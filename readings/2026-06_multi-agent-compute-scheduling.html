@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多智能体算力调度 — 独立调研系列 · FDE</title>
+  <link rel="stylesheet" href="../_assets/insight.css" />
+  <style>
+    /* 站点字体 + 设计 token 由 insight.css 提供；本页保留结构化组件样式，配色映射到站点 token */
+
+    /* --- Variables：配色映射到站点 insight.css token（融入亮/暗双主题）；保留装饰色与本页 cyan accent --- */
+    :root {
+      --bg-surface: var(--surface);
+      --bg-elevated: var(--surface);
+      --bg-card: var(--surface);
+      --text-secondary: var(--text-soft);
+      --text-heading: var(--text);
+      --accent: #0284c7;
+      --accent-dim: var(--accent-soft);
+      --border-accent: var(--accent);
+      --cyan: #22d3ee;
+      --green: #34d399;
+      --amber: #fbbf24;
+      --orange: #fb923c;
+      --red: #f87171;
+      --purple: #a78bfa;
+      --layer-l1: #34d399;
+      --layer-l2: #38bdf8;
+      --layer-l3: #fbbf24;
+      --layer-l4: #f87171;
+      --border-hover: var(--border-strong);
+      --shadow-md: var(--shadow);
+      --shadow-lg: var(--shadow);
+      --shadow-glow: 0 0 20px var(--accent-soft);
+      --font-display: var(--display);
+      --font-body: var(--sans);
+      --font-mono: var(--mono);
+      --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    [data-theme="dark"] { --accent: #38bdf8; }
+
+    /* --- Reset --- */
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    html { scroll-behavior:smooth; -webkit-font-smoothing:antialiased; }
+    body {
+      font-family:var(--font-body); font-size:16px; line-height:1.75;
+      color:var(--text); background:var(--bg); min-height:100vh; overflow-x:hidden;
+    }
+    body::before {
+      content:''; position:fixed; inset:0;
+      background-image:radial-gradient(rgba(56,189,248,0.04) 1px,transparent 1px);
+      background-size:32px 32px; pointer-events:none; z-index:0;
+    }
+    body::after {
+      content:''; position:fixed; top:-50%; left:-50%; width:200%; height:200%;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(56,189,248,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(167,139,250,0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(251,191,36,0.02) 0%, transparent 60%);
+      animation:drift 30s ease-in-out infinite alternate;
+      pointer-events:none; z-index:0;
+    }
+    @keyframes drift { 0%{transform:translate(0,0)} 100%{transform:translate(-3%,-3%) rotate(2deg)} }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+    ::selection { background:rgba(56,189,248,0.25); color:var(--text-heading); }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:var(--bg); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    ::-webkit-scrollbar-thumb:hover { background:var(--border-hover); }
+
+    /* --- Layout --- */
+    .layout { display:flex; min-height:100vh; position:relative; z-index:1; }
+
+    /* --- Sidebar --- */
+    .sidebar {
+      width:260px; position:fixed; top:0; left:0; bottom:0;
+      background:var(--bg-surface); border-right:1px solid var(--border);
+      padding:1.75rem 1.1rem; display:flex; flex-direction:column; z-index:100; overflow-y:auto;
+      transition:transform var(--transition);
+    }
+    .sidebar-brand { margin-bottom:1.75rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border); }
+    .sidebar-brand h2 {
+      font-family:var(--font-display); font-size:0.8rem; font-weight:600;
+      color:var(--accent); letter-spacing:0.08em; text-transform:uppercase; margin-bottom:0.2rem;
+    }
+    .sidebar-brand p { font-size:0.68rem; color:var(--text-muted); letter-spacing:0.04em; }
+    .sidebar-nav { list-style:none; display:flex; flex-direction:column; gap:2px; }
+    .sidebar-nav a {
+      display:flex; align-items:center; gap:0.7rem;
+      padding:0.55rem 0.8rem; color:var(--text-secondary); text-decoration:none;
+      font-size:0.8rem; font-weight:500; border-radius:8px;
+      transition:all var(--transition); position:relative;
+    }
+    .sidebar-nav a::before {
+      content:''; position:absolute; left:0; top:50%; transform:translateY(-50%);
+      width:3px; height:0; background:var(--accent); border-radius:0 3px 3px 0;
+      transition:height var(--transition);
+    }
+    .sidebar-nav a:hover { color:var(--text); background:rgba(56,189,248,0.06); }
+    .sidebar-nav a:hover::before { height:60%; }
+    .sidebar-nav a.active { color:var(--accent); background:var(--accent-dim); }
+    .sidebar-nav a.active::before { height:70%; }
+    .nav-icon {
+      width:20px; height:20px; display:flex; align-items:center; justify-content:center;
+      font-size:0.65rem; font-family:var(--font-mono); font-weight:600;
+      border-radius:5px; flex-shrink:0;
+    }
+    .nav-icon.idx  { background:rgba(56,189,248,0.15); color:var(--accent); }
+    .nav-icon.s1   { background:rgba(52,211,153,0.15); color:var(--green); }
+    .nav-icon.s2   { background:rgba(251,191,36,0.15); color:var(--amber); }
+    .nav-icon.s3   { background:rgba(248,113,113,0.15); color:var(--red); }
+    .nav-icon.s4   { background:rgba(167,139,250,0.15); color:var(--purple); }
+    .sidebar-footer { margin-top:auto; padding-top:1.25rem; border-top:1px solid var(--border); font-size:0.68rem; color:var(--text-muted); line-height:1.6; }
+
+    .sidebar-toggle {
+      display:none; position:fixed; top:1rem; left:1rem; z-index:200;
+      width:40px; height:40px; border-radius:10px; border:1px solid var(--border);
+      background:var(--bg-elevated); color:var(--text); cursor:pointer;
+      align-items:center; justify-content:center; font-size:1.1rem;
+    }
+
+    /* --- Main --- */
+    .main-content { margin-left:260px; flex:1; min-width:0; padding:0 2rem; }
+    .content-wrapper { max-width:880px; margin:0 auto; padding:2.5rem 0 5rem; }
+
+    /* --- Sections (pages) --- */
+    .page { display:none; animation:fadeIn 0.4s ease; }
+    .page.active { display:block; }
+
+    /* --- Hero --- */
+    .hero { position:relative; padding:3rem 0 2.5rem; margin-bottom:2.5rem; border-bottom:1px solid var(--border); }
+    .hero-badge {
+      display:inline-flex; align-items:center; gap:0.5rem;
+      padding:0.3rem 0.8rem; background:var(--accent-dim); border:1px solid var(--border-accent);
+      border-radius:20px; font-size:0.7rem; font-weight:600; color:var(--accent);
+      text-transform:uppercase; letter-spacing:0.06em; margin-bottom:1rem; font-family:var(--font-mono);
+    }
+    .hero-badge .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:pulse 2s ease-in-out infinite; }
+    .hero h1 {
+      font-family:var(--font-display); font-size:clamp(1.8rem,4.5vw,3rem); font-weight:700;
+      color:var(--text-heading); line-height:1.15; letter-spacing:-0.01em; margin-bottom:0.75rem;
+    }
+    .hero .subtitle {
+      font-family:var(--font-display); font-size:clamp(0.95rem,2.2vw,1.25rem);
+      font-weight:300; font-style:italic; color:var(--text-secondary); line-height:1.7; max-width:680px;
+    }
+    .hero-meta { display:flex; flex-wrap:wrap; gap:1.25rem; margin-top:1.25rem; font-size:0.75rem; color:var(--text-muted); }
+    .hero-meta span { display:flex; align-items:center; gap:0.35rem; }
+
+    /* --- Section Title --- */
+    h2.sec-title {
+      font-family:var(--font-display); font-size:1.55rem; font-weight:700;
+      color:var(--text-heading); margin-bottom:1.25rem; padding-bottom:0.65rem;
+      border-bottom:1px solid var(--border); position:relative;
+    }
+    h2.sec-title::after {
+      content:''; position:absolute; bottom:-1px; left:0; width:55px; height:2px; background:var(--accent);
+    }
+    h3.sub-title {
+      font-family:var(--font-display); font-size:1.15rem; font-weight:600;
+      color:var(--text-heading); margin:1.75rem 0 0.75rem;
+    }
+    h4.card-title {
+      font-family:var(--font-body); font-size:0.95rem; font-weight:600;
+      color:var(--text-heading); margin-bottom:0.4rem;
+    }
+
+    /* --- Typography --- */
+    p { margin-bottom:0.9rem; color:var(--text-secondary); }
+    strong { color:var(--text-heading); font-weight:600; }
+    a { color:var(--accent); text-decoration:none; transition:color var(--transition); }
+    a:hover { color:var(--cyan); }
+    ul,ol { margin:0.6rem 0 1rem 1.4rem; color:var(--text-secondary); }
+    li { margin-bottom:0.3rem; padding-left:0.2rem; }
+    li::marker { color:var(--accent); }
+    blockquote {
+      border-left:3px solid var(--accent); padding:0.7rem 1.1rem; margin:1rem 0;
+      background:var(--accent-dim); border-radius:0 8px 8px 0;
+      font-family:var(--font-display); font-style:italic; font-size:1rem; color:var(--text);
+    }
+    blockquote p { margin-bottom:0; color:var(--text); }
+    hr { border:none; border-top:1px solid var(--border); margin:2rem 0; }
+    mark,.hl { background:rgba(56,189,248,0.12); color:var(--accent); padding:0.1rem 0.3rem; border-radius:3px; }
+
+    /* --- Tables --- */
+    .tc { overflow-x:auto; margin:1rem 0 1.5rem; border-radius:10px; border:1px solid var(--border); }
+    table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+    thead { background:var(--bg-elevated); }
+    th {
+      text-align:left; padding:0.65rem 0.85rem; font-weight:600; color:var(--text-heading);
+      font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;
+      border-bottom:2px solid var(--border); white-space:nowrap;
+    }
+    td { padding:0.55rem 0.85rem; border-bottom:1px solid var(--border); color:var(--text-secondary); vertical-align:top; }
+    tbody tr { transition:background var(--transition); }
+    tbody tr:hover { background:rgba(56,189,248,0.04); }
+    tbody tr:last-child td { border-bottom:none; }
+    td strong { color:var(--text); }
+
+    /* --- Code --- */
+    pre {
+      background:var(--bg-surface); border:1px solid var(--border); border-radius:10px;
+      padding:1.1rem 1.3rem; overflow-x:auto; margin:1rem 0 1.5rem;
+      font-family:var(--font-mono); font-size:0.76rem; line-height:1.7; color:var(--text);
+      position:relative;
+    }
+    pre::before {
+      content:attr(data-lang); position:absolute; top:0.4rem; right:0.7rem;
+      font-size:0.58rem; font-weight:600; color:var(--text-muted);
+      text-transform:uppercase; letter-spacing:0.06em;
+    }
+    code {
+      font-family:var(--font-mono); font-size:0.8em;
+      background:rgba(56,189,248,0.08); color:var(--accent);
+      padding:0.12rem 0.35rem; border-radius:4px;
+    }
+    pre code { background:none; color:inherit; padding:0; font-size:inherit; }
+
+    /* --- Tags --- */
+    .tag {
+      display:inline-flex; align-items:center; padding:0.12rem 0.5rem;
+      font-size:0.66rem; font-weight:600; border-radius:4px;
+      font-family:var(--font-mono); letter-spacing:0.02em;
+    }
+    .tag.open    { background:rgba(52,211,153,0.12); color:var(--green); }
+    .tag.closed  { background:rgba(248,113,113,0.12); color:var(--red); }
+    .tag.partial { background:rgba(251,191,36,0.12); color:var(--amber); }
+    .tag.strong  { background:rgba(56,189,248,0.12); color:var(--accent); }
+    .tag.weak    { background:rgba(94,106,128,0.15); color:var(--text-muted); }
+
+    /* --- Layer Badges --- */
+    .lb {
+      font-family:var(--font-mono); font-size:0.62rem; font-weight:600;
+      padding:0.15rem 0.45rem; border-radius:4px; text-transform:uppercase;
+      letter-spacing:0.04em; display:inline-block;
+    }
+    .lb.l4 { background:rgba(248,113,113,0.15); color:var(--layer-l4); }
+    .lb.l3 { background:rgba(251,191,36,0.15); color:var(--layer-l3); }
+    .lb.l2 { background:rgba(56,189,248,0.15); color:var(--layer-l2); }
+    .lb.l1 { background:rgba(52,211,153,0.15); color:var(--layer-l1); }
+
+    /* --- Layer Stack --- */
+    .layer-stack { display:flex; flex-direction:column; border-radius:12px; overflow:hidden; border:1px solid var(--border); margin:1.25rem 0; }
+    .layer-item {
+      display:flex; align-items:center; gap:0.85rem; padding:0.75rem 1.1rem;
+      background:var(--bg-elevated); border-bottom:1px solid var(--border);
+      transition:all var(--transition); position:relative;
+    }
+    .layer-item:last-child { border-bottom:none; }
+    .layer-item:hover { background:var(--bg-card); }
+    .layer-item::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px; }
+    .layer-item[data-layer="L4"]::before { background:var(--layer-l4); }
+    .layer-item[data-layer="L3"]::before { background:var(--layer-l3); }
+    .layer-item[data-layer="L2"]::before { background:var(--layer-l2); }
+    .layer-item[data-layer="L1"]::before { background:var(--layer-l1); }
+    .layer-label { font-weight:600; font-size:0.82rem; color:var(--text); min-width:90px; }
+    .layer-desc { font-size:0.76rem; color:var(--text-secondary); }
+
+    /* --- Card --- */
+    .card {
+      background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px;
+      padding:1.35rem; margin-bottom:1.1rem; transition:all var(--transition);
+    }
+    .card:hover { border-color:var(--border-hover); box-shadow:var(--shadow-md); }
+    .card-header { display:flex; align-items:center; gap:0.7rem; margin-bottom:0.85rem; padding-bottom:0.65rem; border-bottom:1px solid var(--border); }
+    .card-icon {
+      width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+      font-size:0.75rem; font-weight:700; font-family:var(--font-mono); flex-shrink:0;
+    }
+    .card-icon.os   { background:rgba(56,189,248,0.12); color:var(--accent); }
+    .card-icon.wf   { background:rgba(251,191,36,0.12); color:var(--amber); }
+    .card-icon.inf  { background:rgba(52,211,153,0.12); color:var(--green); }
+    .card-icon.cl   { background:rgba(167,139,250,0.12); color:var(--purple); }
+    .card-icon.fw   { background:rgba(248,113,113,0.12); color:var(--red); }
+
+    /* --- Callout --- */
+    .callout { border-radius:10px; padding:1rem 1.2rem; margin:1.25rem 0; border-left:4px solid; }
+    .callout.info    { background:rgba(56,189,248,0.06); border-color:var(--accent); }
+    .callout.warning { background:rgba(251,191,36,0.06); border-color:var(--amber); }
+    .callout.danger  { background:rgba(248,113,113,0.06); border-color:var(--red); }
+    .callout.success { background:rgba(52,211,153,0.06); border-color:var(--green); }
+    .callout-title { font-weight:700; font-size:0.82rem; margin-bottom:0.3rem; display:flex; align-items:center; gap:0.35rem; }
+    .callout.info .callout-title    { color:var(--accent); }
+    .callout.warning .callout-title { color:var(--amber); }
+    .callout.danger .callout-title  { color:var(--red); }
+    .callout.success .callout-title { color:var(--green); }
+    .callout p { font-size:0.82rem; margin-bottom:0.4rem; }
+    .callout p:last-child { margin-bottom:0; }
+
+    /* --- Doc Grid (index) --- */
+    .doc-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:1.1rem; margin:1.25rem 0; }
+    .doc-card {
+      background:var(--bg-elevated); border:1px solid var(--border); border-radius:14px;
+      padding:1.5rem; text-decoration:none; transition:all var(--transition);
+      position:relative; overflow:hidden; cursor:pointer;
+    }
+    .doc-card::before {
+      content:''; position:absolute; top:0; left:0; right:0; height:3px;
+      opacity:0; transition:opacity var(--transition);
+    }
+    .doc-card:nth-child(1)::before { background:var(--green); }
+    .doc-card:nth-child(2)::before { background:var(--amber); }
+    .doc-card:nth-child(3)::before { background:var(--red); }
+    .doc-card:nth-child(4)::before { background:var(--purple); }
+    .doc-card:hover { border-color:var(--border-hover); transform:translateY(-3px); box-shadow:var(--shadow-lg); }
+    .doc-card:hover::before { opacity:1; }
+    .doc-card-num {
+      font-family:var(--font-mono); font-size:0.62rem; font-weight:600;
+      letter-spacing:0.06em; text-transform:uppercase; margin-bottom:0.4rem;
+    }
+    .doc-card:nth-child(1) .doc-card-num { color:var(--green); }
+    .doc-card:nth-child(2) .doc-card-num { color:var(--amber); }
+    .doc-card:nth-child(3) .doc-card-num { color:var(--red); }
+    .doc-card:nth-child(4) .doc-card-num { color:var(--purple); }
+    .doc-card h3 {
+      font-family:var(--font-display); font-size:1.1rem; font-weight:700;
+      color:var(--text-heading); margin-bottom:0.4rem;
+    }
+    .doc-card p { font-size:0.78rem; color:var(--text-secondary); margin-bottom:0; line-height:1.55; }
+    .doc-card .arrow {
+      position:absolute; bottom:1rem; right:1.1rem; color:var(--text-muted);
+      font-size:1.1rem; transition:all var(--transition);
+    }
+    .doc-card:hover .arrow { color:var(--accent); transform:translateX(4px); }
+
+    /* --- KV Grid --- */
+    .kv-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:0.9rem; margin:1rem 0; }
+    .kv-item { background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; padding:0.85rem 1rem; }
+    .kv-label { font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:0.25rem; }
+    .kv-value { font-family:var(--font-display); font-size:1.4rem; font-weight:700; color:var(--text-heading); }
+    .kv-detail { font-size:0.72rem; color:var(--text-muted); margin-top:0.2rem; }
+
+    /* --- Timeline --- */
+    .timeline { position:relative; padding-left:1.75rem; margin:1.25rem 0; }
+    .timeline::before {
+      content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+      background:linear-gradient(to bottom,var(--accent),var(--purple)); border-radius:2px;
+    }
+    .tl-item { position:relative; padding-bottom:1.75rem; }
+    .tl-item::before {
+      content:''; position:absolute; left:-1.75rem; top:0.45rem; width:10px; height:10px;
+      border-radius:50%; background:var(--accent); border:2px solid var(--bg); transform:translateX(-4px);
+    }
+    .tl-year { font-family:var(--font-mono); font-size:0.72rem; font-weight:600; color:var(--accent); margin-bottom:0.2rem; }
+    .tl-content { font-size:0.84rem; color:var(--text-secondary); }
+    .tl-content strong { color:var(--text); }
+
+    /* --- Phase Grid --- */
+    .phase-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:0.9rem; margin:1.25rem 0; }
+    .phase-card {
+      background:var(--bg-elevated); border:1px solid var(--border); border-radius:12px;
+      padding:1.25rem; transition:all var(--transition);
+    }
+    .phase-card:hover { border-color:var(--border-hover); }
+    .phase-num { font-family:var(--font-mono); font-size:1.8rem; font-weight:700; opacity:0.15; line-height:1; margin-bottom:0.4rem; }
+    .phase-card h4 { font-family:var(--font-display); font-size:1rem; font-weight:600; color:var(--text-heading); margin-bottom:0.3rem; }
+    .phase-dur { font-family:var(--font-mono); font-size:0.7rem; color:var(--accent); margin-bottom:0.6rem; }
+    .phase-card ul { font-size:0.78rem; margin-left:0.9rem; }
+
+    /* --- Risk Grid --- */
+    .risk-grid { display:grid; gap:0.6rem; margin:1rem 0; }
+    .risk-item {
+      display:grid; grid-template-columns:auto 1fr auto auto; gap:0.85rem;
+      align-items:start; background:var(--bg-elevated); border:1px solid var(--border);
+      border-radius:10px; padding:0.85rem 1.1rem; transition:all var(--transition);
+    }
+    .risk-item:hover { border-color:var(--border-hover); }
+    .risk-id { font-family:var(--font-mono); font-size:0.68rem; font-weight:600; color:var(--text-muted); padding-top:0.1rem; }
+    .risk-desc { font-size:0.82rem; color:var(--text); }
+    .risk-desc .mit { display:block; font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem; }
+    .rl {
+      font-family:var(--font-mono); font-size:0.62rem; font-weight:600;
+      padding:0.15rem 0.45rem; border-radius:4px; text-transform:uppercase; letter-spacing:0.04em;
+    }
+    .rl.high   { background:rgba(248,113,113,0.15); color:var(--red); }
+    .rl.medium { background:rgba(251,191,36,0.15); color:var(--amber); }
+    .rl.low    { background:rgba(52,211,153,0.15); color:var(--green); }
+
+    /* --- Decision Grid --- */
+    .dec-grid { display:grid; gap:0.6rem; margin:1rem 0; }
+    .dec-item {
+      display:flex; gap:0.85rem; align-items:start;
+      background:var(--bg-elevated); border:1px solid var(--border);
+      border-radius:10px; padding:0.85rem 1.1rem;
+    }
+    .dec-goal { font-weight:600; color:var(--text); font-size:0.82rem; min-width:100px; flex-shrink:0; }
+    .dec-adv { font-size:0.8rem; color:var(--text-secondary); }
+
+    /* --- Formula --- */
+    .formula {
+      background:var(--bg-surface); border:1px solid var(--border); border-radius:10px;
+      padding:0.85rem 1.3rem; margin:0.85rem 0; font-family:var(--font-mono);
+      font-size:0.82rem; color:var(--text); text-align:center; overflow-x:auto;
+    }
+
+    /* --- Arch Diagram --- */
+    .arch-diagram {
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:14px; padding:1.75rem; margin:1.25rem 0; text-align:center;
+    }
+    .arch-layer {
+      background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px;
+      padding:0.85rem 1.3rem; margin:0.4rem auto; max-width:480px;
+      transition:all var(--transition);
+    }
+    .arch-layer:hover { transform:scale(1.02); box-shadow:var(--shadow-glow); }
+    .arch-layer-title { font-family:var(--font-mono); font-size:0.7rem; font-weight:600; letter-spacing:0.06em; margin-bottom:0.2rem; }
+    .arch-layer.l4 .arch-layer-title { color:var(--layer-l4); }
+    .arch-layer.l3 .arch-layer-title { color:var(--layer-l3); }
+    .arch-layer.l2 .arch-layer-title { color:var(--layer-l2); }
+    .arch-layer.l1 .arch-layer-title { color:var(--layer-l1); }
+    .arch-layer-desc { font-size:0.78rem; color:var(--text-secondary); }
+    .arch-arrow { color:var(--text-muted); font-size:1.1rem; margin:0.15rem 0; }
+
+    /* --- Status Dot --- */
+    .status { display:inline-flex; align-items:center; gap:0.3rem; font-size:0.72rem; font-weight:500; }
+    .sd { width:7px; height:7px; border-radius:50%; }
+    .sd.done { background:var(--green); }
+    .sd.active { background:var(--accent); animation:pulse 2s ease-in-out infinite; }
+
+    /* --- Responsive --- */
+    @media(max-width:768px) {
+      .sidebar { transform:translateX(-100%); }
+      .sidebar.open { transform:translateX(0); }
+      .sidebar-toggle { display:flex; }
+      .main-content { margin-left:0; padding:0 0.85rem; }
+      .content-wrapper { padding:1.5rem 0 3rem; }
+      .hero { padding:2rem 0 1.5rem; }
+      .hero h1 { font-size:1.6rem; }
+      .doc-grid { grid-template-columns:1fr; }
+      .risk-item { grid-template-columns:1fr; gap:0.4rem; }
+      .dec-item { flex-direction:column; gap:0.4rem; }
+      .phase-grid { grid-template-columns:1fr; }
+      .arch-layer { max-width:100%; }
+      table { font-size:0.7rem; }
+      th,td { padding:0.4rem 0.55rem; }
+      .kv-grid { grid-template-columns:1fr 1fr; }
+    }
+    @media print {
+      .sidebar,.sidebar-toggle { display:none; }
+      .main-content { margin-left:0; }
+      body::before,body::after { display:none; }
+    }
+  </style>
+</head>
+<body>
+  <button class="sidebar-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <div class="layout">
+    <nav class="sidebar">
+      <div class="sidebar-brand">
+        <h2>Agent Compute Scheduling</h2>
+        <p>独立调研系列 · 2026-06-08</p>
+      </div>
+      <ul class="sidebar-nav">
+        <li><a href="#" data-page="index" class="active" onclick="showPage('index')"><span class="nav-icon idx">◎</span> 系列索引</a></li>
+        <li><a href="#" data-page="survey" onclick="showPage('survey')"><span class="nav-icon s1">01</span> 完整调研</a></li>
+        <li><a href="#" data-page="bench" onclick="showPage('bench')"><span class="nav-icon s2">02</span> 评测框架</a></li>
+        <li><a href="#" data-page="gap" onclick="showPage('gap')"><span class="nav-icon s3">03</span> 空白区分析</a></li>
+        <li><a href="#" data-page="memo" onclick="showPage('memo')"><span class="nav-icon s4">04</span> 投入备忘录</a></li>
+      </ul>
+      <div class="sidebar-footer">跨市场 / 系统层前瞻洞察<br>仅基于公开论文、开源项目与工业实践</div>
+    </nav>
+
+    <main class="main-content">
+      <div class="content-wrapper">
+
+        <!-- ==================== PAGE: INDEX ==================== -->
+        <div class="page active" id="page-index">
+          <header class="hero">
+            <div class="hero-badge"><span class="dot"></span> 跨市场 · 系统层前瞻洞察</div>
+            <h1>多智能体算力调度<br>独立调研系列</h1>
+            <p class="subtitle">当多 Agent 共享有限算力池时，「谁先获得资源」成为核心调度问题——这不是单一队列，而是四层叠加的系统挑战。</p>
+            <div class="hero-meta"><span>📅 2026-06-08</span><span>📁 5 篇文档</span><span>🔬 公开论文 + 开源项目</span></div>
+            <div class="doc-meta">
+              <span>2026-06</span>
+              <span>跨市场</span>
+              <span>算力调度</span>
+              <span>独立调研</span>
+              <span>对内</span>
+            </div>
+          </header>
+
+          <section>
+            <h2 class="sec-title">四层问题模型</h2>
+            <p>多 Agent 算力调度不是单一调度问题，而是至少四层叠加：</p>
+            <div class="layer-stack">
+              <div class="layer-item" data-layer="L4"><span class="lb l4">L4</span><span class="layer-label">业务优先级</span><span class="layer-desc">SLA、租户 tier、人工审批、用户打断</span></div>
+              <div class="layer-item" data-layer="L3"><span class="lb l3">L3</span><span class="layer-label">工作流编排</span><span class="layer-desc">DAG 关键路径、动态 replan、subagent 依赖</span></div>
+              <div class="layer-item" data-layer="L2"><span class="lb l2">L2</span><span class="layer-label">推理槽位</span><span class="layer-desc">并发 lane、MLFQ、模型路由、admission control</span></div>
+              <div class="layer-item" data-layer="L1"><span class="lb l1">L1</span><span class="layer-label">硬件池</span><span class="layer-desc">GPU 分片、SM 时间配额、API quota</span></div>
+            </div>
+            <div class="callout info">
+              <div class="callout-title">💡 核心结论</div>
+              <p>2025–2026 学术热点已转向 workflow-aware serving，<strong>L2↔L4 贯通</strong>仍是明显空白，值得以窄切口中间件形式投入。</p>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">文档索引</h2>
+            <div class="doc-grid">
+              <div class="doc-card" onclick="showPage('survey')">
+                <div class="doc-card-num">文档 01</div>
+                <h3>完整调研</h3>
+                <p>四层问题模型、方案全景、对比总表、文献清单——OS 派、Workflow-Aware 派、基础设施派四条技术路线全梳理。</p>
+                <span class="arrow">→</span>
+              </div>
+              <div class="doc-card" onclick="showPage('bench')">
+                <div class="doc-card-num">文档 02</div>
+                <h3>通用评测框架</h3>
+                <p>工作负载场景（W1–W6）、基线调度器（B0–B7）、指标体系、实验协议——使不同方案可在同一 trace 上对比。</p>
+                <span class="arrow">→</span>
+              </div>
+              <div class="doc-card" onclick="showPage('gap')">
+                <div class="doc-card-num">文档 03</div>
+                <h3>空白区深度分析</h3>
+                <p>L2↔L4 贯通、多租户可审计调度、路由 + lane 联合优化——定义开放命题 AACS 与五个可立项研究问题。</p>
+                <span class="arrow">→</span>
+              </div>
+              <div class="doc-card" onclick="showPage('memo')">
+                <div class="doc-card-num">文档 04</div>
+                <h3>投入判断备忘录</h3>
+                <p>切口选择、风险登记、分阶段投入计划（Phase 0–3）、团队建议与 12 个月成功标准。</p>
+                <span class="arrow">→</span>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">关键数据</h2>
+            <div class="kv-grid">
+              <div class="kv-item"><div class="kv-label">AgentRM 实证规模</div><div class="kv-value">4万+</div><div class="kv-detail">GitHub issues 分析</div></div>
+              <div class="kv-item"><div class="kv-label">未协调并发失败率</div><div class="kv-value" style="color:var(--red)">72–100%</div><div class="kv-detail">HiveMind 5–50 Agent</div></div>
+              <div class="kv-item"><div class="kv-label">Workflow 吞吐提升</div><div class="kv-value" style="color:var(--green)">4–15×</div><div class="kv-detail">Agentix PLAS vs vLLM</div></div>
+              <div class="kv-item"><div class="kv-label">Agent TCT 延迟膨胀</div><div class="kv-value" style="color:var(--amber)">3–8×</div><div class="kv-detail">SAGA: 丢弃 KV cache</div></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ==================== PAGE: SURVEY ==================== -->
+        <div class="page" id="page-survey">
+          <header class="hero">
+            <div class="hero-badge"><span class="dot"></span> 文档 01 · 完整调研</div>
+            <h1>多智能体算力调度<br>独立调研报告</h1>
+            <p class="subtitle">基于 2024–2026 公开论文与开源项目，梳理 OS 派、Workflow-Aware 派、基础设施派与经典资源分配四条技术路线。</p>
+            <div class="hero-meta"><span>📅 2026-06-08</span><span>🔬 公开论文 + 开源项目</span></div>
+          </header>
+
+          <!-- 摘要 -->
+          <section>
+            <h2 class="sec-title">摘要</h2>
+            <div class="callout info">
+              <div class="callout-title">🎯 核心发现</div>
+              <p><strong>1.</strong> L1/L2 已有较成熟方案（MLFQ、PLAS、load function 等），但多针对公平性与 HoL blocking，缺乏业务语义。</p>
+              <p><strong>2.</strong> 2025–2026 范式正从 request-level 转向 workflow-level（SAGA、Agentix、TokenCake），整段 Agent 工作流成为一等调度单元。</p>
+              <p><strong>3.</strong> <mark>L2↔L4 贯通</mark>（业务 SLA / 租户 / 用户打断 → 可执行优先级）仍是明显空白。</p>
+            </div>
+          </section>
+
+          <!-- 1. 问题定义 -->
+          <section>
+            <h2 class="sec-title">1. 问题定义</h2>
+            <h3 class="sub-title">1.1 核心问题</h3>
+            <blockquote>在任意时刻，哪个 Agent（或哪次 LLM 调用）应优先获得资源？</blockquote>
+            <div class="tc"><table><thead><tr><th>资源类型</th><th>池化形态</th><th>争用表现</th></tr></thead><tbody>
+              <tr><td><strong>GPU</strong></td><td>集群 N 卡、fractional GPU</td><td>显存碎片、KV cache 驱逐、冷启动</td></tr>
+              <tr><td><strong>API 并发</strong></td><td>provider rate limit、自建 lane 池</td><td>429 级联、HoL blocking、zombie</td></tr>
+              <tr><td><strong>Token 预算</strong></td><td>组织/租户/任务级 cap</td><td>长任务挤占、批处理饿死交互</td></tr>
+              <tr><td><strong>CPU/内存</strong></td><td>orchestrator 进程池</td><td>tool 等待时空转、编排阻塞</td></tr>
+            </tbody></table></div>
+
+            <h3 class="sub-title">1.2 四层问题模型</h3>
+            <div class="layer-stack">
+              <div class="layer-item" data-layer="L4"><span class="lb l4">L4</span><span class="layer-label">业务优先级</span><span class="layer-desc">SLA、租户 tier、人工审批、用户打断</span></div>
+              <div class="layer-item" data-layer="L3"><span class="lb l3">L3</span><span class="layer-label">工作流编排</span><span class="layer-desc">DAG 关键路径、动态 replan、subagent 依赖</span></div>
+              <div class="layer-item" data-layer="L2"><span class="lb l2">L2</span><span class="layer-label">推理槽位</span><span class="layer-desc">并发 lane、MLFQ、模型路由、admission control</span></div>
+              <div class="layer-item" data-layer="L1"><span class="lb l1">L1</span><span class="layer-label">硬件池</span><span class="layer-desc">GPU 分片、SM 时间配额、API quota</span></div>
+            </div>
+            <div class="tc"><table><thead><tr><th>层级</th><th>调度对象</th><th>典型瓶颈</th><th>代表方案</th></tr></thead><tbody>
+              <tr><td><span class="lb l4">L4</span> 业务</td><td>SLA、租户、审批</td><td>付费 vs 批处理、紧急打断</td><td>各平台策略层（多数未产品化）</td></tr>
+              <tr><td><span class="lb l3">L3</span> 工作流</td><td>subagent、DAG 依赖</td><td>关键路径阻塞、tool 等待空转</td><td>SAGA、TokenCake、FATE、HexAGenT</td></tr>
+              <tr><td><span class="lb l2">L2</span> 推理槽位</td><td>并发 LLM 调用</td><td>HoL blocking、zombie、429</td><td>AgentRM、Agentix、HiveMind、loco-agent</td></tr>
+              <tr><td><span class="lb l1">L1</span> 硬件池</td><td>GPU/CPU/API quota</td><td>显存碎片、冷启动、SM 争用</td><td>Ray Serve、KAI Scheduler、HAS-GPU</td></tr>
+            </tbody></table></div>
+            <div class="callout warning">
+              <div class="callout-title">⚠️ 常见误区</div>
+              <p>把问题简化为「调大 concurrency」或「加更多 GPU」。低负载下看似够用；当 N 个 Agent 争用 C 个 lane（C ≪ N）时，scheduling failure 才暴露。</p>
+            </div>
+          </section>
+
+          <!-- 2. 方案全景 -->
+          <section>
+            <h2 class="sec-title">2. 方案全景</h2>
+
+            <h3 class="sub-title">2.1 OS 派：把 Agent 当 Process / Thread</h3>
+
+            <div class="card"><div class="card-header"><div class="card-icon os">OS</div><h4 class="card-title">AgentRM <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2603.13110, 2026</span></h4></div>
+              <div class="tc"><table><tbody>
+                <tr><td><strong>定位</strong></td><td>Agent 框架与 Model API 之间的中间件</td></tr>
+                <tr><td><strong>机制</strong></td><td>MLFQ、zombie reaping、rate-limit-aware admission、AIMD 退避</td></tr>
+                <tr><td><strong>实证</strong></td><td>OpenClaw、AutoGen、CrewAI、LangGraph、Codex、Claude Code 共 4 万+ issues</td></tr>
+                <tr><td><strong>效果</strong></td><td>P95 延迟 <span style="color:var(--green)">-86%</span>，吞吐 <span style="color:var(--green)">+168%</span>，zombie 29→0，lane waste <span style="color:var(--green)">-96%</span></td></tr>
+                <tr><td><strong>局限</strong></td><td>无 DAG 关键路径；无业务语义</td></tr>
+              </tbody></table></div>
+              <p><strong>MLFQ 队列</strong>：Queue 0 高优先级 → Queue 1–2 随时长降级 → Priority boosting 防饥饿 → Zombie reaping 释放死 lane</p>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon os">OS</div><h4 class="card-title">Agentix / Autellix <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">NSDI 2026</span></h4></div>
+              <div class="tc"><table><tbody>
+                <tr><td><strong>PLAS</strong></td><td>Program-Level Attained Service：累计服务时间少的程序优先</td></tr>
+                <tr><td><strong>ATLAS</strong></td><td>多线程/DAG 按 critical path 上的 attained service 排序</td></tr>
+                <tr><td><strong>效果</strong></td><td>同延迟下程序吞吐 <span style="color:var(--green)">4–15×</span>（相对 vLLM）</td></tr>
+                <tr><td><strong>局限</strong></td><td>面向 serving 层；非 framework-agnostic；无多租户 SLA</td></tr>
+              </tbody></table></div>
+              <div class="callout info"><div class="callout-title">🔑 关键区别</div><p>MLFQ 解决 <strong>call-level</strong> HoL blocking；PLAS/ATLAS 进一步解决 <strong>program-level</strong> HoL blocking。</p></div>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon os">OS</div><h4 class="card-title">HiveMind <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2604.17111</span></h4></div>
+              <div class="tc"><table><tbody>
+                <tr><td><strong>定位</strong></td><td>透明 HTTP 代理，零改 Agent 代码</td></tr>
+                <tr><td><strong>原语</strong></td><td>admission、rate-limit tracking、AIMD、circuit breaker、token budget、priority queue + DAG</td></tr>
+                <tr><td><strong>效果</strong></td><td>5–50 并发：未协调失败率 <span style="color:var(--red)">72–100%</span> → <span style="color:var(--green)">0–18%</span></td></tr>
+              </tbody></table></div>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon os">OS</div><h4 class="card-title">loco-agent <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">开源, PyPI 2026</span></h4></div>
+              <div class="tc"><table><tbody>
+                <tr><td><strong>公式</strong></td><td><code>L(i) = α·(Qi/maxQ) + (1-α)·(Dmax_i/maxDmax)</code></td></tr>
+                <tr><td><strong>能力</strong></td><td>bounded concurrency、backpressure、SLO error budget、deadlock-safe</td></tr>
+                <tr><td><strong>局限</strong></td><td>动态 replan 弱；无 KV cache 感知</td></tr>
+              </tbody></table></div>
+            </div>
+            <div class="callout success"><div class="callout-title">📋 OS 派小结</div><p>MLFQ/PLAS/LAS 解决公平性与 HoL blocking；loco/HiveMind 解决框架无关接入；均未充分解决 <strong>业务优先级 + 动态 DAG</strong>。</p></div>
+
+            <hr>
+
+            <h3 class="sub-title">2.2 Workflow-Aware 派：整段工作流为一等公民</h3>
+            <p>2025–2026 最重要范式转变：<strong>不再把每次 LLM 调用当独立 request</strong>。</p>
+
+            <div class="card"><div class="card-header"><div class="card-icon wf">WF</div><h4 class="card-title">SAGA <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2605.00528 · <a href="https://github.com/bettyguo/SAGA" target="_blank" style="font-size:0.68rem">GitHub</a></span></h4></div>
+              <ul><li><strong>主张</strong>：tool call 间丢弃 KV cache 导致 3–8× 延迟膨胀</li>
+              <li><strong>机制</strong>：Agent Execution Graph（KV 复用预测）、session-affinity batching、Agent Fair Share</li>
+              <li><strong>效果</strong>：64-GPU 集群 TCT <span style="color:var(--green)">-1.64×</span>，SLO 99.2%</li></ul>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-icon wf">WF</div><h4 class="card-title">TokenCake <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2510.18586</span></h4></div>
+              <ul><li><strong>Temporal</strong>：tool call 期间 offload KV，预测性 prefetch</li>
+              <li><strong>Spatial</strong>：GPU 内存分 shared + reserved pool，保护 critical-path cache</li></ul>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-icon wf">WF</div><h4 class="card-title">Chimera <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2603.22206</span></h4></div>
+              <ul><li>语义 router + 剩余 token 预测器 → <strong>STJF</strong>（Shortest Total Job First）+ aging 防饥饿</li></ul>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-icon wf">WF</div><h4 class="card-title">HexAGenT <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2605.16637</span></h4></div>
+              <ul><li>Prefill-Decode 分离；在线揭示 DAG；按「违反 workflow horizon 风险」排序</li></ul>
+            </div>
+            <div class="card"><div class="card-header"><div class="card-icon wf">WF</div><h4 class="card-title">FATE <span style="font-size:0.68rem;color:var(--text-muted);font-weight:400">arXiv:2605.07238</span></h4></div>
+              <ul><li>future-state-aware：评分候选 assignment 对下游状态影响；CP-SAT 求解</li></ul>
+            </div>
+            <div class="callout success"><div class="callout-title">📋 Workflow 派小结</div><p>学术前沿在 KV cache + DAG + makespan；工程落地多绑定 vLLM/Ray，<strong>与 L2 lane、L4 业务优先级尚未整合</strong>。</p></div>
+
+            <hr>
+            <h3 class="sub-title">2.3 基础设施派：GPU/集群物理层</h3>
+            <div class="tc"><table><thead><tr><th>方案</th><th>机制</th><th>调度粒度</th><th>Agent 相关性</th></tr></thead><tbody>
+              <tr><td><strong>Ray Serve</strong></td><td>独立 autoscaling deployment</td><td>副本/GPU 分数</td><td>组件级扩缩</td></tr>
+              <tr><td><strong>KAI Scheduler</strong></td><td>K8s 层级队列、quota、抢占</td><td>Pod/GPU 份额</td><td>priority 需上层注入</td></tr>
+              <tr><td><strong>HAS-GPU</strong></td><td>SM 分区 + 时间配额</td><td>Serverless function</td><td>单模型推理 SLO</td></tr>
+              <tr><td><strong>Adaptive GPU</strong></td><td>按 agent 优先级+最小 GPU 需求</td><td>Agent 级 GPU %</td><td>Serverless 多 Agent</td></tr>
+            </tbody></table></div>
+
+            <hr>
+            <h3 class="sub-title">2.4 经典多 Agent 资源分配</h3>
+            <ul>
+              <li><strong>拍卖/市场</strong>：去中心化、可证 welfare；对 LLM：utility 难实时估计</li>
+              <li><strong>分布式 HPC</strong>：去中心化竞价 + fault tolerance；与 LLM tool-wait 差异大</li>
+              <li><strong>MARL</strong>：动态自适应；非平稳、reward 延迟、不可解释；建议仅在线调参</li>
+            </ul>
+
+            <hr>
+            <h3 class="sub-title">2.5 Agent 框架内置</h3>
+            <div class="tc"><table><thead><tr><th>框架</th><th>资源控制</th><th>缺口</th></tr></thead><tbody>
+              <tr><td><strong>LangGraph</strong></td><td>checkpoint、并行 fan-out</td><td>无全局算力池优先级</td></tr>
+              <tr><td><strong>CrewAI/AutoGen</strong></td><td>并发参数</td><td>&gt;20 并发易 failure</td></tr>
+              <tr><td><strong>Claude Workflows</strong></td><td>concurrency + budget cap</td><td>静态上限</td></tr>
+              <tr><td><strong>OpenAI Agents SDK</strong></td><td>无全局调度</td><td>依赖外部</td></tr>
+            </tbody></table></div>
+            <div class="callout danger"><div class="callout-title">📌 结论</div><p>主流框架把调度留给用户，<strong>中间件层窗口仍在</strong>。</p></div>
+          </section>
+
+          <!-- 3. 对比总表 -->
+          <section>
+            <h2 class="sec-title">3. 方案对比总表</h2>
+            <div class="tc"><table><thead><tr><th>方案</th><th>层级</th><th>调度信号</th><th>开源</th><th>Agent 语义</th><th>多租户</th><th>可解释</th></tr></thead><tbody>
+              <tr><td><strong>AgentRM</strong></td><td>L2</td><td>执行时长 MLFQ</td><td><span class="tag partial">论文</span></td><td><span class="tag weak">弱</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>Agentix</strong></td><td>L2</td><td>attained service</td><td><span class="tag partial">论文</span></td><td><span class="tag partial">中</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>HiveMind</strong></td><td>L2</td><td>priority + DAG</td><td><span class="tag open">是</span></td><td><span class="tag partial">中</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>loco-agent</strong></td><td>L2</td><td>queue depth + wait</td><td><span class="tag open">是</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td><td><span class="tag strong">高</span></td></tr>
+              <tr><td><strong>SAGA</strong></td><td>L1+L3</td><td>workflow + KV</td><td><span class="tag open">是</span></td><td><span class="tag strong">强</span></td><td><span class="tag partial">中</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>TokenCake</strong></td><td>L1+L3</td><td>critical path + KV</td><td><span class="tag partial">论文</span></td><td><span class="tag strong">强</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>Chimera</strong></td><td>L2+L3</td><td>STJF + router</td><td><span class="tag partial">论文</span></td><td><span class="tag strong">强</span></td><td><span class="tag weak">弱</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><strong>Ray/KAI</strong></td><td>L1</td><td>quota/priority</td><td><span class="tag open">是</span></td><td><span class="tag weak">无</span></td><td><span class="tag strong">强</span></td><td><span class="tag strong">高</span></td></tr>
+              <tr><td><strong>拍卖/MARL</strong></td><td>通用</td><td>bid/RL</td><td><span class="tag partial">部分</span></td><td><span class="tag weak">需定制</span></td><td><span class="tag partial">中</span></td><td><span class="tag weak">低</span></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <!-- 4. 时间线 -->
+          <section>
+            <h2 class="sec-title">4. 技术演进时间线</h2>
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-year">2024</div><div class="tl-content"><strong>请求级 LLM serving</strong> 为主；prefix caching 普及</div></div>
+              <div class="tl-item"><div class="tl-year">2025</div><div class="tl-content"><strong>TokenCake</strong> KV-centric；MARL RAO Survey；HAS-GPU fine-grained GPU</div></div>
+              <div class="tl-item"><div class="tl-year">2026 Q1</div><div class="tl-content"><strong>AgentRM</strong> MLFQ；<strong>HiveMind</strong> 代理调度；<strong>Chimera</strong> STJF</div></div>
+              <div class="tl-item"><div class="tl-year">2026 Q2</div><div class="tl-content"><strong>Agentix PLAS</strong> (NSDI)；<strong>SAGA</strong> workflow-atomic；<strong>HexAGenT</strong>、<strong>FATE</strong>；<strong>loco-agent</strong> v0.3</div></div>
+            </div>
+            <div class="callout info"><div class="callout-title">🕐 窗口判断</div><p>2026–2027 是 workflow-aware + OS-style middleware 的整合窗口。</p></div>
+          </section>
+
+          <!-- 5. 文献 -->
+          <section>
+            <h2 class="sec-title">5. 文献清单</h2>
+            <h3 class="sub-title">LLM Agent 调度（核心）</h3>
+            <div class="tc"><table><thead><tr><th>文献</th><th>链接</th><th>关键词</th></tr></thead><tbody>
+              <tr><td>AgentRM</td><td><a href="https://arxiv.org/abs/2603.13110" target="_blank">arXiv:2603.13110</a></td><td>MLFQ, zombie, rate limit</td></tr>
+              <tr><td>Agentix</td><td><a href="https://arxiv.org/pdf/2502.13965" target="_blank">arXiv:2502.13965</a></td><td>PLAS, ATLAS, critical path</td></tr>
+              <tr><td>HiveMind</td><td><a href="https://arxiv.org/abs/2604.17111" target="_blank">arXiv:2604.17111</a></td><td>HTTP proxy, admission, AIMD</td></tr>
+              <tr><td>loco-agent</td><td><a href="https://github.com/ArielSmoliar/loco-agent" target="_blank">GitHub</a></td><td>load function, SLO budget</td></tr>
+            </tbody></table></div>
+            <h3 class="sub-title">Workflow-Aware Serving</h3>
+            <div class="tc"><table><thead><tr><th>文献</th><th>链接</th><th>关键词</th></tr></thead><tbody>
+              <tr><td>SAGA</td><td><a href="https://arxiv.org/abs/2605.00528" target="_blank">arXiv:2605.00528</a></td><td>workflow-atomic, AEG, AFS</td></tr>
+              <tr><td>TokenCake</td><td><a href="https://arxiv.org/html/2510.18586" target="_blank">arXiv:2510.18586</a></td><td>KV partition, temporal/spatial</td></tr>
+              <tr><td>Chimera</td><td><a href="https://arxiv.org/pdf/2603.22206" target="_blank">arXiv:2603.22206</a></td><td>STJF, semantic router</td></tr>
+              <tr><td>HexAGenT</td><td><a href="https://arxiv.org/html/2605.16637" target="_blank">arXiv:2605.16637</a></td><td>P-D disaggregated, DAG horizon</td></tr>
+              <tr><td>FATE</td><td><a href="https://arxiv.org/html/2605.07238" target="_blank">arXiv:2605.07238</a></td><td>future-state-aware, CP-SAT</td></tr>
+            </tbody></table></div>
+            <h3 class="sub-title">基础设施</h3>
+            <div class="tc"><table><thead><tr><th>文献</th><th>链接</th><th>关键词</th></tr></thead><tbody>
+              <tr><td>Ray Serve</td><td><a href="https://www.anyscale.com/blog/ai-agents-on-ray-serve-single-to-multi-agent-architecture" target="_blank">Anyscale</a></td><td>microservices, autoscaling</td></tr>
+              <tr><td>KAI Scheduler</td><td><a href="https://docs.ray.io/en/latest/cluster/kubernetes/k8s-ecosystem/kai-scheduler.html" target="_blank">Ray Docs</a></td><td>quota, preemption</td></tr>
+              <tr><td>HAS-GPU</td><td><a href="https://arxiv.org/html/2505.01968v1" target="_blank">arXiv:2505.01968</a></td><td>SM partition</td></tr>
+              <tr><td>Adaptive GPU</td><td><a href="https://arxiv.org/html/2512.22149v2" target="_blank">arXiv:2512.22149</a></td><td>serverless, priority</td></tr>
+            </tbody></table></div>
+            <h3 class="sub-title">经典资源分配</h3>
+            <div class="tc"><table><thead><tr><th>文献</th><th>链接</th><th>关键词</th></tr></thead><tbody>
+              <tr><td>MARL RAO Survey</td><td><a href="https://arxiv.org/abs/2504.21048" target="_blank">arXiv:2504.21048</a></td><td>CTDE, DTDE</td></tr>
+              <tr><td>HPC distributed</td><td><a href="https://github.com/pbalapra/distributed-multiagent-scheduling" target="_blank">GitHub</a></td><td>bidding, fault tolerance</td></tr>
+            </tbody></table></div>
+          </section>
+        </div>
+
+        <!-- ==================== PAGE: BENCHMARK ==================== -->
+        <div class="page" id="page-bench">
+          <header class="hero">
+            <div class="hero-badge"><span class="dot"></span> 文档 02 · 评测规格</div>
+            <h1>通用评测框架</h1>
+            <p class="subtitle">定义可复现评测协议，覆盖工作负载生成、基线对照、指标体系与实验报告格式。</p>
+            <div class="hero-meta"><span>📅 2026-06-08</span><span>🔬 6 工作负载 · 8 基线</span></div>
+          </header>
+
+          <section>
+            <h2 class="sec-title">1. 评测目标与范围</h2>
+            <div class="tc"><table><thead><tr><th>层级</th><th>评测焦点</th><th>覆盖</th></tr></thead><tbody>
+              <tr><td><span class="lb l2">L2</span></td><td>N Agent 争用 C lane 时的公平性、HoL、zombie</td><td><span class="tag strong">核心</span></td></tr>
+              <tr><td><span class="lb l3">L3</span></td><td>DAG 关键路径、makespan</td><td><span class="tag strong">核心</span></td></tr>
+              <tr><td><span class="lb l4">L4</span></td><td>SLO 违约、优先级插入</td><td><span class="tag strong">核心</span></td></tr>
+              <tr><td><span class="lb l1">L1</span></td><td>GPU KV cache、分片</td><td><span class="tag partial">可选</span></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">2. 核心抽象</h2>
+            <h3 class="sub-title">2.1 资源模型</h3>
+<pre data-lang="python">
+SharedPool:
+  lanes: int              # 并发 LLM 调用槽位数 C
+  rate_limit: float       # 每秒最大请求数 QPS
+  token_budget: float     # 组织级 token 上限
+
+Agent:
+  agent_id: str
+  workflow_id: str
+  priority_class: int    # L4: 0=最高
+  on_critical_path: bool # L3
+
+LLMCall:
+  call_id, agent_id, est_tokens, est_duration_ms
+  dependencies: [call_id]
+</pre>
+            <h3 class="sub-title">2.2 调度器接口</h3>
+<pre data-lang="python">
+class SchedulerUnderTest:
+    async def acquire(self, call: LLMCall, hints: ScheduleHints) -> Ticket: ...
+    async def release(self, ticket: Ticket, metrics: RunMetrics) -> None: ...
+</pre>
+          </section>
+
+          <section>
+            <h2 class="sec-title">3. 工作负载场景</h2>
+
+            <div class="card"><div class="card-header"><div class="card-icon os">W1</div><h4 class="card-title">Lane 争用（基础）</h4></div>
+              <p>验证 L2 调度在 C ≪ N 时的公平性与吞吐。</p>
+              <div class="tc"><table><thead><tr><th>参数</th><th>默认值</th><th>说明</th></tr></thead><tbody>
+                <tr><td><code>lanes</code> C</td><td>4</td><td>并发槽位</td></tr>
+                <tr><td><code>agents</code> N</td><td>20</td><td>同时活跃 Agent</td></tr>
+                <tr><td><code>duration</code></td><td>lognormal</td><td>长短调用混合</td></tr>
+              </tbody></table></div>
+              <p><strong>变体</strong>：W1a 同质 · W1b 重尾（HoL）· W1c 突发（admission）</p>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon wf">W2</div><h4 class="card-title">DAG 关键路径</h4></div>
+              <p>验证 L3 信号是否缩短 workflow makespan。</p>
+<pre data-lang="text">
+[Planner] → [Researcher_A] ──┐
+     └──→ [Researcher_B] ────┤→ [Writer] → [Reviewer]
+critical path: Planner → Researcher_A → Writer → Reviewer
+</pre>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon inf">W3</div><h4 class="card-title">Tool 等待空转</h4></div>
+              <p>模拟 Agent 在 tool call 期间不占 lane，但 workflow 仍存活。Tool wait 占总时间 30–70%。</p>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon fw">W4</div><h4 class="card-title">优先级插入（L4）</h4></div>
+              <p>注入 <code>priority_class=0</code> 紧急 Agent，测 SLO 与饥饿平衡。</p>
+<div class="formula">SLO_attainment = 1 - (violations / total_priority_0_calls)</div>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon cl">W5</div><h4 class="card-title">Rate Limit 级联</h4></div>
+              <p>测 429 处理与 zombie 治理。指标：429 次数、zombie 数、lane waste。</p>
+            </div>
+
+            <div class="card"><div class="card-header"><div class="card-icon fw">W6</div><h4 class="card-title">多租户公平性</h4></div>
+              <p>3–10 租户不等 quota/tier/负载。公平性：</p>
+<div class="formula">AFS_deviation(i) = |TCT_i / fair_share_i - 1|</div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">4. 基线调度器</h2>
+            <div class="tc"><table><thead><tr><th>ID</th><th>名称</th><th>策略</th></tr></thead><tbody>
+              <tr><td>B0</td><td><strong>FIFO</strong></td><td>先到先得</td></tr>
+              <tr><td>B1</td><td><strong>Round-Robin</strong></td><td>按 Agent 轮转</td></tr>
+              <tr><td>B2</td><td><strong>MLFQ</strong></td><td>多级反馈队列（AgentRM 风格）</td></tr>
+              <tr><td>B3</td><td><strong>PLAS</strong></td><td>attained service 少者优先（Agentix 风格）</td></tr>
+              <tr><td>B4</td><td><strong>loco</strong></td><td>load function α=0.5</td></tr>
+              <tr><td>B5</td><td><strong>STJF</strong></td><td>预估剩余 token 最少者优先</td></tr>
+              <tr><td>B6</td><td><strong>Random</strong></td><td>随机 grant（下界）</td></tr>
+              <tr><td>B7</td><td><strong>Unlimited</strong></td><td>C=∞（上界）</td></tr>
+            </tbody></table></div>
+            <p><strong>合成 score 基线</strong>：</p>
+<div class="formula">
+score(i) = w1·priority + w2·critical_path + w3·(1-attained_svc) + w4·wait - w5·est_cost
+</div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">5. 指标体系</h2>
+            <div class="tc"><table><thead><tr><th>类别</th><th>指标</th><th>定义</th></tr></thead><tbody>
+              <tr><td rowspan="3"><strong>延迟/吞吐</strong></td><td><code>makespan_p95</code></td><td>首 call 到末 call 完成</td></tr>
+              <tr><td><code>call_wait_ms</code></td><td>acquire 前等待</td></tr>
+              <tr><td><code>throughput_wpm</code></td><td>每分钟完成 workflow 数</td></tr>
+              <tr><td rowspan="2"><strong>SLO/公平</strong></td><td><code>slo_attainment</code></td><td>P0 调用 wait &lt; threshold 比例</td></tr>
+              <tr><td><code>max_AFS_deviation</code></td><td>多租户公平偏差</td></tr>
+              <tr><td rowspan="3"><strong>资源效率</strong></td><td><code>lane_utilization</code></td><td>活跃 lane 时间 / 总时间</td></tr>
+              <tr><td><code>zombie_count</code></td><td>未释放的已完成 call 数</td></tr>
+              <tr><td><code>429_count</code></td><td>上游 429 次数</td></tr>
+              <tr><td rowspan="2"><strong>可解释</strong></td><td><code>log_coverage</code></td><td>有理由记录的 grant / 总 grant</td></tr>
+              <tr><td><code>replay_fidelity</code></td><td>log 重放一致性</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">6. 实验协议</h2>
+<pre data-lang="python">
+for seed in seeds:                    # ≥ 5 seeds
+  trace = generate_or_load(W*, seed)
+  for scheduler in baselines + candidate:
+    result = run_simulation(trace, scheduler, config)
+    record(metrics)
+aggregate(mean, 95% CI)
+</pre>
+            <h3 class="sub-title">通过/失败启发式</h3>
+            <div class="tc"><table><thead><tr><th>条件</th><th>阈值</th></tr></thead><tbody>
+              <tr><td>makespan P95 改善</td><td>≥ 15%</td></tr>
+              <tr><td>SLO attainment (W4)</td><td>≥ 95%</td></tr>
+              <tr><td>zombie_count</td><td>= 0</td></tr>
+              <tr><td>429 率 (W5)</td><td>相对无调度降低 ≥ 50%</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">7. 与现有工作对齐</h2>
+            <div class="tc"><table><thead><tr><th>外部基准</th><th>本框架</th></tr></thead><tbody>
+              <tr><td>AgentRM 高负载</td><td>W1b + W5</td></tr>
+              <tr><td>Agentix throughput</td><td>W1 + W2</td></tr>
+              <tr><td>HiveMind 并发</td><td>W5, N=5..50</td></tr>
+              <tr><td>SAGA TCT/AFS</td><td>W2 + W6</td></tr>
+              <tr><td>loco load function</td><td>W1 + B4</td></tr>
+            </tbody></table></div>
+          </section>
+        </div>
+
+        <!-- ==================== PAGE: GAP ANALYSIS ==================== -->
+        <div class="page" id="page-gap">
+          <header class="hero">
+            <div class="hero-badge"><span class="dot"></span> 文档 03 · 研究机会分析</div>
+            <h1>空白区深度分析</h1>
+            <p class="subtitle">聚焦三个尚未被充分解决的空白区：L2↔L4 贯通、多租户可审计调度、路由与 lane 联合优化。</p>
+            <div class="hero-meta"><span>📅 2026-06-08</span><span>🎯 5 空白区 · 3 重点</span></div>
+          </header>
+
+          <section>
+            <h2 class="sec-title">1. 空白区总览</h2>
+            <div class="tc"><table><thead><tr><th>ID</th><th>空白区</th><th>仍缺什么</th><th>难度</th><th>差异化</th></tr></thead><tbody>
+              <tr><td><span class="tag" style="background:rgba(248,113,113,0.15);color:var(--red)">G1</span></td><td><strong>L2↔L4 贯通</strong></td><td>业务语义 → 可执行优先级</td><td><span class="rl medium">中</span></td><td><span class="tag strong">高</span></td></tr>
+              <tr><td><span class="tag" style="background:rgba(251,191,36,0.15);color:var(--amber)">G2</span></td><td><strong>多租户可审计</strong></td><td>决策可回放、合规解释</td><td><span class="rl medium">中</span></td><td><span class="tag strong">高</span></td></tr>
+              <tr><td><span class="tag" style="background:rgba(56,189,248,0.15);color:var(--accent)">G3</span></td><td><strong>路由+lane 联合</strong></td><td>占槽与选模一体优化</td><td><span class="rl high">中高</span></td><td><span class="tag partial">中高</span></td></tr>
+              <tr><td><span class="tag" style="background:rgba(167,139,250,0.15);color:var(--purple)">G4</span></td><td><strong>replan 抢占</strong></td><td>关键路径变化时的让路</td><td><span class="rl high">高</span></td><td><span class="tag partial">中</span></td></tr>
+              <tr><td><span class="tag" style="background:rgba(52,211,153,0.15);color:var(--green)">G5</span></td><td><strong>KV+lane 统一</strong></td><td>API lane 与 GPU KV 协同</td><td><span class="rl high">高</span></td><td><span class="tag partial">中</span></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <!-- G1 -->
+          <section>
+            <h2 class="sec-title">2. G1：L2↔L4 贯通</h2>
+            <blockquote>
+              L4: "这个审批流是 P0，用户刚 inject 了新指令"<br>
+              ↓ （多数系统无标准接口）<br>
+              L2: "按 FIFO / MLFQ 排队，不知道业务含义"
+            </blockquote>
+            <div class="tc"><table><thead><tr><th>方案</th><th>L2 能力</th><th>L4 缺口</th></tr></thead><tbody>
+              <tr><td>AgentRM</td><td>执行时长反馈</td><td>无 priority_class 注入</td></tr>
+              <tr><td>PLAS</td><td>workflow 累计服务</td><td>无租户/SLA override</td></tr>
+              <tr><td>loco-agent</td><td>SLO error budget</td><td>偏单 Agent，非跨 workflow 业务规则</td></tr>
+              <tr><td>HiveMind</td><td>priority queue</td><td>priority 需手动设置，无策略引擎</td></tr>
+            </tbody></table></div>
+
+            <h3 class="sub-title">技术路径</h3>
+            <div class="card"><h4 class="card-title">路径 A：Priority Synthesis Layer</h4>
+              <p>L2 前 <strong>Policy Engine</strong>，将 L4 规则编译为 <code>ScheduleHints</code>：</p>
+<pre data-lang="python">
+hints = PolicyEngine.evaluate(
+  tenant_id, workflow_id, agent_id,
+  event={type: "user_inject", ...},
+  context={sla_tier, approval_state, est_value}
+) → priority_class, preemption_eligible, max_wait_ms
+</pre>
+            </div>
+            <div class="card"><h4 class="card-title">路径 B：双队列 + override</h4>
+              <ul><li><strong>System queue</strong>：MLFQ/PLAS 处理默认争用</li>
+              <li><strong>Express queue</strong>：P0/P1 有独立 lane 配额（reserved 1 槽）</li>
+              <li><strong>Override</strong>：user_inject 提升至 express，不 kill in-flight tool</li></ul>
+            </div>
+            <div class="card"><h4 class="card-title">路径 C：事件驱动优先级衰减</h4>
+              <ul><li>插入时 <code>P0</code> → 每等待 Δt 未 grant 自动升级（防饿死）→ grant 后按规则衰减</li></ul>
+            </div>
+
+            <h3 class="sub-title">验证标准</h3>
+            <div class="tc"><table><thead><tr><th>场景</th><th>通过标准</th></tr></thead><tbody>
+              <tr><td>W4 优先级插入</td><td>P0 SLO ≥ 95%，P2 饥饿 &lt; 5%</td></tr>
+              <tr><td>混合 tier</td><td>高 tier makespan P95 低于低 tier ≥ 30%</td></tr>
+              <tr><td>inject 延迟</td><td>inject 到首次 grant &lt; 2× 稳态 P50</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <!-- G2 -->
+          <section>
+            <h2 class="sec-title">3. G2：多租户可审计调度</h2>
+            <blockquote>「为什么在 14:32:07 让 Tenant A 先获得了槽位，而不是 Tenant B？」</blockquote>
+            <p>不只是 fairness，是 <strong>合规与纠纷仲裁</strong> 需求。</p>
+
+            <div class="card"><h4 class="card-title">路径 A：Decision Log as First-Class Artifact</h4>
+<pre data-lang="text">
+grant_id, ts, tenant_id, workflow_id, agent_id, call_id,
+policy_version, candidates[{id, score, factors}],
+selected_reason, lane_id, preemption=false
+</pre>
+              <p>支持 <strong>Replay</strong>（确定性重放）+ <strong>Counterfactual</strong>（「若 B 优先会怎样」）</p>
+            </div>
+            <div class="card"><h4 class="card-title">路径 B：租户隔离 + 组内调度</h4>
+<pre data-lang="text">
+TenantQuotaManager → Tenant A: max_lanes=2
+                    → Tenant B: max_lanes=1
+IntraTenantScheduler → PLAS / loco within tenant
+</pre>
+              <p>跨租户争用只在 spare capacity 上发生。</p>
+            </div>
+            <div class="card"><h4 class="card-title">路径 C：SLA 合同对象</h4>
+<pre data-lang="yaml">
+sla_id: enterprise-gold
+rules:
+  - metric: p95_wait_ms
+    threshold: 5000
+    priority_class: 1
+</pre>
+            </div>
+          </section>
+
+          <!-- G3 -->
+          <section>
+            <h2 class="sec-title">4. G3：路由 + lane 联合优化</h2>
+            <blockquote>在 lane 稀缺时，「降级到 Haiku」可能反而 <strong>延长 makespan</strong>（更多轮次）或 <strong>浪费槽位</strong>。</blockquote>
+<div class="formula">
+min  α·E[makespan] + β·E[cost] + γ·P(SLO violation)<br>
+s.t. Σ active_calls(t) ≤ C,  tokens(c,m) ≤ budget
+</div>
+            <div class="card"><h4 class="card-title">路径 A：两阶段启发式</h4>
+              <ol><li><strong>Admission</strong>：拒绝低 outcome_value / est_cost 的 call</li>
+              <li><strong>Routing</strong>：选 cost-quality Pareto 最优模型</li>
+              <li><strong>Feedback</strong>：失败 → 升级模型权重</li></ol>
+            </div>
+            <div class="card"><h4 class="card-title">路径 B：Lane-aware router</h4>
+<pre data-lang="python">
+router(call, state={
+  free_lanes: 1,
+  queue_depth_by_tier: {...},
+  tenant_budget_remaining: ...
+}) → model, defer=false
+</pre>
+            </div>
+            <div class="card"><h4 class="card-title">路径 C：Critical path 禁止降级</h4>
+              <ul><li><code>on_critical_path=true</code> → 仅允许 ≥ 阈值模型</li>
+              <li>非关键路径 → Haiku 省 budget，lane 给关键路径</li></ul>
+            </div>
+          </section>
+
+          <!-- G4/G5 -->
+          <section>
+            <h2 class="sec-title">5. G4/G5 简述（中长期）</h2>
+            <div class="card"><h4 class="card-title" style="color:var(--purple)">G4：运行时 replan 抢占</h4>
+              <ul><li>Checkpoint 边界安全抢占（不中断 in-flight tool）</li>
+              <li>Priority inheritance：高优先级 workflow 临时提升依赖 subagent</li>
+              <li>验证：makespan 劣化 &lt; 1.2× 静态上界</li></ul>
+            </div>
+            <div class="card"><h4 class="card-title" style="color:var(--green)">G5：KV + lane 统一</h4>
+              <ul><li>同一 workflow KV 驻留 GPU 与 lane grant 同步</li>
+              <li>工具等待期 TTL 与 lane 释放联动</li>
+              <li>验证：需真实 GPU；TCT ≥ 1.3× 分离优化</li></ul>
+            </div>
+          </section>
+
+          <!-- AACS -->
+          <section>
+            <h2 class="sec-title">6. 开放命题：AACS</h2>
+            <blockquote>在有限 lane/GPU/API 池下，<strong>联合</strong>优化 workflow makespan、$/outcome、SLO 违约率；决策 <strong>可解释、可回放</strong>；L4 业务规则标准注入 L2。</blockquote>
+            <div class="arch-diagram">
+              <div class="arch-layer l4"><div class="arch-layer-title">L4 Policy Engine</div><div class="arch-layer-desc">SLA, tier, inject → ScheduleHints</div></div>
+              <div class="arch-arrow">↓</div>
+              <div class="arch-layer l3"><div class="arch-layer-title">L3 Workflow Signals</div><div class="arch-layer-desc">critical path, DAG state</div></div>
+              <div class="arch-arrow">↓</div>
+              <div class="arch-layer l2"><div class="arch-layer-title">L2 Scheduler Core</div><div class="arch-layer-desc">MLFQ + PLAS + loco · Lane-aware Router · Decision Log</div></div>
+              <div class="arch-arrow">↓</div>
+              <div class="arch-layer l1"><div class="arch-layer-title">L1 Pool</div><div class="arch-layer-desc">GPU fraction / API quota</div></div>
+            </div>
+            <h3 class="sub-title">差异化矩阵</h3>
+            <div class="tc"><table><thead><tr><th>能力</th><th>AgentRM</th><th>Agentix</th><th>loco</th><th>SAGA</th><th style="color:var(--accent)"><strong>AACS</strong></th></tr></thead><tbody>
+              <tr><td>Lane 调度</td><td>✓</td><td>✓</td><td>✓</td><td>—</td><td><strong>✓</strong></td></tr>
+              <tr><td>Workflow DAG</td><td>—</td><td>✓</td><td>弱</td><td>✓</td><td><strong>✓</strong></td></tr>
+              <tr><td>L4 业务规则</td><td>—</td><td>—</td><td>弱</td><td>—</td><td><strong style="color:var(--accent)">✓</strong></td></tr>
+              <tr><td>路由+lane 联合</td><td>—</td><td>—</td><td>弱</td><td>—</td><td><strong style="color:var(--accent)">✓</strong></td></tr>
+              <tr><td>多租户审计</td><td>—</td><td>—</td><td>—</td><td>公平性</td><td><strong style="color:var(--accent)">✓</strong></td></tr>
+              <tr><td>Framework 无关</td><td>✓</td><td>—</td><td>✓</td><td>桥接</td><td><strong>✓</strong></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">7. 研究问题清单</h2>
+            <div class="dec-grid">
+              <div class="dec-item"><div class="dec-goal" style="font-family:var(--font-mono);color:var(--accent)">RQ1</div><div class="dec-adv">Priority Synthesis Layer 能否将 SLO attainment 从 ~60% 提升到 ≥95%，且低优先级饥饿 &lt; 5%？</div></div>
+              <div class="dec-item"><div class="dec-goal" style="font-family:var(--font-mono);color:var(--accent)">RQ2</div><div class="dec-adv">Decision log replay 开销 &lt; 5%？存储成本可接受？</div></div>
+              <div class="dec-item"><div class="dec-goal" style="font-family:var(--font-mono);color:var(--accent)">RQ3</div><div class="dec-adv">Lane-aware router makespan 改善 ≥15%（C=2, 异构模型）？</div></div>
+              <div class="dec-item"><div class="dec-goal" style="font-family:var(--font-mono);color:var(--accent)">RQ4</div><div class="dec-adv">PLAS + critical_path_boost 优于纯 PLAS？增益随 fan_out 增大？</div></div>
+              <div class="dec-item"><div class="dec-goal" style="font-family:var(--font-mono);color:var(--accent)">RQ5</div><div class="dec-adv">租户 quota 内调度 vs 全局调度，AFS_deviation 降低 50% 且吞吐损失 &lt; 10%？</div></div>
+            </div>
+          </section>
+        </div>
+
+        <!-- ==================== PAGE: MEMO ==================== -->
+        <div class="page" id="page-memo">
+          <header class="hero">
+            <div class="hero-badge"><span class="dot"></span> 文档 04 · 战略备忘</div>
+            <h1>投入判断备忘录</h1>
+            <p class="subtitle">值得投入，但必须窄切口、分阶段。以跨框架 Agent Runtime Scheduler 中间件为主切口。</p>
+            <div class="hero-meta"><span>📅 2026-06-08</span><span>📊 4 Phase · 12 月</span></div>
+          </header>
+
+          <section>
+            <h2 class="sec-title">执行摘要</h2>
+            <div class="kv-grid">
+              <div class="kv-item"><div class="kv-label">学术价值</div><div class="kv-value" style="color:var(--green)">高</div></div>
+              <div class="kv-item"><div class="kv-label">工程价值</div><div class="kv-value" style="color:var(--green)">高</div></div>
+              <div class="kv-item"><div class="kv-label">创业价值</div><div class="kv-value" style="color:var(--amber)">中高</div><div class="kv-detail">窄切口中间件</div></div>
+              <div class="kv-item"><div class="kv-label">不建议</div><div class="kv-value" style="font-size:0.8rem;color:var(--red)">纯 HPC/纯 MARL/纯 K8s</div></div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">1. 为何现在</h2>
+            <h3 class="sub-title">已量化痛点</h3>
+            <div class="tc"><table><thead><tr><th>来源</th><th>发现</th></tr></thead><tbody>
+              <tr><td><strong>AgentRM</strong></td><td>4 万+ issues：zombie、429 级联是 top failure</td></tr>
+              <tr><td><strong>HiveMind</strong></td><td>未协调 5–50 并发：失败率 <span style="color:var(--red)">72–100%</span></td></tr>
+              <tr><td><strong>SAGA</strong></td><td>request-level 调度：TCT 多 <span style="color:var(--amber)">3–8×</span></td></tr>
+              <tr><td><strong>Agentix</strong></td><td>program-level HoL：吞吐损失 <span style="color:var(--amber)">4–15×</span></td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">2. 竞争格局</h2>
+            <div class="layer-stack">
+              <div class="layer-item" data-layer="L4" style="opacity:0.6"><span class="lb l4">L4</span><span class="layer-label">业务策略</span><span class="layer-desc">░░░░░░░░░░ 低竞争，高定制</span></div>
+              <div class="layer-item" data-layer="L3"><span class="lb l3">L3</span><span class="layer-label">Workflow</span><span class="layer-desc">████████░░ 学术热，SAGA 领先</span></div>
+              <div class="layer-item" data-layer="L2"><span class="lb l2">L2</span><span class="layer-label">Lane 调度</span><span class="layer-desc">██████░░░░ AgentRM/loco 涌现</span></div>
+              <div class="layer-item" data-layer="L1"><span class="lb l1">L1</span><span class="layer-label">GPU 池</span><span class="layer-desc">██████████ 红海（Ray/K8s/云厂商）</span></div>
+            </div>
+            <div class="tc"><table><thead><tr><th>竞争者</th><th>威胁</th><th>应对</th></tr></thead><tbody>
+              <tr><td>学术开源</td><td>6–12 月后 commoditize</td><td>抢先 L4+审计整合</td></tr>
+              <tr><td>开源中间件</td><td>功能重叠</td><td>DAG+L4+联合路由差异化</td></tr>
+              <tr><td>云厂商</td><td>锁定单云</td><td>跨云、跨框架</td></tr>
+              <tr><td>框架内置</td><td>绑定生态</td><td>framework-agnostic</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">3. 推荐切口</h2>
+            <div class="card" style="border-left:4px solid var(--accent)">
+              <div class="card-header"><span class="tag" style="background:var(--accent-dim);color:var(--accent)">首选</span><h4 class="card-title">Agent Runtime Scheduler Middleware</h4></div>
+              <p>跨框架共享 lane 池 + MLFQ/PLAS/loco + zombie/429 治理。交付：Python 库 / sidecar。Phase 1：4–8 周。</p>
+            </div>
+            <div class="card" style="border-left:4px solid var(--amber)">
+              <div class="card-header"><span class="tag" style="background:rgba(251,191,36,0.12);color:var(--amber)">次选</span><h4 class="card-title">Workflow-Signal-Aware Priority</h4></div>
+              <p>从 orchestrator 接收 critical_path / blocked 信号。Phase 2：+3 月。</p>
+            </div>
+            <div class="card" style="border-left:4px solid var(--purple)">
+              <div class="card-header"><span class="tag" style="background:rgba(167,139,250,0.12);color:var(--purple)">第三</span><h4 class="card-title">Cost-SLO Joint Controller</h4></div>
+              <p>路由与 lane 争用联合优化，闭环 $/successful task。Phase 2–3。</p>
+            </div>
+            <div class="callout danger"><div class="callout-title">🚫 不建议主线</div><p>通用 GPU 调度器 · 纯 MARL · HPC 拍卖 · 全栈 Agent OS</p></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">4. 分阶段投入</h2>
+            <div class="phase-grid">
+              <div class="phase-card" style="border-top:3px solid var(--green)">
+                <div class="phase-num" style="color:var(--green)">0</div>
+                <h4>调研沉淀</h4>
+                <div class="phase-dur">1–2 周 · <span class="status"><span class="sd done"></span>已完成</span></div>
+                <ul><li>四层模型 + 方案对比</li><li>评测框架</li><li>空白区 + 备忘录</li></ul>
+              </div>
+              <div class="phase-card" style="border-top:3px solid var(--accent)">
+                <div class="phase-num" style="color:var(--accent)">1</div>
+                <h4>原型验证</h4>
+                <div class="phase-dur">4–8 周 · 1–2 工程师</div>
+                <ul><li>B0–B4 基线调度器</li><li>Mock 仿真器</li><li>合成 score 候选</li></ul>
+              </div>
+              <div class="phase-card" style="border-top:3px solid var(--amber)">
+                <div class="phase-num" style="color:var(--amber)">2</div>
+                <h4>产品化深化</h4>
+                <div class="phase-dur">3–6 月</div>
+                <ul><li>Policy DSL + API</li><li>Decision log + replay</li><li>框架 adapter</li></ul>
+              </div>
+              <div class="phase-card" style="border-top:3px solid var(--purple)">
+                <div class="phase-num" style="color:var(--purple)">3</div>
+                <h4>集群级扩展</h4>
+                <div class="phase-dur">6–12 月 · 可选</div>
+                <ul><li>vLLM/Ray 桥接</li><li>GPU trace 对比</li></ul>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">5. 风险登记</h2>
+            <div class="risk-grid">
+              <div class="risk-item"><div class="risk-id">R1</div><div class="risk-desc">云厂商下沉 queue/quota<span class="mit">跨云中间件 + L4 治理</span></div><span class="rl high">高概率</span><span class="rl high">高影响</span></div>
+              <div class="risk-item"><div class="risk-id">R2</div><div class="risk-desc">「调大 concurrency」够用论<span class="mit">benchmark 公开数据教育</span></div><span class="rl medium">中概率</span><span class="rl medium">中影响</span></div>
+              <div class="risk-item"><div class="risk-id">R3</div><div class="risk-desc">学术快速 commoditize<span class="mit">12 月内建立品牌</span></div><span class="rl high">高概率</span><span class="rl medium">中影响</span></div>
+              <div class="risk-item"><div class="risk-id">R4</div><div class="risk-desc">范围膨胀<span class="mit">严格 Phase gate</span></div><span class="rl medium">中概率</span><span class="rl high">高影响</span></div>
+              <div class="risk-item"><div class="risk-id">R5</div><div class="risk-desc">框架不暴露 workflow 信号<span class="mit">侧车推断 / 静态 DAG</span></div><span class="rl medium">中概率</span><span class="rl medium">中影响</span></div>
+              <div class="risk-item"><div class="risk-id">R6</div><div class="risk-desc">调度开销 &gt; 收益<span class="mit">目标 &lt;3ms</span></div><span class="rl low">低概率</span><span class="rl high">高影响</span></div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">6. 团队建议</h2>
+            <div class="tc"><table><thead><tr><th>Phase</th><th>角色</th><th>投入</th></tr></thead><tbody>
+              <tr><td>Phase 1</td><td>系统工程师</td><td>1 FTE</td></tr>
+              <tr><td>Phase 1</td><td>研究顾问</td><td>0.2 FTE</td></tr>
+              <tr><td>Phase 2</td><td>后端工程师</td><td>+1</td></tr>
+              <tr><td>Phase 2</td><td>技术写作</td><td>+0.5</td></tr>
+            </tbody></table></div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">7. 成功标准（12 个月）</h2>
+            <div class="tc"><table><thead><tr><th>里程碑</th><th>标准</th></tr></thead><tbody>
+              <tr><td><strong>M1</strong> Benchmark</td><td>W1–W4 可复现，≥3 基线</td></tr>
+              <tr><td><strong>M2</strong> 技术报告</td><td>makespan P95 ≥15% 改善</td></tr>
+              <tr><td><strong>M3</strong> 开源</td><td>中间件 v0.1 + 文档</td></tr>
+              <tr><td><strong>M4</strong> 设计伙伴</td><td>1 个生产场景试点</td></tr>
+              <tr><td><strong>M5</strong> 叙事验证</td><td>外部认可「L2↔L4 贯通」</td></tr>
+            </tbody></table></div>
+            <div class="callout danger"><div class="callout-title">🛑 失败信号</div>
+              <ul style="margin-bottom:0"><li>Phase 1：所有场景改善 &lt;5%</li><li>12 月：零试点、无人引用</li><li>云厂商发布等价中间件且开源</li></ul>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">8. 决策矩阵</h2>
+            <div class="dec-grid">
+              <div class="dec-item"><div class="dec-goal">发论文</div><div class="dec-adv">聚焦 G1+G3，投稿 NSDI/OSDI/EuroSys</div></div>
+              <div class="dec-item"><div class="dec-goal">创业</div><div class="dec-adv">切口 1，ToB 多租户 SaaS，「调度+审计+预算」</div></div>
+              <div class="dec-item"><div class="dec-goal">大厂基建</div><div class="dec-adv">切口 1+3，嵌入现有推理平台</div></div>
+              <div class="dec-item"><div class="dec-goal">个人学习</div><div class="dec-adv">Phase 1 mock，读 AgentRM+Agentix+SAGA</div></div>
+              <div class="dec-item"><div class="dec-goal" style="color:var(--red)">短期变现</div><div class="dec-adv" style="color:var(--red)"><strong>不推荐</strong> — 窗口在积累期</div></div>
+            </div>
+          </section>
+
+          <section>
+            <h2 class="sec-title">9. 最终建议</h2>
+            <div class="card" style="border-left:4px solid var(--green)"><h4 class="card-title" style="color:var(--green)">✅ 做</h4><ol><li>以 Agent Runtime Scheduler Middleware 为 Phase 1 核心，用评测框架严格验证。</li><li>L4 Policy 注入 + decision log 作为 Phase 2 差异化。</li></ol></div>
+            <div class="card" style="border-left:4px solid var(--red)"><h4 class="card-title" style="color:var(--red)">🚫 不做</h4><ul style="margin-bottom:0"><li>通用 GPU 调度器、纯 MARL 第一版、无 benchmark demo。</li></ul></div>
+            <div class="card" style="border-left:4px solid var(--amber)"><h4 class="card-title" style="color:var(--amber)">👀 观察</h4><ul style="margin-bottom:0"><li>loco-agent、HiveMind、SAGA 开源进展；6 个月复评。</li></ul></div>
+            <div class="card" style="border-left:4px solid var(--accent)"><h4 class="card-title" style="color:var(--accent)">🔄 复评节点</h4><ul style="margin-bottom:0"><li>Phase 1 结束（8 周）· 2026 Q4 · 2027 Q2</li></ul></div>
+          </section>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script>
+    function showPage(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page-' + id).classList.add('active');
+      document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+      document.querySelector(`[data-page="${id}"]`).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      // close mobile sidebar
+      document.querySelector('.sidebar').classList.remove('open');
+    }
+  </script>
+</body>
+</html>

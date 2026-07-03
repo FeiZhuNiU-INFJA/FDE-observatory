@@ -1,0 +1,364 @@
+{
+  "generated_at": "2026-07-03T05:46:40.145479+00:00",
+  "insights": [
+    {
+      "path": "insights/cross/活地图落地指南.html",
+      "title": "活地图落地指南",
+      "date": "2026-07",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "2026",
+        "落地指南",
+        "基础设施"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
+    {
+      "path": "insights/cross/specflow_vericoding_product_direction_2026-05.html",
+      "title": "SpecFlowAI代码时代的\"规范即产品\"",
+      "date": "2026-05-23",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "产品方向",
+        "Vericoding"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
+    {
+      "path": "insights/cross/person_mining_persona_distillation_2026-05.html",
+      "title": "从数字痕迹蒸馏人",
+      "date": "2026-05-21",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "调研产出",
+        "品类洞察"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
+    {
+      "path": "insights/cross/agent_cognitive_power_2026-05.html",
+      "title": "Agent 的隐权力",
+      "date": "2026-05-20",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "脑暴产出",
+        "前瞻洞察"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
+    {
+      "path": "insights/cross/2028-agent-five-forms_2026-05.html",
+      "title": "2028 Agent 五种形态From Artifact to Presence",
+      "date": "2026-05",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Agent 形态",
+        "前瞻推演"
+      ],
+      "category": "insight",
+      "extra": {}
+    }
+  ],
+  "frontier_deep": [
+    {
+      "path": "frontier/vendors/openai/deep_dives/2026-06-15_sam-altman-stanford-cs153-scale-agi.html",
+      "title": "Sam Altman 斯坦福 CS153规模、AGI 与「智能公用事业」",
+      "date": "2026-06-15",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "OpenAI",
+        "Scale",
+        "AGI"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "openai"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-28_claude-code-dynamic-workflows.html",
+      "title": "Claude Code Dynamic Workflows：大规模 Subagent 编排深度解读",
+      "date": "2026-05-30",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "Claude Code",
+        "Agent 编排"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-28_alex-albert-research-pm-interview.html",
+      "title": "Anthropic 研究 PM 访谈：模型即产品、Character 与 AI-Native 工作方式",
+      "date": "2026-05-28",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "AI-native PM",
+        "模型评测"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/openai/deep_dives/2026-05-28_building-self-improving-tax-agents-with-codex.html",
+      "title": "OpenAI《Building self-improving tax agents with Codex》洞察",
+      "date": "2026-05-28",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "OpenAI动态",
+        "Agent进化闭环"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "openai"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-14_the-founders-playbook.html",
+      "title": "The founder's playbook：Building an AI-native startup",
+      "date": "2026-05-25",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "AI-native",
+        "方法论"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-14_claude-code-large-codebases.md",
+      "title": "How Claude Code works in large codebases — 深度分析",
+      "date": "2026-05-14",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-13_computer-browser-use-best-practices.md",
+      "title": "Best practices for computer and browser use with Claude — 深度分析",
+      "date": "2026-05-13",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry.md",
+      "title": "Claude for the legal industry — 深度分析",
+      "date": "2026-05-12",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry_实现拆解.md",
+      "title": "Claude 法务领域插件 — 代码层实现拆解",
+      "date": "2026-05-12",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    }
+  ],
+  "frontier_digest": [
+    {
+      "path": "frontier/vendors/anthropic/digests/前沿科技公司动态总结思考.md",
+      "title": "前沿科技公司动态总结思考",
+      "date": "2026-07",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-digest",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    },
+    {
+      "path": "frontier/vendors/anthropic/digests/2026-05-06_前沿AI公司动态.md",
+      "title": "前沿 AI 公司动态（第 1 期）",
+      "date": "2026-05-06",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "frontier-digest",
+      "extra": {
+        "vendor": "anthropic"
+      }
+    }
+  ],
+  "oss": [
+    {
+      "path": "opensource-analysis/shadowbroker_osint_platform_2026-05.html",
+      "title": "ShadowBroker：全球 OSINT 聚合平台的启示",
+      "date": "2026-05-22",
+      "audience": null,
+      "status": null,
+      "tags": [
+        "项目分析",
+        "开源情报"
+      ],
+      "category": "oss",
+      "extra": {}
+    },
+    {
+      "path": "opensource-analysis/openhuman-memory-tree.html",
+      "title": "OpenHuman Memory Tree 深度拆解",
+      "date": "2026-05-22",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "架构拆解 · 个人 Agent · Memory"
+      ],
+      "category": "oss",
+      "extra": {}
+    }
+  ],
+  "legacy": [],
+  "readings": [
+    {
+      "path": "readings/2026-06_drop-hierarchy-self-organizing-agents.html",
+      "title": "放弃层级与角色 Drop the Hierarchy & Roles自组织 LLM Agent 如何胜过人为设计的结构",
+      "date": "2026-06-21",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Multi-Agent",
+        "自组织",
+        "协调协议",
+        "Agent 编排"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/2026-06_claude-code-artifacts.html",
+      "title": "Artifacts 落地 Claude Code把整段会话发布成可分享的活页面",
+      "date": "2026-06-20",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Claude Code",
+        "Artifacts",
+        "厂商动态",
+        "Agent 产出"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/2026-06_loop-engineering-coding-agent.html",
+      "title": "循环工程 Loop Engineering从手动提示到自主 Coding Agent 循环系统",
+      "date": "2026-06-18",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Loop Engineering",
+        "Coding Agent",
+        "Agent 编排",
+        "MCP"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/2026-06_bcg-ai-at-work.html",
+      "title": "BCG《AI at Work》2026策略胜过工具，瓶颈回到组织",
+      "date": "2026-06",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "BCG",
+        "AI at Work",
+        "组织变革",
+        "员工体验",
+        "Agent 采纳"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/2026-06_multi-agent-compute-scheduling.html",
+      "title": "多智能体算力调度独立调研系列",
+      "date": "2026-06",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "算力调度",
+        "独立调研"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/AI_Native_Organization_调研与机会_2026-05.html",
+      "title": "AI-Native Organization · 系列索引",
+      "date": "2026-05-28",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "组织转型",
+        "系列入口"
+      ],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/AI_Native_Organization_理论解读_2026-05.html",
+      "title": "AI-Native Organization · 卷一",
+      "date": "2026-05",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "readings",
+      "extra": {}
+    },
+    {
+      "path": "readings/AI_Native_Organization_融合与实现_2026-05.html",
+      "title": "AI-Native Organization · 卷二",
+      "date": "2026-05",
+      "audience": null,
+      "status": null,
+      "tags": [],
+      "category": "readings",
+      "extra": {}
+    }
+  ]
+}

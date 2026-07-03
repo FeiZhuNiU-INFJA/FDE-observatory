@@ -1,0 +1,590 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BCG《AI at Work》2026：策略胜过工具，瓶颈回到组织 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色（rose/wine）+ 暗色变体；其余设计令牌、字体、底纹、排版全部来自共享 insight.css */
+  :root {
+    --accent: #be185d;
+    --accent-deep: #9d174d;
+    --accent-ink: #831843;
+    --accent-soft: color-mix(in srgb, #be185d 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #f472b6;
+    --accent-soft: color-mix(in srgb, #be185d 22%, #1a1a22);
+    --accent-ink: #fbcfe8;
+  }
+
+  /* ═════════ 视觉一：省时漏出 ═════════ */
+  .leak { margin: 1.8em 0; }
+  .leak-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; align-items: stretch; }
+  .leak-step { border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.1rem 1rem; background: var(--surface); display: flex; flex-direction: column; gap: .35rem; position: relative; transition: transform .2s, border-color .2s; box-shadow: var(--shadow); }
+  .leak-step:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .leak-step.is-leak { border-top: 3px solid var(--warn); }
+  .leak-num { font-family: var(--display); font-weight: 700; font-size: 2.1rem; line-height: 1; color: var(--accent); letter-spacing: -.02em; }
+  .leak-step.is-leak .leak-num { color: var(--warn); }
+  .leak-lab { font-size: .82rem; color: var(--text-soft); line-height: 1.45; }
+  .leak-step::after { content: ""; position: absolute; right: -.45rem; top: 50%; transform: translateY(-50%); width: 0; height: 0; border-left: 8px solid var(--accent); border-top: 6px solid transparent; border-bottom: 6px solid transparent; z-index: 2; opacity: .55; }
+  .leak-step:last-child::after { display: none; }
+  .leak-out { margin-top: .8rem; display: flex; align-items: center; gap: .9rem; border: 1.5px dashed var(--warn); border-radius: 12px; padding: .9rem 1.1rem; background: var(--warn-soft); }
+  .leak-out svg { width: 30px; height: 30px; color: var(--warn); flex-shrink: 0; }
+  .leak-out span { font-size: .9rem; color: var(--text-soft); line-height: 1.5; }
+  @media (max-width: 760px) { .leak-row { grid-template-columns: 1fr; } .leak-step::after { content: "↓"; border: none; right: 50%; top: auto; bottom: -.55rem; transform: translateX(50%); color: var(--accent); font-family: var(--display); font-size: 1.1rem; opacity: 1; } }
+
+  /* ═════════ 视觉二：Deploy/Reshape/Invent 位移 + 溢价 ═════════ */
+  .stage { margin: 1.8em 0; }
+  .stage-shift { display: grid; grid-template-columns: repeat(3, 1fr); gap: .7rem; margin-bottom: 1.1rem; }
+  .stage-card { border: 1px solid var(--border); border-radius: 12px; padding: 1rem .95rem; background: var(--surface); position: relative; overflow: hidden; transition: transform .2s, border-color .2s; }
+  .stage-card:hover { transform: translateY(-3px); }
+  .stage-card.tier-1 { border-color: var(--border-strong); }
+  .stage-card.tier-2 { border-color: var(--accent); }
+  .stage-card.tier-3 { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .stage-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .1rem; }
+  .stage-name .en { font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .62rem; letter-spacing: .06em; color: var(--text-muted); margin-left: .35em; }
+  .stage-desc { font-size: .78rem; color: var(--text-muted); margin: 0 0 .6rem; line-height: 1.4; }
+  .stage-track { display: flex; align-items: flex-end; gap: .5rem; height: 46px; }
+  .stage-bar { flex: 1; border-radius: 5px 5px 0 0; display: flex; align-items: flex-start; justify-content: center; padding-top: .15rem; font-family: var(--mono); font-size: .66rem; font-weight: 600; color: var(--surface); }
+  .stage-bar.old { background: var(--border-strong); color: var(--text); }
+  .stage-bar.new { background: var(--accent); }
+  .stage-delta { position: absolute; top: .6rem; right: .7rem; font-family: var(--mono); font-size: .62rem; font-weight: 700; letter-spacing: .04em; padding: .12em .45em; border-radius: 999px; }
+  .stage-card.tier-1 .stage-delta { color: var(--text-muted); background: var(--bg-soft); }
+  .stage-card.tier-2 .stage-delta, .stage-card.tier-3 .stage-delta { color: var(--accent); background: var(--accent-soft); }
+  .stage-legend { display: flex; gap: 1rem; align-items: center; font-family: var(--mono); font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .5rem; }
+  .stage-legend .sw { display: inline-block; width: 14px; height: 8px; border-radius: 2px; margin-right: .3em; vertical-align: middle; }
+  .stage-legend .sw.old { background: var(--border-strong); }
+  .stage-legend .sw.new { background: var(--accent); }
+  .stage-legend .hint { margin-left: auto; letter-spacing: .04em; text-transform: none; }
+  .stage-prem-head { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin: .4rem 0 .6rem; }
+  .stage-prem { display: flex; flex-direction: column; gap: .65rem; border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; background: var(--surface); }
+  .prem-row { display: grid; grid-template-columns: 92px 1fr; gap: .8rem; align-items: center; }
+  .prem-lab { font-size: .82rem; color: var(--text); font-weight: 600; }
+  .prem-bars { display: flex; flex-direction: column; gap: .28rem; }
+  .prem-bar { display: grid; grid-template-columns: 64px 1fr 44px; align-items: center; gap: .5rem; }
+  .prem-bar .tag { font-family: var(--mono); font-size: .58rem; letter-spacing: .04em; text-transform: uppercase; color: var(--text-muted); }
+  .prem-bar .track { height: 12px; border-radius: 6px; background: var(--bg-soft); overflow: hidden; }
+  .prem-bar .fill { display: block; height: 100%; border-radius: 6px; }
+  .prem-bar.dep .fill { background: var(--border-strong); }
+  .prem-bar.ri .fill { background: var(--accent); }
+  .prem-bar .val { font-family: var(--display); font-weight: 700; font-size: .85rem; text-align: right; color: var(--text); }
+  @media (max-width: 760px) { .stage-shift { grid-template-columns: 1fr; } }
+
+  /* ═════════ 视觉三：战略清晰度 × 工具 2×2（中心件） ═════════ */
+  .matrix { margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 1.5rem 1.5rem 1.3rem; box-shadow: var(--shadow); }
+  .matrix-head { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; flex-wrap: wrap; margin-bottom: 1rem; }
+  .matrix-head h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); }
+  .matrix-head .sub { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .matrix-body { display: flex; gap: .5rem; align-items: stretch; }
+  .matrix-yaxis { writing-mode: vertical-rl; transform: rotate(180deg); font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; justify-content: center; min-width: 22px; }
+  .matrix-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+  .matrix-main .colhead { font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); text-align: center; padding-bottom: .15rem; }
+  .matrix-cell { border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1rem .9rem; background: var(--bg-soft); display: flex; flex-direction: column; gap: .25rem; transition: transform .2s, border-color .2s; }
+  .matrix-cell:hover { transform: translateY(-3px); }
+  .matrix-cell .cond { font-size: .74rem; color: var(--text-muted); line-height: 1.3; }
+  .matrix-cell .pct { font-family: var(--display); font-weight: 700; font-size: 2.4rem; line-height: 1; letter-spacing: -.02em; color: var(--text); margin: .15rem 0; }
+  .matrix-cell .note { font-size: .72rem; color: var(--text-soft); line-height: 1.35; }
+  .matrix-cell.lo { border-color: var(--border-strong); }
+  .matrix-cell.lo .pct { color: var(--text-muted); }
+  .matrix-cell.hi { border-color: var(--accent); background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
+  .matrix-cell.hi .pct { color: var(--accent); }
+  .matrix-cell.hero { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .matrix-xaxis { grid-column: 1 / -1; font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-top: .25rem; }
+  .matrix-take { margin-top: 1.1rem; display: flex; gap: .8rem; flex-wrap: wrap; }
+  .matrix-take .pill-up { font-family: var(--mono); font-size: .78rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); padding: .35em .7em; border-radius: 999px; }
+  .matrix-take .pill-side { font-family: var(--mono); font-size: .78rem; font-weight: 700; color: var(--text-muted); background: var(--bg-soft); border: 1px solid var(--border-strong); padding: .35em .7em; border-radius: 999px; }
+  .matrix-take .verdict { flex: 1; min-width: 200px; font-size: .9rem; color: var(--text-soft); align-self: center; line-height: 1.5; }
+  .matrix-take .verdict strong { color: var(--accent); }
+
+  /* ═════════ 视觉四：蜜月期愉悦驱动力翻转 ═════════ */
+  .paradox { display: grid; grid-template-columns: 1fr 1fr; gap: .8rem; margin: 1.6em 0 1.2em; }
+  .paradox-tile { border-radius: 12px; padding: 1rem 1.1rem; display: flex; align-items: center; gap: .9rem; }
+  .paradox-tile.joy { background: var(--accent-soft); border: 1px solid var(--accent); }
+  .paradox-tile.strain { background: var(--warn-soft); border: 1px solid var(--warn); }
+  .paradox-tile .big { font-family: var(--display); font-weight: 700; font-size: 2rem; line-height: 1; }
+  .paradox-tile.joy .big { color: var(--accent); }
+  .paradox-tile.strain .big { color: var(--warn); }
+  .paradox-tile .lab { font-size: .85rem; color: var(--text-soft); line-height: 1.4; }
+  @media (max-width: 560px) { .paradox { grid-template-columns: 1fr; } }
+  .honey { margin: 1.6em 0; }
+  .honey-cols { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
+  .honey-col { border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.1rem .9rem; background: var(--surface); box-shadow: var(--shadow); }
+  .honey-col.mature { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .honey-when { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .15rem; }
+  .honey-col.mature .honey-when { color: var(--accent); }
+  .honey-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .7rem; }
+  .honey-sec { font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin: .55rem 0 .35rem; }
+  .honey-sec:first-of-type { margin-top: 0; }
+  .honey-row { display: grid; grid-template-columns: 1fr 46px; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+  .honey-bar { position: relative; height: 16px; }
+  .honey-bar .axis { position: absolute; left: 50%; top: 50%; transform: translateY(-50%); width: 1px; height: 16px; background: var(--border-strong); }
+  .honey-bar .fill { position: absolute; top: 50%; transform: translateY(-50%); height: 12px; border-radius: 3px; }
+  .honey-bar .fill.pos { left: 50%; background: var(--accent); }
+  .honey-bar .fill.neg { right: 50%; background: var(--con); }
+  .honey-row .v { font-family: var(--mono); font-size: .68rem; font-weight: 700; text-align: right; }
+  .honey-row .v.pos { color: var(--accent); }
+  .honey-row .v.neg { color: var(--con); }
+  .honey-labs { display: grid; grid-template-columns: 1fr 46px; gap: .5rem; font-family: var(--mono); font-size: .56rem; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .25rem; }
+  .honey-labs .leg { display: flex; justify-content: space-between; }
+  .honey-flip { margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; border-top: 1px dashed var(--border-strong); padding-top: .8rem; }
+  .honey-flip .f { font-size: .84rem; color: var(--text-soft); line-height: 1.5; }
+  .honey-flip .f b { font-family: var(--mono); font-size: .72rem; color: var(--accent); }
+  @media (max-width: 760px) { .honey-cols { grid-template-columns: 1fr; } }
+
+  /* ═════════ 视觉五：Agent 落地 + 治理真空 ═════════ */
+  .agents { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin: 1.8em 0; }
+  .agents-card { border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem; background: var(--surface); box-shadow: var(--shadow); display: flex; flex-direction: column; gap: .7rem; }
+  .agents-card.gap { border-color: var(--warn); }
+  .agents-eb { font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+  .agents-card .agents-eb { color: var(--accent); }
+  .agents-card.gap .agents-eb { color: var(--warn); }
+  .agents-card h4 { margin: .1rem 0 .4rem; font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); }
+  .agents-growpair { display: flex; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+  .agents-growpair .blk { display: flex; flex-direction: column; align-items: center; gap: .25rem; }
+  .agents-growpair .bar { width: 46px; border-radius: 6px 6px 0 0; background: var(--border-strong); }
+  .agents-growpair .bar.new { background: var(--accent); }
+  .agents-growpair .pct { font-family: var(--display); font-weight: 700; font-size: 1.15rem; }
+  .agents-growpair .yr { font-family: var(--mono); font-size: .58rem; color: var(--text-muted); letter-spacing: .06em; }
+  .agents-growpair .arrow { font-family: var(--display); color: var(--accent); font-size: 1.3rem; padding-bottom: 1.6rem; }
+  .agents-belief { border-top: 1px dashed var(--border-strong); padding-top: .7rem; }
+  .agents-belief .b-num { font-family: var(--display); font-weight: 700; font-size: 1.8rem; color: var(--accent); line-height: 1; }
+  .agents-belief .b-lab { font-size: .8rem; color: var(--text-soft); margin-top: .2rem; line-height: 1.4; }
+  .agents-belief .b-sub { font-family: var(--mono); font-size: .62rem; color: var(--text-muted); margin-top: .35rem; }
+  .gap-row { display: grid; grid-template-columns: 1fr; gap: .5rem; }
+  .gap-stat { display: flex; align-items: baseline; gap: .6rem; }
+  .gap-stat .n { font-family: var(--display); font-weight: 700; font-size: 1.7rem; color: var(--warn); line-height: 1; }
+  .gap-stat .l { font-size: .82rem; color: var(--text-soft); line-height: 1.35; }
+  .gap-mini { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .76rem; color: var(--text-muted); }
+  .gap-mini b { font-family: var(--mono); color: var(--text); font-weight: 600; }
+  @media (max-width: 760px) { .agents { grid-template-columns: 1fr; } }
+
+  /* ── CEO 五命令卡（共享 card-grid 已够，此处轻量定制） ── */
+  .imp { counter-reset: imp; list-style: none; padding: 0; margin: 1.4em 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: .8rem; }
+  .imp li { counter-increment: imp; position: relative; margin: 0; padding: 1.6rem 1.1rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); box-shadow: var(--shadow); transition: transform .2s, border-color .2s; }
+  .imp li:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .imp li::before { content: counter(imp, decimal-leading-zero); position: absolute; top: .7rem; right: .9rem; font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem; }
+  .imp li h4 { margin: 0 0 .35rem; font-family: var(--display); font-weight: 700; font-size: .98rem; color: var(--text); padding-right: 2rem; }
+  .imp li p { margin: 0; font-size: .82rem; color: var(--text-soft); line-height: 1.5; }
+
+  /* ── FDE 映射 / 待验证 ── */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0; }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li { counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative; border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent); border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55; }
+  .threads li::before { content: "?" counter(th); position: absolute; left: .8rem; top: .78rem; font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem; }
+
+  /* reduced-motion：本页无持续循环动画，仅保险 */
+  @media (prefers-reduced-motion: reduce) { .leak-step, .matrix-cell, .honey-col, .agents-card, .imp li, .stage-card { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      BCG《AI at Work》2026：策略胜过工具，瓶颈回到组织<span class="brand-sub">跨市场 · 行业调研 · 2026-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>BCG《AI at Work》2026<br />策略胜过工具，瓶颈回到组织</h1>
+      <p style="font-size: 1.02rem; color: var(--text-muted); margin-top: -.2em;">第四版全球白领调研 · n=11,749 · 14 市场 · frontline / manager / leader · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-06</span>
+        <span>跨市场</span>
+        <span>BCG</span>
+        <span>AI at Work</span>
+        <span>组织变革</span>
+        <span>员工体验</span>
+        <span>Agent 采纳</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">11,749</div><div class="lab">受访白领<br />14 市场 · 第四版</div></div>
+        <div class="hero-stat"><div class="num">74<small>%</small></div><div class="lab">frontline 常规 AI 用户<br />YoY +23pp</div></div>
+        <div class="hero-stat"><div class="num">80/60</div><div class="lab">清晰战略 vs 强工具<br />measurable impact</div></div>
+        <div class="hero-stat"><div class="num">+28<small>pp</small></div><div class="lab">「言行一致」<br />最强愉悦杠杆</div></div>
+      </div>
+
+      <p style="color: var(--text-soft); font-size: .95rem; margin-top: 1.2em;">
+        信源：<a href="https://web-assets.bcg.com/e7/c7/00d913744cccb1e4f65bbf54fe86/ai-at-work-slideshow-june-2026.pdf" target="_blank" rel="noopener">BCG · AI at Work, June 2026 (4th edition) · PDF</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>BCG 第四版（n=11,749）的核心信息不是「AI 又进步了」，而是 <strong>adoption 这道题已被做完</strong>——74% frontline 已是常规用户（+23pp）。真正的瓶颈彻底从技术/工具转移到<strong>组织与管理</strong>：省下的时间不会自动变成价值（42% 每周省一个工作日，但 66% 没人告诉他们时间该干嘛），只有 <strong>end-to-end 流程重设计 + 战略清晰度（CEO 亲自 own）</strong> 才能把省时变成 measurable impact。最反直觉的一拳：<strong>战略清晰但工具有限的企业（80% measurable impact）反超工具很强但没方向的企业（60%）</strong>；蜜月期靠新鲜感，成熟期靠「言行一致」。Agent 已落地（接入翻倍、61% 信三年干半活）但治理真空（50%）。对 FDE：卖价值不卖 adoption、交付侧主推流程重设计、治理 + eval 是新咨询面、培训是最便宜的入口。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>瓶颈转移</strong>：adoption 已解决（74% frontline 常规用户），难题现在是组织与管理，不是技术</li>
+        <li><strong>省时 ≠ 创值</strong>：42% 每周省一个工作日，但 66% 无指引、58% 未转投战略工作——时间「漏出」组织</li>
+        <li><strong>重设计溢价</strong>：Reshape/Invent 企业在省时 / 愉悦 / impact 上全面领先 Deploy-only 约 <strong>+18~24pp</strong></li>
+        <li><strong>策略胜工具</strong>：战略清晰 + 低工具（80%）&gt; 低清晰 + 强工具（60%）；clarity +25pp vs tools 仅 +5pp</li>
+        <li><strong>蜜月期会过</strong>：早期「认知负荷」是愉悦驱动（+43pp），成熟后被「战略清晰度」取代（+24→+30pp）</li>
+        <li><strong>言行一致 + 追踪价值</strong>：分别是最强愉悦杠杆（+28pp）与最强影响杠杆（+22pp）</li>
+        <li><strong>Agent 落地但治理滞后</strong>：接入翻倍（13→30%），但 50% 无「人×AI」治理、47% 担忧问责</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>语境：第四版调研的坐标<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">Survey Map · 全球白领 × 三层级</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>设定</th></tr></thead>
+        <tbody>
+          <tr><td>样本</td><td><strong>11,749 名白领</strong>，14 个市场（澳/英/美/西/印/日/巴/德/法/意/北欧/南非/中东/比荷卢）</td></tr>
+          <tr><td>角色分层</td><td>Frontline 34% · Manager 34% · Leader 32%（frontline = 无下属的白领个体）</td></tr>
+          <tr><td>行业</td><td>TMT 25% · 金融 18% · 消费零售 17% · 医疗 14% · 工业 14% · 保险 6% · 公共 5% · 其他</td></tr>
+          <tr><td>版本</td><td>第四版（2026-06），纵向对比 2023/2024/2025，呈现 YoY 结构性位移</td></tr>
+          <tr><td>报告主旨</td><td>「<strong>Strategy Matters More Than Tools</strong>」——瓶颈从技术回到组织与管理</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>读这份报告前先记住一句话：它<strong>全是 self-report</strong>（员工自报省时、自评 impact、自认 regular user），无客观产出或财务校验；样本只覆盖白领。把「发现」和「处方」分开看——BCG 卖的正是它开的药（战略重设计 + 培训 + 治理咨询）。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-shift"><span class="sec-num">二</span>瓶颈转移：从技术回到组织<a href="#sec-shift" class="anchor">#</a></h2>
+    <p class="kicker">From Tech to Org · 工作本身在被改写</p>
+
+    <p>当 74% frontline 已是常规用户，技术不再是门槛。真正在变的是<strong>工作本身的性质</strong>——技能预期、任务边界、人与 AI 的分工。报告列出 AI 已经改变的六个工作面向（同意占比）：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>AI 改变了什么</th><th>同意</th><th>不同意</th></tr></thead>
+        <tbody>
+          <tr><td>岗位的技能预期已变</td><td><strong>72%</strong></td><td>13%</td></tr>
+          <tr><td>接管了简单任务，留下复杂高风险工作</td><td>67%</td><td>16%</td></tr>
+          <tr><td>「够好」的门槛被抬高</td><td>60%</td><td>17%</td></tr>
+          <tr><td>花更多时间审查 / 纠正 AI 输出</td><td>52%</td><td>22%</td></tr>
+          <tr><td>角色转向「管理与指挥 AI」</td><td>47%</td><td>23%</td></tr>
+          <tr><td>决策权增加</td><td>41%</td><td>24%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>关键信号：72% 的人说岗位技能预期变了，近半数说角色已转向<strong>「管理 / 指挥 AI」而非亲自干活</strong>。这不是工具升级，是工种重写——而工种重写是 CEO 和 HR 的活，不是 IT 部门的活。</p>
+
+    <!-- 三 -->
+    <h2 id="sec-leak"><span class="sec-num">三</span>省时 ≠ 创值：时间的漏出<a href="#sec-leak" class="anchor">#</a></h2>
+    <p class="kicker">The Leak · 省下的时间会溜走</p>
+
+    <p>报告最被忽视、却最致命的一组数据：员工确实省下了大量时间，但<strong>这些时间大多没变成组织价值</strong>。三级漏出：</p>
+
+    <!-- ▼ 视觉一：省时漏出 -->
+    <div class="leak reveal">
+      <div class="leak-row">
+        <div class="leak-step">
+          <div class="leak-num">42%</div>
+          <div class="leak-lab">frontline 常规用户<br />每周省下 <strong>≥1 个工作日</strong></div>
+        </div>
+        <div class="leak-step is-leak">
+          <div class="leak-num">66%</div>
+          <div class="leak-lab">几乎<strong>没人告诉</strong>他们<br />省下的时间该干嘛</div>
+        </div>
+        <div class="leak-step is-leak">
+          <div class="leak-num">58%</div>
+          <div class="leak-lab">没有把时间<br /><strong>转投到战略工作</strong></div>
+        </div>
+      </div>
+      <div class="leak-out">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="漏出"><path d="M12 3 C12 3, 7 10, 7 14 a5 5 0 0 0 10 0 C17 10, 12 3, 12 3 z"/><path d="M19 4 v3 M21 5.5 h-3" stroke-width="1.5"/></svg>
+        <span>省下的时间会<strong>「漏出」组织</strong>——除非被主动追踪与再投资。报告的处方直白：<strong>衡量价值，而非 adoption。</strong></span>
+      </div>
+    </div>
+
+    <p>层级差也很刺眼：管理者与领导者<strong>感知到的指引更清晰</strong>（比 frontline 高 +14pp / +22pp），impact 自评也更高。也就是说，离权力越近的人越觉得「已经在用得好」，而真正干活的 frontline 既缺指引、也没把时间用到刀刃上——<strong>价值捕获的瓶颈在最底层，但决策权在最顶层</strong>。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-stage"><span class="sec-num">四</span>重设计溢价：Reshape / Invent 全面领先<a href="#sec-stage" class="anchor">#</a></h2>
+    <p class="kicker">Deploy → Reshape → Invent · 越往上越值</p>
+
+    <p>BCG 把企业的 AI 落地分三档：<strong>Deploy</strong>（部署工具提效）→ <strong>Reshape</strong>（端到端重设流程）→ <strong>Invent</strong>（造新业务模式）。一年之间，Invent 占比几乎翻倍（22% → 42%），企业正集体越过「装工具」阶段。</p>
+
+    <!-- ▼ 视觉二：Deploy/Reshape/Invent 位移 + 溢价 -->
+    <div class="stage reveal">
+      <div class="stage-legend"><span><i class="sw old"></i>2025</span><span><i class="sw new"></i>2026</span><span class="hint">企业占比 · 横向三档</span></div>
+      <div class="stage-shift">
+        <div class="stage-card tier-1">
+          <span class="stage-delta">78→72</span>
+          <h4 class="stage-name">Deploy<span class="en">部署工具</span></h4>
+          <p class="stage-desc">支持 GenAI 工具、促生产力</p>
+          <div class="stage-track"><div class="stage-bar old" style="height:78%">78</div><div class="stage-bar new" style="height:72%">72</div></div>
+        </div>
+        <div class="stage-card tier-2">
+          <span class="stage-delta">50→57 +7</span>
+          <h4 class="stage-name">Reshape<span class="en">重设流程</span></h4>
+          <p class="stage-desc">端到端重做工作流</p>
+          <div class="stage-track"><div class="stage-bar old" style="height:50%">50</div><div class="stage-bar new" style="height:57%">57</div></div>
+        </div>
+        <div class="stage-card tier-3">
+          <span class="stage-delta">22→42 +20</span>
+          <h4 class="stage-name">Invent<span class="en">造新模式</span></h4>
+          <p class="stage-desc">创新业务模型与产品</p>
+          <div class="stage-track"><div class="stage-bar old" style="height:22%">22</div><div class="stage-bar new" style="height:42%">42</div></div>
+        </div>
+      </div>
+
+      <div class="stage-prem-head">Reshape/Invent 企业 vs 仅 Deploy 企业 · 员工层面的全面溢价</div>
+      <div class="stage-prem">
+        <div class="prem-row">
+          <div class="prem-lab">省下更多时间</div>
+          <div class="prem-bars">
+            <div class="prem-bar dep"><span class="tag">Deploy</span><span class="track"><span class="fill" style="width:31%"></span></span><span class="val">31%</span></div>
+            <div class="prem-bar ri"><span class="tag">R / I</span><span class="track"><span class="fill" style="width:53%"></span></span><span class="val">53%</span></div>
+          </div>
+        </div>
+        <div class="prem-row">
+          <div class="prem-lab">更享受工作</div>
+          <div class="prem-bars">
+            <div class="prem-bar dep"><span class="tag">Deploy</span><span class="track"><span class="fill" style="width:48%"></span></span><span class="val">48%</span></div>
+            <div class="prem-bar ri"><span class="tag">R / I</span><span class="track"><span class="fill" style="width:68%"></span></span><span class="val">68%</span></div>
+          </div>
+        </div>
+        <div class="prem-row">
+          <div class="prem-lab">看到可测业务影响</div>
+          <div class="prem-bars">
+            <div class="prem-bar dep"><span class="tag">Deploy</span><span class="track"><span class="fill" style="width:43%"></span></span><span class="val">43%</span></div>
+            <div class="prem-bar ri"><span class="tag">R / I</span><span class="track"><span class="fill" style="width:67%"></span></span><span class="val">67%</span></div>
+          </div>
+        </div>
+        <div class="prem-row">
+          <div class="prem-lab">更易展现独特价值</div>
+          <div class="prem-bars">
+            <div class="prem-bar dep"><span class="tag">Deploy</span><span class="track"><span class="fill" style="width:56%"></span></span><span class="val">56%</span></div>
+            <div class="prem-bar ri"><span class="tag">R / I</span><span class="track"><span class="fill" style="width:79%"></span></span><span class="val">79%</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">读法 caveat</div>
+      <p style="margin: .3em 0;">「Reshape/Invent 更成功」可能是<strong>反向因果</strong>：本来就战略清晰、敢投人、有 roadmap 的公司才去做 Reshape/Invent，而非做了才变好。报告用同一组驱动因子（清晰 roadmap + 投人）解释成功——<strong>两边其实是同一拨公司</strong>，这是相关性，报告按因果讲。</p>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-matrix"><span class="sec-num">五</span>策略胜过工具：一张 2×2 说清全部<a href="#sec-matrix" class="anchor">#</a></h2>
+    <p class="kicker">Clarity × Tools · 方向比工具重要 5 倍</p>
+
+    <p>整份报告最干净、最有说服力的一张图：把企业按「战略清晰度」和「工具可及性」分成四格，看 measurable impact 落在哪。<strong>纵向移动（加战略清晰度）带来 +25pp，横向移动（加工具）只带来 +5pp。</strong></p>
+
+    <!-- ▼ 视觉三：clarity × tools 2×2 -->
+    <div class="matrix reveal">
+      <div class="matrix-head">
+        <h4>measurable impact：战略清晰度 × 工具可及性</h4>
+        <span class="sub">Direction Beats Tooling · 5×</span>
+      </div>
+      <div class="matrix-body">
+        <div class="matrix-yaxis">战略清晰度 ↑</div>
+        <div class="matrix-main">
+          <div class="colhead">工具有限</div>
+          <div class="colhead">工具强劲</div>
+
+          <div class="matrix-cell hero">
+            <span class="cond">清晰战略 · 工具有限</span>
+            <span class="pct">80%</span>
+            <span class="note">方向清楚，哪怕工具不齐——<strong>反超</strong>下面那格</span>
+          </div>
+          <div class="matrix-cell hi">
+            <span class="cond">清晰战略 · 强工具</span>
+            <span class="pct">83%</span>
+            <span class="note">两者兼具，顶配（仅再 +3pp）</span>
+          </div>
+
+          <div class="matrix-cell lo">
+            <span class="cond">无方向 · 工具有限</span>
+            <span class="pct">55%</span>
+            <span class="note">基准：又没方向又没工具</span>
+          </div>
+          <div class="matrix-cell lo">
+            <span class="cond">无方向 · 强工具</span>
+            <span class="pct">60%</span>
+            <span class="note">砸了工具但没方向——只比基准 +5pp</span>
+          </div>
+          <div class="matrix-xaxis">工具可及 →</div>
+        </div>
+      </div>
+      <div class="matrix-take">
+        <span class="pill-up">↑ 战略清晰度 +25pp</span>
+        <span class="pill-side">→ 工具 +5pp</span>
+        <span class="verdict">给工具加码只值 +5pp，给方向加码值 +25pp——<strong>战略清晰度的杠杆是工具的 5 倍</strong>。这就是 CEO 必须亲自 own 它的原因。</span>
+      </div>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-joy"><span class="sec-num">六</span>愉悦悖论与蜜月期<a href="#sec-joy" class="anchor">#</a></h2>
+    <p class="kicker">The Joy Paradox · 又好又累，且会过期</p>
+
+    <p>价值与愉悦不是 tradeoff——它们被同一组力驱动。但 AI 让工作<strong>「又好又累」</strong>：三分之二常规用户更享受工作，同时四成多认知负荷上升（领导者尤甚，48%）。</p>
+
+    <!-- 蜜月期前：愉悦悖论双数 -->
+    <div class="paradox reveal">
+      <div class="paradox-tile joy">
+        <span class="big">67%</span>
+        <span class="lab">常规用户报告<br /><strong>工作满意度上升</strong>（领导者 77%）</span>
+      </div>
+      <div class="paradox-tile strain">
+        <span class="big">41%</span>
+        <span class="lab">同时报告<br /><strong>认知负荷上升</strong>（领导者 48%）</span>
+      </div>
+    </div>
+
+    <p>更关键的是<strong>愉悦的来源会随时间翻转</strong>。用 AI 不到半年的新人，靠新鲜感和脑力拉伸获得愉悦；用满一年后，「认知负荷」从驱动变成负担，唯一能持续撑住愉悦的是<strong>战略清晰度</strong>。</p>
+
+    <!-- ▼ 视觉四：蜜月期翻转 -->
+    <div class="honey reveal">
+      <div class="honey-cols">
+        <div class="honey-col">
+          <div class="honey-when">使用 &lt; 6 个月</div>
+          <h4 class="honey-title">蜜月期 · 靠新鲜感</h4>
+          <div class="honey-labs"><span class="leg"><span>← 阻力</span><span>驱动 →</span></span><span></span></div>
+          <div class="honey-sec">愉悦驱动</div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:48%"></span></div><span class="v pos">+43</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:27%"></span></div><span class="v pos">+24</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:26%"></span></div><span class="v pos">+23</span></div>
+          <div class="honey-sec">愉悦阻力</div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill neg" style="width:32%"></span></div><span class="v neg">−29</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill neg" style="width:17%"></span></div><span class="v neg">−15</span></div>
+        </div>
+        <div class="honey-col mature">
+          <div class="honey-when">使用 &gt; 1 年</div>
+          <h4 class="honey-title">成熟期 · 靠战略清晰</h4>
+          <div class="honey-labs"><span class="leg"><span>← 阻力</span><span>驱动 →</span></span><span></span></div>
+          <div class="honey-sec">愉悦驱动</div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:33%"></span></div><span class="v pos">+30</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:28%"></span></div><span class="v pos">+25</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill pos" style="width:23%"></span></div><span class="v pos">+21</span></div>
+          <div class="honey-sec">愉悦阻力</div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill neg" style="width:29%"></span></div><span class="v neg">−26</span></div>
+          <div class="honey-row"><div class="honey-bar"><span class="axis"></span><span class="fill neg" style="width:18%"></span></div><span class="v neg">−16</span></div>
+        </div>
+      </div>
+      <div class="honey-flip">
+        <span class="f"><b>认知负荷</b>　+43 → +21（从最强驱动退场——新鲜感会过期）</span>
+        <span class="f"><b>战略清晰度</b>　+24 → +30（成为唯一可持续的愉悦来源）</span>
+      </div>
+    </div>
+
+    <p>顺便校准一个之前容易误读的点：在「五大组织杠杆」里，<strong>最强愉悦杠杆是「言行一致 / Align AI actions with messaging」（+28pp）</strong>，最强影响杠杆是「追踪价值」与「让员工参与构想」（并列 +22pp）——而「围绕 AI 重设组织」其实只是中位杠杆（+14 / +16pp）。信号很统一：<strong>领导说的话和做的事一致，比任何工具都更能留住人</strong>。</p>
+
+    <!-- 七 -->
+    <h2 id="sec-agents"><span class="sec-num">七</span>Agent 落地，治理真空<a href="#sec-agents" class="anchor">#</a></h2>
+    <p class="kicker">Agents Real, Governance Not · 制度落后于技术</p>
+
+    <p>Agent 在一年内从概念变成现实，但运营模型（治理、问责、人机协作规则）远远没跟上。</p>
+
+    <!-- ▼ 视觉五：Agent 落地 + 治理真空 -->
+    <div class="agents reveal">
+      <div class="agents-card">
+        <span class="agents-eb">落地 · Adoption</span>
+        <h4>接入工作流较 2025 翻倍</h4>
+        <div class="agents-growpair">
+          <div class="blk"><span class="pct" style="color:var(--text-muted)">13%</span><div class="bar" style="height:26px"></div><span class="yr">2025</span></div>
+          <span class="arrow">→</span>
+          <div class="blk"><span class="pct" style="color:var(--accent)">30%</span><div class="bar new" style="height:60px"></div><span class="yr">2026</span></div>
+          <div class="agents-belief" style="border:none;padding:0 0 0 1rem">
+            <div class="b-num">61%</div>
+            <div class="b-lab">相信三年内 agent 能干掉<br />自己<strong>至少一半</strong>的活</div>
+            <div class="b-sub">frontline 52% · 管理者/领导者 65%</div>
+          </div>
+        </div>
+        <p style="font-size:.82rem;color:var(--text-soft);margin:0;">另有 50% 仍在试验 / 试点，20% 尚未部署——但已从"概念"全面进入"工作流"。</p>
+      </div>
+
+      <div class="agents-card gap">
+        <span class="agents-eb">缺口 · Governance Gap</span>
+        <h4>治理与问责远未跟上</h4>
+        <div class="gap-row">
+          <div class="gap-stat"><span class="n">50%</span><span class="l">员工说公司<strong>没有</strong>清晰的「人×AI 团队」治理</span></div>
+          <div class="gap-mini"><span><b>frontline</b> 54%</span><span><b>manager</b> 55%</span><span><b>leader</b> 41%</span></div>
+        </div>
+        <div class="gap-row" style="border-top:1px dashed var(--border-strong);padding-top:.6rem">
+          <div class="gap-stat"><span class="n">47%</span><span class="l">把「AI 驱动的<strong>问责</strong>」列为未来 2–3 年 top-3 担忧</span></div>
+          <div class="gap-mini"><span><b>各层级几乎均等</b> ≈ 46–47%</span></div>
+        </div>
+        <p style="font-size:.82rem;color:var(--text-soft);margin:0;">技术已远超制度——而<strong>连领导者自己也不比 frontline 少担心</strong>，说明这不是认知问题，是缺规则。</p>
+      </div>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-ceo"><span class="sec-num">八</span>报告落点：CEO 五条命令<a href="#sec-ceo" class="anchor">#</a></h2>
+    <p class="kicker">Five Imperatives · 报告给最高管理者的处方</p>
+
+    <ol class="imp">
+      <li><h4>换计分板</h4><p>衡量<strong>价值</strong>而非 adoption。省下的时间会漏出组织，除非被追踪与再投资。</p></li>
+      <li><h4>战略清晰度置顶，且亲自 own</h4><p>这不是传播任务，是领导姿态。亲自 own 的 CEO 在价值 / 愉悦 / 信任上全维度领先。</p></li>
+      <li><h4>投 end-to-end 重设计，而非更多工具</h4><p>大多数公司仍把 AI 当个人生产力工具；更重要的变化是集体的——任务如何跨组织流动。</p></li>
+      <li><h4>把人放在重设计的中心</h4><p>让人参与 shaping change，而非被 present。留住人的是"AI 如何帮我成长"，不是"我变快了多少"。</p></li>
+      <li><h4>当成移动靶治理，不是一次性项目</h4><p>技术变得比任何公司都快。设一个轻量、常设的治理，反复校验什么有效、重测价值、随模型演进调整。</p></li>
+    </ol>
+
+    <!-- 九 -->
+    <h2 id="sec-fde"><span class="sec-num">九</span>FDE / ToB 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 落到客户现场</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>卖"夜间照明"而非 adoption</strong>：客户买的不是使用率、不是省时，是 <strong>measurable business outcome</strong>。报价 / SLA 挂"价值被追踪 + 再投资"，而不是 token 配额——和公用事业论完全同向。</span></li>
+      <li><span class="ix">ii</span><span><strong>交付侧主推 end-to-end 重设计</strong>：纯"部署工具"型 POC 正被客户内部判为低价值（p9 那组 +18~24pp 差距就是话术弹药）。FDE 方案要主动包流程重设计，而不是只塞模型。</span></li>
+      <li><span class="ix">iii</span><span><strong>治理 + eval 是新咨询面</strong>：50% 治理真空 + 47% 问责担忧 = "人×AI 治理 + 可问责 eval + 多供应商可迁移"是 ToB 现在最缺、也最愿付费的缺口（正好对上 p22"战略清晰度"）。</span></li>
+      <li><span class="ix">iv</span><span><strong>培训是最便宜的入口</strong>：88% 需求 vs 36% 满足，这 52pp 缺口是进客户成本最低的楔子——先卖再培训，再上重设计。</span></li>
+      <li><span class="ix">v</span><span><strong>帮客户把 CEO 拉进驾驶位</strong>：报告反复证明"CEO 亲自 own"是全维度领先变量。FDE 推进卡在 IT 时，数据弹药是"这是 CEO 议程，不是 CIO 议程"。</span></li>
+      <li><span class="ix">vi</span><span><strong>Agent POC 必须自带治理 SKU</strong>：技术翻倍落地但治理真空——交付 agent 时把"人机协作规则 + 问责 + 审计"打包，否则就是给客户埋雷。</span></li>
+    </ol>
+
+    <!-- 十 -->
+    <h2 id="sec-open"><span class="sec-num">十</span>待验证与批判<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 留给后续</p>
+
+    <ol class="threads">
+      <li>self-report 偏差有多大？"省一个工作日 / measurable impact"若用客观产出校验，会缩水多少？</li>
+      <li>Reshape/Invent 的溢价里，因果与选型效应各占几成？需要纵向追踪同一公司转型前后的面板数据。</li>
+      <li>"61% 信 agent 三年干半活"是预期还是能力？把它当情绪指标而非预测，那真实自动化潜力曲线长什么样？</li>
+      <li>"战略清晰度 +25pp"在不同行业 / 公司规模 / 监管强度下是否稳健？金融与公共部门的"清晰度"是否更难落地？</li>
+      <li>蜜月期翻转是否可被组织主动延长？"言行一致 +28pp"能否补偿认知负荷的退场效应？</li>
+    </ol>
+
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-06-24 初稿 · 基于 BCG《AI at Work》2026 第四版（关键数字经原图视觉校准）· 对内
+    </p>
+
+    <div class="doc-footer">
+      <a href="../insights/index.html">← 洞察总索引</a>
+      ·
+      <a href="2026-06_loop-engineering-coding-agent.html">相关：循环工程</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

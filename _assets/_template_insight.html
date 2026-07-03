@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>【标题】· FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<!-- 相对路径按文件深度调整，例如 insights/tob/ 下用 ../../_assets/ -->
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<!-- 如需覆盖本篇 accent 色，在此处写 <style> 块覆盖 --accent / --accent-soft -->
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      【标题】<span class="brand-sub">【受众：toB/toC/跨市场】· YYYY-MM</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>【标题】</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">【副标题 / 一句话定位】</p>
+      <div class="doc-meta">
+        <span>YYYY-MM-DD</span>
+        <span>【受众：toB / toC / 跨市场】</span>
+        <span>【主题标签：Agent OS / Persona / 评测 / …】</span>
+        <span>【状态：草案 / 对内 / 可对外】</span>
+      </div>
+    </header>
+
+    <!-- 一句话结论 / 核心论点，用 lede 或 callout-accent -->
+    <div class="lede">
+      <strong>核心论点：</strong>【一段话，抓住读者】
+    </div>
+
+    <!-- ========== 一、背景 ========== -->
+    <h2 id="background"><span class="sec-num">一</span>背景<a href="#background" class="anchor">#</a></h2>
+    <p>【背景描述：为什么写这篇？此刻的外部信号 / 内部触发？】</p>
+
+    <!-- ========== 二、当前判断 ========== -->
+    <h2 id="judgment"><span class="sec-num">二</span>当前判断<a href="#judgment" class="anchor">#</a></h2>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">核心假设</div>
+      <ul style="margin: .3em 0;">
+        <li>【判断 1】</li>
+        <li>【判断 2】</li>
+      </ul>
+    </div>
+
+    <h3 id="judgment-detail">2.1 推导与影响</h3>
+    <p>【展开论证】</p>
+
+    <h3 id="challenges">2.2 关键挑战</h3>
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险</div>
+      <ul style="margin: .3em 0;">
+        <li>【挑战 1】</li>
+        <li>【挑战 2】</li>
+      </ul>
+    </div>
+
+    <!-- ========== 三、策略 ========== -->
+    <h2 id="strategy"><span class="sec-num">三</span>策略<a href="#strategy" class="anchor">#</a></h2>
+    <p>【当前策略描述】</p>
+
+    <!-- 视需要插入 card-grid / table-wrap / mermaid -->
+
+    <!-- ========== 四、下一步行动 ========== -->
+    <h2 id="actions"><span class="sec-num">四</span>下一步行动（1–2 周）<a href="#actions" class="anchor">#</a></h2>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动清单</div>
+      <ul style="margin: .3em 0;">
+        <li>【行动 1】</li>
+        <li>【行动 2】</li>
+      </ul>
+    </div>
+
+    <!-- ========== 五、待验证问题 ========== -->
+    <h2 id="open-questions"><span class="sec-num">五</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>【问题 1】</li>
+      <li>【问题 2】</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：YYYY-MM-DD 初稿
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

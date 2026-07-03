@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>前沿厂商动态 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  .index-page { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; }
+
+  .vendor-section { margin-bottom: 2.5rem; }
+  .vendor-header {
+    display: flex; align-items: center; gap: .8rem;
+    padding: .9em 1em;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+  }
+  .vendor-logo { font-size: 1.3rem; }
+  .vendor-name { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; color: var(--text); }
+
+  .doc-list { list-style: none; padding: 0; margin: 0; }
+  .doc-list li {
+    display: flex; align-items: baseline; gap: .7rem;
+    padding: .6em .9em; border: 1px solid var(--border);
+    border-top: 1px solid var(--border); font-size: .92rem;
+    background: var(--surface);
+  }
+  .doc-list li:first-child { border-top: 1px solid var(--border); }
+  .doc-list li:last-child { border-radius: 0 0 10px 10px; }
+  .doc-date { color: var(--text-muted); font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
+  .doc-title { flex: 1; min-width: 0; }
+  .doc-title a { color: var(--text); border-bottom: none; }
+  .doc-title a:hover { color: var(--accent); }
+  .doc-tags { display: flex; gap: .3rem; flex-shrink: 0; }
+
+  .type-digest { border-left: 3px solid var(--info); }
+  .type-deep { border-left: 3px solid var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      前沿厂商动态
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="index-page">
+
+  <div style="padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 2rem;">
+    <h1 style="font-size:1.9rem;margin:0 0 .3em;">前沿厂商动态</h1>
+    <p style="color:var(--text-muted);margin:0;font-size:.95rem;">头部 AI 公司官方博客的深度拆解与周期性动态摘要</p>
+    <div style="margin-top:.8em;font-size:.85rem;color:var(--text-muted);">
+      <span class="pill pill-accent" style="margin-right:.4em;">深度拆解</span>单篇博客技术/产品拆解 &nbsp;·&nbsp;
+      <span class="pill pill-info" style="margin-right:.4em;">周期摘要</span>多期动态汇总
+    </div>
+  </div>
+
+  <!-- Anthropic -->
+  <div class="vendor-section">
+    <div class="vendor-header">
+      <span class="vendor-logo">🤖</span>
+      <span class="vendor-name">Anthropic</span>
+    </div>
+    <div style="font-size:.78rem;color:var(--text-muted);padding:.6em 1em;background:var(--surface);border:1px solid var(--border);border-bottom:none;">深度拆解</div>
+    <ul class="doc-list" data-render="frontier-deep" data-filter-vendor="anthropic" data-href-prefix="../">
+      <li class="placeholder" style="padding:.6em .9em;color:var(--text-muted);font-style:italic;">加载中…</li>
+    </ul>
+    <div style="font-size:.78rem;color:var(--text-muted);padding:.6em 1em;background:var(--surface);border:1px solid var(--border);border-top:none;border-bottom:none;margin-top:.4em;">周期摘要</div>
+    <ul class="doc-list" data-render="frontier-digest" data-filter-vendor="anthropic" data-href-prefix="../">
+      <li class="placeholder" style="padding:.6em .9em;color:var(--text-muted);font-style:italic;">加载中…</li>
+    </ul>
+  </div>
+
+  <!-- OpenAI -->
+  <div class="vendor-section">
+    <div class="vendor-header">
+      <span class="vendor-logo">⚡</span>
+      <span class="vendor-name">OpenAI</span>
+    </div>
+    <div style="font-size:.78rem;color:var(--text-muted);padding:.6em 1em;background:var(--surface);border:1px solid var(--border);border-bottom:none;">深度拆解</div>
+    <ul class="doc-list" data-render="frontier-deep" data-filter-vendor="openai" data-href-prefix="../">
+      <li class="placeholder" style="padding:.6em .9em;color:var(--text-muted);font-style:italic;">加载中…</li>
+    </ul>
+    <div style="font-size:.78rem;color:var(--text-muted);padding:.6em 1em;background:var(--surface);border:1px solid var(--border);border-top:none;border-bottom:none;margin-top:.4em;">周期摘要</div>
+    <ul class="doc-list" data-render="frontier-digest" data-filter-vendor="openai" data-href-prefix="../">
+      <li class="placeholder" style="padding:.6em .9em;color:var(--text-muted);font-style:italic;">加载中…</li>
+    </ul>
+  </div>
+
+  <div class="callout" style="margin-top:1rem;">
+    <div class="callout-tag">新建深度文</div>
+    <p style="margin:.3em 0;">复制 <code>vendors/anthropic/_template_deep_dive.md</code>（或根目录 <code>_template_deep_dive.md</code>）→ <code>vendors/&lt;vendor&gt;/deep_dives/YYYY-MM-DD_&lt;slug&gt;.md</code>，然后在上方列表中添加一行。</p>
+  </div>
+
+  <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--text-muted);">
+    <a href="../index.html">← 返回首页</a>
+  </div>
+
+</div>
+
+<script src="../_assets/insight.js"></script>
+<script src="../_assets/manifest-render.js"></script>
+</body>
+</html>

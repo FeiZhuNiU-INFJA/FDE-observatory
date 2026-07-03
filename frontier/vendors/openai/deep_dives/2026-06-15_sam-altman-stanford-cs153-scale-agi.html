@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sam Altman 斯坦福 CS153：规模、AGI 与「智能公用事业」 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页强调色（OpenAI 绿）+ 暗色变体；其余设计令牌、字体、底纹、排版全部来自共享 insight.css */
+  :root {
+    --accent: #10a37f;
+    --accent-deep: #0e8a6c;
+    --accent-ink: #0b5e47;
+    --accent-soft: color-mix(in srgb, #10a37f 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #2fd6aa;
+    --accent-soft: color-mix(in srgb, #10a37f 24%, #1a1a22);
+    --accent-ink: #6ee7c7;
+  }
+
+  /* ═════════ 视觉一：规模定律曲线 ═════════ */
+  .scale { margin: 1.8em 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem 1.4rem 1.2rem; box-shadow: var(--shadow); }
+  .scale-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; margin-bottom: .2rem; }
+  .scale-head h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); }
+  .scale-sub { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .scale-chart svg { width: 100%; height: auto; display: block; }
+  .scale-chart text { font-family: var(--mono); }
+  .scale-draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: scaledraw 2.6s ease-out .25s forwards; }
+  @keyframes scaledraw { to { stroke-dashoffset: 0; } }
+  .scale-legend { display: flex; gap: 1.4rem; flex-wrap: wrap; margin: .8rem 0 .6rem; }
+  .scale-legend span { display: flex; align-items: center; gap: .55rem; font-size: .84rem; color: var(--text-soft); }
+  .scale-legend i { width: 24px; height: 0; border-top: 2.5px solid; display: inline-block; flex-shrink: 0; }
+  .scale-legend .ln-accent { border-color: var(--accent); }
+  .scale-legend .ln-muted { border-color: var(--text-muted); border-top-style: dashed; }
+  .scale-note { font-size: .86rem; color: var(--text-soft); border-top: 1px dashed var(--border-strong); padding-top: .7rem; line-height: 1.6; margin: 0; }
+
+  /* ═════════ 视觉二：ChatGPT 起源时间线 ═════════ */
+  .origin { margin: 1.8em 0; }
+  .origin-track { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; position: relative; }
+  .origin-track::before { content: ""; position: absolute; left: 9%; right: 9%; top: 11px; height: 2px; background: linear-gradient(90deg, var(--border-strong), var(--accent)); z-index: 0; }
+  .origin-node { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; gap: .15rem; padding: .2rem; }
+  .origin-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 2.5px solid var(--accent); z-index: 1; box-shadow: 0 0 0 4px var(--bg); flex-shrink: 0; }
+  .origin-dot-hot { background: var(--accent); box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px var(--accent-soft); animation: dotpulse 2.4s ease-in-out infinite; }
+  @keyframes dotpulse { 0%, 100% { box-shadow: 0 0 0 4px var(--bg), 0 0 0 7px var(--accent-soft); } 50% { box-shadow: 0 0 0 4px var(--bg), 0 0 0 11px color-mix(in srgb, var(--accent) 10%, transparent); } }
+  .origin-phase { font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin-top: .35rem; }
+  .origin-hot .origin-phase { color: var(--accent); }
+  .origin-title { font-family: var(--display); font-weight: 700; font-size: .92rem; color: var(--text); line-height: 1.2; margin-top: .15rem; }
+  .origin-hot .origin-title { color: var(--accent); }
+  .origin-desc { font-size: .78rem; color: var(--text-soft); line-height: 1.45; margin-top: .2rem; }
+  .origin-coda { margin-top: 1rem; font-size: .86rem; color: var(--text-soft); border-top: 1px dashed var(--border-strong); padding-top: .7rem; line-height: 1.6; }
+  @media (max-width: 860px) {
+    .origin-track { grid-template-columns: 1fr; gap: .1rem; }
+    .origin-track::before { left: 11px; top: 0; bottom: 0; width: 2px; height: auto; background: linear-gradient(180deg, var(--border-strong), var(--accent)); }
+    .origin-node { flex-direction: row; align-items: flex-start; text-align: left; gap: .7rem; padding: .5rem 0; }
+    .origin-dot { margin-top: .2rem; }
+    .origin-phase, .origin-title, .origin-desc { margin-top: 0; }
+  }
+
+  /* ═════════ 视觉三：能力管线 + AI 自我重写 ═════════ */
+  .pipe { margin: 1.8em 0; }
+  .pipe-rail { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .5rem; }
+  .pipe-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+  .pipe-step { border: 1px solid var(--border); border-radius: 12px; padding: .9rem .85rem; background: var(--surface); position: relative; transition: transform .2s, border-color .2s; }
+  .pipe-step:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .pipe-step .ph { display: flex; align-items: center; gap: .5rem; margin-bottom: .4rem; }
+  .pipe-step .pn { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: var(--accent); line-height: 1; }
+  .pipe-step .pt { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); }
+  .pipe-step .pm { font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--rule); padding: .1em .45em; border-radius: 4px; display: inline-block; margin-bottom: .3rem; }
+  .pipe-step .pd { font-size: .79rem; color: var(--text-soft); margin: 0; line-height: 1.45; }
+  .pipe-step:not(:last-child)::after { content: "→"; position: absolute; right: -.5rem; top: 50%; transform: translate(50%, -50%); font-family: var(--display); color: var(--accent); font-size: 1.2rem; z-index: 2; background: var(--bg); padding: 0 .15rem; line-height: 1; }
+  .pipe-rewrite { margin-top: 1rem; border: 1.5px dashed var(--accent); border-radius: 14px; padding: 1.1rem 1.2rem; background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 82%, transparent)); display: grid; grid-template-columns: auto 1fr; gap: .6rem 1.1rem; align-items: start; box-shadow: 0 6px 22px var(--accent-glow); }
+  .pipe-rewrite-icon { font-family: var(--display); font-size: 2rem; color: var(--accent); line-height: 1; transform-origin: 50% 55%; animation: orbit 9s linear infinite; }
+  .pipe-rewrite-body { grid-column: 2; }
+  .pipe-rewrite-body h4 { margin: 0 0 .3rem; font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--text); }
+  .pipe-rewrite-body p { margin: 0; font-size: .85rem; color: var(--text-soft); line-height: 1.55; }
+  .pipe-ms { grid-column: 1 / -1; display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .3rem; }
+  .pipe-ms .ms { font-size: .8rem; color: var(--text-soft); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: .5rem .8rem; line-height: 1.4; }
+  .pipe-ms .ms b { font-family: var(--mono); font-size: .66rem; letter-spacing: .06em; color: var(--accent); display: block; margin-bottom: .15rem; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  @media (max-width: 860px) {
+    .pipe-flow { grid-template-columns: 1fr; }
+    .pipe-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -.5rem; transform: translate(50%, 50%); }
+    .pipe-rewrite { grid-template-columns: 1fr; }
+    .pipe-rewrite-body { grid-column: 1; }
+  }
+
+  /* ═════════ 视觉四：智能公用事业 · 卖电 vs 卖夜间照明 ═════════ */
+  .util { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0; }
+  .util-side { border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem; background: var(--surface); display: flex; flex-direction: column; gap: .7rem; transition: transform .2s, border-color .2s; }
+  .util-side:hover { transform: translateY(-3px); }
+  .util-raw { border-color: var(--border-strong); }
+  .util-light { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .util-eyebrow { font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .util-raw .util-eyebrow { color: var(--text-muted); }
+  .util-light .util-eyebrow { color: var(--accent); }
+  .util-vis { display: flex; justify-content: center; }
+  .util-vis svg { width: 100%; max-width: 230px; height: auto; }
+  .util-vis text { font-family: var(--mono); }
+  .util-glow { animation: glowpulse 2.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes glowpulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  .util-cap { font-size: .88rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .util-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; color: var(--accent); padding: 0 .3rem; }
+  .util-arrow .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .util-arrow .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 760px) { .util { grid-template-columns: 1fr; } .util-arrow { transform: rotate(90deg); } .util-arrow .lab { writing-mode: horizontal-tb; } }
+
+  /* ═════════ 视觉五：未来十年分叉 + 算力短缺 ═════════ */
+  .fork { display: grid; grid-template-columns: 1.2fr 1fr; gap: 1.2rem; margin: 1.8em 0; }
+  .fork-tree { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1rem; box-shadow: var(--shadow); }
+  .fork-tree svg { width: 100%; height: auto; display: block; }
+  .fork-tree text { font-family: var(--mono); }
+  .fork-compute { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.2rem 1.2rem 1.1rem; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: .7rem; }
+  .fc-eyebrow { font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--warn); }
+  .fork-compute h4 { margin: .2rem 0 0; font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--text); }
+  .fc-bars { display: flex; flex-direction: column; gap: .65rem; margin: .5rem 0 .2rem; }
+  .fc-bar { display: grid; grid-template-columns: 72px 1fr 42px; align-items: center; gap: .7rem; }
+  .fc-lab { font-size: .82rem; color: var(--text-soft); }
+  .fc-track { height: 14px; border-radius: 7px; background: var(--bg-soft); overflow: hidden; border: 1px solid var(--border); }
+  .fc-fill { display: block; height: 100%; border-radius: 7px; }
+  .fc-fill-low { background: var(--accent); }
+  .fc-fill-high { background: var(--warn); }
+  .fc-val { font-family: var(--display); font-weight: 700; font-size: .98rem; text-align: right; }
+  .fc-val.lo { color: var(--accent); }
+  .fc-val.hi { color: var(--warn); }
+  .fc-note { font-size: .83rem; color: var(--text-soft); margin: .3rem 0 0; line-height: 1.55; border-top: 1px dashed var(--border-strong); padding-top: .6rem; }
+  @media (max-width: 860px) { .fork { grid-template-columns: 1fr; } }
+
+  /* ── FDE 映射 / 待验证 ── */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0; }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li { counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative; border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent); border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55; }
+  .threads li::before { content: "?" counter(th); position: absolute; left: .8rem; top: .78rem; font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem; }
+
+  /* reduced-motion：关掉本页特有动画（.reveal 由共享样式处理） */
+  @media (prefers-reduced-motion: reduce) {
+    .scale-draw, .pipe-rewrite-icon, .util-glow, .origin-dot-hot { animation: none !important; }
+    .scale-draw { stroke-dashoffset: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Sam Altman 斯坦福 CS153：规模、AGI 与「智能公用事业」<span class="brand-sub">OpenAI · 跨市场 · 2026-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Sam Altman 斯坦福 CS153<br />规模、AGI 与「智能公用事业」</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Frontier Systems 客座 · ChatGPT/Codex 起源 · 算力短缺 · 约 41 分钟 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-06-15</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>OpenAI</span>
+        <span>Scale</span>
+        <span>AGI</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">41<small>min</small></div><div class="lab">客座讲座<br />CS153 Frontier Systems</div></div>
+        <div class="hero-stat"><div class="num">2014→26</div><div class="lab">从 CS183 到 CS153<br />12 年后重返讲台</div></div>
+        <div class="hero-stat"><div class="num">~80<small>%</small></div><div class="lab">预计走民主扩散<br />路径的概率</div></div>
+        <div class="hero-stat"><div class="num">50<small>万</small></div><div class="lab">2026-09 目标<br />A100 等效算力</div></div>
+      </div>
+
+      <p style="color: var(--text-soft); font-size: .95rem; margin-top: 1.2em;">
+        视频：<a href="https://www.youtube.com/watch?v=F_7M4Hc-usM" target="_blank" rel="noopener">YouTube · Stanford Online · F_7M4Hc-usM</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Altman 重返斯坦福（2014 CS183 讲台）的核心信息不是 AGI 时间表，而是<strong>三套可操作的系统论</strong>：① <strong>规模</strong>仍是超共识回报的来源，但崩溃加速且人类组织是瓶颈；② <strong>ChatGPT</strong> 源于研究 demo 意外爆款后的五天「良性紧急」，Codex 则是更早的编码赌注、5.5 为拐点；③ <strong>智能将被消费为公用事业</strong>，但叙事须像卖「夜间照明」而非卖「电」。他预计预训练/后训练/RL 管线将遭 AI 主导的重写，并警告<strong>算力短缺或结构性永久</strong>、技术集中 vs 全球普及是十年最大分叉之一。对 FDE：客户卖结果不卖模型、推理成本进 SLA、多供应商治理、组织学习需 redesign 而非禁 AI。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>创业范式</strong>：适量 token 可替代百人工程团队；OpenAI 走路径反常——先研究实验室再变公司</li>
+        <li><strong>规模信仰</strong>：经验上 scale 持续产生超共识的涌现回报；难点是系统崩溃加速 + 人类组织惯性</li>
+        <li><strong>ChatGPT 起源</strong>：研究 demo → 意外爆款 → 五天「良性紧急状态」→ 同时建公司与产品</li>
+        <li><strong>Codex 拐点</strong>：编码赌注早于 ChatGPT；5.5 为转折；编程 = 模型操控计算机的主路径</li>
+        <li><strong>管线将重写</strong>：预训练/后训练/RL 非终局；目标 2026-09 用 50 万 A100 等效算力作 AI 研究实习生</li>
+        <li><strong>智能即公用事业</strong>：卖「夜间照明」而非「电力」——需新叙事；算力短缺或成结构性危机</li>
+        <li><strong>最大分叉</strong>：普及 vs 少数公司垄断（他估 ~80% 走民主扩散路径，但集中风险仍值得全力对抗）</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>语境：回到斯坦福教「创业」<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">Back to the Lectern · 十二年后</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>场合</td><td>Stanford <strong>CS153 Frontier Systems</strong> · Sam Altman 客座 · 约 41 分钟</td></tr>
+          <tr><td>历史锚点</td><td>2014 年在此教 CS183《如何创办一家初创公司》；OpenAI 2015 创立</td></tr>
+          <tr><td>核心张力</td><td>AI 时代创业 playbook 已变，但「如何正确创办初创公司」尚无完整新课</td></tr>
+          <tr><td>课程</td><td><a href="https://cs153.stanford.edu/" target="_blank" rel="noopener">cs153.stanford.edu</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Altman 开场即承认：若重教 CS183，<strong>整门课都要改写</strong>。不是微调——「投入适量 token，你能做到一支超强工程团队才能做的事」已成为创业选项集的一部分，抱负水平、行动速度、并行度完全不同。</p>
+
+    <p>关于「作业式创业题目」：他直言<strong>分配问题给学生行不通</strong>——若他能想到的明显好想法，对很多人也显而易见。要找的是像 OpenAI 创立时那样「全球仅四五个同类项目」级别的非共识机会。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-scale"><span class="sec-num">二</span>规模：无理论支撑的经验定律<a href="#sec-scale" class="anchor">#</a></h2>
+    <p class="kicker">Scaling Laws · 超共识的涌现回报</p>
+
+    <p>Altman 的核心实证信念（他坦承<strong>没有满意理论</strong>，但仍建议遵循）：</p>
+    <blockquote style="border-left: 3px solid var(--accent); padding-left: 1em; color: var(--text-soft);">
+      当某件事在较小规模已「有趣地奏效」，且你能把它推到<strong>前人从未尝试过的规模</strong>，回报往往远超共识预期——AI scaling laws、YC 网络效应、人才密度皆然。
+    </blockquote>
+
+    <!-- ▼ 视觉一：规模定律曲线 -->
+    <div class="scale reveal">
+      <div class="scale-head">
+        <h4>规模定律：回报曲线 vs 共识预期</h4>
+        <span class="scale-sub">No Theory, Still Bet On It</span>
+      </div>
+      <div class="scale-chart">
+        <svg viewBox="0 0 520 300" role="img" aria-label="规模定律曲线：实际涌现回报持续上升，远超多数人预期中那条会平台化的共识曲线">
+          <!-- 前人未尝试的规模 shaded zone -->
+          <rect x="300" y="44" width="198" height="206" style="fill:var(--accent-soft)" opacity=".75"/>
+          <text x="399" y="60" text-anchor="middle" font-size="10" style="fill:var(--accent-ink)" stroke="none">前人未尝试的规模</text>
+          <!-- axes -->
+          <g style="color:var(--border-strong)" fill="none" stroke="currentColor">
+            <line x1="50" y1="44" x2="50" y2="250"/>
+            <line x1="50" y1="250" x2="498" y2="250"/>
+          </g>
+          <text x="274" y="284" text-anchor="middle" font-size="11" style="fill:var(--text-muted)" stroke="none">规模（算力 · 数据 · 参数）→</text>
+          <text x="22" y="150" font-size="11" style="fill:var(--text-muted)" stroke="none" transform="rotate(-90 22 150)">能力 / 回报</text>
+          <!-- 共识预期 dashed plateau -->
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor">
+            <path d="M50 250 Q160 250 230 178 Q300 124 360 120 Q440 116 498 116" stroke-width="2" stroke-dasharray="6 6"/>
+          </g>
+          <!-- 实际涌现 solid -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <path class="scale-draw" pathLength="1" d="M50 250 Q150 249 215 172 Q290 86 360 70 Q430 52 498 40" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="215" cy="172" r="5" style="fill:var(--accent)" stroke="none"/>
+          </g>
+          <!-- divergence marker -->
+          <g style="color:var(--accent)">
+            <line x1="215" y1="166" x2="215" y2="138" stroke-width="1" stroke-dasharray="3 3"/>
+            <text x="215" y="130" text-anchor="middle" font-size="9.5" style="fill:var(--accent)" stroke="none">↑ 分叉点</text>
+          </g>
+          <!-- curve labels -->
+          <text x="492" y="33" text-anchor="end" font-size="10.5" font-weight="600" style="fill:var(--accent)" stroke="none">实际涌现 ↗</text>
+          <text x="492" y="108" text-anchor="end" font-size="10" style="fill:var(--text-muted)" stroke="none">共识预期（认为在此递减）</text>
+        </svg>
+      </div>
+      <div class="scale-legend">
+        <span><i class="ln-accent"></i>规模定律：把已「有趣地奏效」的事推到更大规模，回报<strong>远超共识</strong></span>
+        <span><i class="ln-muted"></i>多数人预期：在某个点认为边际递减、该收手</span>
+      </div>
+      <p class="scale-note">难点不在「scale 是否有效」，而在<strong>系统崩溃随规模加速、人类组织跟不上</strong>——逐一拆解每个「不可行」理由并攻克。</p>
+    </div>
+
+    <h3 id="sec-scale-yc">2.1 YC 网络效应反例</h3>
+    <p>聪明人多主张「YC 该缩小规模、每期只投 10 家」。但 YC 的关键涌现是<strong>孵化器内部网络效应</strong>——没人试过同等模式大规模资助创业公司，故无人预见 1 家 vs 100 家 vs 更大规模时的质变。</p>
+
+    <h3 id="sec-scale-system">2.2 系统设计：为何大多数人不敢 scale</h3>
+    <ul>
+      <li>规模越大，<strong>系统崩溃越快且越难预测</strong></li>
+      <li>总有聪明人劝你「别太雄心勃勃」</li>
+      <li>AI 扩规模例：万卡/十万卡工程、资金、盈利路径、研究员文化（「为何把算力全押一个项目？」）</li>
+    </ul>
+    <p>他的方法：<strong>逐一拆解每个「不可行」理由并攻克</strong>。人类组织侧需要：清晰目标 + 清晰计划（如何达成、如何决策）+ 愿意押注单一方向（「我们押深度学习 scale，错了就死」）。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">人类因素</div>
+      <p style="margin: .3em 0;">最难重构的崩溃点是<strong>人的预期与身份认同</strong>。人们不擅长想象指数：规模法则、收入、组织复杂度继续指数增长时会发生什么——需要大量时间从第一性原理对齐。</p>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-chatgpt"><span class="sec-num">三</span>ChatGPT：研究 demo 如何变成爆款<a href="#sec-chatgpt" class="anchor">#</a></h2>
+    <p class="kicker">The Accidental Product · 从 demo 到公司</p>
+
+    <p>长期障碍：「这些模型有什么用？」——研究先行、产品后置。ChatGPT 证明<strong>聊天是通用模型的消费者杀手级形态</strong>（企业侧则是 coding）。</p>
+
+    <!-- ▼ 视觉二：ChatGPT 起源时间线 -->
+    <div class="origin reveal">
+      <div class="origin-track">
+        <span class="origin-node">
+          <span class="origin-dot"></span>
+          <span class="origin-phase">2020 夏</span>
+          <span class="origin-title">GPT-3 API</span>
+          <span class="origin-desc">找不到产品形态，干脆开放 API；起初几乎无人问津。</span>
+        </span>
+        <span class="origin-node">
+          <span class="origin-dot"></span>
+          <span class="origin-phase">约一月后</span>
+          <span class="origin-title">意外走红</span>
+          <span class="origin-desc">开发者用 API key 聊天，模型其实很差。</span>
+        </span>
+        <span class="origin-node">
+          <span class="origin-dot"></span>
+          <span class="origin-phase">2022 决策</span>
+          <span class="origin-title">ChatGPT 立项</span>
+          <span class="origin-desc">用户要聊天机器人；3.5 + 新后训练；预期年入千万级。</span>
+        </span>
+        <span class="origin-node origin-hot">
+          <span class="origin-dot origin-dot-hot"></span>
+          <span class="origin-phase">发布后</span>
+          <span class="origin-title">★ 五天「良性紧急」</span>
+          <span class="origin-desc">流量峰谷可预测；第 5 天全员决定——同时建公司与产品。</span>
+        </span>
+        <span class="origin-node">
+          <span class="origin-dot"></span>
+          <span class="origin-phase">两个月内</span>
+          <span class="origin-title">疯狂扩张</span>
+          <span class="origin-desc">先收费挡住算力账单；商业模式以后再说——结果也奏效。</span>
+        </span>
+      </div>
+      <p class="origin-coda">研究 demo 的本意是<strong>说服别人做聊天产品并买 API</strong>——结果 demo 自己爆火。思维惯性（research demo 心态）仍是组织需克服的积极障碍。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>阶段</th><th>发生了什么</th></tr></thead>
+        <tbody>
+          <tr><td>GPT-3 API（2020 夏）</td><td>找不到产品形态 → 干脆做 API 让别人试；起初几乎无人问津</td></tr>
+          <tr><td>意外走红</td><td>约一月后 Twitter 爆火；开发者用 API key 聊天，模型其实很差</td></tr>
+          <tr><td>唯一商业用途</td><td>文案撰写——不兴奋，「只能等更好模型」</td></tr>
+          <tr><td>ChatGPT 决策</td><td>用户行为显示要聊天机器人；3.5 + 新后训练改善指令遵循；预期年收入千万美元级</td></tr>
+          <tr><td>病毒传播</td><td>本意是 demo，说服他人做聊天产品并买 API；结果自身爆火</td></tr>
+          <tr><td>五天「良性紧急」</td><td>流量峰谷规律可预测；第五天全员：必须<strong>同时建公司与产品</strong></td></tr>
+          <tr><td>两个月疯狂扩张</td><td>「商业模式以后再说」；先收费以免算力账单爆炸——结果也奏效</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>YC 教训复用：<strong>当某物开始真正流行，即使还不完美，你手里握着稳赚爆款</strong>。思维惯性（research demo 心态）仍是组织需克服的积极障碍。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-codex"><span class="sec-num">四</span>Codex：更早的赌注与 5.5 拐点<a href="#sec-codex" class="anchor">#</a></h2>
+    <p class="kicker">Capability Pipeline · 即将被 AI 自己重写</p>
+
+    <p>内部世界观：<strong>编程 = 模型操控计算机；机器人 = 操控物理世界</strong>。足够智能的模型 + 写代码 + 驱动机器人执行器 → 智能真正「为你做事」。Codex 计划早于 ChatGPT 全力投入，今年初已很强，<strong>5.5 为大众感知拐点</strong>。</p>
+
+    <!-- ▼ 视觉三：能力管线 + AI 自我重写 -->
+    <div class="pipe reveal">
+      <div class="pipe-rail">当前生产流程</div>
+      <div class="pipe-flow">
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">1</span><span class="pt">预训练</span></div>
+          <span class="pm">Pretraining</span>
+          <p class="pd">海量原始语料上学通用表征。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">2</span><span class="pt">中训练</span></div>
+          <span class="pm">Mid-training</span>
+          <p class="pd">注入知识与结构化能力。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">3</span><span class="pt">后训练</span></div>
+          <span class="pm">Post-training</span>
+          <p class="pd">对齐、指令遵循、风格塑造。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">4</span><span class="pt">RL / 监督反馈</span></div>
+          <span class="pm">RL · Feedback</span>
+          <p class="pd">强化学习打磨复杂推理与任务。</p>
+        </div>
+      </div>
+      <div class="pipe-rewrite">
+        <div class="pipe-rewrite-icon">↺</div>
+        <div class="pipe-rewrite-body">
+          <h4>但 Altman 判断：这条流水线「不太像最优解」，<strong>将被根本性重写</strong></h4>
+          <p>最优架构应由 <strong>AI 自己研究</strong>。以现有流程仍能跨过「AI 完成惊人工作」的临界点，但终局形态由 AI 设计。</p>
+        </div>
+        <div class="pipe-ms">
+          <span class="ms"><b>2026-09</b>50 万 A100 等效算力 → 「AI 研究实习生」</span>
+          <span class="ms"><b>2028-03</b>端到端杰出研究员级 AI 设计新架构</span>
+        </div>
+      </div>
+    </div>
+
+    <p>关于能力管线（预训练 → 中训练 → 后训练 → RL/监督反馈）：</p>
+    <ul>
+      <li>这是<strong>当前生产流程</strong>，但 Altman 预计会<strong>根本性重写</strong>——流水线形态「不太像最优解」</li>
+      <li>最优架构应由 <strong>AI 自己研究</strong></li>
+      <li>里程碑：2026 年 9 月 → 50 万 A100 等效 GPU 作「AI 研究实习生」；2028 年 3 月 → 端到端杰出研究员级 AI 设计新架构</li>
+      <li>以现有流程/architecture 仍能跨过「AI 完成惊人工作」的临界点</li>
+    </ul>
+
+    <!-- 五 -->
+    <h2 id="sec-utility"><span class="sec-num">五</span>智能作为新公用事业：叙事问题<a href="#sec-utility" class="anchor">#</a></h2>
+    <p class="kicker">Don't Sell Electricity · 卖夜间照明</p>
+
+    <p>电力公司早年<strong>不卖「电」</strong>——用户不知电是什么、听起来可怕。他们卖<strong>「夜间照明」</strong>。同理，「出售情报」现下不 resonate；要成为新公用事业，需找到「夜间照明」级产品叙事。</p>
+
+    <!-- ▼ 视觉四：卖电 vs 卖夜间照明 -->
+    <div class="util reveal">
+      <div class="util-side util-raw">
+        <span class="util-eyebrow">卖电 · 不 resonate</span>
+        <div class="util-vis">
+          <svg viewBox="0 0 200 150" role="img" aria-label="出售原始智能：抽象、用户不懂、听起来可怕">
+            <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M100 26 L78 80 a26 26 0 1 0 44 0 z" style="fill:var(--bg-soft)"/>
+              <path d="M90 96 h20 M90 108 h20"/>
+              <text x="100" y="140" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">智能 / 电</text>
+            </g>
+            <text x="100" y="20" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">「这是什么？听起来可怕」</text>
+          </svg>
+        </div>
+        <p class="util-cap">用户不知「智能 / 电」是什么——出售原始能力，<strong>叙事不成立</strong>。</p>
+      </div>
+
+      <div class="util-arrow"><span class="gly">→</span><span class="lab">重新叙事</span></div>
+
+      <div class="util-side util-light">
+        <span class="util-eyebrow">卖夜间照明 · 具体</span>
+        <div class="util-vis">
+          <svg viewBox="0 0 200 150" role="img" aria-label="出售夜间照明：具体、可感知的业务结果，硬件被抽象">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle class="util-glow" cx="100" cy="64" r="34" style="fill:var(--accent-soft)"/>
+              <path d="M100 32 L84 72 a18 18 0 1 0 32 0 z" style="fill:var(--accent-soft)"/>
+              <line x1="88" y1="94" x2="88" y2="114"/><line x1="112" y1="94" x2="112" y2="114"/>
+              <rect x="82" y="114" width="36" height="6" rx="2" style="fill:currentColor"/>
+              <line x1="100" y1="22" x2="100" y2="12"/><line x1="128" y1="32" x2="135" y2="24"/><line x1="72" y1="32" x2="65" y2="24"/>
+              <text x="100" y="140" text-anchor="middle" font-size="10" style="fill:var(--accent-ink)" stroke="none">夜间照明 / 业务结果</text>
+            </g>
+          </svg>
+        </div>
+        <p class="util-cap">卖<strong>具体业务结果</strong>（审计通过率、工单闭环）——消费者关心的是能不能常用、便宜、好用。</p>
+      </div>
+    </div>
+
+    <p>愿景：每家公司、客户、政府都需要接入的智能管道；OpenAI 代币订阅插入一切设备，持续运行。Jensen 把 OpenAI 比作计算公用事业 vs Altman 把智能比作公用事业——<strong>对消费者两者皆真</strong>：</p>
+    <ul>
+      <li>关心的是<strong>代币/交互层</strong>（能否常用、便宜、好用），硬件被抽象</li>
+      <li>持续 Agent 世界可能更进一步——像买手机套餐而非买基站芯片</li>
+    </ul>
+
+  <!-- 六 -->
+    <h2 id="sec-student"><span class="sec-num">六</span>给学生的话：推理栈是被低估的赌注<a href="#sec-student" class="anchor">#</a></h2>
+    <p class="kicker">Inference Stack · 被低估的赌注</p>
+
+    <p>CS153 最终项目是「单人前沿实验室」。Altman 建议：训练理念很多人会做、模型会很快很强，但<strong>大规模提供廉价丰富智能投入不足</strong>——他会研究<strong>推理栈</strong>：如何让惊人智能便宜且充足。前沿实验室将<strong>很大程度上转型为推理公司</strong>。</p>
+
+    <!-- 七 -->
+    <h2 id="sec-lecun"><span class="sec-num">七</span>LeCun「LLM 死路」与科学身份认同<a href="#sec-lecun" class="anchor">#</a></h2>
+    <p class="kicker">Identity Trap · 别把身份绑死在「LLM 不行」</p>
+
+    <p>Altman 反驳：模型已在某些维度远超人类、某些维度远逊人类（长程判断/任务）；已能推翻 Erdős 猜想级问题。LLM 能获取新知识、完成人类不能的智能任务，还会继续 scale。</p>
+    <p>世界模型重要（尤其机器人），但<strong>押注 LLM scale 失败不明智</strong>。一代科学家对 scale 过于自信地否定，阻碍了领域；把身份绑死在「LLM 不行」上会在数据面前变成重复无效行为的「疯狂」。</p>
+
+    <!-- 八 -->
+    <h2 id="sec-education"><span class="sec-num">八</span>教育：适应速度慢于预期<a href="#sec-education" class="anchor">#</a></h2>
+    <p class="kicker">Slow Adaptation · 三年半后仍难指出变化</p>
+
+    <p>他原以为 ChatGPT 后一年作弊潮、然后教育系统重构——<strong>三年半过去，系统性变化难以指出</strong>。若继续旧教学/评价方式，批判性思维会退化。元技能（写作思考、编程学思考）仍值得教，但很多教/学/评方式需彻底改变。</p>
+
+    <!-- 九 -->
+    <h2 id="sec-futures"><span class="sec-num">九</span>未来十年三分支<a href="#sec-futures" class="anchor">#</a></h2>
+    <p class="kicker">The Fork · 普及 vs 垄断 · 算力分配</p>
+
+    <!-- ▼ 视觉五：分叉树 + 算力短缺 -->
+    <div class="fork reveal">
+      <div class="fork-tree">
+        <svg viewBox="0 0 520 230" role="img" aria-label="未来十年分叉：约 80% 走民主扩散路径，约 20% 走寡头集中风险">
+          <!-- 根节点 -->
+          <g style="color:var(--accent)">
+            <rect x="200" y="10" width="120" height="34" rx="8" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="260" y="32" text-anchor="middle" font-size="11" font-weight="700" style="fill:var(--accent-ink)" stroke="none">十年最大分叉</text>
+          </g>
+          <!-- 分支曲线 -->
+          <g fill="none" stroke-width="2.4" stroke-linecap="round">
+            <path d="M240 44 Q150 90 96 150" style="stroke:var(--pro)"/>
+            <path d="M280 44 Q370 90 424 150" style="stroke:var(--warn)"/>
+          </g>
+          <!-- 左：民主扩散 -->
+          <g style="color:var(--pro)">
+            <rect x="20" y="150" width="172" height="64" rx="10" style="fill:var(--pro-soft)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="106" y="174" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--pro)" stroke="none">民主扩散</text>
+            <text x="106" y="192" text-anchor="middle" font-size="9.5" style="fill:var(--text-soft)" stroke="none">公用事业模式 · 全球普及</text>
+            <text x="106" y="206" text-anchor="middle" font-size="9.5" style="fill:var(--text-muted)" stroke="none">但权力追逐仍强</text>
+          </g>
+          <!-- 右：寡头集中 -->
+          <g style="color:var(--warn)">
+            <rect x="338" y="150" width="172" height="64" rx="10" style="fill:var(--warn-soft)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="424" y="174" text-anchor="middle" font-size="12.5" font-weight="700" style="fill:var(--warn)" stroke="none">寡头集中</text>
+            <text x="424" y="192" text-anchor="middle" font-size="9.5" style="fill:var(--text-soft)" stroke="none">财富集中于少数公司</text>
+            <text x="424" y="206" text-anchor="middle" font-size="9.5" style="fill:var(--text-muted)" stroke="none">默认吸引子 · 需全球意志对抗</text>
+          </g>
+          <!-- 概率徽章 -->
+          <g style="color:var(--pro)"><circle cx="96" cy="150" r="15" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.8"/><text x="96" y="154" text-anchor="middle" font-size="9.5" font-weight="700" style="fill:var(--pro)" stroke="none">~80%</text></g>
+          <g style="color:var(--warn)"><circle cx="424" cy="150" r="15" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.8"/><text x="424" y="154" text-anchor="middle" font-size="9.5" font-weight="700" style="fill:var(--warn)" stroke="none">~20%</text></g>
+        </svg>
+      </div>
+      <div class="fork-compute">
+        <span class="fc-eyebrow">结构性约束</span>
+        <h4>算力短缺：如「计算机时代的 COVID」</h4>
+        <div class="fc-bars">
+          <div class="fc-bar"><span class="fc-lab">长期预订</span><span class="fc-track"><span class="fc-fill fc-fill-low" style="width:20%"></span></span><span class="fc-val lo">1×</span></div>
+          <div class="fc-bar"><span class="fc-lab">现货价</span><span class="fc-track"><span class="fc-fill fc-fill-high" style="width:100%"></span></span><span class="fc-val hi">~5×</span></div>
+        </div>
+        <p class="fc-note">H100 / Blackwell 长期预订 vs 现货价差曾达约 <strong>5×</strong>；若智能足够便宜，需求<strong>无上限</strong>——短缺可能结构性永久。</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>分叉</th><th>Altman 判断</th></tr></thead>
+        <tbody>
+          <tr><td><strong>普及 vs 垄断</strong></td><td>默认吸引子是财富集中于少数掌握模型的公司——非常糟糕，需全球意志对抗；推公用事业模式因不稳定+不公平+脆弱世界协调失败；估 <strong>~80%</strong> 走民主扩散路径，但权力追逐仍强</td></tr>
+          <tr><td><strong>经济分配</strong></td><td>更倾向<strong>公民财富基金式所有权</strong>而非纯 UBI 现金；劳动力→资本杠杆转移；挪威主权基金、尼古拉·唐根课堂联系</td></tr>
+          <tr><td><strong>算力分配</strong></td><td>比 UBI/资本主义讨论更少被谈，却可能是关键；算力短缺如「计算机时代的 COVID」；H100/Blackwell 长期预订 vs 现货价差曾达 ~5×；若智能足够便宜需求<strong>无上限</strong>，短缺或结构性永久</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>若 AI 继续指数发展：ChatGPT 发布已 3.5 年，<strong>再走同样 3.5 年世界将截然不同</strong>——社会对此接受度仍不足。</p>
+
+    <!-- 十 -->
+    <h2 id="sec-fde"><span class="sec-num">十</span>FDE / ToB 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 落到客户现场</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>客户叙事</strong>：卖「夜间照明」——具体业务结果（审计通过率、工单闭环），非「大模型能力」本身</span></li>
+      <li><span class="ix">ii</span><span><strong>爆款识别</strong>：API 阶段用户用 key 聊天 = 需求信号；ChatGPT 式「良性紧急」= ToB POC 突然全公司要用的预案</span></li>
+      <li><span class="ix">iii</span><span><strong>推理即产品</strong>：前沿实验室变推理公司 → 交付侧应把<strong>推理成本、延迟、并发</strong>纳入 SLA 与定价，而非只卖 token 配额</span></li>
+      <li><span class="ix">iv</span><span><strong>算力瓶颈</strong>：客户「永远觉得不够」可能是结构性的；FDE 方案需含<strong>分级智能</strong>（小模型路由、批处理、缓存）而非无限堆 frontier 调用</span></li>
+      <li><span class="ix">v</span><span><strong>集中风险</strong>：ToB 采购若默认 2–3 家模型商 → 帮客户设计<strong>多供应商 + 可迁移 eval</strong> 是治理卖点</span></li>
+      <li><span class="ix">vi</span><span><strong>教育/组织</strong>：企业内部 AI 培训若仍防作弊式禁用，会重复教育系统滞后——应 redesign 为「必须用 AI 才能完成但需深度思考」的项目制</span></li>
+    </ol>
+
+    <!-- 十一 -->
+    <h2 id="sec-open"><span class="sec-num">十一</span>待验证问题<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 留给后续</p>
+
+    <ol class="threads">
+      <li>「50 万 A100 等效实习生」时间表与 GPT-5/架构重写如何耦合？</li>
+      <li>推理栈突破能否在 12–18 个月内让单位智能成本下降一个数量级？</li>
+      <li>公用事业叙事在 ToB 合同里应具象成什么 SKU（agent-hours？outcome credits？）？</li>
+      <li>算力永久短缺下，OpenAI 定价策略会否倒逼客户自建推理？</li>
+      <li>80% 民主路径 vs 20% 集中风险——监管/开源动态如何改变这组概率？</li>
+    </ol>
+
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-06-24 初稿 · 视觉重构版 · 视频 F_7M4Hc-usM
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../../../frontier/index.html">← Frontier 索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

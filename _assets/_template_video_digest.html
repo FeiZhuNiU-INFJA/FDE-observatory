@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{TITLE}} · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="{{ASSETS_REL}}/insight.css" />
+{{ACCENT_STYLE}}
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="{{INDEX_REL}}">← 首页</a></span>
+      {{TITLE}}<span class="brand-sub">{{BRAND_SUB}}</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>{{TITLE}}</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">{{SUBTITLE}}</p>
+      <div class="doc-meta">
+        {{META_SPANS}}
+      </div>
+      {{VIDEO_LINK}}
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>{{LEDE}}
+    </div>
+
+    {{BODY}}
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：{{REVISION}}
+    </p>
+
+    <div class="doc-footer">
+      {{FOOTER}}
+    </div>
+
+  </article>
+</div>
+
+<script src="{{ASSETS_REL}}/insight.js"></script>
+</body>
+</html>

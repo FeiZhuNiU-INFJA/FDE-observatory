@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>2028 Agent 五种形态：从 Artifact 到 Presence · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* 本页强调色（indigo）+ 暗色变体；其余设计令牌、字体、底纹、排版全部来自共享 insight.css */
+  :root {
+    --accent: #4f46e5;
+    --accent-deep: #4338ca;
+    --accent-ink: #312e81;
+    --accent-soft: color-mix(in srgb, #4f46e5 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #818cf8;
+    --accent-soft: color-mix(in srgb, #4f46e5 24%, #1a1a22);
+    --accent-ink: #c7d2fe;
+  }
+
+  /* ═════════ 视觉一：范式转移 Artifact → Presence ═════════ */
+  .paradigm { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0; }
+  @media (max-width: 760px) { .paradigm { grid-template-columns: 1fr; } .paradigm-arrow { transform: rotate(90deg); } }
+  .paradigm-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.3rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .8rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .paradigm-side:hover { transform: translateY(-3px); }
+  .paradigm-eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .paradigm-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .paradigm-old { border-color: var(--border-strong); }
+  .paradigm-old .paradigm-eyebrow { color: var(--text-muted); }
+  .paradigm-old .paradigm-eyebrow .dot { background: var(--text-muted); }
+  .paradigm-new { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .paradigm-new .paradigm-eyebrow { color: var(--accent); }
+  .paradigm-new .paradigm-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .paradigm-vis { display: flex; justify-content: center; }
+  .paradigm-vis svg { width: 100%; max-width: 360px; height: auto; }
+  .paradigm-cap { font-size: .92rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .paradigm-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .35rem; color: var(--accent); padding: 0 .3rem;
+  }
+  .paradigm-arrow .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .paradigm-arrow .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 760px) { .paradigm-arrow .lab { writing-mode: horizontal-tb; } }
+  .paradigm-vis text { font-family: var(--mono); }
+  .pulse { animation: pp 1.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes pp { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+
+  /* ═════════ 视觉二：五形态全景 ═════════ */
+  .morphs { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 2rem; align-items: center; margin: 1.8em 0; }
+  @media (max-width: 880px) { .morphs { grid-template-columns: 1fr; } .morphs-emblem { max-width: 380px; margin: 0 auto; } }
+  .morphs-emblem { width: 100%; }
+  .morphs-emblem svg { width: 100%; height: auto; display: block; }
+  .morphs-emblem text { font-family: var(--mono); }
+  .morphs-emblem text.disp { font-family: var(--display); font-weight: 700; }
+  .orbit { transform-origin: 200px 200px; animation: orbit 9s linear infinite; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  .morph-cards { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; margin: 1.6em 0 .6em; }
+  @media (max-width: 980px) { .morph-cards { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .morph-cards { grid-template-columns: repeat(2, 1fr); } }
+  .mcard {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem .9rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .mcard::after { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--mc, var(--accent)); transform: scaleY(0); transform-origin: top; transition: transform .25s; }
+  .mcard:hover { transform: translateY(-4px); border-color: var(--mc, var(--accent)); box-shadow: 0 10px 26px rgba(0,0,0,.07); }
+  .mcard:hover::after { transform: scaleY(1); }
+  .mcard .mn { font-family: var(--display); font-style: italic; font-weight: 500; font-size: .95rem; color: var(--mc, var(--accent)); }
+  .mcard .micon { color: var(--mc, var(--accent)); margin: .35rem 0 .5rem; }
+  .mcard .micon svg { width: 30px; height: 30px; }
+  .mcard .mname { font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--text); margin: 0; }
+  .mcard .mname .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .62rem; letter-spacing: .05em; color: var(--text-muted); margin-top: .1em; }
+  .mcard .mrole { font-size: .8rem; color: var(--text-soft); margin: .35rem 0 .15rem; line-height: 1.45; }
+  .mcard .mstar { font-family: var(--mono); font-size: .68rem; color: var(--mc, var(--accent)); letter-spacing: .04em; }
+  .mcard.m1 { --mc: #4f46e5; } .mcard.m2 { --mc: #0891b2; } .mcard.m3 { --mc: #059669; } .mcard.m4 { --mc: #d97706; } .mcard.m5 { --mc: #db2777; }
+
+  /* 形态详节 */
+  .morph-detail { border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.4rem; margin: 1.4em 0; background: color-mix(in srgb, var(--surface) 60%, transparent); border-left: 4px solid var(--mc, var(--accent)); }
+  .morph-detail.md1 { --mc: #4f46e5; } .morph-detail.md2 { --mc: #0891b2; } .morph-detail.md3 { --mc: #059669; } .morph-detail.md4 { --mc: #d97706; } .morph-detail.md5 { --mc: #db2777; }
+  .morph-detail .md-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; margin-bottom: .5rem; }
+  .morph-detail .md-num { font-family: var(--display); font-weight: 700; font-size: 1.3rem; color: var(--mc); line-height: 1; }
+  .morph-detail .md-title { font-family: var(--display); font-weight: 700; font-size: 1.12rem; color: var(--text); margin: 0; }
+  .morph-detail .md-title .en { font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .66rem; color: var(--text-muted); margin-left: .3em; }
+  .morph-detail .md-metaphor { font-style: italic; color: var(--mc); font-size: .9rem; margin: 0 0 .6rem; }
+  .morph-detail .md-row { display: grid; grid-template-columns: auto 1fr; gap: .6rem 1rem; font-size: .9rem; margin-top: .5rem; }
+  .morph-detail .md-row dt { font-family: var(--mono); font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); padding-top: .15em; white-space: nowrap; }
+  .morph-detail .md-row dd { margin: 0; color: var(--text-soft); line-height: 1.5; }
+  .morph-detail .md-signal { font-size: .82rem; color: var(--mc); margin-top: .6rem; padding-top: .5rem; border-top: 1px dashed var(--border-strong); }
+  .morph-detail .md-signal b { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; }
+
+  /* ═════════ 视觉三：演进时间线 ═════════ */
+  .evo { margin: 1.8em 0; }
+  .evo-axis { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; position: relative; }
+  @media (max-width: 980px) { .evo-axis { grid-template-columns: 1fr; } }
+  .evo-col {
+    border: 1px solid var(--border); border-radius: 12px; padding: .9rem .85rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .5rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .evo-col:hover { transform: translateY(-3px); border-color: var(--ec, var(--accent)); }
+  .evo-col .eh { display: flex; align-items: center; gap: .5rem; }
+  .evo-col .en { font-family: var(--display); font-weight: 700; font-size: .92rem; color: var(--text); }
+  .evo-col .edot { width: 10px; height: 10px; border-radius: 50%; background: var(--ec, var(--accent)); flex-shrink: 0; }
+  .evo-col .enow { font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); margin: .2rem 0; display: inline-block; border: 1px solid var(--border); padding: .12em .45em; border-radius: 4px; align-self: flex-start; }
+  .evo-col .ealias { font-size: .78rem; color: var(--text-soft); line-height: 1.45; }
+  .evo-col .ejump {
+    margin-top: auto; padding-top: .5rem; border-top: 1px dashed var(--border-strong);
+    font-size: .78rem; color: var(--text); line-height: 1.45;
+  }
+  .evo-col .ejump b { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--ec, var(--accent)); display: block; margin-bottom: .15em; }
+  .evo-col.c1 { --ec: #4f46e5; } .evo-col.c2 { --ec: #0891b2; } .evo-col.c3 { --ec: #059669; } .evo-col.c4 { --ec: #d97706; } .evo-col.c5 { --ec: #db2777; }
+  .evo-rail { margin-top: 1rem; display: flex; align-items: center; gap: .7rem; justify-content: center; font-family: var(--mono); font-size: .76rem; color: var(--text-muted); letter-spacing: .06em; }
+  .evo-rail .gly { color: var(--accent); font-size: 1.1rem; }
+
+  /* 组合套餐 */
+  .pack-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.6em 0; }
+  @media (max-width: 820px) { .pack-grid { grid-template-columns: 1fr; } }
+  .pack { border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem; background: var(--surface); border-top: 3px solid var(--accent); display: flex; flex-direction: column; gap: .5rem; }
+  .pack h4 { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0; }
+  .pack .pform { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--accent); }
+  .pack .pprice { font-size: .85rem; color: var(--text-soft); margin-top: auto; padding-top: .5rem; border-top: 1px dashed var(--border-strong); }
+
+  /* FDE 映射 */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0; }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse, .orbit, .evo-rail .gly { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      2028 Agent 五种形态：从 Artifact 到 Presence<span class="brand-sub">跨市场 · 前瞻推演 · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>2028 Agent 五种形态<br /><span class="en">From Artifact to Presence</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;"><em style="background:none;padding:0;font-style:italic;color:var(--accent);">从「造一个 App」到「孵化一种在场」</em> · 五种 2027–2028 可能的存在形态 · 今天已有何种子、如何长成</p>
+      <div class="doc-meta">
+        <span>2026-05</span>
+        <span>跨市场</span>
+        <span>Agent 形态</span>
+        <span>前瞻推演</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5</div><div class="lab">种 2028<br />存在形态</div></div>
+        <div class="hero-stat"><div class="num">★★</div><div class="lab">最高当前成熟度<br />多数仍 ★ 试点</div></div>
+        <div class="hero-stat"><div class="num">2028</div><div class="lab">关键跃迁窗口<br />2027–2028</div></div>
+        <div class="hero-stat"><div class="num">3</div><div class="lab">建议优先押注<br />Outcome·Continuity·World</div></div>
+      </div>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>2024–2026 的 Agent 是 <strong>Artifact</strong>——你打开它、它交付一个产物、你关闭它，按 seat/token 付费。2027–2028 的范式是 <strong>Presence</strong>——你订阅一个<strong>结果</strong>、它持续<strong>在场</strong>、跨主体<strong>缔约</strong>，按 outcome 付费。由此衍生五种存在形态：<strong>意图订阅体、认知连续性体、世界模型体、A2A 社会、感官网格体</strong>。关键判断：OS/Factory 仍是 2026–2027 的<strong>基础设施</strong>（runtime、连接器、治理），五种形态是<strong>产品与社会层</strong>的跃迁；Factory 若进化，应从「造 App」转向「孵化 outcome 契约 + world schema + 连续性包」。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>范式</strong>：Artifact（打开→任务→关闭）→ Presence（订阅→事件→批准）；付费从 seat/token 到 outcome</li>
+        <li><strong>五形态</strong>：意图订阅体（订结果）·认知连续性体（第二自我）·世界模型体（活地图）·A2A 社会（Agent 缔约）·感官网格体（事件驱动在场）</li>
+        <li><strong>成熟度</strong>：多数仍 ★～★★ 试点/早期；2028 跃迁依赖 契约/记忆/世界模型/信誉/传感 五类基础设施成熟</li>
+        <li><strong>组合</strong>：五形态非互斥——ToB 套餐 = 结果订阅 + 连续性 + 世界切片，聊天只是入口之一</li>
+        <li><strong>FDE 押注</strong>：2027 前优先 <strong>Outcome + Continuity + World（单切片）</strong>；A2A/Mesh 跟协议与硬件成熟再进</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>背景：从「多一个聊天窗口」说起<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">The Shift · 为什么需要新形态</p>
+
+    <p>企业今天买 Agent，多半是「多了一个聊天窗口」——报表多了，KPI 未必动；按人头、按 token 越用越亏，不敢承诺效果。这条路的天花板是：<strong>用户买的不是对话，是结果</strong>。一旦结果可定义、可验证、可定价，Agent 的存在形态就会从「你打开的工具」变成「持续替你盯到底的在场面」。</p>
+
+    <p>由此延伸出一个问题：如果 OS/Factory（怎么造、怎么管 Agent）是地基，那么 <strong>2027–2028 客户真正感受到的产品长什么样、方案怎么卖</strong>？答案是五种「在场」形态——它们不是更聪明的对话框，而是把<strong>结果契约、认知连续性、世界模型、Agent 间缔约、传感触发</strong>分别做成可订阅的存在。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-paradigm"><span class="sec-num">二</span>核心范式：Artifact → Presence<a href="#sec-paradigm" class="anchor">#</a></h2>
+    <p class="kicker">Paradigm Shift · 单位、交互、付费、壁垒全变</p>
+
+    <p>理解五形态之前，先锁定范式转移本身。2024–2026 的 Agent 围绕 <strong>Artifact</strong>（产物）组织：构建部署一个 Agent 应用，用对话或 Workflow 驱动，按租户 RBAC 管控。2027–2028 围绕 <strong>Presence</strong>（在场）组织：订阅一个结果，事件触发持续行动，跨主体用信誉缔约。</p>
+
+    <!-- ▼ 视觉一：Artifact → Presence -->
+    <div class="paradigm reveal">
+      <div class="paradigm-side paradigm-old">
+        <span class="paradigm-eyebrow"><span class="dot"></span>2024–2026 · Artifact</span>
+        <div class="paradigm-vis">
+          <svg viewBox="0 0 360 130" role="img" aria-label="Artifact：打开-任务-关闭的一次性产物">
+            <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="6" y="6" width="348" height="118" rx="8" fill="var(--surface)" stroke="var(--border-strong)"/>
+              <circle cx="18" cy="18" r="2.2"/><circle cx="27" cy="18" r="2.2"/><circle cx="36" cy="18" r="2.2"/>
+              <g transform="translate(30,50)">
+                <rect x="0" y="0" width="300" height="60" rx="6" fill="var(--bg-soft)" stroke="var(--border)"/>
+                <text x="12" y="20" font-size="9" fill="var(--text)" stroke="none">打开 Agent 应用</text>
+                <line x1="12" y1="32" x2="180" y2="32" stroke="var(--text-muted)" stroke-width="1"/>
+                <line x1="12" y1="42" x2="150" y2="42" stroke="var(--text-muted)" stroke-width="1"/>
+                <text x="200" y="38" font-size="8" fill="var(--text-muted)" stroke="none">→ 交付产物</text>
+                <text x="12" y="54" font-size="7.5" fill="var(--text-muted)" stroke="none">关闭 · 按 seat/token 计费</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <p class="paradigm-cap">单位是<strong>应用/模板</strong>，交互是<strong>打开→任务→关闭</strong>，壁垒在连接器 + playbook。</p>
+      </div>
+
+      <div class="paradigm-arrow">
+        <span class="gly">→</span>
+        <span class="lab">范式转移</span>
+      </div>
+
+      <div class="paradigm-side paradigm-new">
+        <span class="paradigm-eyebrow"><span class="dot"></span>2027–2028 · Presence</span>
+        <div class="paradigm-vis">
+          <svg viewBox="0 0 360 130" role="img" aria-label="Presence：订阅结果-持续在场-跨主体缔约">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="6" y="6" width="348" height="118" rx="8" fill="var(--surface)" stroke="var(--accent)"/>
+              <circle cx="18" cy="18" r="2.2"/><circle cx="27" cy="18" r="2.2"/><circle cx="36" cy="18" r="2.2"/>
+              <rect x="48" y="13" width="250" height="11" rx="5.5" fill="var(--accent-soft)" stroke="none"/>
+              <text x="54" y="21.5" font-size="7" fill="var(--accent)" stroke="none">订阅 outcome · 持续在场 · 跨主体信誉</text>
+              <g class="pulse"><circle cx="334" cy="18.5" r="2.6" fill="var(--accent)" stroke="none"/></g>
+              <text x="312" y="21.5" font-size="6.5" fill="var(--accent)" stroke="none">LIVE</text>
+              <g transform="translate(30,46)">
+                <circle cx="20" cy="20" r="18" stroke-width="1.4" stroke-dasharray="3 4"/>
+                <g class="pulse"><circle cx="20" cy="2" r="4" fill="var(--accent)" stroke="none"/></g>
+                <text x="20" y="24" text-anchor="middle" font-size="9" fill="var(--accent-ink)" stroke="none">事件</text>
+                <line x1="44" y1="20" x2="78" y2="20"/>
+                <path d="M78 16 l7 4 l-7 4 z" fill="var(--accent)" stroke="none"/>
+                <rect x="88" y="8" width="80" height="24" rx="5" fill="var(--accent-soft)" stroke="var(--accent)"/>
+                <text x="128" y="23" text-anchor="middle" font-size="7.5" fill="var(--accent)" stroke="none">批准/执行</text>
+                <line x1="172" y1="20" x2="200" y2="20"/>
+                <path d="M200 16 l7 4 l-7 4 z" fill="var(--accent)" stroke="none"/>
+                <text x="212" y="14" font-size="7" fill="var(--text)" stroke="none">达成 → 结算</text>
+                <text x="212" y="26" font-size="6.5" fill="var(--text-muted)" stroke="none">未达标零费用</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <p class="paradigm-cap">单位是<strong>委托关系/认知体/世界切片</strong>，交互是<strong>订阅→事件→批准</strong>，壁垒在连续性 + 世界模型 + 信誉。</p>
+      </div>
+    </div>
+
+    <p>四个维度的变化值得逐条记住——它决定了未来的产品怎么设计、怎么收费、护城河在哪：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>Artifact（OS/Factory）</th><th>Presence（五种形态）</th></tr></thead>
+        <tbody>
+          <tr><td>单位</td><td>Agent 应用 / 模板</td><td>委托关系 / 认知体 / 世界切片</td></tr>
+          <tr><td>交互</td><td>打开 → 任务 → 关闭</td><td>订阅 → 事件 → 批准</td></tr>
+          <tr><td>付费</td><td>Seat / Token</td><td>Outcome / saved hours / 缔约手续费</td></tr>
+          <tr><td>壁垒</td><td>连接器 + playbook</td><td>连续性 + 世界模型 + 信誉</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-morphs"><span class="sec-num">三</span>五种形态全景<a href="#sec-morphs" class="anchor">#</a></h2>
+    <p class="kicker">Five Forms · 各占一个「在场」维度</p>
+
+    <p>Presence 不是单一产品，而是五个正交维度的存在形态。它们共享「持续在场 + 事件驱动」的底座，但各自押注不同的基础设施：结果契约、认知主权、世界模型、Agent 间协议、传感网格。</p>
+
+    <!-- ▼ 视觉二：五形态全景 -->
+    <div class="morphs reveal">
+      <div class="morphs-emblem">
+        <svg viewBox="0 0 400 400" role="img" aria-label="五形态全景：中心 Presence，五个形态节点">
+          <defs>
+            <radialGradient id="hub2" cx="50%" cy="42%" r="60%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".18"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <circle cx="200" cy="200" r="138" stroke-width="1.5" opacity=".3"/>
+            <circle cx="200" cy="200" r="138" stroke-width="2.5" stroke-dasharray="6 8" opacity=".5"/>
+            <g class="orbit" style="color:#4f46e5"><circle cx="200" cy="62" r="6" fill="currentColor" stroke="none"/></g>
+          </g>
+          <circle cx="200" cy="200" r="96" fill="url(#hub2)"/>
+          <circle cx="200" cy="200" r="92" fill="none" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="2 5"/>
+          <text class="disp" x="200" y="196" text-anchor="middle" font-size="24" style="fill:var(--accent-ink)">Presence</text>
+          <text x="200" y="218" text-anchor="middle" font-size="10" letter-spacing="2" style="fill:var(--text-muted)">持续在场</text>
+          <g font-size="11" font-weight="700">
+            <g><circle cx="200" cy="62" r="20" stroke-width="2" style="fill:var(--surface);stroke:#4f46e5"/><text x="200" y="66" text-anchor="middle" fill="#4f46e5" stroke="none">1</text></g>
+            <g><circle cx="324" cy="160" r="20" stroke-width="2" style="fill:var(--surface);stroke:#0891b2"/><text x="324" y="164" text-anchor="middle" fill="#0891b2" stroke="none">2</text></g>
+            <g><circle cx="276" cy="305" r="20" stroke-width="2" style="fill:var(--surface);stroke:#059669"/><text x="276" y="309" text-anchor="middle" fill="#059669" stroke="none">3</text></g>
+            <g><circle cx="124" cy="305" r="20" stroke-width="2" style="fill:var(--surface);stroke:#d97706"/><text x="124" y="309" text-anchor="middle" fill="#d97706" stroke="none">4</text></g>
+            <g><circle cx="76" cy="160" r="20" stroke-width="2" style="fill:var(--surface);stroke:#db2777"/><text x="76" y="164" text-anchor="middle" fill="#db2777" stroke="none">5</text></g>
+          </g>
+        </svg>
+      </div>
+      <div>
+        <p style="font-size:.92rem;color:var(--text-soft);margin:0 0 .8rem;">五个节点围绕 Presence，各押注一类基础设施。当前多数处于 ★～★★ 试点/早期，2028 跃迁窗口在 2027–2028。</p>
+        <p style="font-size:.82rem;color:var(--text-muted);margin:0;font-family:var(--mono);">★ = 研究/POC · ★★ = 试点/早期 · 跃迁 = 2028 关键能力</p>
+      </div>
+    </div>
+
+    <div class="morph-cards reveal">
+      <article class="mcard m1">
+        <div class="mn">01</div>
+        <div class="micon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l-6 6 6 6"/><circle cx="19" cy="18" r="2.4"/></svg></div>
+        <h4 class="mname">意图订阅体<span class="en">Outcome Subscriber</span></h4>
+        <p class="mrole">订的是结果，不是对话</p>
+        <span class="mstar">★★ 试点</span>
+      </article>
+      <article class="mcard m2">
+        <div class="mn">02</div>
+        <div class="micon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 4.8-9 4.8L3 7.8z"/><path d="M3 12.2l9 4.8 9-4.8"/><path d="M3 16.6l9 4.8 9-4.8"/></svg></div>
+        <h4 class="mname">认知连续性体<span class="en">Continuity Agent</span></h4>
+        <p class="mrole">可携带的第二自我</p>
+        <span class="mstar">★★ 早期</span>
+      </article>
+      <article class="mcard m3">
+        <div class="mn">03</div>
+        <div class="micon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+        <h4 class="mname">世界模型体<span class="en">World-model Agent</span></h4>
+        <p class="mrole">活的世界切片上推理</p>
+        <span class="mstar">★ 垂直 POC</span>
+      </article>
+      <article class="mcard m4">
+        <div class="mn">04</div>
+        <div class="micon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="19" r="2.6"/><path d="M8.2 13.3l7.6 4.4M15.8 6.3L8.2 10.7"/></svg></div>
+        <h4 class="mname">A2A 社会<span class="en">A2A Ecology</span></h4>
+        <p class="mrole">Agent 彼此缔约</p>
+        <span class="mstar">★★ 协议元年</span>
+      </article>
+      <article class="mcard m5">
+        <div class="mn">05</div>
+        <div class="micon"><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l2 12h12l2-12"/><path d="M9 10l2 2 4-4"/><path d="M3 6h18"/></svg></div>
+        <h4 class="mname">感官网格体<span class="en">Sensory Mesh Agent</span></h4>
+        <p class="mrole">事件驱动的在场</p>
+        <span class="mstar">★ 研究/硬件</span>
+      </article>
+    </div>
+
+    <h3 id="morph-1" style="color:var(--text);">逐个形态</h3>
+
+    <div class="morph-detail md1">
+      <div class="md-head"><span class="md-num">1</span><h4 class="md-title">意图订阅体<span class="en">Outcome Subscriber</span></h4></div>
+      <p class="md-metaphor">比喻：保洁按干净付钱——客户买的是「事办成了」，不是「聊得开心」。</p>
+      <dl class="md-row">
+        <dt>定义</dt><dd>用户声明<strong>可验证的结果契约</strong>，系统负责分解、租用子 Agent、调度工具、在 checkpoint 请求人类授权，按结果达成计费或担责。</dd>
+        <dt>现状种子</dt><dd>Anthropic Outcomes API（rubric + 独立 grader + 自纠正）、Managed Agents、OpenAI Operator（cron）、Workspace Agents、process-based pricing（$1.50/工单）、ARS 支付担保。</dd>
+        <dt>关键差距</dt><dd>契约语言缺长期 KPI；清算与仲裁无标准；与采购合同/AP2 未衔接；授权链缺分级委托宪法。</dd>
+        <dt>实现路径</dt><dd>Contract DSL（KPI/截止/例外/数据源）→ 分解器 → 第三方 Grader 市场 → Ledger（达成率/退款/AP2）→ Gate（P0 自动 / P1 审批 / P2 禁止）。</dd>
+      </dl>
+      <p class="md-signal"><b>2028 跃迁</b>结果定价 + 可执行契约 + 清算仲裁 · <b>观察信号</b>头部云发 Outcome Marketplace、采购合同出现 Agent SLA 条款、独立 grader 成为 SKU。</p>
+    </div>
+
+    <div class="morph-detail md2">
+      <div class="md-head"><span class="md-num">2</span><h4 class="md-title">认知连续性体<span class="en">Continuity Agent</span></h4></div>
+      <p class="md-metaphor">比喻：换机数据跟着走——经验跟着岗位走，不锁死在某个工具里。</p>
+      <dl class="md-row">
+        <dt>定义</dt><dd>跨 session、产品、模型商，持续维护用户/角色的认知状态（偏好、决策史、文风、失败教训），形成可授权、可导出、可继承的「第二自我」。</dd>
+        <dt>现状种子</dt><dd>Anthropic Memory Import（ChatGPT/Gemini JSON → Claude）、Onoma 跨厂商 memory API、Dreaming（批处理 1–100 sessions 可审核）、CLAUDE.md/Scope 项目连续性。</dd>
+        <dt>关键差距</dt><dd>无 Continuity Pack 统一格式；导入 ≠ 细粒度分享；缺组织 vs 个人双层宪法；进化缺回归测试。</dd>
+        <dt>实现路径</dt><dd>Continuity Pack（身份 + episodic/semantic/procedural + 元认知，签名版本化）→ 睡眠流水线（去重/矛盾检测/提炼 skill）→ 晋升闸门（P0/P1/P2）→ 可移植导入导出 → 组织交接（认知体副本 + 范围限制 + 审计）。</dd>
+      </dl>
+      <p class="md-signal"><b>2028 跃迁</b>用户主权记忆 + 授权继承 + 组织认知交接 · <b>观察信号</b>开放 Continuity Pack 标准、企业岗位认知体 SKU、Dreaming 成默认后台。</p>
+    </div>
+
+    <div class="morph-detail md3">
+      <div class="md-head"><span class="md-num">3</span><h4 class="md-title">世界模型体<span class="en">World-model Agent</span></h4></div>
+      <p class="md-metaphor">比喻：导航心里有路——脑子里有张业务实况表，而不是每次重新查接口。</p>
+      <dl class="md-row">
+        <dt>定义</dt><dd>维护<strong>可推理的活世界切片</strong>（实体、关系、状态、因果），API 主要用于校准真值与执行副作用。企业侧即「订单—库存—运力—客户」联合状态。</dd>
+        <dt>现状种子</dt><dd>Traversal Production World Model（遥测 + 因果，百万实体）、DigitalTwinz 数字孪生、Geminos KnowledgeWay 知识图谱、ODEI 宪法化 ontology；主流仍是 RAG + Tool + ERP（每次重拉）。</dd>
+        <dt>关键差距</dt><dd>构建成本高、冷启动需 FDE；图推理 vs LLM 规划缺标准接口；ERP/传感器/人工录入需 truth maintenance；个人生活世界模型几乎空白。</dd>
+        <dt>实现路径</dt><dd>业务事件流 → 摄入对齐 → 世界图（行业 ontology + 状态机）→ 模拟（what-if）→ 图上规划的 Agent → 阈值触发 API 校准写回。落地顺序：单切片 → 最小 ontology → 只建议不写 → 模拟与跨切片。</dd>
+      </dl>
+      <p class="md-signal"><b>2028 跃迁</b>事件驱动状态机 + 因果模拟 + 行业 ontology · <b>观察信号</b>World Graph 与 Agent Studio 并列 SKU、招标从 RAG 转向「状态机 + 模拟」。</p>
+    </div>
+
+    <div class="morph-detail md4">
+      <div class="md-head"><span class="md-num">4</span><h4 class="md-title">A2A 社会<span class="en">Agent-to-Agent Ecology</span></h4></div>
+      <p class="md-metaphor">比喻：比价下单你只付款——机器先谈，人只批大事。</p>
+      <dl class="md-row">
+        <dt>定义</dt><dd>主路径是 <strong>Agent ↔ Agent</strong>（发现、委托、谈判、履约、结算）；人类是立宪者、仲裁者、法律责任承担者。协议：A2A task + AP2 mandate + 信誉分。</dd>
+        <dt>现状种子</dt><dd>Google A2A v1.0（Agent Card + Task，150+ 组织）、AP2 v0.2（Intent/Cart/Payment Mandate）、MCP（Agent↔工具）、Copilot/Bedrock/LangGraph 宣称支持。</dd>
+        <dt>关键差距</dt><dd>谈判语义缺还价/要约标准；无跨平台信誉系统；责任链（平台/部署方/模型方/用户谁赔）未定；需联邦世界模型；国内支付路径不同。</dd>
+        <dt>实现路径</dt><dd>Agent Card 发现 → A2A Task + Artifact 交换 → RFQ/Quote 商务扩展 → AP2 Mandate 支付链 → 信誉 registry（完成率/争议率）→ 内网网关联邦。国内可走飞书/钉钉/微信支付宝托管代扣，不必等全球协议。</dd>
+      </dl>
+      <p class="md-signal"><b>2028 跃迁</b>信誉 + 支付 + 责任链产品化 · <b>观察信号</b>A2A negotiation/contract 扩展、Agent 错误责任险 SKU、Agent 店铺与 Card 搜索引擎。</p>
+    </div>
+
+    <div class="morph-detail md5">
+      <div class="md-head"><span class="md-num">5</span><h4 class="md-title">感官网格体<span class="en">Sensory Mesh Agent</span></h4></div>
+      <p class="md-metaphor">比喻：烟感响了才报警——有事才找你，聊天框降为批准台。</p>
+      <dl class="md-row">
+        <dt>定义</dt><dd>以<strong>多模态传感事件流</strong>为主输入，阈值触发<strong>主动</strong>行动；对话 UI 降为批准台。</dd>
+        <dt>现状种子</dt><dd>ContextAgent（NeurIPS 2025，可穿戴→主动调工具）、ProAgent（AR 眼镜 + 边缘，+33% 主动预测）、Meta Ray-Ban 等硬件；企业 IoT 多无 LLM Agent 层；Operator cron/Workspace 定时属弱主动。</dd>
+        <dt>关键差距</dt><dd>连续录音录像的隐私合规（个保法/GDPR）；缺 interruption budget 打扰成本；端云实时 multimodal 贵；主动建议难对赌 SLA。</dd>
+        <dt>实现路径</dt><dd>传感网格 → 边缘脱敏（敏感数据不出端）→ 事件总线（统一 UserContextEvent）→ 打扰策略（价值 × 紧急 − 打扰成本，每日配额）→ 轻量情境图 → 批准 UX（卡片「将要做 X，因为 Y」）→ MCP/A2A 执行。</dd>
+      </dl>
+      <p class="md-signal"><b>2028 跃迁</b>可穿戴 + 阈值策略 + 批准式 UI · <b>观察信号</b>OS 级 Agent 通知类别、可穿戴第三方 Agent SDK、连续感知 AI 法规。</p>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-evo"><span class="sec-num">四</span>演进路径：从今天的种子到 2028<a href="#sec-evo" class="anchor">#</a></h2>
+    <p class="kicker">Evolution · 五形态各自的 2026→2028 跃迁</p>
+
+    <p>五形态不是同时成熟。下表把每个形态的<strong>当前种子</strong>和<strong>2028 跃迁关键</strong>并排——它既是路线图，也是观察清单：哪条信号出现，说明那个形态在加速。</p>
+
+    <!-- ▼ 视觉三：演进时间线 -->
+    <div class="evo reveal">
+      <div class="evo-axis">
+        <div class="evo-col c1">
+          <div class="eh"><span class="edot"></span><span class="en">意图订阅体</span></div>
+          <span class="enow">2026 ★★ 试点</span>
+          <p class="ealias">Outcomes API · 按流程定价 · Workspace Agents</p>
+          <div class="ejump"><b>2028 跃迁</b>结果定价 + 可执行契约 + 清算仲裁</div>
+        </div>
+        <div class="evo-col c2">
+          <div class="eh"><span class="edot"></span><span class="en">认知连续性体</span></div>
+          <span class="enow">2026 ★★ 早期</span>
+          <p class="ealias">Memory Import · Dreaming · Onoma 跨厂商</p>
+          <div class="ejump"><b>2028 跃迁</b>主权记忆 + 授权继承 + 组织交接</div>
+        </div>
+        <div class="evo-col c3">
+          <div class="eh"><span class="edot"></span><span class="en">世界模型体</span></div>
+          <span class="enow">2026 ★ 垂直 POC</span>
+          <p class="ealias">Production World Model · 数字孪生 · GraphRAG</p>
+          <div class="ejump"><b>2028 跃迁</b>状态机 + 因果模拟 + 行业 ontology</div>
+        </div>
+        <div class="evo-col c4">
+          <div class="eh"><span class="edot"></span><span class="en">A2A 社会</span></div>
+          <span class="enow">2026 ★★ 协议元年</span>
+          <p class="ealias">A2A v1.0 · AP2 v0.2 · MCP 互补</p>
+          <div class="ejump"><b>2028 跃迁</b>信誉 + 支付 + 责任链产品化</div>
+        </div>
+        <div class="evo-col c5">
+          <div class="eh"><span class="edot"></span><span class="en">感官网格体</span></div>
+          <span class="enow">2026 ★ 研究/硬件</span>
+          <p class="ealias">ContextAgent · ProAgent · Ray-Ban 硬件</p>
+          <div class="ejump"><b>2028 跃迁</b>可穿戴 + 阈值策略 + 批准式 UI</div>
+        </div>
+      </div>
+      <div class="evo-rail"><span class="gly">→</span> 2026 种子 / 试点 → 2027–2028 跃迁 · 跃迁依赖 契约·记忆·世界模型·信誉·传感 五类基础设施</div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">交叉</div>
+      <p style="margin:.3em 0;">五形态互相借力：Outcome 订阅驱动<strong>监测指标</strong>，感官网格提供<strong>早触发</strong>；世界模型给 Outcome 提供<strong>进度真值</strong>，给 A2A 提供<strong>联邦边界</strong>；连续性把任务级进展沉淀进<strong>认知体</strong>。组合价值 > 单形态价值。</p>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-combine"><span class="sec-num">五</span>组合：五形态不是互斥的<a href="#sec-combine" class="anchor">#</a></h2>
+    <p class="kicker">Composition · ToB 套餐怎么搭</p>
+
+    <p>客户不会单买某个形态，而是买<strong>组合</strong>。典型 ToB 套餐把两三个形态捆成一个可验收、可复用的方案——聊天只是入口之一，真正卖的是「能盯 KPI、能沉淀 SOP、能接实况数据的一整套」。</p>
+
+    <div class="pack-grid reveal">
+      <div class="pack">
+        <span class="pform">结果订阅 + 评测</span>
+        <h4>可验收 AI 劳力</h4>
+        <p style="font-size:.85rem;color:var(--text-soft);margin:0;">客服「一次解决」、财务「对账本周清零」、合同「高风险 100% 标出」。今天就能卖：Rubric + 独立评测 + 合同验收附件。</p>
+        <p class="pprice">报价：试点 seat + 按闭环加价</p>
+      </div>
+      <div class="pack">
+        <span class="pform">第二大脑 + 审批</span>
+        <h4>岗位知识资产</h4>
+        <p style="font-size:.85rem;color:var(--text-soft);margin:0;">销售（客户偏好）、客服（标准答）、法务（红线）、研发（架构约定）。记忆归客户、可导出 = 招标加分项。</p>
+        <p class="pprice">报价：按部门记忆容量</p>
+      </div>
+      <div class="pack">
+        <span class="pform">活地图 + 告警感应</span>
+        <h4>运营实况助手</h4>
+        <p style="font-size:.85rem;color:var(--text-soft);margin:0;">供应链（在途 + 异常）、制造（订单—产能—物料）、零售（门店库存—补货）。先只读看板 → 再建议人批 → 再模拟。</p>
+        <p class="pprice">报价：按系统数 + 事件量</p>
+      </div>
+    </div>
+
+    <p>两种完整方案故事，说明组合如何落地：</p>
+    <ul>
+      <li><strong>制造 · 订单与交付</strong>：活地图（订单—物料—产能）→ 结果订阅（准时率）→ 第二大脑（插单规矩）→ 感应（产线异常推卡片）→ 成熟后再对外要货 Agent。</li>
+      <li><strong>零售 · 门店与补货</strong>：活地图（库存 + 在途）→ 感应（低于安全库存推店长）→ 结果订阅（缺货率）→ 第二大脑（促销话术规矩）。</li>
+    </ul>
+    <p>底下都要 <strong>Agent OS</strong>：权限、日志、评测、接 ERP/工单——这是地基。行业在变的五条信号：招标写验收标准附件、出现按闭环定价、客户问记忆归谁、合同写 AI 误操作怎么赔、产品默认推送批准而非打开聊天。</p>
+
+    <!-- 六 -->
+    <h2 id="sec-fde"><span class="sec-num">六</span>对 FDE / 产品路线的含义<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 押注、动作、现有资产</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>优先 Outcome + Continuity + World（单切片）</strong>：2027 前这三条最可落地、最能把「省时」变成「可验收 impact」。Outcome 走 rubric + 独立 grader；Continuity 做 skill/memory 晋升规范与 Pack 导出；World 从单切片 entity + FSM 起步。</span></li>
+      <li><span class="ix">ii</span><span><strong>A2A 跟协议、Mesh 跟硬件</strong>：A2A/AP2 仍欧美中心、Mesh 受限于可穿戴与隐私法规——这两条先跟踪、做内网网关/Computer Use harness 的小 POC，不重仓。</span></li>
+      <li><span class="ix">iii</span><span><strong>Factory 进化方向</strong>：从「造 App」转向「孵化 outcome 契约 + world schema + 连续性包」。现有资产（顺丰 KPI、sf_claw 进化、skill 评测、MCP 目录、物流 WMS 事件）正好分别对应五形态的种子。</span></li>
+      <li><span class="ix">iv</span><span><strong>销售话术升级</strong>：不再卖更聪明的对话框，卖「能盯 KPI、能沉淀 SOP、能接实况数据」的一整套；报价从 seat/token 转向按闭环/按结果。</span></li>
+      <li><span class="ix">v</span><span><strong>不必五线全开</strong>：判断成熟度而非热度——哪个形态的基础设施（契约/记忆/世界模型/信誉/传感）先就绪，哪个就先可产品化。</span></li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断</div>
+      <p style="margin:.3em 0;">2028 的 Agent 不是更强的 Artifact，而是<strong>持续在场的 Presence</strong>——你订阅结果、它盯到底、跨主体缔约。对 FDE，真正的机会不在「选哪个形态」，而在<strong>把 Outcome + Continuity + World 三条基础设施先做厚</strong>，让组合套餐可验收、可复用、可定价；A2A 与 Mesh 等协议和硬件成熟再进。</p>
+    </div>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-06-26 视觉重构版 · 合并自「大白话版」+「现状与实现路径」两篇 · 精炼为单篇深度 insight
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,0 +1,990 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ShadowBroker · 全球 OSINT 聚合平台的启示</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #fafaf7;
+    --bg-soft: #f3f2ed;
+    --surface: #ffffff;
+    --text: #1c1c1e;
+    --text-soft: #555;
+    --text-muted: #888;
+    --border: #e6e4dd;
+    --border-strong: #d8d5cc;
+    --accent: #4338ca;
+    --accent-soft: #ede9fe;
+    --pro: #16a34a;
+    --pro-soft: #ecfdf5;
+    --con: #dc2626;
+    --con-soft: #fef2f2;
+    --info: #2563eb;
+    --info-soft: #eff6ff;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --code-bg: #f5f3ee;
+    --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia, serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  [data-theme="dark"] {
+    --bg: #15151a;
+    --bg-soft: #1c1c22;
+    --surface: #1f1f26;
+    --text: #ececf0;
+    --text-soft: #b8b8c0;
+    --text-muted: #888892;
+    --border: #2c2c34;
+    --border-strong: #3a3a44;
+    --accent: #a78bfa;
+    --accent-soft: #2a2440;
+    --pro: #4ade80;
+    --pro-soft: #14281d;
+    --con: #f87171;
+    --con-soft: #2a1717;
+    --info: #60a5fa;
+    --info-soft: #172033;
+    --warn: #fbbf24;
+    --warn-soft: #2a2010;
+    --code-bg: #25252d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    transition: background .25s, color .25s;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--serif);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -.005em;
+    color: var(--text);
+  }
+  h1 { font-size: 2.2rem; margin: 0 0 .4em; }
+  h2 { font-size: 1.55rem; margin: 3em 0 .8em; padding-top: .4em; border-top: 1px solid var(--border); }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  h3 { font-size: 1.2rem; margin: 2em 0 .6em; color: var(--text); }
+  h4 { font-size: 1rem; margin: 1.4em 0 .4em; font-family: var(--sans); font-weight: 600; }
+  p { margin: .8em 0; color: var(--text-soft); }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s; }
+  a:hover { border-bottom-color: var(--accent); }
+  strong { color: var(--text); font-weight: 600; }
+  em { color: var(--text); font-style: normal; background: var(--accent-soft); padding: 0 .25em; border-radius: 3px; }
+  code { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: .12em .4em; border-radius: 4px; color: var(--text); }
+  ul, ol { padding-left: 1.4em; color: var(--text-soft); }
+  li { margin: .3em 0; }
+  li::marker { color: var(--text-muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5em 0; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .7rem 1.2rem;
+  }
+  .brand {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    letter-spacing: -.01em;
+  }
+  .brand-sub { color: var(--text-muted); font-weight: 400; font-family: var(--sans); margin-left: .6em; font-size: .85em; }
+  .actions { display: flex; gap: .5rem; align-items: center; }
+  .icon-btn {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s, transform .15s;
+    font-size: 14px;
+  }
+  .icon-btn:hover { background: var(--bg-soft); }
+  .icon-btn:active { transform: scale(.94); }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2.5rem 1.2rem 6rem;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 3.5rem;
+  }
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr; gap: 1rem; padding-top: 1.5rem; }
+    .toc-aside { display: none; }
+  }
+  .toc-aside {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: .6rem;
+    font-size: .85rem;
+  }
+  .toc-aside h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; font-weight: 600; }
+  .toc-aside ul { list-style: none; padding: 0; margin: 0; }
+  .toc-aside li { margin: .15em 0; }
+  .toc-aside a {
+    color: var(--text-soft);
+    display: block;
+    padding: .25em .5em;
+    border-radius: 6px;
+    border-bottom: none;
+    line-height: 1.4;
+    transition: color .15s, background .15s;
+  }
+  .toc-aside a:hover { background: var(--bg-soft); color: var(--text); }
+  .toc-aside a.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .toc-aside li.sub a { padding-left: 1.4em; font-size: .95em; color: var(--text-muted); }
+
+  article { min-width: 0; }
+
+  .doc-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: .7rem .9rem;
+    font-size: .82rem; color: var(--text-muted);
+    margin: .8em 0 1.2em;
+  }
+  .doc-meta span { display: inline-flex; align-items: center; gap: .35em; }
+  .doc-meta span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+  .doc-meta span:first-child::before { display: none; }
+
+  .lede {
+    font-size: 1.08rem;
+    line-height: 1.75;
+    color: var(--text-soft);
+    border-left: 3px solid var(--accent);
+    padding-left: 1.2em;
+    margin: 1.5em 0;
+    background: linear-gradient(to right, var(--accent-soft) 0%, transparent 50%);
+    padding-top: 1em;
+    padding-bottom: 1em;
+    border-radius: 0 6px 6px 0;
+  }
+  .lede strong { color: var(--text); }
+
+  .callout {
+    margin: 1.5em 0;
+    padding: 1em 1.2em 1em 1.4em;
+    border-left: 3px solid var(--info);
+    background: var(--info-soft);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-soft);
+  }
+  .callout > :first-child { margin-top: 0; }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout-tag {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: .5em;
+    color: var(--info);
+  }
+  .callout-pro { border-color: var(--pro); background: var(--pro-soft); }
+  .callout-pro .callout-tag { color: var(--pro); }
+  .callout-con { border-color: var(--con); background: var(--con-soft); }
+  .callout-con .callout-tag { color: var(--con); }
+  .callout-warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout-warn .callout-tag { color: var(--warn); }
+  .callout-accent { border-color: var(--accent); background: var(--accent-soft); }
+  .callout-accent .callout-tag { color: var(--accent); }
+
+  .table-wrap { overflow-x: auto; margin: 1.4em 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: .65em .9em; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+  th { background: var(--bg-soft); font-weight: 600; color: var(--text); font-size: .85rem; letter-spacing: .01em; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-soft); }
+  td { color: var(--text-soft); }
+  td strong, th { color: var(--text); }
+  .center { text-align: center; }
+  .nowrap { white-space: nowrap; }
+
+  .pill {
+    display: inline-block;
+    padding: .15em .55em;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .01em;
+    background: var(--bg-soft);
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+  }
+  .pill-pro { background: var(--pro-soft); color: var(--pro); border-color: transparent; }
+  .pill-con { background: var(--con-soft); color: var(--con); border-color: transparent; }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .pill-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .pill-accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5em 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1em 1.2em;
+    box-shadow: var(--shadow);
+    transition: transform .15s, border-color .15s;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .card h4 { margin-top: 0; margin-bottom: .4em; font-family: var(--serif); font-size: 1.05rem; }
+  .card .card-eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; margin-bottom: .3em; }
+  .card p { margin: .4em 0; font-size: .92rem; }
+  .card ul { padding-left: 1.2em; font-size: .9rem; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .6rem;
+    margin: 1.4em 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .8em 1em;
+  }
+  .stat-num { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .stat-label { font-size: .8rem; color: var(--text-muted); margin-top: .3em; line-height: 1.4; }
+
+  .anchor {
+    opacity: 0;
+    margin-left: .4em;
+    font-weight: 400;
+    color: var(--text-muted);
+    transition: opacity .15s;
+    border: none;
+    font-size: .85em;
+  }
+  h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+
+  blockquote {
+    margin: 1.4em 0;
+    padding: .8em 1.2em;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--border-strong);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-soft);
+    font-style: normal;
+  }
+  blockquote p { margin: .3em 0; }
+
+  .doc-footer {
+    margin-top: 4em;
+    padding-top: 1.5em;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: .85rem;
+    text-align: center;
+  }
+
+  .sec-num {
+    display: inline-block;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: .9em;
+    margin-right: .35em;
+    letter-spacing: .02em;
+  }
+
+  .toc-mobile-btn {
+    display: none;
+  }
+  @media (max-width: 1024px) {
+    .toc-mobile-btn {
+      display: inline-flex;
+    }
+  }
+
+  .drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 90;
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed;
+    top: 0; right: -80%;
+    width: 80%; max-width: 320px;
+    height: 100vh;
+    background: var(--surface);
+    z-index: 100;
+    padding: 4rem 1.2rem 2rem;
+    overflow-y: auto;
+    transition: right .25s;
+    box-shadow: -8px 0 24px rgba(0,0,0,.15);
+  }
+  .drawer.open { right: 0; }
+  .drawer h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; }
+  .drawer ul { list-style: none; padding: 0; margin: 0; }
+  .drawer li { margin: .15em 0; }
+  .drawer a { color: var(--text-soft); display: block; padding: .4em .5em; border-radius: 6px; font-size: .92rem; }
+  .drawer a:hover { background: var(--bg-soft); }
+  .drawer li.sub a { padding-left: 1.4em; font-size: .88em; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">ShadowBroker 项目解读<span class="brand-sub">OSINT · 2026-05</span></div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>ShadowBroker：全球 OSINT 聚合平台的启示</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">开源情报聚合平台的架构、价值与局限性</p>
+      <div class="doc-meta">
+        <span>2026-05-22</span>
+        <span>项目分析</span>
+        <span>开源情报</span>
+        <span>~4,500 字</span>
+      </div>
+      <p style="color: var(--text-soft);">
+        项目地址：<a href="https://github.com/BigBodyCobain/Shadowbroker" target="_blank">github.com/BigBodyCobain/Shadowbroker</a>
+      </p>
+      <p style="color: var(--text-soft);">
+        与已有框架的关系：对应
+        <a href="../insights/cross/agent-future-2028/2028_Agent五种形态_大白话版_2026-05.html">2028 Agent 五种形态</a>
+        的「活地图」「感应助手」「结果订阅」形态。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>ShadowBroker 是一个实时全球地理空间情报平台</strong>，聚合了 60+ 个开源情报（OSINT）数据源，在统一地图界面上展示飞机、船舶、卫星、地震、冲突区域、CCTV 网络、GPS 干扰等全球动态。它本质上是一个<strong>"世界实况图"的原型</strong>——展示了当分散的数字信号被整合时，我们能看到的宏观图景。本文分析其架构、价值、局限性，以及与 Agent 产品的关系。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页结论</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>核心价值</strong>：证明了全球活动数据大量存在于公开渠道，整合后能揭示惊人的宏观图景</li>
+        <li><strong>技术亮点</strong>：Next.js + MapLibre + FastAPI 架构；WebSocket 实时流；gzip 92% 压缩；视口剔除优化</li>
+        <li><span class="pill pill-con">局限一</span> <strong>只展示不解读</strong>：给的是原始数据，不是"这意味着什么"</li>
+        <li><span class="pill pill-con">局限二</span> <strong>没有主动推送</strong>：要人自己打开看，不是"有事才找我"</li>
+        <li><span class="pill pill-con">局限三</span> <strong>没有业务关联</strong>：不知道"我的货船在哪""我的工厂会不会断电"</li>
+        <li><span class="pill pill-con">局限四</span> <strong>数据源不可控</strong>：依赖第三方 API，随时可能断供</li>
+        <li><span class="pill pill-pro">机会</span> <strong>这是"活地图"形态的最佳参考案例</strong>，但需要加上解读层、订阅层、业务关联层</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、项目概述 ========== -->
+    <h2 id="sec-1"><span class="sec-num">一</span>项目概述<a href="#sec-1" class="anchor">#</a></h2>
+
+    <h3 id="sec-1-1">1.1 项目定位</h3>
+    <p>ShadowBroker 是一个<strong>实时、多领域的 OSINT（开源情报）仪表板</strong>，将来自数十个开源情报源的实时数据聚合到统一的暗色操作界面地图上。它追踪飞机、船舶、卫星、地震、冲突区域、CCTV 网络、GPS 干扰和突发地缘政治事件——全部实时更新。</p>
+
+    <p>项目作者强调：<strong>它没有引入新的监控能力，只是聚合和可视化现有的公共数据集</strong>。所有代码开源，任何人都可以审计访问了什么数据以及如何访问。不收集或传输用户数据——仪表板完全在浏览器中运行，后端自托管。</p>
+
+    <h3 id="sec-1-2">1.2 技术架构</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">前端</div>
+        <h4>Next.js + MapLibre GL</h4>
+        <p>2D WebGL 地图渲染；视口剔除；React.memo 优化</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">后端</div>
+        <h4>FastAPI + Python</h4>
+        <p>60+ 数据源调度器；WebSocket 实时流；gzip 92% 压缩</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">部署</div>
+        <h4>Docker / Helm</h4>
+        <p>一键 docker-compose 启动；Kubernetes Helm Chart</p>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">60+</div><div class="stat-label">数据源</div></div>
+      <div class="stat"><div class="stat-num">5,000+</div><div class="stat-label">实时飞机</div></div>
+      <div class="stat"><div class="stat-num">25,000+</div><div class="stat-label">实时船舶</div></div>
+      <div class="stat"><div class="stat-num">2,000+</div><div class="stat-label">卫星</div></div>
+      <div class="stat"><div class="stat-num">4,400+</div><div class="stat-label">CCTV 摄像头</div></div>
+      <div class="stat"><div class="stat-num">~60s</div><div class="stat-label">刷新频率</div></div>
+    </div>
+
+    <!-- ========== 二、核心能力矩阵 ========== -->
+    <h2 id="sec-2"><span class="sec-num">二</span>核心能力矩阵<a href="#sec-2" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>类别</th>
+            <th>数据源</th>
+            <th>覆盖范围</th>
+            <th>更新频率</th>
+            <th>API Key</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>航空追踪</strong></td>
+            <td>OpenSky, adsb.lol</td>
+            <td>5,000+ 商业/私人/军用飞机</td>
+            <td>~60s</td>
+            <td>可选</td>
+          </tr>
+          <tr>
+            <td><strong>海事追踪</strong></td>
+            <td>aisstream.io</td>
+            <td>25,000+ 船舶实时位置</td>
+            <td>实时 WebSocket</td>
+            <td>必需</td>
+          </tr>
+          <tr>
+            <td><strong>卫星轨道</strong></td>
+            <td>CelesTrak TLE</td>
+            <td>2,000+ 活跃卫星</td>
+            <td>~60s</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>地缘政治</strong></td>
+            <td>GDELT, DeepState</td>
+            <td>全球冲突事件、乌克兰前线</td>
+            <td>~6h / ~30min</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>监控网络</strong></td>
+            <td>多国交通部门</td>
+            <td>4,400+ CCTV 摄像头</td>
+            <td>~5-10min</td>
+            <td>部分</td>
+          </tr>
+          <tr>
+            <td><strong>自然灾害</strong></td>
+            <td>USGS, NASA FIRMS</td>
+            <td>地震、火灾热点</td>
+            <td>~60s / ~120s</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>信号情报</strong></td>
+            <td>航空 NAC-P 分析</td>
+            <td>GPS 干扰检测</td>
+            <td>实时分析</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>空间天气</strong></td>
+            <td>NOAA SWPC</td>
+            <td>地磁风暴 Kp 指数</td>
+            <td>~120s</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>网络状态</strong></td>
+            <td>Georgia Tech IODA</td>
+            <td>区域网络中断</td>
+            <td>~120s</td>
+            <td>无</td>
+          </tr>
+          <tr>
+            <td><strong>SDR 无线电</strong></td>
+            <td>KiwiSDR</td>
+            <td>500+ 公共接收机</td>
+            <td>~30min</td>
+            <td>无</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-2-1">2.1 独特功能</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">富豪追踪</div>
+        <h4>私人机主识别</h4>
+        <p>私人机主数据库、超级游艇数据库（Yacht-Alert DB）</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">军事监控</div>
+        <h4>航母打击群</h4>
+        <p>11 艘美军航母 OSINT 位置估算，自动更新</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">情报卡片</div>
+        <h4>右键智能卡</h4>
+        <p>任意地点 Sentinel-2 卫星影像 + 维基百科摘要</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">无线电接入</div>
+        <h4>SDR 接收机</h4>
+        <p>500+ 公共 KiwiSDR，点击即可调频</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">地图风格</div>
+        <h4>多预设切换</h4>
+        <p>FLIR 热成像、夜视、CRT 等战术风格</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">GPS 干扰</div>
+        <h4>信号检测</h4>
+        <p>通过航空 NAC-P 值分析 GPS 干扰区域</p>
+      </div>
+    </div>
+
+    <!-- ========== 三、与 Agent 五种形态的对应 ========== -->
+    <h2 id="sec-3"><span class="sec-num">三</span>与 Agent 五种形态的对应<a href="#sec-3" class="anchor">#</a></h2>
+
+    <p>ShadowBroker 本身不是 Agent 产品，但它展示了<strong>"活地图"形态</strong>的核心架构。如果加上 Agent 能力，可以演化成：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Agent 形态</th>
+            <th>ShadowBroker 对应能力</th>
+            <th>缺失部分</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>活地图</strong></td>
+            <td>✓ 已经是"全球业务实况图"</td>
+            <td>需要加入业务对象（订单、库存、合同）</td>
+          </tr>
+          <tr>
+            <td><strong>感应助手</strong></td>
+            <td>× 被动展示，需要用户打开看</td>
+            <td>主动推送"值得你关注的事"</td>
+          </tr>
+          <tr>
+            <td><strong>结果订阅</strong></td>
+            <td>× 只给数据，不给"结果"</td>
+            <td>订阅"供应链中断预警""冲突升级警报"</td>
+          </tr>
+          <tr>
+            <td><strong>第二大脑</strong></td>
+            <td>× 无记忆、无学习</td>
+            <td>积累"用户关注什么""怎么解读"</td>
+          </tr>
+          <tr>
+            <td><strong>Agent 互谈</strong></td>
+            <td>× 无对外交互能力</td>
+            <td>与供应商/合作伙伴 Agent 对接</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 四、项目局限性 ========== -->
+    <h2 id="sec-4"><span class="sec-num">四</span>项目局限性（重点）<a href="#sec-4" class="anchor">#</a></h2>
+
+    <h3 id="sec-4-1">4.1 产品层局限</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">核心问题：只展示不解读</div>
+      <p style="margin:0;">ShadowBroker 给你的是<strong>原始数据</strong>，不是<strong>解读</strong>。你能看到"某海域有 5 艘军舰"，但不知道"这是演习还是威胁"、"对油价有什么影响"。这对于专业用户（分析师、研究员）没问题，但对普通用户或企业客户来说，<strong>不知道"这和我有什么关系"</strong>。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>局限</th>
+            <th>具体表现</th>
+            <th>影响人群</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>没有解读层</strong></td>
+            <td>给原始数据，不给"这意味着什么"</td>
+            <td>非专业用户、企业决策者</td>
+          </tr>
+          <tr>
+            <td><strong>没有主动推送</strong></td>
+            <td>要用户自己打开看，不是"有事才找我"</td>
+            <td>忙碌的高管、一线操作人员</td>
+          </tr>
+          <tr>
+            <td><strong>没有业务关联</strong></td>
+            <td>不知道"我的货船在哪""我的工厂会不会断电"</td>
+            <td>企业用户、供应链管理者</td>
+          </tr>
+          <tr>
+            <td><strong>没有预警机制</strong></td>
+            <td>事件发生了你得自己发现</td>
+            <td>需要提前预警的业务</td>
+          </tr>
+          <tr>
+            <td><strong>没有历史分析</strong></td>
+            <td>只能看现在，不能看趋势</td>
+            <td>分析师、研究员</td>
+          </tr>
+          <tr>
+            <td><strong>没有协作功能</strong></td>
+            <td>不能标注、分享、协作分析</td>
+            <td>团队用户</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-4-2">4.2 技术层局限</h3>
+    <div class="callout callout-warn">
+      <div class="callout-tag">数据源不可控</div>
+      <p style="margin:0;">ShadowBroker 依赖 60+ 第三方 API，任何一家断供都会影响功能。例如 OpenSky 匿名访问有限制、aisstream.io 需要 API Key、CCTV 摄像头源可能随时下线。<strong>这不是产品可控的风险</strong>。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>局限</th>
+            <th>具体表现</th>
+            <th>严重程度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>数据源依赖</strong></td>
+            <td>60+ API，任何一家断供都有影响</td>
+            <td><span class="pill pill-con">高</span></td>
+          </tr>
+          <tr>
+            <td><strong>数据质量不一</strong></td>
+            <td>有的数据源延迟几分钟，有的几小时</td>
+            <td><span class="pill pill-warn">中</span></td>
+          </tr>
+          <tr>
+            <td><strong>覆盖不均</strong></td>
+            <td>发达国家数据多，欠发达地区少</td>
+            <td><span class="pill pill-warn">中</span></td>
+          </tr>
+          <tr>
+            <td><strong>实时性瓶颈</strong></td>
+            <td>60-120 秒刷新，对某些场景太慢</td>
+            <td><span class="pill pill-info">低</span></td>
+          </tr>
+          <tr>
+            <td><strong>资源消耗</strong></td>
+            <td>大量 WebSocket 连接，服务器成本不低</td>
+            <td><span class="pill pill-warn">中</span></td>
+          </tr>
+          <tr>
+            <td><strong>隐私合规</strong></td>
+            <td>人脸识别、CCTV 可能涉及隐私法规</td>
+            <td><span class="pill pill-con">高</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-4-3">4.3 商业化局限</h3>
+    <div class="callout callout-accent">
+      <div class="callout-tag">商业化困境</div>
+      <p style="margin:0;">ShadowBroker 是开源项目，<strong>没有明确的商业模式</strong>。如果商业化，会面临：</p>
+      <ul style="margin: .6em 0 0;">
+        <li><strong>数据成本高</strong>：60+ API，不少需要付费</li>
+        <li><strong>客户定位难</strong>：卖给谁？分析师？企业？政府？</li>
+        <li><strong>差异化难</strong>：数据都是公开的，别人也能做</li>
+        <li><strong>合规风险</strong>：某些数据源商用可能需要授权</li>
+      </ul>
+    </div>
+
+    <!-- ========== 五、可衍生的 Agent 产品方向 ========== -->
+    <h2 id="sec-5"><span class="sec-num">五</span>可衍生的 Agent 产品方向<a href="#sec-5" class="anchor">#</a></h2>
+
+    <h3 id="sec-5-1">5.1 供应链风险管理</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">落地场景</div>
+      <p style="margin:0;"><strong>实时看：货轮在红海哪条航道、有没有改道</strong><br />
+      + Agent 解读：这批货会不会延误、备选方案是什么<br />
+      = 结果订阅：「每周海运风险清单」</p>
+    </div>
+
+    <p>目标客户：跨国制造企业、物流公司、跨境电商</p>
+    <p>核心价值：提前预警供应链中断，减少损失</p>
+
+    <h3 id="sec-5-2">5.2 金融机构宏观监控</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">落地场景</div>
+      <p style="margin:0;"><strong>实时看：美军航母位置、卫星过境、地震/火灾、GPS 干扰区</strong><br />
+      + Agent 解读：某地区局势变化 → 对大宗商品/汇率的影响<br />
+      = 感应推送：「值得关注的 3 个地缘信号」</p>
+    </div>
+
+    <p>目标客户：宏观对冲基金、商品交易员、投行研究部</p>
+    <p>核心价值：比新闻更早感知地缘政治变化</p>
+
+    <h3 id="sec-5-3">5.3 企业出海/跨国业务</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">落地场景</div>
+      <p style="margin:0;"><strong>实时看：目标国家互联网中断、骚乱事件、机场关闭</strong><br />
+      + Agent 解读：对当地业务的影响评估<br />
+      = 活地图：业务风险热力图</p>
+    </div>
+
+    <p>目标客户：出海企业、跨国公司、海外项目组</p>
+    <p>核心价值：实时监控海外业务环境变化</p>
+
+    <h3 id="sec-5-4">5.4 新闻/媒体机构</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">落地场景</div>
+      <p style="margin:0;"><strong>实时看：全球冲突事件、地震、火灾、政治动荡</strong><br />
+      + Agent 解读：这是新闻吗？值不值得派人？<br />
+      = 感应推送：「突发新闻线索」</p>
+    </div>
+
+    <p>目标客户：新闻机构、媒体、内容创作者</p>
+    <p>核心价值：比社交平台更早发现新闻线索</p>
+
+    <!-- ========== 六、技术亮点可借鉴 ========== -->
+    <h2 id="sec-6"><span class="sec-num">六</span>技术亮点可借鉴<a href="#sec-6" class="anchor">#</a></h2>
+
+    <h3 id="sec-6-1">6.1 性能优化</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>技术</th>
+            <th>效果</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Gzip 压缩</strong></td>
+            <td>API 负载压缩 ~92%（11.6 MB → 915 KB）</td>
+          </tr>
+          <tr>
+            <td><strong>ETag 缓存</strong></td>
+            <td>304 Not Modified 跳过冗余 JSON 解析</td>
+          </tr>
+          <tr>
+            <td><strong>视口剔除</strong></td>
+            <td>只渲染可见地图边界内的要素（+20% 缓冲）</td>
+          </tr>
+          <tr>
+            <td><strong>命令式更新</strong></td>
+            <td>高流量层绕过 React，直接 setData()</td>
+          </tr>
+          <tr>
+            <td><strong>聚类渲染</strong></td>
+            <td>船舶、CCTV、地震、数据中心使用 MapLibre 聚类</td>
+          </tr>
+          <tr>
+            <td><strong>防抖更新</strong></td>
+            <td>300ms 防抖防止 GeoJSON 重建抖动；密集层 2s</td>
+          </tr>
+          <tr>
+            <td><strong>位置插值</strong></td>
+            <td>数据刷新间平滑 10s 动画</td>
+          </tr>
+          <tr>
+            <td><strong>React.memo</strong></td>
+            <td>重型组件包装防止不必要的重渲染</td>
+          </tr>
+          <tr>
+            <td><strong>坐标精度</strong></td>
+            <td>Lat/lng 舍入到 5 位小数（~1m）以减少 JSON 大小</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-6-2">6.2 架构设计</h3>
+    <div class="callout callout-accent">
+      <div class="callout-tag">前后端分离 + 代理模式</div>
+      <p style="margin:0;">前端通过 Next.js 服务器代理所有 <code>/api/*</code> 请求到 <code>BACKEND_URL</code>。浏览器只与端口 3000 通信，端口 8000 不需要外部暴露。<code>BACKEND_URL</code> 是运行时环境变量，更改无需重新构建。</p>
+    </div>
+
+    <h3 id="sec-6-3">6.3 部署策略</h3>
+    <ul>
+      <li><strong>Docker / Podman 一键启动</strong>：兼容多种容器引擎</li>
+      <li><strong>Helm Chart</strong>：支持 Kubernetes 高可用部署</li>
+      <li><strong>GitHub Container Registry</strong>：预构建镜像，Portainer/Uncloud 可直接部署</li>
+    </ul>
+
+    <!-- ========== 七、总结：从 OSINT 聚合到 Agent 产品 ========== -->
+    <h2 id="sec-7"><span class="sec-num">七</span>总结：从 OSINT 聚合到 Agent 产品<a href="#sec-7" class="anchor">#</a></h2>
+
+    <h3 id="sec-7-1">7.1 ShadowBroker 的本质</h3>
+    <p>ShadowBroker 是一个<strong>世界实况图的原型</strong>，证明了：</p>
+    <ul>
+      <li>全球活动数据大量存在于公开渠道</li>
+      <li>整合后能揭示惊人的宏观图景</li>
+      <li>技术上是可行的，成本是可控的</li>
+    </ul>
+
+    <h3 id="sec-7-2">7.2 但它不是 Agent 产品</h3>
+    <p>ShadowBroker 缺少 Agent 产品的核心要素：</p>
+    <ul>
+      <li><strong>没有解读层</strong>：不给"这意味着什么"</li>
+      <li><strong>没有主动推送</strong>：要人自己打开看</li>
+      <li><strong>没有业务关联</strong>：不知道"这和我有什么关系"</li>
+      <li><strong>没有结果订阅</strong>：不承诺"帮你达到什么目标"</li>
+    </ul>
+
+    <h3 id="sec-7-3">7.3 怎么把它变成 Agent 产品</h3>
+    <p>在 ShadowBroker 基础上加：</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">加一层</div>
+        <h4>解读层</h4>
+        <p>事件 → 业务影响分析<br />不是只给原始数据</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">加一层</div>
+        <h4>订阅层</h4>
+        <p>订阅"供应链中断预警"<br />只推和客户相关的事</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">加一层</div>
+        <h4>业务关联层</h4>
+        <p>接企业 ERP/CRM<br />知道"我的货在哪"</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">加一层</div>
+        <h4>行动建议层</h4>
+        <p>不只说"发生了什么"<br />还说"该怎么办"</p>
+      </div>
+    </div>
+
+    <h3 id="sec-7-4">7.4 最终定位建议</h3>
+    <div class="callout callout-accent">
+      <div class="callout-tag">产品定位</div>
+      <p style="margin:0;"><strong>不是卖给"OSINT 爱好者"</strong>，而是卖给：</p>
+      <ul style="margin: .6em 0 0;">
+        <li>有跨国供应链的企业（看货、看港、看路）</li>
+        <li>宏观/商品交易员（看冲突、看制裁、看物流）</li>
+        <li>出海企业（看目标国风险）</li>
+      </ul>
+      <p style="margin-top: .6em;">这是 <strong>"活地图 + 感应助手 + 结果订阅"三形态组合</strong>的典型场景。</p>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center; line-height: 1.7;">
+      修订记录：2026-05-22 初稿<br />
+      基于 ShadowBroker GitHub 仓库 2026-05 状态分析
+    </p>
+
+    <div class="doc-footer">
+      <p>项目地址：<a href="https://github.com/BigBodyCobain/Shadowbroker" target="_blank">github.com/BigBodyCobain/Shadowbroker</a></p>
+    </div>
+
+  </article>
+</div>
+
+<script>
+  const themeBtn = document.getElementById('themeBtn');
+  const savedTheme = localStorage.getItem('sb-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', initialTheme);
+  themeBtn.textContent = initialTheme === 'dark' ? '☼' : '◐';
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('sb-theme', next);
+    themeBtn.textContent = next === 'dark' ? '☼' : '◐';
+  });
+
+  const toc = document.getElementById('toc');
+  const drawerToc = document.getElementById('drawerToc');
+  const headings = document.querySelectorAll('article h2, article h3');
+  headings.forEach(h => {
+    const li = document.createElement('li');
+    if (h.tagName === 'H3') li.classList.add('sub');
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent.replace(/#$/, '').trim();
+    li.appendChild(a);
+    toc.appendChild(li.cloneNode(true));
+    drawerToc.appendChild(li);
+  });
+
+  const allTocLinks = document.querySelectorAll('#toc a, #drawerToc a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        allTocLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-100px 0px -70% 0px', threshold: 0 });
+  headings.forEach(h => observer.observe(h));
+
+  const tocBtn = document.getElementById('tocBtn');
+  const drawer = document.getElementById('drawer');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  if (tocBtn) {
+    const closeDrawer = () => {
+      drawer.classList.remove('open');
+      drawerOverlay.classList.remove('open');
+    };
+    tocBtn.addEventListener('click', () => {
+      drawer.classList.add('open');
+      drawerOverlay.classList.add('open');
+    });
+    drawerOverlay.addEventListener('click', closeDrawer);
+    drawer.addEventListener('click', (e) => { if (e.target.tagName === 'A') closeDrawer(); });
+  }
+</script>
+
+</body>
+</html>

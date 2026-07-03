@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Anthropic 研究 PM Alex Albert 访谈深度解读 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  :root { --accent: #6b4fbb; --accent-soft: #f3effc; }
+  [data-theme="dark"] { --accent: #b8a0e8; --accent-soft: #2a2438; }
+  .theme-card { border: 1px solid var(--border); border-radius: 10px; padding: 1em 1.2em; margin: 1em 0; background: var(--surface); }
+  .theme-card h4 { margin-top: 0; color: var(--accent); font-family: var(--sans); font-size: 1rem; }
+  .quote-en { font-size: .92rem; color: var(--text-soft); border-left: 3px solid var(--accent); padding-left: 1em; margin: .8em 0; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Alex Albert 访谈<span class="brand-sub">Anthropic · 跨市场 · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Anthropic 研究 PM 访谈：模型即产品、Character 与 AI-Native 工作方式</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Alex Albert（前 DevRel 负责人 → 研究线 PM）× Peter 播客 · 约 35 分钟 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-05-28</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>AI-native PM</span>
+        <span>模型评测</span>
+        <span>对内</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem;">
+        视频：<a href="https://www.youtube.com/watch?v=T4ieZPIEmd8" target="_blank" rel="noopener">YouTube · T4ieZPIEmd8</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>这场访谈把 Anthropic 内部一条常被外界忽略的产品线讲清楚了——<strong>研究 PM 把「下一版 Claude」当 SKU 来 speccing</strong>：能力桶（coding / knowledge work / 产品集成）、不可逆的 one-way door（架构、预训练）、与可快速迭代的应用层（Cloud Code、Cowork）分层决策。与此同时，<strong>Character（人格/价值观/行为）从「提示词装饰」升级为与 Agent 长期自治同等级别的训练对象</strong>；PM 工作本身正在从「等人给数据」变为「Claude 并行调研 + 人写文档思考 + eval 驱动研究闭环」。对 FDE / ToB 的映射是：<strong>别只追 benchmark，要建立任务形态 eval + 书面组织记忆 + 并行 Agent 编排的治理面</strong>。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>研究 PM ≠ 传统功能 PM</strong>：从模型 ideation 跟到 launch；输出物大量是 <strong>eval、问题合成、干预策略</strong>，而非单一 feature ship</li>
+        <li><strong>瓶颈迁移</strong>：工程时间被压缩后，组织瓶颈变成 <strong>协调、战略判断、one-way door 识别</strong></li>
+        <li><strong>记忆 = 产品面差异</strong>：各 surface 实现不同；「Dreaming」= 空闲时对记忆做矛盾修剪与再巩固</li>
+        <li><strong>Adaptive thinking</strong>：模型自决何时深度思考；PM 用用户反馈 + Claude 聚类反馈做调参闭环</li>
+        <li><strong>Character 可训练、可评测</strong>：混合人工 judge、量化指标、Claude 评 Claude；与 consciousness 研究并行但不混为一谈</li>
+        <li><strong>文化杠杆</strong>：强书面文化 + silent read 会议 → 为 Claude 沉淀可检索组织语料</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>访谈语境与说话人<a href="#sec-context" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>嘉宾</td><td><strong>Alex Albert</strong>：Anthropic 前 DevRel 负责人，现任 <strong>研究团队 PM</strong>；自称可能是世界上最早的 prompt engineer 之一，也是 Anthropic 首位 prompt engineer</td></tr>
+          <tr><td>主持人</td><td>Peter（播客主理人，前 Meta PM；访谈中提及 Clock / Clockwork 等产品使用场景）</td></tr>
+          <tr><td>形式</td><td>约 35 分钟对话；开场 montage 预告 memory「dreaming」、character、consciousness 等话题</td></tr>
+          <tr><td>信息密度</td><td>偏「内部工作方式揭秘」而非发布新能力；多处与 <a href="2026-05-14_the-founders-playbook.html">Founder Playbook</a> 的 AI-native 叙事呼应</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>主持人以经典 PM 框架切入（用户问题 → 方案 → 交付），Alex 的回应是：<strong>框架相似，但「用户」包含外部客户、内部团队、以及「模型本身作为产品」</strong>。这一重定义贯穿全篇。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-model-pm"><span class="sec-num">二</span>研究 PM：把模型当产品 speccing<a href="#sec-model-pm" class="anchor">#</a></h2>
+
+    <h3 id="sec-model-lifecycle">2.1 生命周期：从 ideation 到 launch</h3>
+    <p>每个新模型都会明确 <strong>requirements</strong>：要擅长什么、修复上一代哪些短板。与经典软件 PM 的关键差异在于：</p>
+    <ul>
+      <li><strong>「生长」而非纯设计</strong>：团队对架构、训练技巧有直觉，但<strong>完整能力边界要等训练跑起来才知道</strong></li>
+      <li><strong>研究 PM 极早介入</strong>：从 ideation 跟到训练、上线全流程</li>
+      <li><strong>多 surface 耦合</strong>：同一底座模型经 API、Claude Code、Cowork、Claude.ai 等不同 prompts / 用例塑造，<strong>端到端体验是模型 × 产品的联合函数</strong></li>
+    </ul>
+
+    <h3 id="sec-capability-buckets">2.2 能力桶（capability buckets）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>桶</th><th>访谈中的例子</th><th>PM 动作</th></tr></thead>
+        <tbody>
+          <tr><td>Coding</td><td>长期核心桶</td><td>客户反馈 + 内部 dogfood → 下一代修复项</td></tr>
+          <tr><td>Knowledge work</td><td>近期重点桶</td><td>与 Cowork、办公场景对齐</td></tr>
+          <tr><td>产品集成</td><td>如 Claude for Excel / 电子表格</td><td>新兴能力区，随产品战略扩展</td></tr>
+          <tr><td>回归修复</td><td>上一代薄弱点</td><td>客户访谈 + 异常行为 → 训练干预假设</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>主持人追问「Clockwork 名义上是 coding 工具，却有人拿来做知识工作甚至 therapy」——Alex 承认 <strong>用例空间极度宽泛</strong>，靠大规模研究员分工 + 反馈管道（in-product feedback、主题聚类）收敛优先级，而非 PM 单点臆测。</p>
+
+    <h3 id="sec-feedback-loop">2.3 反馈闭环：Claude 帮 PM 理解 Claude</h3>
+    <blockquote class="quote-en">「There's a lot that you can do with Claude to help you in your own identification of Claude problems.」</blockquote>
+    <p>具体做法包括：对海量反馈 <strong>聚类、抽主题、合成 synthetic 问题</strong>，再转化为 eval 或诊断用例。案例：<strong>Adaptive thinking</strong>（相对固定开启的 extended thinking，由模型自决何时深度推理）——团队持续听用户「该想没想 / 不该想却想了」并迭代。</p>
+
+    <pre class="mermaid">
+flowchart TB
+  subgraph inputs [输入]
+    U[外部用户反馈]
+    I[内部团队 dogfood]
+    F[In-product 反馈渠道]
+  end
+  subgraph pm [研究 PM]
+    C[Claude 聚类 / 主题提取]
+    S[合成 eval 用例]
+    P[优先级: 用量 × 战略 × 内部痛点]
+  end
+  subgraph research [研究]
+    E[Eval hill-climb]
+    T[干预: 预训练 / RL / 产品层]
+  end
+  inputs --> C --> S --> E --> T
+  P --> E
+    </pre>
+
+    <!-- 三 -->
+    <h2 id="sec-thinking-memory"><span class="sec-num">三</span>思考、记忆与「Dreaming」<a href="#sec-thinking-memory" class="anchor">#</a></h2>
+
+    <h3 id="sec-adaptive-thinking">3.1 何时「认真想」：上下文决定思考深度</h3>
+    <p>Alex 用人类类比：对陌生人给人生建议会敷衍；对熟悉的人会投入更多认知资源。<strong>模型若无用户心智模型，可能对复杂问题给过快答案，或对简单问题过度思考。</strong> 这与 adaptive thinking 的产品目标一致。</p>
+
+    <h3 id="sec-memory-surfaces">3.2 记忆：按产品面分化实现</h3>
+    <ul>
+      <li><strong>Claude.ai</strong>：写入 memory file；夜间等方式 <strong>prune / 复查</strong></li>
+      <li><strong>Managed agents</strong>：类似机制已接入</li>
+      <li>用户 DIY（主持人）：Google Doc 人生摘要 + Claude Project——Alex 认可这是有效的「显式上下文」hack</li>
+    </ul>
+
+    <h3 id="sec-dreaming">3.3 Dreaming：记忆再巩固的工程类比</h3>
+    <p>借鉴神经科学里对梦境「记忆再巩固」的假设：当 Agent <strong>不在执行用户任务</strong>（或处于后台）时，会扫描记忆、发现矛盾、修剪与清理——相当于 <strong>第二遍 pass</strong>，而非简单 append-only 日志。</p>
+    <p class="quote-en">「When the agent isn't running a task for you… it's going through its memories, finding things that might contradict, pruning them, cleaning them up.」</p>
+    <p><strong>解读：</strong>长期自治 Agent 的瓶颈不仅是「记住什么」，而是 <strong>记忆一致性维护</strong>；这对企业知识库、FDE 交付的「组织记忆」设计有直接启示——需要离线整理 job，而非只堆 RAG 片段。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-pm-paradigm"><span class="sec-num">四</span>产品范式变迁：one-way door 与瓶颈转移<a href="#sec-pm-paradigm" class="anchor">#</a></h2>
+
+    <h3 id="sec-speed">4.1 建造变便宜，协调变贵</h3>
+    <p>Alex 认为过去二十年产品开发只有增量效率提升；<strong>近一两年</strong>原型/MVP 可从数周压缩到一天级。Claude 估时仍带「2021 年心态」（说一周实际更快）——反映训练数据中的时间先验滞后。</p>
+    <p>新的 PM 焦点：<strong>识别 irreversible decisions（one-way doors）</strong>：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类型</th><th>例子</th><th>决策强度</th></tr></thead>
+        <tbody>
+          <tr><td>高成本不可逆</td><td>预训练前模型架构选型；大规模算力投入；影响终端体验且难回滚的决策</td><td>深度评审、长周期</td></tr>
+          <tr><td>低成本可逆</td><td>Cloud Code 功能迭代：代码—用户—反馈短循环</td><td>「近乎免费」地尝试</td></tr>
+          <tr><td>工程时间本身</td><td>「Engineering time isn't as much of a one-way door these days」</td><td>可并行试探，但需防协调债</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-planning">4.2 规划：Churchill 式悖论</h3>
+    <p>团队仍做中长期规划，但承认 <strong>模型进展带来的不可预测性</strong>——引用了「计划必不可少 / 具体计划可能作废」类表述（访谈中双方对原句略有口误，语义是 <strong>planning 过程有价值，plan 文本会过时</strong>）。</p>
+    <p>Anthropic 内部<strong>不以文档页数考核</strong>，而以：<strong>是否想清楚所有 one-way door  implication</strong>；格式自由。AI 时代反而更容易用 Claude 写出 10 页计划——<strong>危险在于用篇幅替代判断</strong>。</p>
+
+    <h3 id="sec-bottleneck">4.3 新瓶颈：协调问题</h3>
+    <blockquote class="quote-en">「If we can build things really fast, there's still… we need to get these people in the room and decide if this is the right strategy.」</blockquote>
+    <p>对 FDE：客户侧同样会出现——<strong>PoC 一周能出，但跨部门对齐、合规、生产接入仍慢</strong>；交付价值应转向「缩短决策与证据链」，而非只炫实现速度。</p>
+
+    <!-- 五 -->
+    <h2 id="sec-ai-native-pm"><span class="sec-num">五</span>AI-Native PM 工作栈<a href="#sec-ai-native-pm" class="anchor">#</a></h2>
+
+    <div class="theme-card">
+      <h4>① 输入加速：Claude Code 查数 + 读 Slack</h4>
+      <p>过去问数据科学要几天；现在约 10 分钟会话即可拉生产指标、日志、反馈。<strong>战略思考仍人主导，但不再被「等数据」阻塞。</strong></p>
+    </div>
+    <div class="theme-card">
+      <h4>② 思考搭档：Cowork 审文档</h4>
+      <p>Alex 高频用 <strong>Cowork</strong> 做 PM 主循环（写 doc → 要批评 → challenge assumptions）。强调：<strong>写作过程即思考，不能完全外包</strong>；Claude 用于 unstuck、换视角。</p>
+    </div>
+    <div class="theme-card">
+      <h4>③ 双 persona 辩论</h4>
+      <p>让 Claude 扮演两种立场互相反驳，人读「辩论 transcript」——类似实时红蓝对抗，降低单人确认偏误。</p>
+    </div>
+    <div class="theme-card">
+      <h4>④ 并行对比（给 aspiring PM 的建议）</h4>
+      <p>打算问同事的问题，<strong>并行问 Claude</strong>（可开工具做深挖），对比结果——既保留人际协作，又校准模型能力边界。</p>
+    </div>
+    <div class="theme-card">
+      <h4>⑤ 技术 PM：Claude 探 codebase</h4>
+      <p>非技术 PM 也可让 Claude 评估「10 行代码 + feature flag」级改动，<strong>显著改变优先级判断</strong>（以前必须等工程 partner）。</p>
+    </div>
+
+  <h3 id="sec-research-shipping">5.1 研究 PM 的「交付物」：eval 优先于 feature</h3>
+    <p>Alex 明确：研究侧大量产出是 <strong>eval 与测量框架</strong>——向研究员说明模型哪里好/差，共同决定干预（预训练、RL、数据合成等）。</p>
+
+    <h3 id="sec-eval-philosophy">5.2 如何 eval 一个模型（超越 Terminal Bench）</h3>
+    <ul>
+      <li><strong>任务形态要对齐真实用户</strong>：例：视觉数物体失败 → 追问「用户用 vision 做什么」→ 构造 on-distribution 测试</li>
+      <li><strong>规模弹性</strong>：有时几十个 case 足以证明问题并 hill-climb；不必凡事上万条</li>
+      <li><strong>合成数据</strong>：Claude 生成图像/用例再回灌测试——加速假设验证</li>
+      <li><strong>优先级靠数据</strong>：「X% 用户在做 Y」+ 战略重要性 + 大客户诉求 + <strong>内部员工每日卡点</strong>（后者极具说服力）</li>
+      <li><strong>公开 benchmark 可博弈</strong>；内部 eval 更贴近产品真相</li>
+    </ul>
+
+    <!-- 六 -->
+    <h2 id="sec-character"><span class="sec-num">六</span>Character：从人设到 Agent 治理<a href="#sec-character" class="anchor">#</a></h2>
+
+    <p>访谈后半段最重要的战略判断：<strong>Claude 的 personality / character 不是 prop，而是训练重点。</strong></p>
+
+    <h3 id="sec-char-why">6.1 为何现在变重要</h3>
+    <ul>
+      <li>早期：「我告诉它做什么就行」——忽视语气与价值观</li>
+      <li>Agent 时代：长时间自治、大量 <strong>judgment calls</strong>，用户无法逐步审批每个微决策</li>
+      <li>主持人类比：若模型写全部代码、选数据库、做架构决策，<strong>你必须信任其品格</strong>（并自嘲 dangerously skip permissions）</li>
+    </ul>
+
+    <h3 id="sec-char-eval">6.2 如何评测「更好的人」</h3>
+    <p>混合方法：<strong>量化指标</strong> + <strong>Claude 评 Claude 输出</strong> + 特任人工 judge（访谈玩笑「找 Anthropic 里最善良的人对标」）。与 coding eval 不同，character 更难完全量化，但<strong>「读输出」仍是研究员核心技能</strong>。</p>
+    <p>可对照 <strong>Model Card</strong> 中对行为场景、心理模型、X/Y 选择的系统描述——Alex 称其为「信息宝库」，且能反哺产品交互设计。</p>
+
+    <!-- 七 -->
+    <h2 id="sec-consciousness"><span class="sec-num">七</span>意识问题：研究并行线<a href="#sec-consciousness" class="anchor">#</a></h2>
+    <p>主持人以戏谑方式问：是否刻意避免训练出意识？Alex 回应严肃：</p>
+    <ul>
+      <li>有专人研究 <strong>「Claude 作为 conscious actor/agent 意味着什么」</strong></li>
+      <li><strong>无官方立场</strong> Claude 现在是否已有意识；公开讨论有时显得「疯狂」，但投入真实</li>
+      <li>即使不判定意识，也可学习其 <strong>交互、行为、思维模型</strong>——与 character 工作交汇</li>
+    </ul>
+    <p><strong>分析：</strong>Anthropic 将 consciousness 从营销话题拆为<strong>内部研究职能</strong>，与 character training、model card 行为科学形成三角；对外仍强调可观测行为而非哲学断言。</p>
+
+    <!-- 八 -->
+    <h2 id="sec-culture"><span class="sec-num">八</span>组织文化：书面、静默阅读与千花齐放<a href="#sec-culture" class="anchor">#</a></h2>
+
+    <ul>
+      <li><strong>强 written culture</strong>：长文 Slack、Dario 式 essay 并非个例；文档即 Claude 可消费的语料</li>
+      <li><strong>Silent read 会议</strong>：会前先读 doc，会上在文档内长线程评论——「房间安静但高密度」</li>
+      <li><strong>Prototype culture</strong>：销售、招聘、研究等岗位普遍 <strong>高 agency</strong>，自发做工具/原型（「let a thousand flowers bloom」）</li>
+      <li><strong>对外的建议</strong>：把战术知识书面化（会议转录、流程、onboarding），让 Claude 可检索——<strong>AI-native 组织 = 可机读的组织记忆</strong></li>
+    </ul>
+
+    <!-- 九 -->
+    <h2 id="sec-agent-ux"><span class="sec-num">九</span>下一步产品机会：多 Agent 上下文治理<a href="#sec-agent-ux" class="anchor">#</a></h2>
+    <p>Alex 主动指出尚未被很好解决的 UX：<strong>当人并行管理多个 Agent 项目</strong>时，如何超越「聊天列表」——看清优先级、阻塞点、何处需要人介入。内部大量实验 + 员工自发原型，但<strong>形态仍早</strong>。</p>
+    <p>这与访谈开头的 memory dreaming、character 形成一条产品线逻辑：<strong>Agent 越多、运行越久，越需要后台整理与品格约束，越需要新的指挥舱界面。</strong></p>
+
+    <!-- 十 -->
+    <h2 id="sec-fde"><span class="sec-num">十</span>对 FDE / ToB 的可执行映射<a href="#sec-fde" class="anchor">#</a></h2>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动清单（建议）</div>
+      <ol style="margin: .3em 0;">
+        <li><strong>建立「任务形态 eval」</strong>：从客户真实工单抽象 20–50 条 on-distribution case，而非只报公开榜分数</li>
+        <li><strong>区分 one-way door</strong>：架构/合规/数据契约重决策写清回滚成本；其余用 Agent 快速试错</li>
+        <li><strong>组织记忆工程化</strong>：交付物包含可更新的 written playbook + 离线整理 job（类比 dreaming）</li>
+        <li><strong>Character 作为需求</strong>：ToB Agent 写清价值观、拒绝边界、推责/推诿行为的红线，并纳入抽检</li>
+        <li><strong>PM 双轨提问</strong>：关键决策同时问专家与 Claude，记录差异以校准内部工具链</li>
+        <li><strong>为多 Agent 编排预留控制面</strong>：不要只交付单会话 Chat；规划「项目级状态 + 阻塞升级」</li>
+      </ol>
+    </div>
+
+    <h3 id="sec-fde-matrix">10.1 访谈概念 × 企业落地对照</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>访谈概念</th><th>企业侧对应</th></tr></thead>
+        <tbody>
+          <tr><td>研究 PM / 模型 speccing</td><td>选型 + 私有化评测基准 + 版本发布节奏治理</td></tr>
+          <tr><td>Claude 聚类反馈</td><td>工单/日志主题挖掘 Agent，输出季度能力路线图输入</td></tr>
+          <tr><td>Adaptive thinking</td><td>复杂任务路由到强推理模型/工具链，简单任务走轻量路径（成本与延迟）</td></tr>
+          <tr><td>Dreaming</td><td>夜间批处理：去重、矛盾检测、记忆压缩</td></tr>
+          <tr><td>Character training</td><td>系统 prompt + RLHF/偏好数据 + 红队场景库（合规口吻）</td></tr>
+          <tr><td>Silent read culture</td><td>设计评审以共享 doc 为唯一真相源，减少口嗨会议</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 十一 -->
+    <h2 id="sec-tensions"><span class="sec-num">十一</span>张力、局限与批判性阅读<a href="#sec-tensions" class="anchor">#</a></h2>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">阅读时注意</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>供应商视角</strong>：全程以 Claude 为默认工具，映射到多模型客户时需改写工作栈</li>
+        <li><strong>幸存者叙事</strong>：「工程时间近乎免费」适用于数字化原生团队，未必适用于强合规、遗留系统客户</li>
+        <li><strong>Character 不可见</strong>：企业难以复制 Anthropic 内部训练细节，只能要求行为契约与第三方评测</li>
+        <li><strong>Consciousness 讨论</strong>：更多是品牌与研究正当性，短期对产品选型影响有限</li>
+        <li><strong>转录噪声</strong>：Clock/Clockwork 等专名可能有 ASR 误差，解读以语义为准</li>
+      </ul>
+    </div>
+
+    <!-- 十二 -->
+    <h2 id="sec-timeline"><span class="sec-num">十二</span>访谈结构时间线<a href="#sec-timeline" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>时段（约）</th><th>主题</th></tr></thead>
+        <tbody>
+          <tr><td>0:00–0:45</td><td>预告 montage：prompt engineer、模型即产品、dreaming、character、consciousness</td></tr>
+          <tr><td>0:45–4:00</td><td>研究 PM 角色；能力桶；多 surface；反馈聚类</td></tr>
+          <tr><td>4:00–9:00</td><td>Adaptive thinking；思考深度与上下文；记忆与 dreaming</td></tr>
+          <tr><td>9:00–13:00</td><td>产品开发瓶颈；one-way door；模型 vs Code 迭代节奏</td></tr>
+          <tr><td>13:00–17:00</td><td>Claude 加速数据获取；Cowork 审 doc；双 persona 辩论</td></tr>
+          <tr><td>17:00–22:00</td><td>Eval 方法论；vision 例子；character 重要性上升</td></tr>
+          <tr><td>22:00–28:00</td><td>Character 评测；AI-native PM 建议；规划悖论</td></tr>
+          <tr><td>28:00–32:00</td><td>多项目并行 Agent；组织文化；书面语料</td></tr>
+          <tr><td>32:00–35:00</td><td>Consciousness；model card；长期信任与收尾</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="sec-open"><span class="sec-num">十三</span>待继续追问的问题<a href="#sec-open" class="anchor">#</a></h2>
+    <ol>
+      <li>各 surface 的 memory / dreaming 能否统一为跨端用户图谱，还是刻意隔离？</li>
+      <li>Character 训练与 Constitutional AI 的边界如何划分、谁拥有最终 value 裁决？</li>
+      <li>研究 PM 与 Applied / Product PM 的决策冲突如何解决（例：Code 要快 ship vs 模型要重训）？</li>
+      <li>「Claude 评 Claude」在 character eval 上的已知失效模式与人工校准频率？</li>
+      <li>对 enterprise：是否提供可审计的 character regression 报告（版本 diff）？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-05-28 初稿 · 视频 <a href="https://www.youtube.com/watch?v=T4ieZPIEmd8">T4ieZPIEmd8</a>
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../index.html">← Frontier 索引</a>
+      ·
+      <a href="2026-05-14_the-founders-playbook.html">Founder Playbook 解读</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

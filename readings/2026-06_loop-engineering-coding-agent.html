@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>循环工程 Loop Engineering：从手动提示到自主 Coding Agent 循环系统 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色（teal）+ 暗色变体；其余设计令牌、字体、底纹、排版全部来自共享 insight.css */
+  :root {
+    --accent: #0d9488;
+    --accent-deep: #0f766e;
+    --accent-ink: #134e4a;
+    --accent-soft: color-mix(in srgb, #0d9488 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent-soft: color-mix(in srgb, #0d9488 22%, #1a1a22);
+    --accent-ink: #5eead4;
+  }
+
+  /* ═════════ 视觉一：范式转移 双态对照 ═════════ */
+  .shift { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0; }
+  @media (max-width: 760px) { .shift { grid-template-columns: 1fr; } .shift-arrow { transform: rotate(90deg); } }
+  .shift-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.3rem 1.3rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .8rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .shift-side:hover { transform: translateY(-3px); }
+  .shift-eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .shift-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .shift-manual { border-color: var(--border-strong); }
+  .shift-manual .shift-eyebrow { color: var(--text-muted); }
+  .shift-manual .shift-eyebrow .dot { background: var(--text-muted); }
+  .shift-loop { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .shift-loop .shift-eyebrow { color: var(--accent); }
+  .shift-loop .shift-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .shift-vis { display: flex; justify-content: center; }
+  .shift-vis svg { width: 100%; max-width: 360px; height: auto; }
+  .shift-cap { font-size: .92rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .shift-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .35rem; color: var(--accent); padding: 0 .3rem;
+  }
+  .shift-arrow .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .shift-arrow .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 760px) { .shift-arrow .lab { writing-mode: horizontal-tb; } }
+
+  /* SVG 文字字体：var() 仅在 CSS 上下文解析，font-family 一律走样式表 */
+  .shift-vis text { font-family: var(--mono); }
+  .engine-emblem text { font-family: var(--mono); }
+  .engine-emblem text.disp,
+  .engine-emblem .nums text { font-family: var(--display); font-weight: 700; }
+
+  /* 轨道动画 */
+  .orbit { transform-origin: center; animation: orbit 7s linear infinite; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 1.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -28; } }
+
+  /* ═════════ 视觉二：概念嵌套层级 ═════════ */
+  .nest { margin: 1.8em 0; }
+  .nest-tier {
+    border: 1.5px solid var(--border-strong); border-radius: 16px; padding: 1.1rem 1.2rem 1.2rem;
+    background: var(--surface); position: relative;
+  }
+  .nest-factory { background: color-mix(in srgb, var(--surface) 50%, var(--bg-soft)); }
+  .nest-loop {
+    margin: .9rem 0 0; border-color: var(--accent); border-width: 2px;
+    background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 80%, transparent));
+    box-shadow: 0 6px 22px var(--accent-glow);
+  }
+  .nest-harness { margin: .9rem 0 0; background: var(--bg-soft); }
+  .nest-row { display: flex; align-items: baseline; gap: .7em; flex-wrap: wrap; }
+  .nest-label { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+  .nest-label .en { font-style: italic; font-weight: 500; color: var(--text-muted); font-size: .85em; margin-left: .3em; }
+  .nest-desc { font-size: .88rem; color: var(--text-soft); margin: .15em 0 0; }
+  .nest-mark {
+    font-family: var(--mono); font-size: .64rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--text-muted);
+    border: 1px solid var(--border-strong); padding: .15em .55em; border-radius: 999px;
+  }
+  .nest-loop .nest-mark { color: var(--accent); border-color: var(--accent); background: var(--surface); }
+
+  /* ═════════ 视觉三：循环引擎（中心件） ═════════ */
+  .engine { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 2rem; align-items: center; margin: 1.8em 0; }
+  @media (max-width: 880px) { .engine { grid-template-columns: 1fr; } .engine-emblem { max-width: 380px; margin: 0 auto; } }
+  .engine-emblem { width: 100%; }
+  .engine-emblem svg { width: 100%; height: auto; display: block; }
+  .engine-legend { display: flex; flex-direction: column; gap: .55rem; }
+  .engine-legend .ll {
+    display: flex; align-items: center; gap: .7rem; font-size: .9rem; color: var(--text-soft);
+  }
+  .engine-legend .ll b { font-family: var(--mono); color: var(--accent); width: 1.6em; font-weight: 600; font-size: .82rem; }
+
+  /* 模块卡 */
+  .mods { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; margin: 1.6em 0 .6em; }
+  @media (max-width: 980px) { .mods { grid-template-columns: repeat(3, 1fr); } }
+  @media (max-width: 560px) { .mods { grid-template-columns: repeat(2, 1fr); } }
+  .mod {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem .9rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .mod::after {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent); transform: scaleY(0); transform-origin: top; transition: transform .25s;
+  }
+  .mod:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 10px 26px rgba(0,0,0,.07); }
+  .mod:hover::after { transform: scaleY(1); }
+  .mod-num { font-family: var(--display); font-style: italic; font-weight: 500; font-size: .95rem; color: var(--accent); }
+  .mod-icon { color: var(--accent); margin: .35rem 0 .5rem; }
+  .mod-icon svg { width: 30px; height: 30px; }
+  .mod-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0; }
+  .mod-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .66rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .1em; }
+  .mod-role { font-size: .8rem; color: var(--accent); font-weight: 600; margin: .35rem 0 .15rem; }
+  .mod-desc { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .mod-memory {
+    grid-column: 1 / -1; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    background: linear-gradient(90deg, var(--bg-soft), color-mix(in srgb, var(--accent) 6%, var(--surface)));
+    border-style: dashed;
+  }
+  .mod-memory .mod-icon { margin: 0; }
+  .mod-memory .mod-name { font-size: 1rem; }
+  .mod-memory .mod-desc { flex: 1; min-width: 200px; }
+  .mod-memory .found {
+    font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--text-muted); border: 1px solid var(--border-strong); padding: .25em .6em; border-radius: 999px;
+  }
+
+  /* ═════════ 视觉四：CI 巡检循环流水线 ═════════ */
+  .pipe { margin: 1.8em 0; }
+  .pipe-flow { display: grid; grid-template-columns: repeat(5, 1fr) ; gap: .5rem; position: relative; }
+  @media (max-width: 860px) { .pipe-flow { grid-template-columns: 1fr; } }
+  .pipe-step {
+    border: 1px solid var(--border); border-radius: 12px; padding: .9rem .8rem;
+    background: var(--surface); position: relative;
+    transition: transform .2s, border-color .2s;
+  }
+  .pipe-step:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .pipe-step .ph { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+  .pipe-step .pn {
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--accent); line-height: 1;
+  }
+  .pipe-step .pi { color: var(--accent); }
+  .pipe-step .pi svg { width: 20px; height: 20px; display: block; }
+  .pipe-step .pt { font-family: var(--display); font-weight: 700; font-size: .98rem; color: var(--text); }
+  .pipe-step .pm {
+    font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); margin: .35rem 0 .25rem; display: inline-block;
+    border: 1px solid var(--rule); padding: .1em .45em; border-radius: 4px;
+  }
+  .pipe-step .pd { font-size: .8rem; color: var(--text-soft); margin: 0; line-height: 1.45; }
+  /* 步骤间箭头（桌面） */
+  .pipe-step:not(:last-child)::after {
+    content: "→"; position: absolute; right: -.5rem; top: 50%; transform: translate(50%, -50%);
+    font-family: var(--display); color: var(--accent); font-size: 1.2rem; z-index: 2;
+    background: var(--bg); padding: 0 .15rem; line-height: 1;
+  }
+  @media (max-width: 860px) {
+    .pipe-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -.5rem; transform: translate(50%, 50%); }
+  }
+  .pipe-loop {
+    margin-top: 1rem; display: flex; align-items: center; gap: .7rem; justify-content: center;
+    font-family: var(--mono); font-size: .76rem; color: var(--accent); letter-spacing: .06em;
+  }
+  .pipe-loop .gly { font-size: 1.1rem; animation: orbit 9s linear infinite; display: inline-block; }
+
+  /* ═════════ 视觉五：三笔债（递进卡片） ═════════ */
+  .debts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.8em 0; }
+  @media (max-width: 820px) { .debts { grid-template-columns: 1fr; } }
+  .debt {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: .6rem;
+    transition: transform .2s; border-top: 3px solid var(--c);
+  }
+  .debt:hover { transform: translateY(-4px); }
+  .debt.d1 { --c: var(--accent); }
+  .debt.d2 { --c: var(--warn); }
+  .debt.d3 { --c: var(--con); }
+  .debt-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .8rem; }
+  .debt-ic { color: var(--c); flex-shrink: 0; }
+  .debt-ic svg { width: 30px; height: 30px; display: block; }
+  .debt-sev { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; }
+  .debt-sev .bar { width: 26px; height: 7px; border-radius: 2px; background: var(--border); }
+  .debt-sev .bar.on { background: var(--c); }
+  .debt-sev .lab { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-top: .2em; }
+  .debt-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; line-height: 1.2; }
+  .debt-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .64rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .15em; }
+  .debt-mean { font-size: .85rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .debt-fix {
+    font-size: .82rem; margin: .2rem 0 0; padding-top: .6rem; border-top: 1px dashed var(--border-strong);
+    display: flex; gap: .5rem; line-height: 1.45;
+  }
+  .debt-fix b { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--c); flex-shrink: 0; padding-top: .15em; }
+
+  /* ── FDE 映射 / 待验证：轻量打磨 ── */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li {
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline;
+    padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0;
+  }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li {
+    counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative;
+    border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent);
+    border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55;
+  }
+  .threads li::before {
+    content: "?" counter(th); position: absolute; left: .8rem; top: .78rem;
+    font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem;
+  }
+
+  /* reduced-motion：关掉本页特有的轨道/流光动画（.reveal 由共享样式处理） */
+  @media (prefers-reduced-motion: reduce) {
+    .orbit, .dash-flow, .pipe-loop .gly { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      循环工程 Loop Engineering：从手动提示到自主 Coding Agent 循环系统<span class="brand-sub">跨市场 · Agent 编排 · 2026-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>循环工程<span class="en"> Loop Engineering</span><br />从手动提示到自主 Coding Agent 循环系统</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Addy Osmani 分析 · Claude Code × Codex 五模块同构 · 约 18 分钟 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-06-18</span>
+        <span>跨市场</span>
+        <span>Loop Engineering</span>
+        <span>Coding Agent</span>
+        <span>Agent 编排</span>
+        <span>MCP</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5<small>+1</small></div><div class="lab">模块 + 外部记忆<br />构成完整循环</div></div>
+        <div class="hero-stat"><div class="num">3</div><div class="lab">笔新债<br />验证·理解·认知</div></div>
+        <div class="hero-stat"><div class="num">≈</div><div class="lab">Codex ≡ Claude Code<br />底层模块同构</div></div>
+        <div class="hero-stat"><div class="num">18<small>min</small></div><div class="lab">原始信源<br />Addy Osmani 深度分析</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        视频：<a href="https://www.youtube.com/watch?v=KgiwIEBeOHw" target="_blank" rel="noopener">YouTube · Best Partners TV · KgiwIEBeOHw</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>硅谷一线信号指向同一范式转移——<strong>程序员的核心杠杆从「写好提示词」转向「设计能自主运转的循环系统」</strong>。Loop Engineering 在 Agent Harness 之上，由 Automations、Worktrees、Skills、Connectors、Sub-agents 五模块 + 外部记忆组成；Claude Code 与 Codex 已内置同构能力，工具差异正在缩小。但循环同时放大三笔债：<strong>验证责任、理解债、认知投降</strong>。对 FDE 的映射是：把循环当可复用编排资产，把 Skill/状态文件当组织记忆，把子 Agent 验证当 eval 治理面——<strong>以工程师身份设计系统，而非做只会按启动键的人</strong>。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>范式转移</strong>：从「人逐步 prompt Agent」→「人设计循环系统，Agent 自主迭代直到目标达成」</li>
+        <li><strong>五模块 + 外部记忆</strong>：Automations · Worktrees · Skills · Connectors · Sub-agents · 持久化状态文件</li>
+        <li><strong>工具趋同</strong>：Claude Code 与 Codex 底层模块高度同构，竞争焦点从「选哪款工具」转向「能否设计通用循环逻辑」</li>
+        <li><strong>三笔新债</strong>：验证责任仍在人、理解债（Comprehension Debt）、认知投降（Cognitive Surrender）</li>
+        <li><strong>FDE 映射</strong>：循环 = 可复用编排资产；Skill/状态文件 = 组织记忆；子 Agent 验证 = eval 治理面</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>背景：从手动提示到循环工程<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">The Shift · 范式转移</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>视频来源</td><td>Best Partners TV · 基于 Google AI 总监 <strong>Addy Osmani</strong> 深度分析 · 约 18 分钟</td></tr>
+          <tr><td>核心信源</td><td><a href="https://x.com/addyosmani/status/2064127981161959567" target="_blank" rel="noopener">Addy Osmani X 帖</a>；Peter Steinberger（OpenClaw）；Boris Cherny（Claude Code）；Andrej Karpathy（AutoResearch）</td></tr>
+          <tr><td>概念层级</td><td>Agent Harness Engineering（单 Agent 运行框架）&lt; <strong>Loop Engineering</strong>（计时器上的自主运行环境，可生成子 Agent）&lt; 工厂模型（整套软件构建系统）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ▼ 视觉一：双态对照 -->
+    <div class="shift reveal">
+      <div class="shift-side shift-manual">
+        <span class="shift-eyebrow"><span class="dot"></span>过去 · 手动提示</span>
+        <div class="shift-vis">
+          <svg viewBox="0 0 360 130" role="img" aria-label="手动提示：人逐步触发 Agent">
+            <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <g transform="translate(40,55)">
+                <circle cx="0" cy="-8" r="9"/>
+                <path d="M-12 16 a12 12 0 0 1 24 0"/>
+              </g>
+              <text x="40" y="93" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">人</text>
+              <line x1="62" y1="55" x2="104" y2="55"/>
+              <path d="M104 51 l8 4 l-8 4 z" fill="currentColor" stroke="none"/>
+              <text x="83" y="46" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">prompt</text>
+              <g transform="translate(150,55)"><rect x="-26" y="-18" width="52" height="36" rx="7"/></g>
+              <text x="150" y="59" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">Agent</text>
+              <line x1="178" y1="55" x2="220" y2="55"/>
+              <path d="M220 51 l8 4 l-8 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(266,55)"><rect x="-26" y="-18" width="52" height="36" rx="7"/></g>
+              <text x="266" y="59" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">输出</text>
+              <path d="M266 78 Q180 120 40 78" stroke-dasharray="4 5" stroke-width="1.4"/>
+              <text x="153" y="120" text-anchor="middle" font-size="9.5" fill="currentColor" stroke="none">等下一条指令 · 走走停停</text>
+              <g transform="translate(330,55)" stroke-width="2" stroke-linecap="round">
+                <line x1="-3" y1="-7" x2="-3" y2="7"/><line x1="3" y1="-7" x2="3" y2="7"/>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <p class="shift-cap">Agent 是「你全程握持的工具」——每一步都要人触发，<strong>串行、走走停停</strong>，产能上限是你的手速。</p>
+      </div>
+
+      <div class="shift-arrow">
+        <span class="gly">→</span>
+        <span class="lab">范式转移</span>
+      </div>
+
+      <div class="shift-side shift-loop">
+        <span class="shift-eyebrow"><span class="dot"></span>现在 · 循环工程</span>
+        <div class="shift-vis">
+          <svg viewBox="0 0 360 130" role="img" aria-label="循环工程：Agent 自主迭代直到目标达成">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <text x="36" y="14" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">目标 ×1</text>
+              <line x1="52" y1="55" x2="92" y2="55"/>
+              <path d="M92 51 l8 4 l-8 4 z" fill="currentColor" stroke="none"/>
+              <!-- 自运转循环 -->
+              <g transform="translate(230,60)">
+                <circle cx="0" cy="0" r="44" stroke-width="2" class="dash-flow"/>
+                <g class="orbit">
+                  <circle cx="0" cy="-44" r="5.5" fill="currentColor" stroke="none"/>
+                  <circle cx="0" cy="-44" r="9" stroke-width="1" opacity=".4"/>
+                </g>
+                <path d="M44 -2 L40 -8 L48 -8 z" fill="currentColor" stroke="none"/>
+              </g>
+              <text x="230" y="58" text-anchor="middle" font-size="14" font-weight="700" stroke="none" style="fill:var(--accent-ink)">循环</text>
+              <text x="230" y="73" text-anchor="middle" font-size="8" stroke="none" style="fill:var(--text-muted)">自主运转</text>
+              <text x="230" y="120" text-anchor="middle" font-size="9.5" fill="currentColor" stroke="none">迭代直到目标达成 ✓</text>
+              <!-- 人（被动，只下达一次目标） -->
+              <g style="color:var(--text-muted)" transform="translate(36,60)">
+                <circle cx="0" cy="-8" r="8" stroke-width="1.5"/>
+                <path d="M-10 14 a10 10 0 0 1 20 0" stroke-width="1.5"/>
+                <text x="0" y="34" text-anchor="middle" font-size="9.5" fill="currentColor" stroke="none">人</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+        <p class="shift-cap">你只定义<strong>最终目的</strong>，循环在后台反复迭代执行；人从「逐步发令」变成<strong>设计能自转的系统</strong>。</p>
+      </div>
+    </div>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      Boris Cherny：「我现在很少手动提示 Claude 了，有很多循环在后台运行，它们负责提示 Claude、判断下一步。我的核心工作是编写这些循环。」
+    </blockquote>
+
+    <!-- 二 -->
+    <h2 id="sec-definition"><span class="sec-num">二</span>循环工程是什么<a href="#sec-definition" class="anchor">#</a></h2>
+    <p class="kicker">Definition · 概念定位</p>
+
+    <p><strong>Loop Engineering（循环工程）</strong>：用你设计的系统，替代你自己完成对 Agent 的提示与调度。循环 = 一个<strong>递归目标</strong>——你只定义最终目的，AI 反复迭代执行直到完成。</p>
+
+    <!-- ▼ 视觉二：嵌套层级 -->
+    <div class="nest reveal">
+      <div class="nest-tier nest-factory">
+        <div class="nest-row"><span class="nest-mark">最外层</span><span class="nest-label">工厂模型 <span class="en">Factory Model</span></span></div>
+        <p class="nest-desc">整套软件生产系统——从需求到交付的完整流水线。</p>
+        <div class="nest-tier nest-loop">
+          <div class="nest-row"><span class="nest-mark">本文焦点</span><span class="nest-label">Loop Engineering <span class="en">循环工程</span></span></div>
+          <p class="nest-desc">跑在计时器上，能<strong>自主生成子 Agent、自我驱动、持续运转</strong>。</p>
+          <div class="nest-tier nest-harness">
+            <div class="nest-row"><span class="nest-mark">最内层</span><span class="nest-label">Agent Harness <span class="en">运行框架</span></span></div>
+            <p class="nest-desc">为单个 Agent 搭建运行环境（prompt、工具、权限）。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>关键变化：一年前跑自动循环还需自己写 bash 脚本长期维护；现在<strong>五模块能力已内置进 Claude Code 与 Codex</strong>，Steinberger 总结的循环清单与两款产品功能几乎一一对应。启示是：<strong>设计通用循环逻辑，工具可替换</strong>。</p>
+
+    <!-- 三 -->
+    <h2 id="sec-modules"><span class="sec-num">三</span>五模块 + 外部记忆<a href="#sec-modules" class="anchor">#</a></h2>
+    <p class="kicker">The Loop Engine · 循环引擎</p>
+
+    <!-- ▼ 视觉三：循环引擎中心件 -->
+    <div class="engine reveal">
+      <div class="engine-emblem">
+        <svg viewBox="0 0 400 400" role="img" aria-label="循环引擎：中心闭环 + 五模块节点 + 外部记忆基座">
+          <defs>
+            <radialGradient id="hub" cx="50%" cy="42%" r="60%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".18"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- accent 区域：环、方向、站点、轨道点 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <circle cx="200" cy="200" r="138" stroke-width="1.5" opacity=".35"/>
+            <circle cx="200" cy="200" r="138" stroke-width="2.5" class="dash-flow" opacity=".9"/>
+            <path d="M200 62 L210 50 L218 64" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            <g class="orbit">
+              <circle cx="200" cy="62" r="7" fill="currentColor" stroke="none"/>
+              <circle cx="200" cy="62" r="12" stroke-width="1.2" opacity=".4"/>
+            </g>
+            <g class="nums" font-size="15">
+              <g><circle cx="200" cy="62" r="18" stroke-width="2" style="fill:var(--surface)"/><text x="200" y="67" text-anchor="middle" fill="currentColor" stroke="none">1</text></g>
+              <g><circle cx="324" cy="160" r="18" stroke-width="2" style="fill:var(--surface)"/><text x="324" y="165" text-anchor="middle" fill="currentColor" stroke="none">2</text></g>
+              <g><circle cx="276" cy="305" r="18" stroke-width="2" style="fill:var(--surface)"/><text x="276" y="310" text-anchor="middle" fill="currentColor" stroke="none">3</text></g>
+              <g><circle cx="124" cy="305" r="18" stroke-width="2" style="fill:var(--surface)"/><text x="124" y="310" text-anchor="middle" fill="currentColor" stroke="none">4</text></g>
+              <g><circle cx="76" cy="160" r="18" stroke-width="2" style="fill:var(--surface)"/><text x="76" y="165" text-anchor="middle" fill="currentColor" stroke="none">5</text></g>
+            </g>
+          </g>
+          <!-- 中心晕染 + 内虚线 -->
+          <circle cx="200" cy="200" r="96" fill="url(#hub)"/>
+          <circle cx="200" cy="200" r="92" fill="none" style="stroke:var(--border)" stroke-width="1" stroke-dasharray="2 5"/>
+          <!-- 中心文字 -->
+          <text class="disp" x="200" y="192" text-anchor="middle" font-size="26" style="fill:var(--accent-ink)">循环</text>
+          <text x="200" y="216" text-anchor="middle" font-size="11" letter-spacing="2" style="fill:var(--text-muted)">LOOP ENGINE</text>
+          <text x="200" y="236" text-anchor="middle" font-size="9.5" style="fill:var(--text-muted)">自主运转 · 直到目标达成</text>
+          <!-- 外部记忆基座（rust） -->
+          <g style="color:var(--rust)" fill="none" stroke="currentColor">
+            <line x1="56" y1="356" x2="344" y2="356" stroke-width="2" stroke-dasharray="3 4"/>
+            <rect x="120" y="350" width="160" height="22" rx="6" style="fill:var(--bg)" stroke-width="1.4"/>
+            <text x="200" y="365" text-anchor="middle" font-size="10" font-weight="600" fill="currentColor" stroke="none">⏚ 外部记忆 / 状态文件</text>
+            <line x1="200" y1="338" x2="200" y2="350" stroke-width="1.2" opacity=".6"/>
+          </g>
+        </svg>
+      </div>
+      <div class="engine-legend">
+        <div class="ll"><b>1</b><span>Automations 自动化 —— 给任务设周期，到点自动触发，循环的<strong>心跳</strong>。</span></div>
+        <div class="ll"><b>2</b><span>Worktrees 工作树 —— 多 Agent 并行改码的<strong>物理隔离</strong>，避免撞库。</span></div>
+        <div class="ll"><b>3</b><span>Skills 技能 —— 写一次、每次可读，消除<strong>意图债务</strong>，意图复利。</span></div>
+        <div class="ll"><b>4</b><span>Connectors 连接器 —— 基于 MCP，读需求/查库/建 MR/发通知，<strong>融入环境</strong>。</span></div>
+        <div class="ll"><b>5</b><span>Sub-agents 子 Agent —— 第二个模型<strong>生成分离</strong>验证，发现自审盲区。</span></div>
+        <div class="ll" style="color:var(--rust);border-top:1px dashed var(--border-strong);padding-top:.55rem;margin-top:.1rem;"><b style="color:var(--rust);">⏚</b><span>外部记忆 —— 跨会话状态。Agent 会忘，<strong>仓库和状态文件不会</strong>。</span></div>
+      </div>
+    </div>
+
+    <!-- 模块速查卡 -->
+    <div class="mods reveal">
+      <article class="mod">
+        <div class="mod-num">01</div>
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-6 3.2 12L13.5 9l2 4.2H22"/></svg></div>
+        <h4 class="mod-name">自动化<span class="en">Automations</span></h4>
+        <div class="mod-role">循环的心跳</div>
+        <p class="mod-desc">定时触发、持续到条件达成、无人值守归档。</p>
+      </article>
+      <article class="mod">
+        <div class="mod-num">02</div>
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="12" r="2.3"/><path d="M6 8.3v7.4M8 11c4 0 4-3 8-3"/></svg></div>
+        <h4 class="mod-name">工作树<span class="en">Worktrees</span></h4>
+        <div class="mod-role">并行隔离</div>
+        <p class="mod-desc">独立目录/分支、共享历史，物理层避免冲突。</p>
+      </article>
+      <article class="mod">
+        <div class="mod-num">03</div>
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 4.8-9 4.8L3 7.8z"/><path d="M3 12.2l9 4.8 9-4.8"/><path d="M3 16.6l9 4.8 9-4.8"/></svg></div>
+        <h4 class="mod-name">技能<span class="en">Skills</span></h4>
+        <div class="mod-role">意图复利</div>
+        <p class="mod-desc">写一次、每次可读，把规范沉淀成组织记忆。</p>
+      </article>
+      <article class="mod">
+        <div class="mod-num">04</div>
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="11" r="2.4"/><circle cx="4.5" cy="6" r="1.8"/><circle cx="19.5" cy="6" r="1.8"/><circle cx="12" cy="20" r="1.8"/><path d="M6.1 7l4 2.6M17.9 7l-4 2.6M12 17.6v-3.4"/></svg></div>
+        <h4 class="mod-name">连接器<span class="en">Connectors</span></h4>
+        <div class="mod-role">融入环境</div>
+        <p class="mod-desc">MCP 协议接入需求/数据库/CI/IM，跨工具复用。</p>
+      </article>
+      <article class="mod">
+        <div class="mod-num">05</div>
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3.1"/><circle cx="17" cy="15.5" r="2.7"/><path d="M11.6 11l2.9 2.9"/><path d="M15.6 15.5l.9.9 1.5-1.7"/></svg></div>
+        <h4 class="mod-name">子 Agent<span class="en">Sub-agents</span></h4>
+        <div class="mod-role">生成分离</div>
+        <p class="mod-desc">第二个模型对照验证，发现自审忽略的问题。</p>
+      </article>
+      <article class="mod mod-memory">
+        <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="color:var(--rust);"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg></div>
+        <div>
+          <h4 class="mod-name">外部记忆<span class="en">External Memory · 跨会话状态</span></h4>
+          <p class="mod-desc">Markdown 状态文件、项目看板——记录「已完成/待做」。长时间运行的循环必须依赖持久化存储，<strong>Agent 会忘，仓库不会</strong>。</p>
+        </div>
+        <span class="found">基座 / Foundation</span>
+      </article>
+    </div>
+
+    <h3 id="sec-auto">3.1 Automations —— 定时与持续运行</h3>
+    <p>两款工具实现路径不同、逻辑相同：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>能力</th><th>Codex</th><th>Claude Code</th></tr></thead>
+        <tbody>
+          <tr><td>定时任务</td><td>自动化标签页：选项目、提示词、频率、本地/工作树</td><td><code>/loop</code>、定时任务、生命周期钩子（hooks）</td></tr>
+          <tr><td>持续运行至条件达成</td><td><code>/goal</code>：跨多轮直到可验证停止条件成立</td><td><code>/goal</code>：每轮结束由<strong>独立小模型</strong>检查是否完成</td></tr>
+          <tr><td>无人值守</td><td>结果进分类收件箱；无问题则自动归档</td><td>可推送到 GitHub Actions 关电脑后继续</td></tr>
+          <tr><td>Skill 调用</td><td>自动化任务可直接调用 Skill</td><td>同上逻辑</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><code>/loop</code> = 固定节奏重复；<code>/goal</code> = 直到「认证模块测试全过且 lint 通过」类停止条件成立。<strong>写代码的 Agent 与判断是否完成的 Agent 不是同一个</strong>——生成与校验分离从停止条件层就已体现。</p>
+
+    <h3 id="sec-worktree">3.2 Worktrees —— 并行隔离</h3>
+    <p>Codex 内置多线程；Claude Code 支持 <code>--worktree</code> 与子 Agent 工作树隔离，多 Agent 同时改同一文件从物理层避免冲突。</p>
+    <div class="callout callout-warn">
+      <div class="callout-tag">编排税</div>
+      <p style="margin:.3em 0;">工作树只解决<strong>机械层文件冲突</strong>。真正瓶颈是<strong>人一天能审核多少份产出</strong>——你能并行跑几个 Agent，取决于你能读几份 PR，而非工具线程数。</p>
+    </div>
+
+    <h3 id="sec-skills">3.3 Skills —— 意图复利</h3>
+    <p>每次新会话从零解释项目 → <strong>意图债务</strong>：没说清楚的，Agent 用猜测填补。Skill 写一次、每次可读。</p>
+    <ul>
+      <li>Skill = <strong>内容编写格式</strong>；Plugin = <strong>内容分发方式</strong>（跨仓库共享、打包多个 Skill）</li>
+      <li>描述要简洁明确——<strong>准确匹配比花哨文案有用</strong></li>
+    </ul>
+
+    <h3 id="sec-connectors">3.4 Connectors —— 融入工作环境</h3>
+    <p>基于 <strong>MCP 协议</strong>的连接器让循环读需求跟踪器、查数据库、调测试环境、发 IM，两款工具 MCP 互通可跨工具复用。普通 Agent 告诉你「这里有修复方案」；完整循环能<strong>自己建 MR、关联工单、CI 通过后自动通知频道</strong>。</p>
+
+    <h3 id="sec-subagents">3.5 Sub-agents —— 生成分离</h3>
+    <p>第二个 Agent（不同指令/模型）能发现第一个忽略的问题。常见分工：<strong>探索 → 实现 → 对照规格验证</strong>。无人值守时，可信验证环节是放心让它跑的前提；代价是更多 token，只在关键场景开启。</p>
+
+    <!-- 3.6 外部记忆 已并入上方模块卡，此处保留跨会话要点 -->
+
+    <!-- 四 -->
+    <h2 id="sec-example"><span class="sec-num">四</span>完整循环实例<a href="#sec-example" class="anchor">#</a></h2>
+    <p class="kicker">Loop in Motion · 每日 CI 巡检</p>
+
+    <p>你只需<strong>设计一次循环规则</strong>，之后无需手动提示任何步骤——这正是 Steinberger「不要手动提示 Coding Agent」的工程化体现。</p>
+
+    <!-- ▼ 视觉四：CI 巡检流水线 -->
+    <div class="pipe reveal">
+      <div class="pipe-flow">
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">1</span><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg></span><span class="pt">触发</span></div>
+          <span class="pm">Automations</span>
+          <p class="pd">早上自动启动，调分类 Skill，读昨日 CI 失败 / 未解 issue / 最近提交。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">2</span><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg></span><span class="pt">落盘</span></div>
+          <span class="pm">Memory</span>
+          <p class="pd">写入状态文件（Markdown / 看板），建立可断点续跑的基线。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">3</span><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="9" r="3"/><circle cx="17" cy="15.5" r="2.6"/><path d="M11.5 11l2.9 2.8"/><path d="M15.7 15.5l.8.9 1.4-1.6"/></svg></span><span class="pt">分支</span></div>
+          <span class="pm">Worktree + Sub-agent</span>
+          <p class="pd">每个问题建工作树：子 Agent A 起草修复，B 对照 Skill/测试审查。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">4</span><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l16-7-6.5 16-2.4-6.4z"/><path d="M13.5 5l-2.6 6.6"/></svg></span><span class="pt">交付</span></div>
+          <span class="pm">Connectors</span>
+          <p class="pd">连接器自动建 MR、关联工单；CI 通过后通知频道；复杂问题进人工收件箱。</p>
+        </div>
+        <div class="pipe-step">
+          <div class="ph"><span class="pn">5</span><span class="pi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3M19.5 4v3.2h-3.2"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3M4.5 20v-3.2h3.2"/></svg></span><span class="pt">续跑</span></div>
+          <span class="pm">Memory</span>
+          <p class="pd">状态文件记录已尝试方案 / 通过验证 / 进行中，次日从断点继续。</p>
+        </div>
+      </div>
+      <div class="pipe-loop"><span class="gly">↻</span> 次日重复 · 从断点继续，而非从头开始</div>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-risks"><span class="sec-num">五</span>三笔「债」：循环放大的副作用<a href="#sec-risks" class="anchor">#</a></h2>
+    <p class="kicker">The New Debts · 递进的风险</p>
+
+    <p>循环让产出变快，也把三类风险<strong>同步放大</strong>——严重度自左至右递增：</p>
+
+    <!-- ▼ 视觉五：三笔债递进卡 -->
+    <div class="debts reveal">
+      <article class="debt d1">
+        <div class="debt-head">
+          <div class="debt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5c0 4.6-3.2 7.8-7.5 9.3C7.7 18.8 4.5 15.6 4.5 11V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <div class="debt-sev"><span class="bar on"></span><span class="bar"></span><span class="bar"></span><span class="lab">Lv 1</span></div>
+        </div>
+        <h4 class="debt-name">验证责任<span class="en">Verification Responsibility</span></h4>
+        <p class="debt-mean">无人值守循环 = 无人值守犯错。「完成」只是一句声明，不是严格验证。</p>
+        <p class="debt-fix"><b>应对</b><span>交付的仍是你亲自确认可运行的代码。</span></p>
+      </article>
+      <article class="debt d2">
+        <div class="debt-head">
+          <div class="debt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5z"/><path d="M19 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6z"/></svg></div>
+          <div class="debt-sev"><span class="bar on"></span><span class="bar on"></span><span class="bar"></span><span class="lab">Lv 2</span></div>
+        </div>
+        <h4 class="debt-name">理解债<span class="en">Comprehension Debt</span></h4>
+        <p class="debt-mean">循环产出越快，你没亲手写的代码越多，对代码库的理解持续退化。</p>
+        <p class="debt-fix"><b>应对</b><span>认真读每一份循环生成的代码，保持掌控力。</span></p>
+      </article>
+      <article class="debt d3">
+        <div class="debt-head">
+          <div class="debt-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18"/><path d="M6 4.2h10c-1.2 2-1.2 3.2 0 5.2H6"/></svg></div>
+          <div class="debt-sev"><span class="bar on"></span><span class="bar on"></span><span class="bar on"></span><span class="lab">Lv 3</span></div>
+        </div>
+        <h4 class="debt-name">认知投降<span class="en">Cognitive Surrender</span></h4>
+        <p class="debt-mean">循环自运行时，人停止主动思考，直接接受所有结果——加速能力退化。</p>
+        <p class="debt-fix"><b>应对</b><span>带着判断力设计循环；逃避思考则是最深的债。</span></p>
+      </article>
+    </div>
+
+    <p>此外还有现实约束：<strong>token 成本</strong>（不同模式消耗差异巨大）、<strong>代码质量下滑</strong>（无人值守放大粗糙产出）。方向仍处早期，但可能是未来协作雏形。</p>
+
+    <!-- 六 -->
+    <h2 id="sec-fde"><span class="sec-num">六</span>FDE / ToB 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 落到客户现场</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>杠杆点转移</strong>：从「写好单次 prompt」→「设计可复用循环系统 + 组织记忆」——与 Alex Albert 访谈中「eval / 书面文化 / 并行 Agent 治理」同向。</span></li>
+      <li><span class="ix">ii</span><span><strong>工具选型降级</strong>：五模块同构意味着客户场景应优先问「循环逻辑是否可审计、可回滚」，而非「Claude Code vs Codex」。</span></li>
+      <li><span class="ix">iii</span><span><strong>编排税 = 交付瓶颈</strong>：ToB POC 并行 Agent 时，审核/验收人力是硬上限；循环设计必须包含<strong>人工收件箱 + 分级自动化</strong>。</span></li>
+      <li><span class="ix">iv</span><span><strong>Skill = 组织意图资产</strong>：对应企业内 coding 规范、架构决策记录、踩坑清单——循环每次运行都复利读取。</span></li>
+      <li><span class="ix">v</span><span><strong>子 Agent 验证 = eval 治理</strong>：生成分离、对抗审查，是无人值守场景最低限度的质量门禁。</span></li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断</div>
+      <p style="margin:.3em 0;">循环工程是<strong>解药也是毒药</strong>——取决于你是否仍承担验证与理解责任。可以搭建循环，但要以<strong>工程师身份设计系统</strong>，而非做只会按启动键的人。找到「直接提示」与「自动化循环」之间的平衡，比全盘押注任一极端更务实。</p>
+    </div>
+
+    <!-- 七 -->
+    <h2 id="sec-open"><span class="sec-num">七</span>待验证问题<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 留给后续</p>
+
+    <ol class="threads">
+      <li>企业场景下，循环的 token 成本 vs 人力节省，盈亏平衡点在哪类任务形态？</li>
+      <li>状态文件 / Skill 的版本治理：谁来审批变更、如何防止「意图漂移」？</li>
+      <li>子 Agent 验证的 false negative 率：什么任务类型仍必须人工 gate？</li>
+      <li>与 Dynamic Workflows（JS 编排脚本、1000 agent 上限）如何组合，而非二选一？</li>
+      <li>ToB 交付中，如何把客户侧的「理解债」纳入验收与知识转移 SLA？</li>
+    </ol>
+
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-06-18 初稿 · 视觉重构版 · 视频 KgiwIEBeOHw
+    </p>
+
+    <div class="doc-footer">
+      <a href="../insights/index.html">← 洞察总索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

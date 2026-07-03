@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI-Native Organization · 卷一：理论解读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AI-Native Organization · 卷一 — "Academic Monograph" · Indigo
+   Crimson Pro + Plus Jakarta Sans
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --accent: #2d3a8c;
+  --accent-soft: #eef0f8;
+  --serif: "Crimson Pro", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  --sans: "Plus Jakarta Sans", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+  --ink: #1a1a2e;
+}
+[data-theme="dark"] {
+  --accent: #818cf8;
+  --accent-soft: #1e1b4b;
+  --ink: #e0e0f0;
+}
+
+body {
+  background-image: radial-gradient(circle, var(--border) .5px, transparent .5px);
+  background-size: 28px 28px;
+}
+
+.progress-bar {
+  position: fixed; top: 0; left: 0;
+  height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--accent), #6366f1);
+  z-index: 200;
+  transition: width .08s linear;
+  pointer-events: none;
+}
+
+.topbar {
+  border-bottom-color: color-mix(in srgb, var(--accent) 15%, var(--border));
+}
+.brand { letter-spacing: -.02em; }
+
+/* ── Hero (inside article, next to TOC sidebar) ─── */
+.insight-hero {
+  position: relative;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.insight-hero::after {
+  content: "";
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent,
+    color-mix(in srgb, var(--accent) 40%, transparent) 30%,
+    color-mix(in srgb, #6366f1 40%, transparent) 70%,
+    transparent);
+}
+.insight-hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  margin: 0 0 .15em;
+  color: var(--text);
+}
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  font-weight: 400;
+  margin: 0 0 1.2em;
+  line-height: 1.5;
+}
+.hero-rule {
+  width: 48px; height: 2px;
+  background: linear-gradient(to right, var(--accent), #6366f1);
+  margin: .7rem 0 .9rem;
+  border-radius: 1px;
+}
+.hero-meta {
+  display: flex; flex-wrap: wrap;
+  gap: .45rem; margin-top: .8em;
+}
+.hero-meta span {
+  padding: .22em .7em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--text-soft);
+  transition: border-color .15s, background .15s;
+}
+.hero-meta span.meta-accent {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* ── Mobile drawer (ensure hidden off-screen) ───── */
+.drawer-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 90; }
+.drawer-overlay.open { display: block; }
+.drawer { position: fixed; top: 0; right: -80%; width: 80%; max-width: 320px; height: 100vh; background: var(--surface); z-index: 100; padding: 4rem 1.2rem 2rem; overflow-y: auto; transition: right .25s; box-shadow: -8px 0 24px rgba(0,0,0,.15); }
+.drawer.open { right: 0; }
+.drawer h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; }
+.drawer ul { list-style: none; padding: 0; margin: 0; }
+.drawer li { margin: .15em 0; }
+.drawer a { color: var(--text-soft); display: block; padding: .4em .5em; border-radius: 6px; font-size: .92rem; border-bottom: none; }
+.drawer a:hover { background: var(--bg-soft); }
+.drawer li.sub a { padding-left: 1.4em; font-size: .88em; }
+.toc-mobile-btn { display: none; }
+@media (max-width: 1024px) { .toc-mobile-btn { display: inline-flex; } }
+
+/* ── Layout ──────────────────────────────────────── */
+.container {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 3.5rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2.5rem 1.2rem 6rem;
+}
+.toc-aside {
+  position: sticky;
+  top: 80px;
+  align-self: start;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  padding-right: .6rem;
+  font-size: .85rem;
+}
+.toc-aside h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; font-weight: 600; }
+.toc-aside ul { list-style: none; padding: 0; margin: 0; }
+.toc-aside li { margin: .15em 0; }
+.toc-aside a {
+  color: var(--text-soft);
+  display: block;
+  padding: .25em .5em;
+  border-radius: 6px;
+  border-bottom: none;
+  line-height: 1.4;
+  transition: color .15s, background .15s;
+}
+.toc-aside a:hover { background: var(--bg-soft); color: var(--text); }
+.toc-aside li.sub a { padding-left: 1.4em; font-size: .95em; color: var(--text-muted); }
+
+/* ── Lede ────────────────────────────────────────── */
+.lede {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, color-mix(in srgb, #6366f1 8%, var(--accent-soft)) 100%);
+  padding: 1.2em 1.4em;
+  border-radius: 0 10px 10px 0;
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+/* ── Callouts ────────────────────────────────────── */
+.callout {
+  border-radius: 0 10px 10px 0;
+  border-left-width: 4px;
+}
+.callout-accent {
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, #6366f1 6%, var(--accent-soft)));
+}
+.callout-accent .callout-tag { color: var(--accent); font-size: .7rem; letter-spacing: .1em; }
+
+/* ── Sections ────────────────────────────────────── */
+article h2 {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 3.5em;
+}
+article h2::after {
+  content: "";
+  display: block;
+  width: 40px; height: 2px;
+  background: linear-gradient(to right, var(--accent), #6366f1);
+  margin-top: .45em;
+  border-radius: 1px;
+}
+
+.sec-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px; height: 28px;
+  padding: 0 .45em;
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: .75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  margin-right: .45em;
+  letter-spacing: 0;
+  vertical-align: middle;
+  position: relative;
+  top: -.05em;
+}
+[data-theme="dark"] .sec-num { color: var(--bg); }
+
+/* ── Tables ──────────────────────────────────────── */
+.table-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03), 0 4px 12px rgba(0,0,0,.04);
+}
+table th {
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, #6366f1 8%, var(--accent-soft)));
+  font-family: var(--sans);
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+table td { padding: .7em 1em; }
+table tbody tr:hover { background: var(--accent-soft); }
+
+/* ── Mermaid ─────────────────────────────────────── */
+pre.mermaid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2em;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(0,0,0,.04);
+}
+
+/* ── Lists ───────────────────────────────────────── */
+article ul li::marker { color: var(--accent); }
+article ol li::marker { color: var(--accent); font-weight: 600; }
+article ol { padding-left: 1.6em; }
+article ol li { padding-left: .2em; }
+
+/* ── Links ───────────────────────────────────────── */
+article a {
+  color: var(--accent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+article a:hover { border-bottom-color: var(--accent); }
+
+/* ── HR ──────────────────────────────────────────── */
+article hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-strong) 20%, var(--border-strong) 80%, transparent);
+  margin: 3em 0;
+}
+
+/* ── TOC ─────────────────────────────────────────── */
+.toc-aside a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Doc footer ──────────────────────────────────── */
+.doc-footer {
+  margin-top: 4em;
+  padding-top: 1.5em;
+  border-top: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: .85rem;
+  text-align: center;
+}
+.doc-footer a { color: var(--text-muted); border-bottom: none; }
+.doc-footer a:hover { color: var(--accent); }
+
+/* ── Animations ──────────────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .insight-hero { animation: heroIn .7s ease both; }
+  .lede          { animation: slideUp .55s ease .12s both; }
+  .callout       { animation: slideUp .55s ease .2s both; }
+  @keyframes heroIn  { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+}
+
+/* ── Dark ────────────────────────────────────────── */
+
+/* ── Mobile ──────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .insight-hero h1 { font-size: 1.6rem; }
+  .container { padding-top: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      AI-Native Org · 卷一<span class="brand-sub">跨市场 · 理论解读 · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+  <article>
+
+    <header class="insight-hero">
+      <h1>AI-Native Organization · 卷一</h1>
+      <div class="hero-rule"></div>
+      <p class="hero-subtitle">10 套框架逐条解读 + 理论关系地图</p>
+      <div class="hero-meta">
+        <span>2026-05-28</span>
+        <span>跨市场</span>
+        <span>组织转型</span>
+        <span class="meta-accent">理论解读</span>
+        <span>对内</span>
+      </div>
+    </header>
+
+    <div class="lede">McKinsey、BCG、Block、Frontier 等框架按统一模板解读；卷二在此基础上做融合与落地。</div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">系列导航</div>
+      <ul style="margin: .3em 0;">
+        <li><a href="./AI_Native_Organization_调研与机会_2026-05.html">系列索引</a></li>
+        <li><a href="./AI_Native_Organization_融合与实现_2026-05.html">卷二：融合与实现</a></li>
+      </ul>
+    </div>
+
+<h2 id="sec-1"><span class="sec-num">一</span>导读：为什么需要「理论库」<a href="#sec-1" class="anchor">#</a></h2>
+<p>AI-native organization 不是单一作者的概念。McKinsey、BCG、Block、OpenAI、Deloitte 以及多家转型框架从不同切面描述同一场变革。若只读一家，容易：</p>
+<ul>
+<li>把 <strong>诊断</strong>（你在哪）当成 <strong>处方</strong>（该改什么）；</li>
+<li>把 <strong>架构</strong>（系统怎么建）当成 <strong>组织设计</strong>（编制怎么变）；</li>
+<li>把 <strong>激进 greenfield</strong>（Block）当成 <strong>legacy 企业</strong> 的唯一路径。</li>
+</ul>
+<p>本卷按 <strong>统一模板</strong> 解读 8 套主框架 + 2 套辅助模型，并在 §12–§13 给出关系地图与冲突说明。卷二在此基础上做融合判断与实现拆解。</p>
+<p><strong>每章模板</strong>：来源与定位 → 核心概念 → 组织形态含义 → 与 AI-native 的关系 → 领导层要问 → 常见误区 → 适用边界。</p>
+<p><strong>理论分类</strong>：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>类型</th><th>理论</th></tr></thead>
+<tbody>
+<tr><td>诊断类</td><td>T0–T3 成熟度；五层能力阶梯；Automation/Augmentation/Transformation</td></tr>
+<tr><td>处方类</td><td>McKinsey 五支柱；BCG AI-First / FoF；五类结构职能</td></tr>
+<tr><td>架构类</td><td>Intelligence Architecture；Block 四层三角色；OpenAI Frontier</td></tr>
+<tr><td>使能类</td><td>Deloitte 技术组织重建</td></tr>
+</tbody>
+</table></div>
+
+<hr />
+<h2 id="sec-2"><span class="sec-num">二</span>McKinsey Agentic Organization · 五支柱<a href="#sec-2" class="anchor">#</a></h2>
+
+<h3 id="sec-2-1">来源与定位<a href="#sec-2-1" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://www.mckinsey.com/capabilities/people-and-organizational-performance/our-insights/the-agentic-organization-contours-of-the-next-paradigm-for-the-ai-era">The agentic organization</a>（2025）；<a href="https://www.mckinsey.com/capabilities/people-and-organizational-performance/our-insights/the-state-of-organizations">The state of organizations 2026</a>（AI-first operating models）。</li>
+<li><strong>解决什么问题</strong>：企业如何把 AI 从「个人提效工具」升级为 <strong>组织级运营范式</strong>——人类与 Agent 规模化协作，边际成本趋近于零。</li>
+<li><strong>类型</strong>：<strong>处方类</strong>（五柱联动 redesign）+ 部分诊断（AI 悖论、double transformation）。</li>
+</ul>
+<h3 id="sec-2-2">核心概念<a href="#sec-2-2" class="anchor">#</a></h3>
+<ol>
+<li><strong>Agentic organization</strong>：工作流 AI-first；基本单元为 <strong>agentic team</strong>（2–5 人监督 50–100 Agent）。</li>
+<li><strong>五支柱</strong>：商业模式、运营模型、治理、人才与文化、技术与数据——同一 redesign 的五个切面。</li>
+<li><strong>Work chart</strong>：按任务/outcome 交换，替代部分 org chart 的层级委派。</li>
+<li><strong>Future-back + lighthouse</strong>：从 3–5 年目标体验倒推；先在一个高价值域五柱最小闭环。</li>
+<li><strong>Double transformation</strong>：技术转型 + 组织转型必须同时进行。</li>
+</ol>
+<p><strong>银行叙事（贯穿示例）</strong>：购房 journey 由房产/按揭/合规/合同/放款 Agent 链执行，人类 agentic team 督导；可延伸至装修、能源等 outcome 网络。</p>
+<h3 id="sec-2-3">组织形态含义<a href="#sec-2-3" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>支柱</th><th>从…</th><th>到…</th></tr></thead>
+<tbody>
+<tr><td>商业模式</td><td>Seat/工时</td><td>Outcome、hyper-personalization、结果网络</td></tr>
+<tr><td>运营模型</td><td>职能 silo</td><td>AI-first 端到端 + agentic team + work chart</td></tr>
+<tr><td>治理</td><td>周期审计</td><td>实时嵌入、policy/critic agent、风险分级 gate</td></tr>
+<tr><td>人才文化</td><td>Execute</td><td>Judge：编排、评判、above the loop</td></tr>
+<tr><td>技术数据</td><td>烟囱 IT</td><td>Registry、MCP/A2A、agentic mesh、semantic 数据</td></tr>
+</tbody>
+</table></div>
+<h3 id="sec-2-4">与 AI-native 的关系<a href="#sec-2-4" class="anchor">#</a></h3>
+<p>McKinsey 的 <strong>agentic organization</strong> 与 <strong>AI-native organization</strong> 在行业用法中高度重叠：均指运营模型重写，而非 AI overlay。本系列将 McKinsey 五支柱作为 <strong>legacy 大企业转型</strong> 最完整的处方框架。</p>
+<h3 id="sec-2-5">领导层要问<a href="#sec-2-5" class="anchor">#</a></h3>
+<ul>
+<li>五柱是否 <strong>联动</strong>？还是只买了 Copilot（仅技术柱）？</li>
+<li>哪个 lighthouse 域可 AI-first 整段重设计？</li>
+<li>Agent 自主边界与 outcome rubric 是否 explicit？</li>
+</ul>
+<h3 id="sec-2-6">常见误区<a href="#sec-2-6" class="anchor">#</a></h3>
+<ul>
+<li>局部节点自动化 ≠ 生产力（BCG 与 McKinsey 共识）。</li>
+<li>Agent 泛滥无 context = chaos。</li>
+<li>把 governance 等于 SOC2 认证。</li>
+</ul>
+<h3 id="sec-2-7">适用边界<a href="#sec-2-7" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：有复杂 legacy 系统、需渐进改造的大中型企业；需要董事会级「五柱 checklist」。</li>
+<li><strong>不适合</strong>：作为唯一 greenfield 蓝图（见 Block）；不能替代具体技术架构设计（见 Frontier / Intelligence Architecture）。</li>
+</ul>
+<h3 id="sec-2-8">2.1 五柱总览<a href="#sec-2-8" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>支柱</th><th>核心问题</th><th>从…</th><th>到…</th></tr></thead>
+<tbody>
+<tr><td><strong>商业模式</strong></td><td>卖什么、如何定价</td><td>Seat / 工时</td><td>Outcome、hyper-personalization</td></tr>
+<tr><td><strong>运营模型</strong></td><td>工作如何组织</td><td>职能 silo + org chart</td><td>AI-first E2E + agentic team + work chart</td></tr>
+<tr><td><strong>治理</strong></td><td>风险与合规如何嵌入</td><td>周期审计</td><td>实时、嵌入、可观测</td></tr>
+<tr><td><strong>人才与文化</strong></td><td>人做什么</td><td>Execute</td><td>Judge：编排、评判、above the loop</td></tr>
+<tr><td><strong>技术数据</strong></td><td>底座如何支撑</td><td>烟囱 IT</td><td>Registry、互操作、Agent 可消费数据</td></tr>
+</tbody>
+</table></div>
+<h3 id="sec-2-9">2.2 商业模式（Business Model）<a href="#sec-2-9" class="anchor">#</a></h3>
+<p><strong>定义</strong>：客户为 <strong>可验证 outcome</strong> 付费，而非 seat 或工时；Agent 使 marginal delivery cost 趋近于零，商业模式可从「卖时间」转向「卖结果网络」。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>Legacy</th><th>Agentic</th></tr></thead>
+<tbody>
+<tr><td>定价单位</td><td>Seat、FTE、工时</td><td>Outcome、流程、订阅+结果</td></tr>
+<tr><td>价值主张</td><td>标准化产品</td><td>Hyper-personalization</td></tr>
+<tr><td>延伸</td><td>单点交易</td><td>Outcome 网络（购房→装修→能源）</td></tr>
+</tbody>
+</table></div>
+<p><strong>领导层要问</strong>：客户为「什么可验证结果」付费？Outcome rubric 是否 explicit？</p>
+<p><strong>常见误区</strong>：只改定价话术、流程仍 seat 驱动；把 Copilot 席位当作新商业模式。</p>
+<h3 id="sec-2-10">2.3 运营模型（Operating Model）<a href="#sec-2-10" class="anchor">#</a></h3>
+<p><strong>定义</strong>：基本单元为 <strong>agentic team</strong>（2–5 人监督 50–100 Agent）；协作按 <strong>work chart</strong>（任务/outcome 交换）而非纯 org chart 层级委派。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>Legacy</th><th>Agentic</th></tr></thead>
+<tbody>
+<tr><td>协调</td><td>层级传话、会议</td><td>Work chart + Agent 编排</td></tr>
+<tr><td>流程</td><td>职能 silo 接力</td><td>AI-first 端到端 redesign</td></tr>
+<tr><td>单元</td><td>部门编制</td><td>Agentic team + fleet</td></tr>
+</tbody>
+</table></div>
+<p><strong>银行叙事</strong>：购房 journey 由房产/按揭/合规/合同/放款 Agent 链执行，人类 team 督导；可延伸至装修、能源等 outcome 网络。</p>
+<p><strong>领导层要问</strong>：哪个 lighthouse 域可整段 AI-first 重设计？Agent 与人类 gate 是否标注？</p>
+<h3 id="sec-2-11">2.4 治理（Governance）<a href="#sec-2-11" class="anchor">#</a></h3>
+<p><strong>定义</strong>：风险边界 <strong>嵌入 workflow</strong>，非事后补丁；三类 gate——<strong>自动</strong>（低风险）、<strong>规则</strong>（中风险，policy/critic agent）、<strong>人批</strong>（高风险：资金、权限、法律承诺）。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>Legacy</th><th>Agentic</th></tr></thead>
+<tbody>
+<tr><td>节奏</td><td>季度/年度审计</td><td>实时、continuous</td></tr>
+<tr><td>对象</td><td>人行为</td><td>Agent action + human override</td></tr>
+<tr><td>机制</td><td>合规 checklist</td><td>Graduated autonomy + audit trail</td></tr>
+</tbody>
+</table></div>
+<p><strong>领导层要问</strong>：自主边界是否 written？100% 高风险 action 是否过 gate？</p>
+<p><strong>常见误区</strong>：把 governance 等于 SOC2 认证；先上 Agent 后补治理。</p>
+<h3 id="sec-2-12">2.5 人才与文化（Workforce &amp; Culture）<a href="#sec-2-12" class="anchor">#</a></h3>
+<p><strong>定义</strong>：角色从 <strong>Execute</strong>（执行）→ <strong>Judge</strong>（编排、评判、关系、above the loop）；JD、晋升、考核须反映 <strong>outcome ownership</strong> 与 <strong>spec/validation</strong> 能力。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>Legacy</th><th>Agentic</th></tr></thead>
+<tbody>
+<tr><td>核心技能</td><td>领域执行</td><td>编排、评判、spec 写作</td></tr>
+<tr><td>位置</td><td>In the loop</td><td>Above the loop</td></tr>
+<tr><td>考核</td><td>产出量、busy</td><td>Outcome、gate 质量、fleet leverage</td></tr>
+</tbody>
+</table></div>
+<p><strong>领导层要问</strong>：JD 是否已重写？Junior 是否学 spec/review 而非仅工具点击？</p>
+<h3 id="sec-2-13">2.6 技术与数据（Technology &amp; Data）<a href="#sec-2-13" class="anchor">#</a></h3>
+<p><strong>定义</strong>：<strong>Double transformation</strong>——技术架构与组织 OM 同步改；Agent registry、MCP/A2A 互操作、semantic/Agent 可消费数据、agentic mesh。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>Legacy</th><th>Agentic</th></tr></thead>
+<tbody>
+<tr><td>集成</td><td>烟囱、点对点</td><td>Registry + 标准连接器</td></tr>
+<tr><td>数据</td><td>报表/仓库</td><td>Agent 可 query 的 semantic layer</td></tr>
+<tr><td>部署</td><td>项目制</td><td>Platform + eval 闭环</td></tr>
+</tbody>
+</table></div>
+<p><strong>领导层要问</strong>：数据 Agent 能否消费？Registry 是否知道「谁在生产」？</p>
+<p><strong>常见误区</strong>：只买 Copilot（仅技术柱）；Agent 泛滥无 shared context = chaos（McKinsey 警告）。</p>
+<h3 id="sec-2-14">2.7 五柱联动<a href="#sec-2-14" class="anchor">#</a></h3>
+<pre class="mermaid">
+flowchart TB
+  BM["商业模式 · Outcome 定价"] --> OM["运营模型 · Agentic Team"]
+  OM --> GOV["治理 · 嵌入 Gate"]
+  GOV --> WF["人才文化 · Judge"]
+  WF --> TD["技术数据 · Registry 与 Context"]
+  TD -->|"数据与工具支撑"| OM
+  BM -->|"rubric 驱动流程"| OM
+</pre>
+<p>五柱 <strong>必须联动</strong>：只改技术柱 = T1.5 陷阱；只改运营不改治理 = shadow agents。</p>
+<h3 id="sec-12-1">2.8 Workshop 自检（1–5 分）<a href="#sec-12-1" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>问题</th><th>1=否</th><th>5=是</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>五柱是否在同一 lighthouse 域联动？</td><td></td><td></td></tr>
+<tr><td>2</td><td>Outcome rubric 是否 explicit？</td><td></td><td></td></tr>
+<tr><td>3</td><td>Agentic team 是否存在且 KPI 绑 outcome？</td><td></td><td></td></tr>
+<tr><td>4</td><td>Graduated autonomy 是否 defined？</td><td></td><td></td></tr>
+<tr><td>5</td><td>JD/晋升是否含 Judge 技能？</td><td></td><td></td></tr>
+<tr><td>6</td><td>Registry + shared context 是否覆盖 lighthouse？</td><td></td><td></td></tr>
+</tbody>
+</table></div>
+<p><strong>失衡诊断</strong>：技术≥4、运营≤2 → T1.5；治理≤2 → 不敢规模化。</p>
+<h3 id="sec-12-2">2.9 与 T0–T3 对应<a href="#sec-12-2" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>T 阶段</th><th>五柱典型状态</th></tr></thead>
+<tbody>
+<tr><td>T1 / T1.5</td><td>技术柱 spread（Copilot/单 Agent）；运营/治理/人才滞后</td></tr>
+<tr><td>T1.5→T2</td><td>运营+五职能 explicit；治理 gate 嵌入 lighthouse</td></tr>
+<tr><td>T2→T3</td><td>五柱在单域闭环；商业模式 outcome 试点</td></tr>
+</tbody>
+</table></div>
+
+<hr />
+<h2 id="sec-3"><span class="sec-num">三</span>AI-Native Transformation Framework · T0–T3 成熟度<a href="#sec-3" class="anchor">#</a></h2>
+<h3 id="sec-12-3">来源与定位<a href="#sec-12-3" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://framework.ai-native-transformation.com/ai-native-organization">AI-Native Organization</a> · <a href="https://framework.ai-native-transformation.com/framework">Reference Framework</a>。</li>
+<li><strong>解决什么问题</strong>：组织（及个人）处于 AI 转型的 <strong>哪个阶段</strong>；为何 T1.5 是多数企业陷阱。</li>
+<li><strong>类型</strong>：<strong>诊断类</strong>。</li>
+</ul>
+<h3 id="sec-12-4">核心概念<a href="#sec-12-4" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>阶段</th><th>组织状态</th><th>关键特征</th></tr></thead>
+<tbody>
+<tr><td>T0→T1</td><td>AI 叠加</td><td>个人用工具；流程不变</td></tr>
+<tr><td><strong>T1.5</strong></td><td>AI 广、流程旧</td><td>人饱和于 validation；质量漂移；<strong>多数企业 2026</strong></td></tr>
+<tr><td>T1.5→T2</td><td>工作流重设计</td><td>五类结构职能 explicit；规格与验证门 deliberate</td></tr>
+<tr><td>T2→T3</td><td>AI-native 默认</td><td>新角色进编制；compression 完成</td></tr>
+</tbody>
+</table></div>
+<p><strong>个人 tier 与组织 level 映射</strong>：T1≈Level1 AI-Assisted；T2≈Level2 AI-Integrated；T3≈Level3 AI-Native。</p>
+<p><strong>T3 个人工作单元</strong>：Context → Clarification → Execution → Validation → Recovery；cycle 从 sprint 级压到 feature 级（天）。</p>
+<h3 id="sec-12-5">组织形态含义<a href="#sec-12-5" class="anchor">#</a></h3>
+<ul>
+<li>T1.5：编制不变，但每人多了一层「审 AI 输出」——组织 <strong>名义上 AI 化，实质上 human 瓶颈</strong>。</li>
+<li>T2：出现 Workflow Architect、Specification Owner 等 <strong>跨部门职能</strong>。</li>
+<li>T3：部门墙模糊；价值集中在 <strong>spec 边界与 validation 边界</strong>。</li>
+</ul>
+<h3 id="sec-12-6">与 AI-native 的关系<a href="#sec-12-6" class="anchor">#</a></h3>
+<p>T 阶段回答 <strong>「在哪」</strong>；McKinsey 五支柱回答 <strong>「改什么」</strong>。T1.5→T2 的门槛 = lighthouse 域 AI-first 重设计 + 五职能 explicit。</p>
+<h3 id="sec-12-7">领导层要问<a href="#sec-12-7" class="anchor">#</a></h3>
+<ul>
+<li>我们自评 T 几？依据是什么（流程、编制、治理各一项证据）？</li>
+<li>T1.5 持续多久？验证工作占一线时间多少比例？</li>
+</ul>
+<h3 id="sec-12-8">常见误区<a href="#sec-12-8" class="anchor">#</a></h3>
+<ul>
+<li>把「全员 Copilot 席位」当作 T2。</li>
+<li>个人 T3、组织 T1——个人英雄无法拉动组织 level。</li>
+</ul>
+<h3 id="sec-12-9">适用边界<a href="#sec-12-9" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：转型启动诊断、对内对齐「为何投入大产出平」。</li>
+<li><strong>不适合</strong>：替代五支柱的改造清单；Framework 偏方法论站点，案例少于 McKinsey/BCG。</li>
+</ul>
+
+<hr />
+<h2 id="sec-4"><span class="sec-num">四</span>五类结构职能（Direction / Specification / Validation / Agent Ops / Trust）<a href="#sec-4" class="anchor">#</a></h2>
+<h3 id="sec-12-10">来源与定位<a href="#sec-12-10" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：AI-Native Transformation Framework · <a href="https://framework.ai-native-transformation.com/ai-native-organization">AI-Native Organization</a>。</li>
+<li><strong>解决什么问题</strong>：AI-native 组织 <strong>按什么切分工作</strong>——不是按部门，而是按「人不可替代的功能」。</li>
+<li><strong>类型</strong>：<strong>处方类</strong>（岗位/职能设计）。</li>
+</ul>
+<h3 id="sec-12-11">核心概念<a href="#sec-12-11" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>职能</th><th>做什么</th><th>典型角色</th></tr></thead>
+<tbody>
+<tr><td><strong>Direction</strong></td><td>目标、意图、优先级</td><td>领导、DRI</td></tr>
+<tr><td><strong>Specification</strong></td><td>把 know-how 写成 Agent 可执行契约</td><td>Specification Owner、Workflow Architect</td></tr>
+<tr><td><strong>Validation</strong></td><td>风险分级 gate、质量判定</td><td>Governance Specialist、Evaluation Engineer</td></tr>
+<tr><td><strong>Agent Operations</strong></td><td>运行/监控 fleet、工具、上下文、再校准</td><td>Agent Supervisor、DevOps/Data Engineer</td></tr>
+<tr><td><strong>Trust &amp; Human Relations</strong></td><td>客户/监管/员工关系、escalation、伦理</td><td>Player-Coach、合规、CS 升级</td></tr>
+</tbody>
+</table></div>
+<p><strong>关键句</strong>：Legacy 按 Engineering/Sales/CS 分；AI-native 按 <strong>Function 切</strong>——同一角色可跨部门（Workflow Architect 最明显）。</p>
+<h3 id="sec-12-12">组织形态含义<a href="#sec-12-12" class="anchor">#</a></h3>
+<ul>
+<li>编制从「职能头数」→ <strong>五职能覆盖度</strong>（很多 legacy 组织 heavy Direction、weak Specification/Validation）。</li>
+<li>T2 标志：五职能 <strong>deliberate</strong>；T3：五职能 <strong>first-class 编制</strong>。</li>
+</ul>
+<h3 id="sec-12-13">与 AI-native 的关系<a href="#sec-12-13" class="anchor">#</a></h3>
+<p>五职能是 McKinsey「人才+运营+治理」的 <strong>可操作分解</strong>；与 Block 三角色正交（Block 讲问责结构，五职能讲工作类型）。</p>
+<h3 id="sec-12-14">领导层要问<a href="#sec-12-14" class="anchor">#</a></h3>
+<ul>
+<li>五职能中哪几个 <strong>缺失或 implicit</strong>？</li>
+<li>Specification 质量谁 owner？Validation 是事后还是嵌入？</li>
+</ul>
+<h3 id="sec-12-15">常见误区<a href="#sec-12-15" class="anchor">#</a></h3>
+<ul>
+<li>只招 Agent Supervisor，无 Specification Owner → Agent 无 good spec。</li>
+<li>Validation 全堆在一线（T1.5 验证瓶颈）。</li>
+</ul>
+<h3 id="sec-12-16">适用边界<a href="#sec-12-16" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：设计新 JD、agentic team charter、流程 RACI。</li>
+<li><strong>不适合</strong>：替代 Block/McKinsey 的汇报与 team 结构决策。</li>
+</ul>
+
+<hr />
+<h2 id="sec-5"><span class="sec-num">五</span>Intelligence Architecture（智能架构）<a href="#sec-5" class="anchor">#</a></h2>
+<h3 id="sec-12-17">来源与定位<a href="#sec-12-17" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://neemz.medium.com/the-ai-native-architecture-how-ai-native-companies-work-9c2504229259">The AI-Native Architecture</a> 等 practitioner 归纳。</li>
+<li><strong>解决什么问题</strong>：<strong>若不用层级协调，用什么替代？</strong>——三层（或五层）系统架构。</li>
+<li><strong>类型</strong>：<strong>架构类</strong>。</li>
+</ul>
+<h3 id="sec-12-18">核心概念<a href="#sec-12-18" class="anchor">#</a></h3>
+<p><strong>三大块（对外叙事）</strong>：</p>
+<ol>
+<li><strong>闭环运营模型</strong>：感知 → 综合 → 边界内决策 → 度量 → 更新规则（小时级）。</li>
+<li><strong>可查询知识层（Queryable Intelligence）</strong>：组织所知结构化、可检索、可版本化。</li>
+<li><strong>软件工厂</strong>：人写 spec/测试；Agent 执行迭代；主观/新颖处 hybrid。</li>
+</ol>
+<p><strong>展开五层（实现视角）</strong>：</p>
+<ul>
+<li><strong>Governance layer</strong>：自主边界、HITL、日志、置信度阈值。</li>
+<li><strong>Tool layer</strong>：确定性能力（查库、发消息、改 ticket）。</li>
+<li><strong>Learning layer</strong>：对照 expectation 更新规则；政策变更须人批。</li>
+</ul>
+<p><strong>一句 loop</strong>：Operations 产生 signal → Intelligence 变 knowledge → Software factory 变 product → 产生更多 signal。</p>
+<h3 id="sec-12-19">组织形态含义<a href="#sec-12-19" class="anchor">#</a></h3>
+<ul>
+<li>中层协调职能 → 被 <strong>intelligence architecture</strong> 吸收（与 Block world model 同构）。</li>
+<li>人类移到：<strong>spec、judgment、relationship、policy approval</strong>（human layer）。</li>
+</ul>
+<h3 id="sec-12-20">与 AI-native 的关系<a href="#sec-12-20" class="anchor">#</a></h3>
+<p>Intelligence Architecture 是 <strong>「系统长什么样」</strong>；McKinsey 五支柱是 <strong>「组织怎么改」</strong>。技术柱 + 运营柱落地时，常采用此架构 vocabulary。</p>
+<h3 id="sec-12-21">领导层要问<a href="#sec-12-21" class="anchor">#</a></h3>
+<ul>
+<li>知识是否 <strong>queryable</strong>（非仅存在 SharePoint/PDF）？</li>
+<li>Learning loop 周期是小时还是季度？</li>
+<li>软件工厂是否有 <strong>机器可验证</strong> 的验收标准？</li>
+</ul>
+<h3 id="sec-12-22">常见误区<a href="#sec-12-22" class="anchor">#</a></h3>
+<ul>
+<li>只有 RAG，无 governance/learning → 静态知识堆。</li>
+<li>把 software factory 等于「全员 vibe coding」无验证门。</li>
+</ul>
+<h3 id="sec-12-23">适用边界<a href="#sec-12-23" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：CTO/架构师设计 target architecture；研发型 AI-native 组织。</li>
+<li><strong>不适合</strong>：直接给 HR 做编制设计（需配合 Block/McKinsey）。</li>
+</ul>
+
+<hr />
+<h2 id="sec-6"><span class="sec-num">六</span>Block · 四层架构 + 三角色<a href="#sec-6" class="anchor">#</a></h2>
+<h3 id="sec-12-24">来源与定位<a href="#sec-12-24" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://block.xyz/inside/from-hierarchy-to-intelligence">From Hierarchy to Intelligence</a>（Block 官方，2026-03）；<a href="https://amirelion.com/blog/company-as-intelligence-ai-overlay-to-ai-native">Amir Elion 解读</a>。</li>
+<li><strong>解决什么问题</strong>：<strong>能否用 AI 替代层级的协调功能</strong>（而非仅提效个人）？</li>
+<li><strong>类型</strong>：<strong>架构类 + 组织设计</strong>（最激进的 public-company 实践）。</li>
+</ul>
+<h3 id="sec-12-25">核心概念<a href="#sec-12-25" class="anchor">#</a></h3>
+<p><strong>四层结构</strong>：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>层</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><strong>Capabilities</strong></td><td>原子能力（支付、发卡、借贷…）—— building blocks，无 UI</td></tr>
+<tr><td><strong>Intelligence Layer</strong></td><td>按客户/时刻组合 capabilities，proactive</td></tr>
+<tr><td><strong>Interfaces</strong></td><td>Square、Cash App 等交付面</td></tr>
+<tr><td><strong>World Models</strong></td><td>Company world model + Customer world model（机器可读、持续更新）</td></tr>
+</tbody>
+</table></div>
+<p><strong>三角色（assignments，非汇报层级）</strong>：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>角色</th><th>职责</th><th>人类不可替代</th></tr></thead>
+<tbody>
+<tr><td><strong>IC + Agent</strong></td><td>构建与运营</td><td>判断、品味、创意</td></tr>
+<tr><td><strong>DRI</strong></td><td>90 天 own 跨职能 outcome；可 pull 资源</td><td>Ownership、问责</td></tr>
+<tr><td><strong>Player-Coach</strong></td><td>在岗构建 + 培养人</td><td>人际、教练</td></tr>
+</tbody>
+</table></div>
+<p><strong>Goose</strong>：开源 agentic harness（类似内部 Claude Code/Codex），Agent 运行时。</p>
+<p><strong>核心反转</strong>：传统公司 intelligence 分布在人+层级；Block 模型 <strong>intelligence 在 system，人在 edge</strong>。</p>
+<h3 id="sec-12-26">组织形态含义<a href="#sec-12-26" class="anchor">#</a></h3>
+<ul>
+<li><strong>删除永久中层</strong>（Block 公开披露大幅压缩 middle management）。</li>
+<li>World model 替代 manager 的 <strong>信息路由与对齐</strong>；DRI 替代 <strong>优先级与资源 pull</strong>；PC 替代 <strong>纯路由型 manager</strong>。</li>
+<li>Remote-first + <strong>artifact 文化</strong> 是前提（决策/代码/设计/plan 机器可读）。</li>
+</ul>
+<h3 id="sec-12-27">与 AI-native 的关系<a href="#sec-12-27" class="anchor">#</a></h3>
+<p>Block 是 <strong>Intelligence-Native 形态 B</strong> 的参照（见卷二）；与 McKinsey agentic team <strong>兼容处</strong>：人都 above the loop；<strong>冲突处</strong>：Block 弱化 org chart，McKinsey 保留 work chart 网络。</p>
+<h3 id="sec-12-28">领导层要问<a href="#sec-12-28" class="anchor">#</a></h3>
+<ul>
+<li>我们的工作 artifact 是否 <strong>machine-readable</strong> 到可建 world model？</li>
+<li>若删除协调层，DRI 授权是否真实？</li>
+<li>这是 <strong>cost optimization</strong> 还是 <strong>structural redesign</strong>？（Block 自问）</li>
+</ul>
+<h3 id="sec-12-29">常见误区<a href="#sec-12-29" class="anchor">#</a></h3>
+<ul>
+<li>无 artifact 文化却抄三角色 → 对齐真空。</li>
+<li>把 Block 减员叙事当唯一 KPI。</li>
+</ul>
+<h3 id="sec-12-30">适用边界<a href="#sec-12-30" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：数字原生、remote-first、工程/产品 artifact 密集组织；局部域试验 world model。</li>
+<li><strong>不适合</strong>：强监管、强物理现场、legacy ERP 为主的传统制造/政务（宜用形态 A）。</li>
+</ul>
+
+<hr />
+<h2 id="sec-7"><span class="sec-num">七</span>BCG · AI-First Company + Functions of the Future（FoF）<a href="#sec-7" class="anchor">#</a></h2>
+<h3 id="sec-12-31">来源与定位<a href="#sec-12-31" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://www.bcg.com/publications/2026/design-your-company-for-ai-not-ai-for-your-company">Design Your Company for AI, Not AI for Your Company</a>（2026）；<a href="https://www.bcg.com/publications/2026/what-corporate-functions-of-the-future-will-look-like">What Corporate Functions of the Future Will Look Like</a>；<a href="https://www.bcg.com/publications/2025/agents-accelerate-next-wave-of-ai-value-creation">Agents Accelerate the Next Wave</a>（含 MIT 合作研究）。</li>
+<li><strong>解决什么问题</strong>：为何 <strong>95% AI 部署未产生 meaningful value</strong>；企业职能如何重组。</li>
+<li><strong>类型</strong>：<strong>处方类</strong>。</li>
+</ul>
+<h3 id="sec-12-32">核心概念<a href="#sec-12-32" class="anchor">#</a></h3>
+<ol>
+<li><strong>AI-first organization</strong>：工作围绕 <strong>agent 动态协调系统</strong> 组织，而非 primarily human roles/hierarchies。</li>
+<li><strong>Small cross-functional teams</strong>：人+Agent+数据+技术，<strong>端到端 own outcome</strong>（与 McKinsey agentic team 同构）。</li>
+<li><strong>Autonomous execution vs automation</strong>：目标是对 <strong>outcome 的自主执行</strong>，非在旧流程上贴 automation。</li>
+<li><strong>Shared AI platform</strong>：「Freedom within a frame」——统一基建，P&amp;L 在框内创新。</li>
+<li><strong>FoF 七 building blocks</strong>（摘要）：跨职能流程 redesign → 叠 AI/agents → 对齐数据系统 → 新角色（AI product owner、governance manager）→ 领导力适配 human+agent。</li>
+<li><strong>Trust Protocol / Graduated Autonomy</strong>：分级自治；清晰 risk taxonomy、测试、监控、resilience。</li>
+<li><strong>数据点</strong>：45% AI leaders 预期减少 middle management；58% heavy adopters 预期三年 governance 根本变化。</li>
+</ol>
+<h3 id="sec-12-33">组织形态含义<a href="#sec-12-33" class="anchor">#</a></h3>
+<ul>
+<li>职能未来 <strong>更 lean、更 automated、AI speed</strong>。</li>
+<li>Work <strong>不穿过部门链</strong>，而穿过 <strong>统一 workflow</strong>（planning→reporting，sourcing→payment）。</li>
+<li>新角色：<strong>AI product owner、model governance manager、talent data strategist</strong> 等。</li>
+</ul>
+<h3 id="sec-12-34">与 AI-native 的关系<a href="#sec-12-34" class="anchor">#</a></h3>
+<p>BCG 与 McKinsey <strong>高度互补</strong>：BCG 更强 <strong>FoF 序列、shared platform、95% 失败统计</strong>；McKinsey 更强 <strong>五柱 checklist 与银行 narrative</strong>。本系列将 BCG 作为 <strong>「为何必须 redesign 公司而非加 AI」</strong> 的论据库。</p>
+<h3 id="sec-12-35">领导层要问<a href="#sec-12-35" class="anchor">#</a></h3>
+<ul>
+<li>是否有 <strong>shared platform</strong>，还是每部门自建？</li>
+<li>流程是否 <strong>跨职能 mapped</strong> 后才上 Agent？</li>
+<li>Trust Protocol 中自治级别是否 defined？</li>
+</ul>
+<h3 id="sec-12-36">常见误区<a href="#sec-12-36" class="anchor">#</a></h3>
+<ul>
+<li>个体/单职能 AI（BCG 指出的 main failure mode）。</li>
+<li>把 automation 当 transformation 对外宣称。</li>
+</ul>
+<h3 id="sec-12-37">适用边界<a href="#sec-12-37" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：集团职能转型（HR/Finance/Ops）；平台化 IT 治理讨论。</li>
+<li><strong>不适合</strong>：小团队无需 FoF 全称；细节需结合 McKinsey 治理柱。</li>
+</ul>
+
+<hr />
+<h2 id="sec-8"><span class="sec-num">八</span>OpenAI Frontier · 企业语义操作系统<a href="#sec-8" class="anchor">#</a></h2>
+<h3 id="sec-12-38">来源与定位<a href="#sec-12-38" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://openai.com/index/introducing-openai-frontier/">Introducing OpenAI Frontier</a>（2026-02-05）。</li>
+<li><strong>解决什么问题</strong>：Agent 分散部署 → 集成碎片化；如何让 Agent 拥有 <strong>与人类员工同等的 business context</strong>。</li>
+<li><strong>类型</strong>：<strong>架构类 + 平台实践</strong>（overlay 路线）。</li>
+</ul>
+<h3 id="sec-12-39">核心概念<a href="#sec-12-39" class="anchor">#</a></h3>
+<ol>
+<li><strong>Frontier = 企业 Agent 平台</strong>，非模型 API：build / deploy / manage <strong>AI coworkers</strong>。</li>
+<li><strong>Shared business context（Universal Semantic Layer）</strong>：连接 data warehouse、CRM、ticketing、内部 app；Agent 共享 <strong>语义层</strong>。</li>
+<li><strong>Agent 管理类比 HR</strong>：onboarding、identity、permissions、performance review、boundaries。</li>
+<li><strong>Model-agnostic + 开放标准</strong>：可接 OpenAI/Anthropic/Google；不强制 replatform。</li>
+<li><strong>Multi-agent orchestration + eval loop</strong>：生产级 Agent 需持续评估。</li>
+<li><strong>Overlay 定位</strong>：坐在现有 SaaS 之上，非替换 ERP/CRM——与 Block greenfield 形成对照。</li>
+</ol>
+<h3 id="sec-12-40">组织形态含义<a href="#sec-12-40" class="anchor">#</a></h3>
+<ul>
+<li>组织级 <strong>institutional memory</strong> 沉淀在 semantic layer（非个人 prompt）。</li>
+<li>「个人 prompt 资产」→ <strong>组织流程资产</strong>（与 McKinsey 运营模型、BCG shared platform 同向）。</li>
+<li>技术团队 + 业务团队通过 <strong>同一 context</strong> 构建 Agent（democratization，受 governance 约束）。</li>
+</ul>
+<h3 id="sec-12-41">与 AI-native 的关系<a href="#sec-12-41" class="anchor">#</a></h3>
+<p>Frontier 是 <strong>形态 A（Enterprise Agentic）</strong> 的技术 substrate 参照：legacy 企业不必推倒 ERP，但需 <strong>统一 context + agent registry</strong>。卷二 Layer3 的 Shared Context 主要由此 + Intelligence Architecture 融合而来。</p>
+<h3 id="sec-12-42">领导层要问<a href="#sec-12-42" class="anchor">#</a></h3>
+<ul>
+<li>Agent 是否 <strong>共享 context</strong>，还是每 Agent 一条集成？</li>
+<li>Identity/permission 是否与 HR/IAM 对齐？</li>
+<li>Eval 是否 <strong>上线门禁</strong>？</li>
+</ul>
+<h3 id="sec-12-43">常见误区<a href="#sec-12-43" class="anchor">#</a></h3>
+<ul>
+<li>把 Frontier 当作「又一个 ChatGPT Enterprise」。</li>
+<li>无治理即大规模部署 coworkers。</li>
+</ul>
+<h3 id="sec-12-44">适用边界<a href="#sec-12-44" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：已有多云/多 SaaS、希望 overlay 的大型企业；平台选型讨论。</li>
+<li><strong>不适合</strong>：无 digital footprint 的组织；替代 Block 式 world model 组织 redesign。</li>
+</ul>
+
+<hr />
+<h2 id="sec-9"><span class="sec-num">九</span>Deloitte · 技术组织重建<a href="#sec-9" class="anchor">#</a></h2>
+<h3 id="sec-12-45">来源与定位<a href="#sec-12-45" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：<a href="https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2026/ai-future-it-function.html">AI and the future of the IT function</a>（Tech Trends 2026）；Horizon Architecture Survey 2025 等。</li>
+<li><strong>解决什么问题</strong>：AI 如何 <strong>重组 tech org</strong> 本身——不仅是业务侧 agentic。</li>
+<li><strong>类型</strong>：<strong>使能类</strong>。</li>
+</ul>
+<h3 id="sec-12-46">核心概念<a href="#sec-12-46" class="anchor">#</a></h3>
+<ol>
+<li><strong>78% tech leaders</strong> 预期五年内在 architecture workflow 广泛/深度集成 AI agents。</li>
+<li><strong>Tech org 变 leaner、faster</strong>：AI 嵌入 architecture→delivery 各层。</li>
+<li><strong>CIO 角色</strong>：从 IT 运维 → <strong>enterprise AI 架构师</strong>——提供标准化、安全、可扩展 building blocks。</li>
+<li><strong>Cloud-native platform</strong>：API-first、self-service、platform engineering；云 = speed/flexibility 引擎。</li>
+<li><strong>Project team → product/value-stream squads</strong>：与 agentic team 方向一致。</li>
+<li><strong>Adaptive governance cycles</strong>：治理周期缩短，与 McKinsey 实时治理同向。</li>
+</ol>
+<h3 id="sec-12-47">组织形态含义<a href="#sec-12-47" class="anchor">#</a></h3>
+<ul>
+<li><strong>Tech 组织率先 agentic 化</strong>：平台团队维护 Agent registry、连接器、安全基线；业务 agentic team 在平台上构建。</li>
+<li>CIO 协调 <strong>「freedom within a frame」</strong>（与 BCG shared platform 同构）。</li>
+</ul>
+<h3 id="sec-12-48">与 AI-native 的关系<a href="#sec-12-48" class="anchor">#</a></h3>
+<p>Deloitte 回答 <strong>「谁建底座、怎么建」</strong>——卷二 Phase 2「基建」的主要参照；不替代 McKinsey 业务侧五柱。</p>
+<h3 id="sec-12-49">领导层要问<a href="#sec-12-49" class="anchor">#</a></h3>
+<ul>
+<li>Tech 是 <strong>瓶颈还是 enabler</strong>？</li>
+<li>是否有 platform team 对 agent registry 负责？</li>
+<li>Squads 是否 aligned to value stream 而非 project？</li>
+</ul>
+<h3 id="sec-12-50">常见误区<a href="#sec-12-50" class="anchor">#</a></h3>
+<ul>
+<li>业务 Agent 满天飞，tech org 仍 project 制 + 烟囱。</li>
+<li>把 cloud 仅当 cost center，非 AI engine。</li>
+</ul>
+<h3 id="sec-12-51">适用边界<a href="#sec-12-51" class="anchor">#</a></h3>
+<ul>
+<li><strong>适合</strong>：CIO/CTO 规划；Enterprise Agentic 形态 A 的 IT 侧。</li>
+<li><strong>不适合</strong>：纯业务读者（需先读 McKinsey/BCG）。</li>
+</ul>
+
+<hr />
+<h2 id="sec-10"><span class="sec-num">十</span>辅助模型 A：五层能力阶梯<a href="#sec-10" class="anchor">#</a></h2>
+<h3 id="sec-12-52">来源与定位<a href="#sec-12-52" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：AI Journal 等归纳（<a href="https://aijourn.com/the-ai-transformation-reckoning-why-adding-ai-is-quietly-breaking-enterprise-strategy/">The AI Transformation Reckoning</a>）。</li>
+<li><strong>类型</strong>：<strong>诊断类</strong>。</li>
+</ul>
+<h3 id="sec-12-53">五层<a href="#sec-12-53" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>层级</th><th>形态</th><th>特征</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Chatbot</td><td>响应问题</td></tr>
+<tr><td>2</td><td>Copilot</td><td>单 workflow 内 assist</td></tr>
+<tr><td>3</td><td>Agent</td><td>跨工具完成 task</td></tr>
+<tr><td>4</td><td>Multi-agent system</td><td>专用 Agent 协作</td></tr>
+<tr><td>5</td><td><strong>AI-native operating model</strong></td><td>围绕 human-agent 协作 <strong>redesign work</strong></td></tr>
+</tbody>
+</table></div>
+<h3 id="sec-12-54">要点<a href="#sec-12-54" class="anchor">#</a></h3>
+<ul>
+<li>第 5 层才触及 <strong>组织 OM</strong>；1–4 层可在 legacy OM 上运行。</li>
+<li>与 T1–T3 映射：T1≈1–2；T1.5≈3 扩散但 OM 未改；T2–T3≈4–5。</li>
+</ul>
+
+<hr />
+<h2 id="sec-11"><span class="sec-num">十一</span>辅助模型 B：Automation / Augmentation / Transformation<a href="#sec-11" class="anchor">#</a></h2>
+<h3 id="sec-12-55">来源与定位<a href="#sec-12-55" class="anchor">#</a></h3>
+<ul>
+<li><strong>来源</strong>：AI Journal 同上。</li>
+<li><strong>类型</strong>：<strong>诊断类（战略诚实性）</strong>。</li>
+</ul>
+<h3 id="sec-12-56">三选一（非阶梯）<a href="#sec-12-56" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>战略</th><th>做什么</th><th>价值</th><th>组织影响</th></tr></thead>
+<tbody>
+<tr><td><strong>Automation</strong></td><td>用 AI 做已知任务更快</td><td>省时间</td><td>OM 不变</td></tr>
+<tr><td><strong>Augmentation</strong></td><td>增强人类决策/创造</td><td>提质</td><td>OM 基本不变</td></tr>
+<tr><td><strong>Transformation</strong></td><td>改 workflow / BM / 体验</td><td>竞争优势</td><td><strong>改变组织是什么</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>关键句</strong>：三者不是楼梯；选错战略名称会导致 <strong>预期与交付 mismatch</strong>（「自动化项目」被叫成「转型」）。</p>
+<h3 id="sec-12-57">领导层要问<a href="#sec-12-57" class="anchor">#</a></h3>
+<ul>
+<li>董事会/OKR 对应哪一个？证据是什么？</li>
+<li>若选 Transformation，是否分配了 <strong>OM redesign</strong> 预算与 owner？</li>
+</ul>
+
+<hr />
+<h2 id="sec-12"><span class="sec-num">十二</span>理论关系地图<a href="#sec-12" class="anchor">#</a></h2>
+<h3 id="sec-12-58">12.1 各理论回答什么问题<a href="#sec-12-58" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>理论</th><th>核心问题</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>T0–T3</td><td>在哪一阶段？</td><td>诊断</td></tr>
+<tr><td>五层阶梯</td><td>能力停在第几层？</td><td>诊断</td></tr>
+<tr><td>Auto/Aug/Trans</td><td>战略选哪一种？</td><td>诊断</td></tr>
+<tr><td>McKinsey 五支柱</td><td>五面如何联动改？</td><td>处方</td></tr>
+<tr><td>BCG AI-First / FoF</td><td>为何 redesign 公司+职能？</td><td>处方</td></tr>
+<tr><td>五类结构职能</td><td>工作按什么切？</td><td>处方</td></tr>
+<tr><td>Intelligence Architecture</td><td>系统替代层级用什么？</td><td>架构</td></tr>
+<tr><td>Block</td><td>极端：intelligence 在 system</td><td>架构+组织</td></tr>
+<tr><td>Frontier</td><td>legacy 上 shared context</td><td>架构+平台</td></tr>
+<tr><td>Deloitte</td><td>tech org 如何支撑？</td><td>使能</td></tr>
+</tbody>
+</table></div>
+<h3 id="sec-12-59">12.2 与 McKinsey 五支柱映射<a href="#sec-12-59" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>五支柱</th><th>主要支撑理论</th></tr></thead>
+<tbody>
+<tr><td>商业模式</td><td>McKinsey、BCG autonomous execution、Auto/Aug/Trans</td></tr>
+<tr><td>运营模型</td><td>McKinsey agentic team、BCG FoF、五职能、Block DRI</td></tr>
+<tr><td>治理</td><td>McKinsey、BCG Trust Protocol、Intelligence Architecture governance</td></tr>
+<tr><td>人才文化</td><td>McKinsey Execute→Judge、Block 三角色、五职能</td></tr>
+<tr><td>技术数据</td><td>Frontier、Deloitte、Intelligence Architecture、BCG shared platform</td></tr>
+</tbody>
+</table></div>
+<h3 id="sec-12-60">12.3 推荐阅读顺序<a href="#sec-12-60" class="anchor">#</a></h3>
+<pre class="mermaid">
+flowchart LR
+  D1["T0-T3 诊断"] --> D2["Auto/Aug/Trans"]
+  D2 --> P1["McKinsey 或 BCG 处方"]
+  P1 --> A1["Intelligence Arch"]
+  A1 --> A2["Frontier 或 Block"]
+  A2 --> E1["Deloitte 使能"]
+  E1 --> V2["卷二 · 融合"]
+</pre>
+<ol>
+<li>诊断：T1.5？第几层阶梯？哪种战略？</li>
+<li>处方：McKinsey 五柱 workshop + BCG FoF 序列</li>
+<li>架构：选形态 A（Frontier）或 B（Block）或混合</li>
+<li>使能：Deloitte tech org</li>
+<li>卷二：融合实现</li>
+</ol>
+
+<hr />
+<h2 id="sec-13"><span class="sec-num">十三</span>理论冲突与互补<a href="#sec-13" class="anchor">#</a></h2>
+<div class="table-wrap"><table>
+<thead><tr><th>张力</th><th>方 A</th><th>方 B</th><th>融合建议</th></tr></thead>
+<tbody>
+<tr><td>组织图</td><td>McKinsey work chart 网络</td><td>Block 删除 org chart</td><td>大企业：work chart；创新域试 Block 三角色</td></tr>
+<tr><td>系统路线</td><td>Frontier overlay</td><td>Block greenfield world model</td><td>形态 A 为主，B 为 lab</td></tr>
+<tr><td>单元规模</td><td>McKinsey 2–5 人 : 50–100 Agent</td><td>Block IC 1:10 能力</td><td>均指向高 leverage；Agent 数为 order-of-magnitude</td></tr>
+<tr><td>职能切分</td><td>五类 structure functions</td><td>Block 三角色</td><td>用五职能写 RACI，用三角色写问责</td></tr>
+<tr><td>转型路径</td><td>BCG 七 blocks 序列</td><td>McKinsey lighthouse 五柱</td><td>阶段 0–5 合并见卷二</td></tr>
+<tr><td>价值证据</td><td>BCG 95% 无 meaningful value</td><td>McKinsey 81% 无 bottom-line</td><td>共同指向：OM redesign 是必要条件</td></tr>
+</tbody>
+</table></div>
+<p><strong>互补主轴</strong>：</p>
+<ul>
+<li><strong>McKinsey + BCG</strong> = 为什么改 + 改什么（董事会语言）</li>
+<li><strong>Framework T + 五职能</strong> = 阶段诊断 + 岗位设计</li>
+<li><strong>Intelligence Architecture + Frontier</strong> = 形态 A 技术蓝图</li>
+<li><strong>Block</strong> = 形态 B 组织极限参照</li>
+<li><strong>Deloitte</strong> = IT 落地与 CIO 职责</li>
+</ul>
+
+<hr />
+<h2 id="sec-14"><span class="sec-num">十四</span>参考来源<a href="#sec-14" class="anchor">#</a></h2>
+<ul>
+<li>McKinsey — <a href="https://www.mckinsey.com/capabilities/people-and-organizational-performance/our-insights/the-agentic-organization-contours-of-the-next-paradigm-for-the-ai-era">The agentic organization</a></li>
+<li>AI-Native Transformation — <a href="https://framework.ai-native-transformation.com/framework">Framework</a></li>
+<li>Neemz — <a href="https://neemz.medium.com/the-ai-native-architecture-how-ai-native-companies-work-9c2504229259">The AI-Native Architecture</a></li>
+<li>Block — <a href="https://block.xyz/inside/from-hierarchy-to-intelligence">From Hierarchy to Intelligence</a></li>
+<li>Amir Elion — <a href="https://amirelion.com/blog/company-as-intelligence-ai-overlay-to-ai-native">Company as intelligence</a></li>
+<li>BCG — <a href="https://www.bcg.com/publications/2026/design-your-company-for-ai-not-ai-for-your-company">Design Your Company for AI</a> · <a href="https://www.bcg.com/publications/2026/what-corporate-functions-of-the-future-will-look-like">Functions of the Future</a></li>
+<li>OpenAI — <a href="https://openai.com/index/introducing-openai-frontier/">Introducing Frontier</a></li>
+<li>Deloitte — <a href="https://www.deloitte.com/us/en/insights/topics/technology-management/tech-trends/2026/ai-future-it-function.html">AI and the future of the IT function</a></li>
+<li>AI Journal — <a href="https://aijourn.com/the-ai-transformation-reckoning-why-adding-ai-is-quietly-breaking-enterprise-strategy/">The AI Transformation Reckoning</a></li>
+</ul>
+
+<p><strong>下一篇</strong>：<a href="./AI_Native_Organization_融合与实现_2026-05.html">卷二：融合与实现</a></p>
+
+<div class="doc-footer">
+  <a href="./AI_Native_Organization_调研与机会_2026-05.html">← 系列索引</a>
+  · <a href="../insights/index.html">洞察总索引</a>
+</div>
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+<script>
+(function () {
+  var bar = document.getElementById('progressBar');
+  if (!bar) return;
+  function update() {
+    var y = window.scrollY;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? Math.min(y / h * 100, 100) : 0) + '%';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>

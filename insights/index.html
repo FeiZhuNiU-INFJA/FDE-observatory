@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>前沿洞察 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  .index-page { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; }
+
+  .filter-bar { display: flex; gap: .5rem; margin: 1.5rem 0; flex-wrap: wrap; }
+  .filter-btn {
+    padding: .3em .9em; border-radius: 999px;
+    border: 1px solid var(--border-strong); background: var(--surface);
+    color: var(--text-soft); font-size: .82rem; font-weight: 500;
+    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
+    font-family: var(--sans);
+  }
+  .filter-btn:hover { background: var(--bg-soft); color: var(--text); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .section-label {
+    font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--text-muted); padding-bottom: .5em; border-bottom: 1px solid var(--border);
+    margin: 2.5rem 0 1rem;
+  }
+  .doc-list { list-style: none; padding: 0; margin: 0; }
+  .doc-list li {
+    display: flex; align-items: baseline; gap: .7rem;
+    padding: .65em 0; border-bottom: 1px solid var(--border); font-size: .93rem;
+  }
+  .doc-list li:last-child { border-bottom: none; }
+  .doc-date { color: var(--text-muted); font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
+  .doc-title { flex: 1; min-width: 0; }
+  .doc-title a { color: var(--text); border-bottom: none; }
+  .doc-title a:hover { color: var(--accent); }
+  .doc-sub { font-size: .82rem; color: var(--text-muted); margin-left: .4em; }
+  .doc-tags { display: flex; gap: .3rem; flex-shrink: 0; flex-wrap: wrap; }
+  .doc-draft { opacity: .55; }
+
+  /* Audience filter */
+  [data-audience] { transition: opacity .2s; }
+  body.filter-tob [data-audience]:not([data-audience~="tob"]) { opacity: .15; pointer-events: none; }
+  body.filter-toc [data-audience]:not([data-audience~="toc"]) { opacity: .15; pointer-events: none; }
+  body.filter-cross [data-audience]:not([data-audience~="cross"]) { opacity: .15; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      前沿洞察
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="index-page">
+
+  <div class="site-hero" style="padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
+    <h1 style="font-size:1.9rem;margin:0 0 .3em;">前沿洞察</h1>
+    <p style="color:var(--text-muted);margin:0;font-size:.95rem;">行业判断 · 技术分析 · 品类发现 · toB / toC / 跨市场</p>
+  </div>
+
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" data-filter="all">全部</button>
+    <button class="filter-btn" data-filter="tob">ToB</button>
+    <button class="filter-btn" data-filter="toc">ToC</button>
+    <button class="filter-btn" data-filter="cross">跨市场</button>
+  </div>
+
+  <!-- ── ToB ─────────────────────────────────────── -->
+  <div class="section-label" data-audience="tob">ToB · 企业与行业</div>
+  <ul class="doc-list" data-render="insights" data-filter-audience="tob" data-href-prefix="../">
+    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
+  </ul>
+
+  <!-- ── ToC ─────────────────────────────────────── -->
+  <div class="section-label" data-audience="toc">ToC · 消费者与个人</div>
+  <ul class="doc-list" data-render="insights" data-filter-audience="toc" data-href-prefix="../">
+    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
+  </ul>
+
+  <!-- ── 跨市场 ─────────────────────────────────── -->
+  <div class="section-label" data-audience="cross">跨市场 · 底层洞察</div>
+  <ul class="doc-list" data-render="insights" data-filter-audience="cross" data-href-prefix="../">
+    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
+  </ul>
+
+  <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--text-muted);">
+    <a href="../index.html">← 返回首页</a>
+  </div>
+
+</div>
+
+<script src="../_assets/insight.js"></script>
+<script src="../_assets/manifest-render.js"></script>
+<script>
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const f = btn.dataset.filter;
+      document.body.className = document.body.className.replace(/filter-\w+/g, '').trim();
+      if (f !== 'all') document.body.classList.add('filter-' + f);
+    });
+  });
+</script>
+</body>
+</html>

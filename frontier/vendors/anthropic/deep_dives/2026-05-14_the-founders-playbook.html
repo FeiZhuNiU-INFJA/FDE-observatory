@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The founder's playbook：AI-native 创业手册 · FDE 深度解读</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  :root { --accent: #c45c26; --accent-soft: #fef3eb; }
+  [data-theme="dark"] { --accent: #f0a070; --accent-soft: #3d2818; }
+  .stage-card { border: 1px solid var(--border); border-radius: 10px; padding: 1em 1.2em; margin: 1em 0; background: var(--surface); }
+  .stage-card h4 { margin-top: 0; color: var(--accent); font-family: var(--sans); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Founder Playbook<span class="brand-sub">跨市场 · Anthropic · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>The founder's playbook：Building an AI-native startup</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Anthropic 36 页创业手册深度解读 · 四阶段 × Claude 产品矩阵 × ToB/FDE 映射</p>
+      <div class="doc-meta">
+        <span>2026-05-25</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>AI-native</span>
+        <span>方法论</span>
+        <span>对内</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem;">
+        官方：<a href="https://claude.com/blog/the-founders-playbook" target="_blank" rel="noopener">博客</a> ·
+        <a href="https://cdn.prod.website-files.com/6889473510b50328dbb70ae6/69fe2a55b93bb0732b1fe33c_The-Founders-Playbook-05062026_v3%20(1).pdf" target="_blank" rel="noopener">PDF 全文（36 页）</a> ·
+        工作稿：<a href="2026-05-14_the-founders-playbook.md">MD 摘要</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Anthropic 用 <strong>Idea → MVP → Launch → Scale</strong> 重画创业路径：创始人从 IC 变为 <strong>Agent 编排者</strong>；Claude 分工为 <strong>Chat（快问）/ Cowork（知识工作+连接器）/ Code（工程）</strong>。2026 年的瓶颈不再是「能不能造出来」，而是 <strong>验证纪律、CLAUDE.md 级上下文治理、PMF 度量与运营系统化</strong>——对 FDE/ToB 而言，「进化」应落在 <strong>可审计资产 + 运营 OS</strong>，而非模型黑盒自改。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>生命周期重启</strong>：validate→raise→hire→build 被压缩；AI 削弱资本/人头/技能门槛</li>
+        <li><strong>最大新风险</strong>：agentic coding 让「有原型」极易被误读为「已验证」——42% 初创仍死于无人要</li>
+        <li><strong>MVP 第一项交付物</strong>：架构原则落盘 <code>CLAUDE.md</code> + 书面 scope「不做清单」</li>
+        <li><strong>Launch 转折</strong>：从创始人全感知 → 可重复获客 + 运营不绑创始人</li>
+        <li><strong>Scale 护城河</strong>：领域深度 + 集成 + 行为数据飞轮 + workflow lock-in</li>
+        <li><strong>批判阅读</strong>：方法论有价值，同时是 Claude 生态的 Day-0 GTM 文档</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-what"><span class="sec-num">一</span>发布了什么<a href="#sec-what" class="anchor">#</a></h2>
+
+    <h3 id="sec-what-blog">1.1 博客 vs 电子书</h3>
+    <p>2026-05-14 发布的 <a href="https://claude.com/blog/the-founders-playbook" target="_blank" rel="noopener">博客</a>（约 5 分钟）是引流页；正文在 PDF《The Founder's Playbook: Building an AI-Native Startup》（<strong>36 页</strong>）。目标读者：从 Day 0 按 AI-native 架构创业的创始人及早期运营。</p>
+
+    <h3 id="sec-what-narrative">1.2 核心叙事</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>论点</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>生命周期被「重启」</td><td>传统 validate→raise→hire→build 压缩；lean「10 人独角兽」从故事变为 deliberate plan</td></tr>
+          <tr><td>创始人角色</td><td>「会写代码 / 会做生意」→ <strong>编排 agents</strong>，注意力上移到做什么、为什么</td></tr>
+          <tr><td>失败主因不变</td><td><strong>42%</strong> 初创因做了没人要的东西；agentic coding 加剧「误把原型当验证」</td></tr>
+          <tr><td>三能力支柱</td><td>研究（Chat/Cowork）、Agentic coding（Code）、工作流自动化（Cowork + MCP）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-what-close">1.3 收束句（PDF 末章）</h3>
+    <blockquote style="border-left: 3px solid var(--accent); padding-left: 1em; color: var(--text-soft);">
+      The bottlenecks are no longer what you can build, but <strong>what you choose to build</strong>.
+    </blockquote>
+
+    <!-- 二 -->
+    <h2 id="sec-insight"><span class="sec-num">二</span>三条结构性洞察<a href="#sec-insight" class="anchor">#</a></h2>
+
+    <h3 id="sec-insight-1">2.1 创始人 = 编排者，非打字员</h3>
+    <p>非技术创始人可上生产软件；技术创始人可产出 GTM/财务/融资材料。稀缺资源是<strong>判断力与真实市场接触</strong>（客户对话、定位、文化），不是实现速度。</p>
+
+    <h3 id="sec-insight-2">2.2 最大新风险：建造 ≠ 验证</h3>
+    <p>危险路径：<code>想法 → 立刻原型 → 原型存在 = 假设正确</code>。手册强调：原型是<strong>访谈道具</strong>；证据来自与真人的对话与对抗性研究。</p>
+
+    <h3 id="sec-insight-3">2.3 「进化」= 资产累积，非黑盒自改</h3>
+    <ul>
+      <li><code>CLAUDE.md</code> + Scope 文档 = 人工治理的记忆/规则</li>
+      <li>Cowork <strong>Skills</strong> = 可复用工作流资产</li>
+      <li>Scale 章 <strong>行为数据飞轮</strong> = 需刻意设计的反馈环</li>
+      <li>Launch/Scale 的合规与安全仍依赖<strong>创始人审批</strong></li>
+    </ul>
+
+    <!-- 三 -->
+    <h2 id="sec-stages"><span class="sec-num">三</span>四阶段框架<a href="#sec-stages" class="anchor">#</a></h2>
+
+    <pre class="mermaid">
+flowchart LR
+  Idea["Idea\n问题-方案契合"] --> MVP["MVP\nPMF 证据 + 工程纪律"]
+  MVP --> Launch["Launch\n可重复增长 + 生产就绪"]
+  Launch --> Scale["Scale\n护城河 + 组织成熟"]
+    </pre>
+
+    <div class="stage-card">
+      <h4>Idea — 验证问题，再写生产代码</h4>
+      <p><strong>目标</strong>：problem-solution fit；研究、客户发现、竞品、反证，<em>再</em>让 Code 写第一行生产代码。</p>
+      <p><strong>出口（三问皆 Yes）</strong>：① 问题真实可点名用户/频率/严重度/现有行为；② 方案对准<strong>验证后</strong>的问题；③ 有足够定性信号支撑 MVP。</p>
+      <p><strong>典型失败</strong>：把建造当验证 · 过早扩张执行 · AI 放大确认偏误。</p>
+      <p><strong>Claude 练习（PDF）</strong>：魔鬼代言人 · 竞品分层威胁 · 评论/报告合成 TAM/SAM · 访谈问题审计（禁「你会用吗」）· Cowork 外联排期 · Code 仅做<strong>单一核心交互</strong>轻原型。</p>
+    </div>
+
+    <div class="stage-card">
+      <h4>MVP — 仍是在取证，但要工程纪律</h4>
+      <p><strong>双重目标</strong>：最小产品 + 真实使用证据；同时避免 <strong>agentic technical debt</strong>（无架构约束时每 session 重推结构）。</p>
+      <p><strong>出口</strong>：可识别用户群愿意<strong>回来 / 付钱 / 推荐</strong>——非 launch 热度。</p>
+      <p><strong>关键实践</strong>：</p>
+      <ul>
+        <li>开工前架构原则 → <code>CLAUDE.md</code>（「第一项交付物」）</li>
+        <li>Scope：做什么、<strong>刻意不做什么</strong>、加功能需用户证据</li>
+        <li>每 session：读 scope + CLAUDE.md，结束写 session log</li>
+        <li>上线前安全审查 + <strong>上线前定指标</strong>（留存、激活、假阳性模式）</li>
+        <li>PMF 试纸：Sean Ellis「非常失望」&gt;40%；push→pull 努力测试</li>
+      </ul>
+      <p><strong>典型失败</strong>：假 PMF（朋友/HN spike）· 零摩擦 scope creep · 能跑≠安全。</p>
+    </div>
+
+    <div class="stage-card">
+      <h4>Launch — 证明业务值得长大</h4>
+      <p><strong>目标</strong>：可重复获客；生产级可靠；<strong>运营不绑在创始人身上</strong>。</p>
+      <p><strong>出口三要素</strong>：① 渠道化增长（CAC/LTV/回本期可辩护）；② 扛生产负载（安全/合规/可靠性）；③ 流程与自动化替代创始人手工。</p>
+      <p><strong>Launch OS</strong>：Cowork 运营审计 → 自动化；Code 架构审计还债；合规 workstream（SOC2/GDPR/HIPAA 向）；轻量 PM（sprint、spec 模板、bug 分流、周报）。</p>
+      <p><strong>典型失败</strong>：MVP 债到期 · 创始人瓶颈 · 合规再不能拖 · 过早扩市场稀释 PMF。</p>
+    </div>
+
+    <div class="stage-card">
+      <h4>Scale — 系统化增长与护城河</h4>
+      <p><strong>目标</strong>：千万用户/多市场；<strong>领域深度 + 集成 + 专有行为数据 + workflow lock-in</strong>。</p>
+      <p><strong>出口</strong>：可持续盈利 / IPO-ready / 被收购；能回答「大厂明天抄你，用户会留下吗？」</p>
+      <p><strong>三板斧</strong>：创始人领域知识 → Claude Skills/记忆 · 交互数据飞轮 · 集成深度与 switching cost。</p>
+      <p><strong>案例（Resources）</strong>：HumanLayer、Ambral、Carta Healthcare、Anything、Duvo、Wordsmith、Airtree、Zingage 等。</p>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-matrix"><span class="sec-num">四</span>Claude 产品矩阵<a href="#sec-matrix" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>任务</th><th>用谁</th><th>原因</th></tr></thead>
+        <tbody>
+          <tr><td>问答、改写、头脑风暴</td><td><strong>Chat</strong></td><td>快、对话、零 setup</td></tr>
+          <tr><td>多源研究 → 成品文档/表格、定时任务</td><td><strong>Cowork</strong></td><td>文件夹、MCP、Skills、scheduled runs</td></tr>
+          <tr><td>写/测/发软件</td><td><strong>Code</strong></td><td>代码库、git、Plan Mode、环境</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>三者共享同一 Claude 模型；差异在<strong>工作区与工具边界</strong>。Launch 起三件套 compound：Code 做产品，Cowork 做公司运营，Chat 沉淀知识。</p>
+
+    <!-- 五 -->
+    <h2 id="sec-arch"><span class="sec-num">五</span>架构与机制拆解<a href="#sec-arch" class="anchor">#</a></h2>
+
+    <pre class="mermaid">
+flowchart TB
+  subgraph founder [Founder_Orchestrator]
+    J[Judgment_and_Priorities]
+  end
+  subgraph surfaces [Claude_Surfaces]
+    Chat[Chat]
+    Cowork[Cowork]
+    Code[Code]
+  end
+  subgraph assets [Persistent_Assets]
+    CM[CLAUDE_md]
+    SD[Scope_Doc]
+    SK[Skills]
+    DF[Data_Flywheel]
+  end
+  J --> Chat & Cowork & Code
+  Code --> CM & SD
+  Cowork --> SK
+  DF --> Code
+    </pre>
+
+    <ol>
+      <li><strong>阶段门控</strong>：每阶段 exit criteria，防止「能建就建」</li>
+      <li><strong>上下文工程</strong>：<code>CLAUDE.md</code> = memory/playbook 工程化</li>
+      <li><strong>对抗性研究</strong>：Devil's advocate 贯穿 Idea–Scale</li>
+      <li><strong>运营 Agent 化</strong>：Launch 起 Cowork + MCP 替代创始人重复劳动</li>
+    </ol>
+
+    <h3 id="sec-arch-impl">5.1 核心实现拆解（剧透式）</h3>
+    <p>无独立开源 repo；可落地的「实现」是 <strong>CLAUDE.md 作为 Agent SDK 目录级指令</strong>，在每次 Code 会话自动注入，配合 scope 文档形成双轨治理。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>模块</th><th>职责</th><th>关键产物</th></tr></thead>
+        <tbody>
+          <tr><td>架构前置（Chat）</td><td>MVP 前定原则/依赖/权衡</td><td>架构原则文稿</td></tr>
+          <tr><td>CLAUDE.md</td><td>持久项目记忆</td><td>每 session 必读/可追加 log</td></tr>
+          <tr><td>Scope 文档</td><td>防零摩擦蔓延</td><td>「不做」清单 + 加功能证据门槛</td></tr>
+          <tr><td>Cowork Skills</td><td>运营工作流资产化</td><td>可调度、可共享的 routine</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-tob"><span class="sec-num">六</span>对 ToB Agent / FDE 的启示<a href="#sec-tob" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Playbook 阶段</th><th>企业 AI 落地映射</th></tr></thead>
+        <tbody>
+          <tr><td>Idea</td><td>PoC 前：现状调研、workflow 访谈、问题假设压测</td></tr>
+          <tr><td>MVP</td><td>试点：最小闭环 + 安全基线 + 指标先于扩张</td></tr>
+          <tr><td>Launch</td><td>部门级：可重复流程、不绑关键人、合规 workstream</td></tr>
+          <tr><td>Scale</td><td>集团级：集成深度、领域 playbook、行为数据飞轮</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <ul>
+      <li><strong>售前产品矩阵</strong>：业务用户 → Chat/Cowork；集成 → Cowork+MCP；工程 → Code/Agent SDK</li>
+      <li><strong>与「进化 POC」对齐</strong>：先 playbook + 连接器 + notify/approve/rollback，再谈 skill/mem 自动晋升</li>
+      <li><strong>假 PMF ≈ 假进化</strong>：早期指标好看 ≠ 能力真提升；需 benchmark + 回归 + 人工审批</li>
+      <li><strong>合规 caveat</strong>：第三方评论指出 Cowork 活动可能不进审计日志——SOC2/HIPAA 场景需区分 Chat/Cowork/Code 边界</li>
+    </ul>
+
+    <!-- 七 -->
+    <h2 id="sec-critique"><span class="sec-num">七</span>批判性阅读<a href="#sec-critique" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>值得采纳</th><th>需警惕</th></tr></thead>
+        <tbody>
+          <tr><td>验证纪律</td><td>反确认偏误、访谈设计、先问题后代码</td><td>监管/本地化/渠道成本可能被低估</td></tr>
+          <tr><td>工程实践</td><td>CLAUDE.md、scope、session log、上线前指标</td><td>AI 安全审查 ≠ 专业安全/合规签字</td></tr>
+          <tr><td>组织设计</td><td>Launch 瓶颈审计、agentic OS</td><td>全自动运营在关键决策上需人工兜底</td></tr>
+          <tr><td>商业叙事</td><td>数据飞轮 + workflow lock-in</td><td>同时是 Claude 生态 Day-0 GTM</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-checklist"><span class="sec-num">八</span>可执行清单（10 条）<a href="#sec-checklist" class="anchor">#</a></h2>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">脱离厂商也可执行</div>
+      <ol style="margin: .3em 0;">
+        <li>写可检验假设（谁、多频繁、多痛、现在怎么办）— 再开 IDE</li>
+        <li>每周 AI 魔鬼代言人，保存反证记录</li>
+        <li>20+ 一手访谈；每 5 场做「支持 vs 挑战」对称检查</li>
+        <li>MVP 前：架构原则 + <code>CLAUDE.md</code> + scope「不做清单」</li>
+        <li>上线前：认证/密钥/依赖/注入清单 + 真人复核敏感路径</li>
+        <li>上线前：定 D7/D30 与「假 PMF」定义</li>
+        <li>MVP 结束：Ellis + push/pull，非 feature complete</li>
+        <li>Launch：创始人时间审计 → 自动化/委派清单</li>
+        <li>Scale：垂直 edge case 进测试集 = 护城河地图</li>
+        <li>关键路径避免单模型/单供应商锁定</li>
+      </ol>
+    </div>
+
+    <!-- 九 -->
+    <h2 id="sec-track"><span class="sec-num">九</span>待跟踪信号<a href="#sec-track" class="anchor">#</a></h2>
+    <ul>
+      <li>Startups Program 与 Enterprise 四阶段打包是否统一</li>
+      <li>Claude Code Security GA 与能力边界</li>
+      <li>Cowork 审计日志能力更新（合规话术）</li>
+      <li>Playbook 是否发布可检索非 PDF 版</li>
+      <li>国内 ToB 对「编排者」vs「开箱自动化」的预期差</li>
+    </ul>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订：2026-05-25 合并既往 MD 调研与 PDF 全文解读（官方发布 2026-05-14）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="../../README.md">Anthropic 索引</a>
+      · <a href="2026-05-14_the-founders-playbook.md">MD 工作稿</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Code Dynamic Workflows 深度解读 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  :root { --accent: #2563eb; --accent-soft: #eff6ff; }
+  [data-theme="dark"] { --accent: #93c5fd; --accent-soft: #1e3a5f; }
+  .pattern-card { border: 1px solid var(--border); border-radius: 10px; padding: 1em 1.2em; margin: 1em 0; background: var(--surface); }
+  .pattern-card h4 { margin-top: 0; color: var(--accent); font-family: var(--sans); font-size: 1rem; }
+  pre.code-block { font-size: .82rem; line-height: 1.45; overflow-x: auto; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Dynamic Workflows<span class="brand-sub">Anthropic · Claude Code · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Claude Code Dynamic Workflows：大规模 Subagent 编排深度解读</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Research Preview · JS 编排脚本 · Ultracode · 对抗验证 · 与 Subagent / Agent Teams 选型</p>
+      <div class="doc-meta">
+        <span>2026-05-30</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>Claude Code</span>
+        <span>Agent 编排</span>
+        <span>对内</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem;">
+        官方：<a href="https://claude.com/blog/introducing-dynamic-workflows-in-claude-code" target="_blank" rel="noopener">Introducing dynamic workflows</a> ·
+        <a href="https://code.claude.com/docs/en/workflows" target="_blank" rel="noopener">Orchestrate subagents at scale (Docs)</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Dynamic Workflows（2026-05-28 Research Preview）不是「多开几个 subagent」，而是把<strong>编排计划从对话 context 搬进 Claude 即时生成的 JavaScript 脚本</strong>，由隔离 runtime 在后台执行：单次 run 最多 <strong>1000</strong> 个 agent、<strong>16</strong> 路并发，中间态留在脚本变量里，主 session 主要只收<strong>经验证后的最终结果</strong>。对 FDE / 大规模工程任务的映射是：<strong>可脚本化、可复跑、可对抗验证的编排层</strong>——把「计划」从个人 prompt 升级为 <code>.claude/workflows/</code> 团队资产；代价是 token 显著高于普通 session，需从小范围 scoped 任务试起。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>触发</strong>：prompt 含 <code>workflow</code>；或 <code>/effort ultracode</code>（xhigh + 自动编排）；或 <code>/deep-research</code> 等内置命令</li>
+        <li><strong>脚本形态</strong>：<code>export const meta = { ... }</code>（纯字面量）+ <code>agent()</code> / <code>pipeline()</code> / <code>parallel()</code> / <code>phase()</code> / <code>log()</code></li>
+        <li><strong>默认多阶段</strong>：用 <code>pipeline()</code>（无屏障）；仅当下一阶段需要「收齐全部 item」才用 <code>parallel()</code> 当屏障</li>
+        <li><strong>质量模式</strong>：对抗验证、多视角 judge、loop-until-dry、completeness critic</li>
+        <li><strong>要求</strong>：Claude Code ≥ v2.1.154；Pro/Max/Team/Enterprise（Enterprise 默认关）；脚本本身不碰盘，读写由 subagent 完成</li>
+        <li><strong>与 Agent Teams</strong>：Workflow 偏一次性大规模编排 + 可保存脚本；Teams 偏多实例长期 git 协作</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-what"><span class="sec-num">一</span>发布了什么<a href="#sec-what" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>字段</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>发布</td><td>2026-05-28，与 Claude Opus 4.8 同期宣传；Research Preview</td></tr>
+          <tr><td>产品面</td><td>Claude Code CLI、Desktop、VS Code 扩展；Claude API、Bedrock、Vertex AI、Microsoft Foundry</td></tr>
+          <tr><td>计划</td><td>Pro（/config 开启）、Max、Team、Enterprise（管理员可关）；API 侧默认开</td></tr>
+          <tr><td>版本</td><td>Claude Code <strong>≥ v2.1.154</strong></td></tr>
+          <tr><td>定位</td><td>单次 agent pass 搞不定的大规模工程：全库 audit、数百文件迁移、多源交叉研究、高代价错误需二次验证</td></tr>
+          <tr><td>标杆案例</td><td>Bun Zig→Rust（约 75 万行、数百 agent 并行、两 reviewer/文件）；Klarna 死代码发现</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>官方 framing：<strong>「Work you'd normally plan in quarters now finishes in days」</strong>——编排脚本可跑数十到数百并行 subagent，在结果呈现给用户前完成检查。建议配合 <strong>Auto mode</strong> 使用。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-features"><span class="sec-num">二</span>核心特性<a href="#sec-features" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>特性</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>动态 JS 编排</td><td>Claude 按任务生成脚本，runtime 后台执行，主 session 保持响应</td></tr>
+          <tr><td>大规模并行</td><td>数十～数百 subagent；上限 1000 agent/run，16 并发（受 CPU 限制）</td></tr>
+          <tr><td>对抗式验证</td><td>多 agent 独立分析 + 反驳 agent；迭代至答案收敛</td></tr>
+          <tr><td>上下文隔离</td><td>循环/分支/中间结果在脚本变量；主 context 主要收最终结果</td></tr>
+          <tr><td>可恢复</td><td>同 session 内中断后，已完成 agent 用缓存；<strong>退出 Claude Code 后不能续跑</strong></td></tr>
+          <tr><td>可复用</td><td>脚本可保存为 <code>/command</code>（<code>.claude/workflows/</code> 或 <code>~/.claude/workflows/</code>）</td></tr>
+          <tr><td>内置 workflow</td><td><code>/deep-research</code>：多路搜索、抓取、交叉核验、引用报告</td></tr>
+          <tr><td>Ultracode</td><td><code>xhigh</code> effort + 自动判断是否起 workflow（仅当前 session）</td></tr>
+          <tr><td>审批</td><td>首次触发展示计划并确认；组织可通过 managed settings 关闭</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-principle"><span class="sec-num">三</span>背后原理：计划进代码，不进 Context<a href="#sec-principle" class="anchor">#</a></h2>
+
+    <h3 id="sec-arch">3.1 架构对比</h3>
+
+    <div class="mermaid">
+flowchart TB
+    subgraph traditional["传统 Subagent / Skill"]
+        U1["用户任务"] --> C1["Claude 逐轮决策"]
+        C1 --> S1["Spawn subagent"]
+        S1 --> C1
+        C1 --> CW["Context 累积全部中间结果"]
+    end
+
+    subgraph wf["Dynamic Workflow"]
+        U2["用户任务"] --> G["Claude 生成 JS 编排脚本"]
+        G --> RT["Workflow Runtime 隔离执行"]
+        RT --> A1["Agent 1"]
+        RT --> A2["Agent 2"]
+        RT --> An["Agent N …"]
+        A1 --> V["对抗验证 / 收敛迭代"]
+        A2 --> V
+        An --> V
+        V --> F["仅最终结果 → 主 session"]
+    end
+    </div>
+
+    <h3 id="sec-flow">3.2 执行流程</h3>
+    <ol>
+      <li>根据 prompt <strong>动态规划</strong>子任务</li>
+      <li>脚本 <strong>fan-out</strong> 并行 subagent</li>
+      <li><strong>独立验证 / 对抗反驳</strong></li>
+      <li><strong>迭代至收敛</strong></li>
+      <li>汇总为单一、协调后的答案</li>
+    </ol>
+
+    <h3 id="sec-constraint-boundary">3.3 强约束边界：编排强约束，子 Agent 弱约束</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>层</th><th>约束强度</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>Workflow runtime（脚本执行层）</td><td><strong>强约束</strong></td><td>控制流按脚本执行：<code>pipeline</code>/<code>parallel</code> 语义、循环退出、并发上限、预算上限、resume 路径都由代码决定</td></tr>
+          <tr><td><code>agent()</code> 子任务内部</td><td><strong>弱约束</strong></td><td>每次推理和工具链路有概率性差异；通过 <code>schema</code> 校验、对抗验证、投票和 loop-until-dry 提升稳定性，而非完全确定</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>因此更准确的表述是：<strong>Workflow = 确定性的编排骨架 + 概率性的子 Agent 执行单元</strong>。这也是它区别于“全程对话内临场 orchestration”的关键。</p>
+
+    <h3 id="sec-compare-primitives">3.4 与 Subagent / Skill / Agent Teams</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>Subagents</th><th>Skills</th><th>Workflows</th><th>Agent Teams</th></tr></thead>
+        <tbody>
+          <tr><td>本质</td><td>Claude 派发的 worker</td><td>Claude 遵循的指令</td><td>Runtime 执行的脚本</td><td>多 Claude 实例 + git 协调</td></tr>
+          <tr><td>谁决定下一步</td><td>Claude 逐轮</td><td>Claude 按 prompt</td><td><strong>脚本</strong></td><td>团队协调协议</td></tr>
+          <tr><td>中间结果</td><td>Context</td><td>Context</td><td><strong>脚本变量</strong></td><td>共享工作区</td></tr>
+          <tr><td>规模</td><td>每轮少量</td><td>同左</td><td>数十～数百/run</td><td>长期并行工程</td></tr>
+          <tr><td>中断</td><td>重开 turn</td><td>重开 turn</td><td><strong>同 session 可 resume</strong></td><td>持久协作</td></tr>
+          <tr><td>可重复</td><td>worker 定义</td><td>skill 文件</td><td><strong>编排脚本本身</strong></td><td>团队流程</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>选型口诀：<strong>几轮委派 → Subagent；要脚本化大规模 fan-out + 对抗验证 → Workflow；多实例长期改同一 repo → Agent Teams</strong>。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-scenarios"><span class="sec-num">四</span>适用场景<a href="#sec-scenarios" class="anchor">#</a></h2>
+
+    <h3 id="sec-fit">4.1 适合</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>场景</th><th>典型任务</th></tr></thead>
+        <tbody>
+          <tr><td>全库审计</td><td>Bug hunt、安全审计、profiler 优化、死代码（Klarna）</td></tr>
+          <tr><td>大规模迁移</td><td>框架替换、API 废弃、语言移植（Bun 75 万行级）</td></tr>
+          <tr><td>高代价错误</td><td>需多角度 + 对抗验证才能交付</td></tr>
+          <tr><td>跨源研究</td><td><code>/deep-research</code>、多来源交叉核验</td></tr>
+          <tr><td>方案论证</td><td>多独立角度起草/压力测试再 commit</td></tr>
+          <tr><td>可重复流程</td><td>每 PR 的 review sweep → 保存为 workflow command</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-unfit">4.2 不适合</h3>
+    <ul>
+      <li>小改动、单文件修 bug（token 成本过高）</li>
+      <li>需要 <strong>run 中途人工介入</strong>的多阶段签批（应拆成多个 workflow）</li>
+      <li>期望 <strong>跨退出 Claude Code 的 session</strong> 断点续跑</li>
+    </ul>
+
+    <!-- 五 -->
+    <h2 id="sec-howto"><span class="sec-num">五</span>如何使用<a href="#sec-howto" class="anchor">#</a></h2>
+
+    <h3 id="sec-trigger">5.1 触发方式</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>方式</th><th>命令 / 写法</th></tr></thead>
+        <tbody>
+          <tr><td>关键词</td><td>prompt 含 <code>workflow</code>（误触发：<code>alt+w</code> 或 /config 关 keyword）</td></tr>
+          <tr><td>Ultracode</td><td><code>/effort ultracode</code>；日常降回 <code>/effort high</code></td></tr>
+          <tr><td>内置</td><td><code>/deep-research &lt;question&gt;</code></td></tr>
+          <tr><td>已保存</td><td><code>/your-workflow-name</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <pre class="code-block"><code>Run a workflow to audit every API endpoint under src/routes/ for missing auth checks
+
+用 workflow 扫描整个 monorepo 里所有未做输入校验的 API</code></pre>
+
+    <h3 id="sec-monitor">5.2 监控与保存</h3>
+    <ul>
+      <li><code>/workflows</code>：列表、阶段、agent 数、token、耗时；<code>p</code> 暂停/恢复，<code>x</code> 停止，<code>s</code> 保存脚本</li>
+      <li>审批：View raw script、<code>Ctrl+G</code> 编辑；Auto 模式首次后可能免 prompt</li>
+      <li>保存路径：<code>.claude/workflows/</code>（项目）或 <code>~/.claude/workflows/</code>（个人）</li>
+    </ul>
+
+    <h3 id="sec-disable">5.3 关闭</h3>
+    <ul>
+      <li><code>/config</code> → Dynamic workflows off</li>
+      <li><code>~/.claude/settings.json</code>：<code>"disableWorkflows": true</code></li>
+      <li><code>CLAUDE_CODE_DISABLE_WORKFLOWS=1</code></li>
+    </ul>
+
+    <!-- 六 -->
+    <h2 id="sec-script"><span class="sec-num">六</span>生成的 JS 编排脚本长什么样<a href="#sec-script" class="anchor">#</a></h2>
+
+    <p>官方未公开「脚本样例库」，但 Workflow 工具说明（Claude Code v2.1.154+）规定了完整 API。脚本 = <strong>纯字面量 meta</strong> + <strong>异步 JS 编排体</strong>。</p>
+
+    <h3 id="sec-script-skeleton">6.1 骨架</h3>
+    <pre class="code-block"><code>// ① meta 必须是纯字面量（不能变量/函数/展开/模板插值）
+export const meta = {
+  name: 'review-changes',
+  description: 'Review changed files across dimensions, verify each finding',
+  whenToUse: '可选，workflow 列表展示',
+  phases: [
+    { title: 'Review', detail: '多维度并行 review' },
+    { title: 'Verify', detail: '对抗式验证每条 finding' },
+    // 可选：{ title: 'Scan', model: 'sonnet' }
+  ],
+};
+
+// ② 脚本体：纯 JS（非 TS），顶层可直接 await
+phase('Review');
+const results = await pipeline(/* ... */);
+return { confirmed: results };</code></pre>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>约束</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>语言</td><td>纯 JavaScript；禁止 TS 类型注解</td></tr>
+          <tr><td>脚本权限</td><td>无 fs、无 shell、无 Node API；读写由 subagent</td></tr>
+          <tr><td>非确定性</td><td><code>Date.now()</code>、<code>Math.random()</code>、无参 <code>new Date()</code> 抛错（破坏 resume）</td></tr>
+          <tr><td>持久化</td><td>每次 Workflow 调用自动存 session 目录；可 <code>scriptPath</code> + <code>resumeFromRunId</code> 重跑</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-api">6.2 编排原语</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>原语</th><th>作用</th><th>关键语义</th></tr></thead>
+        <tbody>
+          <tr><td><code>agent(prompt, opts?)</code></td><td>派生 subagent</td><td><code>schema</code> → 校验后的 JSON 对象；skip → <code>null</code>；<code>isolation: 'worktree'</code> 并行改文件</td></tr>
+          <tr><td><code>parallel(thunks)</code></td><td>并发</td><td><strong>屏障</strong>：等全部完成；失败 → <code>null</code>，<code>.filter(Boolean)</code></td></tr>
+          <tr><td><code>pipeline(items, ...stages)</code></td><td>流水线</td><td><strong>无屏障</strong>：item A 在 stage3 时 B 可能在 stage1；<strong>默认首选</strong></td></tr>
+          <tr><td><code>phase(title)</code></td><td>UI 分组</td><td>与 <code>meta.phases[].title</code> 精确匹配；pipeline 内用 <code>agent({ phase })</code></td></tr>
+          <tr><td><code>log(msg)</code></td><td>进度旁白</td><td>显示在进度树上方</td></tr>
+          <tr><td><code>args</code></td><td>入参</td><td>Workflow 工具传入；须为真 JSON，勿字符串化</td></tr>
+          <tr><td><code>budget</code></td><td>Token 预算</td><td><code>{ total, spent(), remaining() }</code>；用户 <code>+500k</code> 类指令；超限 <code>agent()</code> 抛错</td></tr>
+          <tr><td><code>workflow(name, args?)</code></td><td>嵌套 workflow</td><td><strong>仅一层</strong>；共享并发/1000 上限/budget</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-canonical">6.3 Canonical 示例：审查 + 对抗验证（pipeline）</h3>
+    <p>bugs 维度还在 Review 时，perf 的 finding 可能已在 Verify——比两阶段 barrier 更省 wall-clock。</p>
+    <pre class="code-block"><code>export const meta = {
+  name: 'review-changes',
+  description: 'Review changed files across dimensions, verify each finding',
+  phases: [{ title: 'Review' }, { title: 'Verify' }],
+};
+
+const DIMENSIONS = [
+  { key: 'bugs', prompt: 'Review for logic bugs in the diff...' },
+  { key: 'perf', prompt: 'Review for performance issues...' },
+];
+
+const FINDINGS_SCHEMA = { /* JSON Schema */ };
+const VERDICT_SCHEMA = { /* JSON Schema */ };
+
+const results = await pipeline(
+  DIMENSIONS,
+  d => agent(d.prompt, {
+    label: `review:${d.key}`,
+    phase: 'Review',
+    schema: FINDINGS_SCHEMA,
+  }),
+  review => parallel(
+    review.findings.map(f => () =>
+      agent(`Adversarially verify: ${f.title}`, {
+        label: `verify:${f.file}`,
+        phase: 'Verify',
+        schema: VERDICT_SCHEMA,
+      }).then(v => ({ ...f, verdict: v }))
+    )
+  ),
+);
+
+const confirmed = results
+  .flat()
+  .filter(Boolean)
+  .filter(f => f.verdict?.isReal);
+
+return { confirmed };</code></pre>
+
+    <h3 id="sec-barrier">6.4 何时用 parallel 屏障</h3>
+    <p><strong>需要</strong>：dedup 全量 findings、零结果 early-exit、stage N 引用「其他 findings」做比较。</p>
+    <p><strong>不需要</strong>：仅 flatten/map/filter——放进 pipeline 的 stage 回调即可。</p>
+    <pre class="code-block"><code>// 需要屏障：先收齐再 dedup
+const all = await parallel(
+  DIMENSIONS.map(d => () => agent(d.prompt, { schema: FINDINGS_SCHEMA }))
+);
+const deduped = dedupeByFileAndLine(
+  all.filter(Boolean).flatMap(r => r.findings)
+);
+const verified = await parallel(
+  deduped.map(f => () => agent(verifyPrompt(f), { schema: VERDICT_SCHEMA }))
+);</code></pre>
+
+    <h3 id="sec-patterns">6.5 常见质量模式</h3>
+
+    <div class="pattern-card">
+      <h4>对抗验证（3 票 refute，≥2 存活）</h4>
+      <pre class="code-block"><code>const votes = await parallel(Array.from({ length: 3 }, () => () =>
+  agent(`Try to refute: ${claim}. Default refuted=true if uncertain.`, { schema: VERDICT })
+));
+const survives = votes.filter(Boolean).filter(v => !v.refuted).length >= 2;</code></pre>
+    </div>
+
+    <div class="pattern-card">
+      <h4>loop-until-dry（发现类任务）</h4>
+      <pre class="code-block"><code>const seen = new Set(), confirmed = [];
+let dry = 0;
+while (dry < 2) {
+  const found = (await parallel(FINDERS.map(f => () =>
+    agent(f.prompt, { phase: 'Find', schema: BUGS })
+  ))).filter(Boolean).flatMap(r => r.bugs);
+  const fresh = found.filter(b => !seen.has(key(b)));
+  if (!fresh.length) { dry++; continue; }
+  dry = 0;
+  fresh.forEach(b => seen.add(key(b)));
+  // ... verify / judge ...
+}
+return confirmed;</code></pre>
+    </div>
+
+    <div class="pattern-card">
+      <h4>loop-until-budget</h4>
+      <pre class="code-block"><code>const bugs = [];
+while (budget.total && budget.remaining() > 50_000) {
+  const result = await agent('Find bugs...', { schema: BUGS_SCHEMA });
+  bugs.push(...result.bugs);
+  log(`${bugs.length} found, ~${Math.round(budget.remaining() / 1000)}k left`);
+}</code></pre>
+    </div>
+
+    <div class="pattern-card">
+      <h4>大规模迁移（worktree 隔离）</h4>
+      <pre class="code-block"><code>phase('Port');
+await pipeline(
+  args, // 文件列表
+  file => agent(`Port ${file} Zig→Rust, identical behavior`, {
+    label: file,
+    phase: 'Port',
+    isolation: 'worktree',
+  }),
+  portResult => parallel([
+    () => agent(`Review correctness: ${portResult.file}`, { phase: 'Verify' }),
+    () => agent(`Review idiomatic Rust: ${portResult.file}`, { phase: 'Verify' }),
+  ])
+);</code></pre>
+    </div>
+
+    <h3 id="sec-rules">6.6 写脚本三条硬规则</h3>
+    <ol>
+      <li><strong>默认 <code>pipeline()</code></strong>；仅「必须收齐全部上一轮」才用 <code>parallel()</code> 当阶段屏障</li>
+      <li><strong>结构化用 <code>schema</code></strong>；编排层做 filter/map/dedup，少让 agent 做无意义汇总</li>
+      <li><strong><code>parallel</code>/<code>pipeline</code> 内用 <code>agent({ phase })</code></strong>，避免抢全局 <code>phase()</code> 状态</li>
+    </ol>
+
+    <h3 id="sec-view-script">6.7 如何查看真实脚本</h3>
+    <ul>
+      <li>审批对话框 <strong>View raw script</strong> 或 <code>Ctrl+G</code></li>
+      <li>Workflow 工具返回的 <strong>session 目录 script 路径</strong> → Edit 后 <code>Workflow({ scriptPath, resumeFromRunId })</code></li>
+      <li><code>/workflows</code> → 选中 run → <code>s</code> 存到 <code>.claude/workflows/</code></li>
+    </ul>
+
+  <!-- 七 -->
+    <h2 id="sec-limits"><span class="sec-num">七</span>限制、成本与权限<a href="#sec-limits" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>项目</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td>Token</td><td>显著高于普通 session；先 scoped 小任务试用量</td></tr>
+          <tr><td>并发</td><td>16 并发 / 1000 agent per run</td></tr>
+          <tr><td>Mid-run 输入</td><td>仅 agent 权限弹窗可暂停；阶段间签批 → 拆多个 workflow</td></tr>
+          <tr><td>Subagent 模式</td><td>默认 <code>acceptEdits</code>；未 allowlist 的工具可能 mid-run 弹窗</td></tr>
+          <tr><td>跨 session</td><td>退出后下次 <strong>fresh start</strong></td></tr>
+          <tr><td>Ultracode</td><td> substantive 任务常链式多 workflow，成本/延迟显著上升</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-fde"><span class="sec-num">八</span>FDE / ToB 映射<a href="#sec-fde" class="anchor">#</a></h2>
+
+    <ul>
+      <li><strong>可审计编排</strong>：workflow 脚本是明文 JS，可 code review、进 git（<code>.claude/workflows/</code>），优于「计划活在某人 laptop 的 prompt 里」</li>
+      <li><strong>质量面</strong>：对抗验证 + schema 结构化输出 → 与 eval / 任务形态评测（task evolution）可对齐</li>
+      <li><strong>治理</strong>：Enterprise 可关 workflow；长跑前配置 allowlist；大 run 前 <code>/model</code> 确认模型档位</li>
+      <li><strong>与 large codebases 叙事一致</strong>：见 <a href="2026-05-14_claude-code-large-codebases.md">Claude Code 大代码库实践</a>——Harness 资产 + 编排层规模化</li>
+    </ul>
+
+    <!-- 九 -->
+    <h2 id="sec-sources"><span class="sec-num">九</span>参考与延伸阅读<a href="#sec-sources" class="anchor">#</a></h2>
+
+    <ul>
+      <li><a href="https://claude.com/blog/introducing-dynamic-workflows-in-claude-code" target="_blank" rel="noopener">Introducing dynamic workflows in Claude Code</a>（官方博客，2026-05-28）</li>
+      <li><a href="https://code.claude.com/docs/en/workflows" target="_blank" rel="noopener">Orchestrate subagents at scale with dynamic workflows</a>（官方文档）</li>
+      <li><a href="https://code.claude.com/docs/en/sub-agents" target="_blank" rel="noopener">Run agents in parallel</a>（subagents vs workflows 对比）</li>
+      <li>Workflow 工具 API（社区整理，<strong>非 Anthropic 官方发布页</strong>，可能随版本变动）：<a href="https://github.com/Piebald-AI/claude-code-system-prompts/blob/main/system-prompts/tool-description-workflow.md" target="_blank" rel="noopener">tool-description-workflow.md</a></li>
+      <li>站内：<a href="2026-05-14_claude-code-large-codebases.md">大代码库 Agentic Search + Harness</a> · <a href="2026-05-28_alex-albert-research-pm-interview.html">Alex Albert 研究 PM 访谈</a></li>
+    </ul>
+
+    <h2 id="sec-open"><span class="sec-num">十</span>待继续追问<a href="#sec-open" class="anchor">#</a></h2>
+    <ol>
+      <li>Enterprise 默认关闭下，与 managed marketplace / 审计日志的集成形态？</li>
+      <li>Workflow 脚本是否计划开放「人工编写模板」官方样例库（非 leaked tool desc）？</li>
+      <li>与 Cursor / 其他 IDE agent 的多 agent 编排如何对标（脚本 vs plan-in-context）？</li>
+      <li>对抗验证的收敛判据是否可配置（轮数、票数阈值）？</li>
+      <li>API / Agent SDK 非交互模式下 workflow 的计费与 rate limit 细则？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-05-30 初稿；2026-06-01 补充「编排强约束 vs 子 Agent 弱约束」边界说明
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../index.html">← Frontier 索引</a>
+      ·
+      <a href="../README.md">Anthropic 索引</a>
+      ·
+      <a href="2026-05-14_claude-code-large-codebases.md">大代码库实践</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

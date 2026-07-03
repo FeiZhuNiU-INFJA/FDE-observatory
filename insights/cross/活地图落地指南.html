@@ -1,0 +1,841 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>活地图落地指南</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #fafaf7;
+    --bg-soft: #f3f2ed;
+    --surface: #ffffff;
+    --text: #1c1c1e;
+    --text-soft: #555;
+    --text-muted: #888;
+    --border: #e6e4dd;
+    --border-strong: #d8d5cc;
+    --accent: #4338ca;
+    --accent-soft: #ede9fe;
+    --pro: #16a34a;
+    --pro-soft: #ecfdf5;
+    --con: #dc2626;
+    --con-soft: #fef2f2;
+    --info: #2563eb;
+    --info-soft: #eff6ff;
+    --warn: #b45309;
+    --warn-soft: #fef3c7;
+    --code-bg: #f5f3ee;
+    --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia, serif;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  [data-theme="dark"] {
+    --bg: #15151a;
+    --bg-soft: #1c1c22;
+    --surface: #1f1f26;
+    --text: #ececf0;
+    --text-soft: #b8b8c0;
+    --text-muted: #888892;
+    --border: #2c2c34;
+    --border-strong: #3a3a44;
+    --accent: #a78bfa;
+    --accent-soft: #2a2440;
+    --pro: #4ade80;
+    --pro-soft: #14281d;
+    --con: #f87171;
+    --con-soft: #2a1717;
+    --info: #60a5fa;
+    --info-soft: #172033;
+    --warn: #fbbf24;
+    --warn-soft: #2a2010;
+    --code-bg: #25252d;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.25);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+    transition: background .25s, color .25s;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--serif);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -.005em;
+    color: var(--text);
+  }
+  h1 { font-size: 2.2rem; margin: 0 0 .4em; }
+  h2 { font-size: 1.55rem; margin: 3em 0 .8em; padding-top: .4em; border-top: 1px solid var(--border); }
+  h2:first-of-type { border-top: none; padding-top: 0; }
+  h3 { font-size: 1.2rem; margin: 2em 0 .6em; color: var(--text); }
+  h4 { font-size: 1rem; margin: 1.4em 0 .4em; font-family: var(--sans); font-weight: 600; }
+  p { margin: .8em 0; color: var(--text-soft); }
+  a { color: var(--accent); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s; }
+  a:hover { border-bottom-color: var(--accent); }
+  strong { color: var(--text); font-weight: 600; }
+  em { color: var(--text); font-style: normal; background: var(--accent-soft); padding: 0 .25em; border-radius: 3px; }
+  code { font-family: var(--mono); font-size: .9em; background: var(--code-bg); padding: .12em .4em; border-radius: 4px; color: var(--text); }
+  ul, ol { padding-left: 1.4em; color: var(--text-soft); }
+  li { margin: .3em 0; }
+  li::marker { color: var(--text-muted); }
+  hr { border: none; border-top: 1px solid var(--border); margin: 2.5em 0; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .7rem 1.2rem;
+  }
+  .brand {
+    font-family: var(--serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    letter-spacing: -.01em;
+  }
+  .brand-sub { color: var(--text-muted); font-weight: 400; font-family: var(--sans); margin-left: .6em; font-size: .85em; }
+  .actions { display: flex; gap: .5rem; align-items: center; }
+  .icon-btn {
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s, transform .15s;
+    font-size: 14px;
+  }
+  .icon-btn:hover { background: var(--bg-soft); }
+  .icon-btn:active { transform: scale(.94); }
+
+  /* Layout */
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2.5rem 1.2rem 6rem;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 3.5rem;
+  }
+  @media (max-width: 1024px) {
+    .container { grid-template-columns: 1fr; gap: 1rem; padding-top: 1.5rem; }
+    .toc-aside { display: none; }
+  }
+  .toc-aside {
+    position: sticky;
+    top: 80px;
+    align-self: start;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    padding-right: .6rem;
+    font-size: .85rem;
+  }
+  .toc-aside h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; font-weight: 600; }
+  .toc-aside ul { list-style: none; padding: 0; margin: 0; }
+  .toc-aside li { margin: .15em 0; }
+  .toc-aside a {
+    color: var(--text-soft);
+    display: block;
+    padding: .25em .5em;
+    border-radius: 6px;
+    border-bottom: none;
+    line-height: 1.4;
+    transition: color .15s, background .15s;
+  }
+  .toc-aside a:hover { background: var(--bg-soft); color: var(--text); }
+  .toc-aside a.active { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+  .toc-aside li.sub a { padding-left: 1.4em; font-size: .95em; color: var(--text-muted); }
+
+  article { min-width: 0; }
+
+  /* Header block */
+  .doc-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .doc-meta {
+    display: flex; flex-wrap: wrap; gap: .7rem .9rem;
+    font-size: .82rem; color: var(--text-muted);
+    margin: .8em 0 1.2em;
+  }
+  .doc-meta span { display: inline-flex; align-items: center; gap: .35em; }
+  .doc-meta span::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+  .doc-meta span:first-child::before { display: none; }
+
+  .lede {
+    font-size: 1.08rem;
+    line-height: 1.75;
+    color: var(--text-soft);
+    border-left: 3px solid var(--accent);
+    padding-left: 1.2em;
+    margin: 1.5em 0;
+    background: linear-gradient(to right, var(--accent-soft) 0%, transparent 50%);
+    padding-top: 1em;
+    padding-bottom: 1em;
+    border-radius: 0 6px 6px 0;
+  }
+  .lede strong { color: var(--text); }
+
+  /* Callouts */
+  .callout {
+    margin: 1.5em 0;
+    padding: 1em 1.2em 1em 1.4em;
+    border-left: 3px solid var(--info);
+    background: var(--info-soft);
+    border-radius: 0 8px 8px 0;
+    color: var(--text-soft);
+  }
+  .callout > :first-child { margin-top: 0; }
+  .callout > :last-child { margin-bottom: 0; }
+  .callout-tag {
+    display: inline-block;
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    margin-bottom: .5em;
+    color: var(--info);
+  }
+  .callout-pro { border-color: var(--pro); background: var(--pro-soft); }
+  .callout-pro .callout-tag { color: var(--pro); }
+  .callout-con { border-color: var(--con); background: var(--con-soft); }
+  .callout-con .callout-tag { color: var(--con); }
+  .callout-warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout-warn .callout-tag { color: var(--warn); }
+  .callout-accent { border-color: var(--accent); background: var(--accent-soft); }
+  .callout-accent .callout-tag { color: var(--accent); }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; margin: 1.4em 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
+  table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+  th, td { padding: .65em .9em; text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+  th { background: var(--bg-soft); font-weight: 600; color: var(--text); font-size: .85rem; letter-spacing: .01em; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg-soft); }
+  td { color: var(--text-soft); }
+  td strong, th { color: var(--text); }
+  .center { text-align: center; }
+  .nowrap { white-space: nowrap; }
+
+  /* Pills / badges */
+  .pill {
+    display: inline-block;
+    padding: .15em .55em;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 500;
+    letter-spacing: .01em;
+    background: var(--bg-soft);
+    color: var(--text-soft);
+    border: 1px solid var(--border);
+  }
+  .pill-pro { background: var(--pro-soft); color: var(--pro); border-color: transparent; }
+  .pill-con { background: var(--con-soft); color: var(--con); border-color: transparent; }
+  .pill-warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+  .pill-info { background: var(--info-soft); color: var(--info); border-color: transparent; }
+  .pill-accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .star { color: #d97706; letter-spacing: -1px; }
+
+  /* Cards (for grid sections) */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin: 1.5em 0;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1em 1.2em;
+    box-shadow: var(--shadow);
+    transition: transform .15s, border-color .15s;
+  }
+  .card:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .card h4 { margin-top: 0; margin-bottom: .4em; font-family: var(--serif); font-size: 1.05rem; }
+  .card .card-eyebrow { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; color: var(--accent); font-weight: 600; margin-bottom: .3em; }
+  .card p { margin: .4em 0; font-size: .92rem; }
+  .card ul { padding-left: 1.2em; font-size: .9rem; }
+
+  /* Stats */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: .6rem;
+    margin: 1.4em 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: .8em 1em;
+  }
+  .stat-num { font-family: var(--serif); font-size: 1.6rem; font-weight: 700; color: var(--accent); line-height: 1.1; }
+  .stat-label { font-size: .8rem; color: var(--text-muted); margin-top: .3em; line-height: 1.4; }
+
+  /* Mermaid */
+  .mermaid {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+  }
+
+  /* Anchor link */
+  .anchor {
+    opacity: 0;
+    margin-left: .4em;
+    font-weight: 400;
+    color: var(--text-muted);
+    transition: opacity .15s;
+    border: none;
+    font-size: .85em;
+  }
+  h2:hover .anchor, h3:hover .anchor { opacity: 1; }
+
+  /* Footnote / quote */
+  blockquote {
+    margin: 1.4em 0;
+    padding: .8em 1.2em;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--border-strong);
+    border-radius: 0 6px 6px 0;
+    color: var(--text-soft);
+    font-style: normal;
+  }
+  blockquote p { margin: .3em 0; }
+
+  /* Footer */
+  .doc-footer {
+    margin-top: 4em;
+    padding-top: 1.5em;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: .85rem;
+    text-align: center;
+  }
+
+  /* Section number */
+  .sec-num {
+    display: inline-block;
+    color: var(--accent);
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: .9em;
+    margin-right: .35em;
+    letter-spacing: .02em;
+  }
+
+  /* TOC mobile toggle */
+  .toc-mobile-btn {
+    display: none;
+  }
+  @media (max-width: 1024px) {
+    .toc-mobile-btn {
+      display: inline-flex;
+    }
+  }
+
+  /* Mobile drawer */
+  .drawer-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.4);
+    z-index: 90;
+  }
+  .drawer-overlay.open { display: block; }
+  .drawer {
+    position: fixed;
+    top: 0; right: -80%;
+    width: 80%; max-width: 320px;
+    height: 100vh;
+    background: var(--surface);
+    z-index: 100;
+    padding: 4rem 1.2rem 2rem;
+    overflow-y: auto;
+    transition: right .25s;
+    box-shadow: -8px 0 24px rgba(0,0,0,.15);
+  }
+  .drawer.open { right: 0; }
+  .drawer h5 { font-family: var(--sans); font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin: 0 0 .6em; }
+  .drawer ul { list-style: none; padding: 0; margin: 0; }
+  .drawer li { margin: .15em 0; }
+  .drawer a { color: var(--text-soft); display: block; padding: .4em .5em; border-radius: 6px; font-size: .92rem; }
+  .drawer a:hover { background: var(--bg-soft); }
+  .drawer li.sub a { padding-left: 1.4em; font-size: .88em; }
+
+  /* Code block */
+  .code-block {
+    background: var(--code-bg);
+    padding: 1em 1.2em;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 1.5em 0;
+    font-family: var(--mono);
+    font-size: .88rem;
+    line-height: 1.65;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  /* Checklist */
+  .checklist { list-style: none; padding: 0; }
+  .checklist li {
+    padding: .4em 0 .4em 1.8em;
+    position: relative;
+    border-bottom: 1px dashed var(--border);
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--pro);
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">活地图落地指南<span class="brand-sub">Live Map · 2026</span></div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>活地图落地指南</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">AI时代的基础设施机会：从数据到决策的"中间层"</p>
+      <div class="doc-meta">
+        <span>2026</span>
+        <span>跨市场</span>
+        <span>落地指南</span>
+        <span>基础设施</span>
+        <span>~5,000 字</span>
+      </div>
+    </header>
+
+    <div class="lede">
+      <p><strong>AI 的 Context 瓶颈：</strong> LLM 只能处理有限的上下文，而企业的数据是海量的、分散的、历史性的。AI 真正需要的不是"所有数据"，而是"当前世界的切片"——能够回答"现在怎么样"的状态快照。</p>
+      <p style="margin-top: .8em;"><strong>活地图的本质：</strong> 业务世界的"实时索引 + 状态缓存 + 推演基础"。它不是数据库，不是 BI，不是数字孪生——它是 AI 理解企业业务的"眼睛"。</p>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">核心价值</div>
+      <p style="margin:0;"><strong>活地图 = 当前世界切片 + 关系网络 + 推演能力</strong></p>
+    </div>
+
+    <!-- ========== 一、为什么是基础设施机会 ========== -->
+    <h2 id="sec-1"><span class="sec-num">一</span>为什么活地图是 AI 时代的基础设施机会？<a href="#sec-1" class="anchor">#</a></h2>
+
+    <div class="card-grid">
+      <div class="card" style="border-color: var(--con);">
+        <h4>❌ 没有活地图的世界</h4>
+        <ul>
+          <li>每次问 AI 都要从零开始查询数据库</li>
+          <li>AI 看不到业务的"全貌"</li>
+          <li>推演"如果...会怎样"几乎不可能</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color: var(--pro);">
+        <h4>✅ 有活地图的世界</h4>
+        <ul>
+          <li>AI 瞬间获取当前业务状态</li>
+          <li>AI 能看到对象之间的关系</li>
+          <li>推演变得可行（库存影响订单）</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">10x</div><div class="stat-label">AI 查询速度提升</div></div>
+      <div class="stat"><div class="stat-num">70%</div><div class="stat-label">Token 成本节省</div></div>
+      <div class="stat"><div class="stat-num">100x</div><div class="stat-label">客户迁移成本</div></div>
+    </div>
+
+    <h3 id="sec-1-1">1.1 商业价值</h3>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">防御价值</div>
+        <h4>🛡️ 护城河</h4>
+        <p>用得越久，积累的状态模式越多；企业的认知依赖活地图的"世界观"</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">进攻价值</div>
+        <h4>⚔️ 生态位</h4>
+        <p>定义行业标准 schema；成为 AI 应用的基础设施；所有 AI 应用都要调用你的 API</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">变现价值</div>
+        <h4>💰 多点收费</h4>
+        <p>按状态对象数量订阅；按查询量计费；按推演能力分层定价</p>
+      </div>
+    </div>
+
+    <!-- ========== 二、活地图到底是什么 ========== -->
+    <h2 id="sec-2"><span class="sec-num">二</span>活地图到底是什么？<a href="#sec-2" class="anchor">#</a></h2>
+
+    <h3 id="sec-2-1">2.1 三个核心概念</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>📍 状态对象</h4>
+        <p>企业里有哪些"东西"？订单、库存、客户、设备...每个对象的当前状态是什么？</p>
+      </div>
+      <div class="card">
+        <h4>🔗 关系网络</h4>
+        <p>对象之间怎么连接？订单 → 包含 → 产品；产品 → 依赖 → 供应商</p>
+      </div>
+      <div class="card">
+        <h4>🎮 推演能力</h4>
+        <p>如果...会怎样？如果供应商 A 延误 → 哪些订单会延期？</p>
+      </div>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">技术类比</div>
+      <p style="margin:0;"><strong>活地图 = LangGraph State 的"持久化、共享化"版本</strong></p>
+    </div>
+
+    <h3 id="sec-2-2">2.2 具体例子：制造业活地图</h3>
+    <div class="code-block">
+订单#1234：状态=生产中(70%) → 依赖 → 物料A(库存=0，断货)
+    ↓ 预测
+"按当前进度，订单#1234将延误3天"
+
+活地图不只是告诉你"现在是什么状态"
+而是让你能够问"如果...会怎样"
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th></th><th>LangGraph State</th><th>活地图</th></tr></thead>
+        <tbody>
+          <tr><td><strong>范围</strong></td><td>单次对话/工作流</td><td>跨对话、跨用户、全局</td></tr>
+          <tr><td><strong>持久性</strong></td><td>临时状态</td><td>持久化存储</td></tr>
+          <tr><td><strong>共享</strong></td><td>单工作流内</td><td>所有 AI 查询共享</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 三、具体怎么做：从 MVP 到产品 ========== -->
+    <h2 id="sec-3"><span class="sec-num">三</span>具体怎么做：从 MVP 到产品<a href="#sec-3" class="anchor">#</a></h2>
+
+    <h3 id="sec-3-1">3.1 路线图</h3>
+    <div class="mermaid">
+timeline
+  title 活地图发展路线
+  section P0 (1-2个月)
+    单场景MVP : 验证价值 : 找到愿意付费的客户
+  section P1 (3-6个月)
+    行业模板 : 从项目变成产品 : 降低实施成本
+  section P2 (6-12个月)
+    跨场景扩展 : 从一个场景扩展到多个场景
+  section P3 (12个月+)
+    生态化 : 成为行业标准 : 所有AI应用的基础设施
+    </div>
+
+    <h3 id="sec-3-2">3.2 MVP 核心代码架构</h3>
+    <div class="code-block">
+class LiveMap:
+    """活地图MVP：单状态、单数据源"""
+
+    def __init__(self, schema):
+        self.schema = schema  # 定义有什么"对象"和"关系"
+        self.state = {}       # 当前状态缓存
+
+    def update_state(self, data_source):
+        """从数据源更新状态"""
+        raw_data = data_source.query()
+        self.state = self._transform(raw_data)
+        self._compute_derived_state()  # 计算衍生状态
+
+    def _compute_derived_state(self):
+        """计算衍生状态（活地图的核心）"""
+        for obj in self.state.values():
+            if obj['当前库存'] < obj['安全库存']:
+                obj['状态'] = '警告'
+                obj['预测'] = f"按日均销量{obj['日均销量']}，" \
+                              f"{obj['当前库存']//obj['日均销量']}天后断货"
+
+    def query(self, question, llm):
+        """用自然语言查询"""
+        context = json.dumps(self.state, ensure_ascii=False)
+        prompt = f"""当前状态：\n{context}\n\n问题：{question}"""
+        return llm.generate(prompt)
+    </div>
+
+    <!-- ========== 四、技术架构选型 ========== -->
+    <h2 id="sec-4"><span class="sec-num">四</span>技术架构选型<a href="#sec-4" class="anchor">#</a></h2>
+
+    <h3 id="sec-4-1">4.1 推荐技术栈</h3>
+    <div class="card-grid">
+      <div class="card">
+        <h4>状态存储</h4>
+        <ul>
+          <li>Redis：高频查询缓存</li>
+          <li>PostgreSQL：持久化存储</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>关系存储</h4>
+        <ul>
+          <li>Neo4j：复杂关系</li>
+          <li>或 PG + JSON：简单场景</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>推演引擎</h4>
+        <ul>
+          <li>规则引擎：Drools/自研</li>
+          <li>LLM：简单场景</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>数据接入</h4>
+        <ul>
+          <li>Airbyte：开源 ELT</li>
+          <li>或自研连接器</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 id="sec-4-2">4.2 系统架构</h3>
+    <div class="mermaid">
+flowchart TB
+  A[查询层 LLM + 自然语言] --> B[活地图引擎]
+  B --> C[状态管理]
+  B --> D[关系管理]
+  B --> E[推演引擎]
+  C --> F[数据接入层]
+  D --> F
+  E --> F
+  F --> G[ERP连接器]
+  F --> H[WMS连接器]
+  F --> I[定时更新任务]
+    </div>
+
+    <!-- ========== 五、商业模式设计 ========== -->
+    <h2 id="sec-5"><span class="sec-num">五</span>商业模式设计<a href="#sec-5" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>版本</th><th>价格</th><th>功能</th></tr></thead>
+        <tbody>
+          <tr><td><strong>基础版</strong></td><td>¥5万/年</td><td>1个数据源、100个状态对象、1000次查询/月</td></tr>
+          <tr><td><strong>专业版</strong></td><td>¥20万/年</td><td>3个数据源、1000个状态对象、10000次查询/月、包含推演功能</td></tr>
+          <tr><td><strong>企业版</strong></td><td>¥50万+/年</td><td>无限数据源、无限状态对象、定制化推演规则、包含实施服务</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-5-1">5.1 定价策略建议</h3>
+    <ul class="checklist">
+      <li>第一家客户给优惠价格，换案例权和迭代权</li>
+      <li>从按订阅收费，逐步过渡到按价值收费（分润）</li>
+      <li>实施费单独计算，避免订阅价格过高吓跑客户</li>
+      <li>提供"成功保障"——达不到效果可以退款（降低决策门槛）</li>
+    </ul>
+
+    <!-- ========== 六、执行清单 ========== -->
+    <h2 id="sec-6"><span class="sec-num">六</span>执行清单：第一个月做什么<a href="#sec-6" class="anchor">#</a></h2>
+
+    <ul class="checklist">
+      <li><strong>Week 1-2：需求调研</strong> —— 找一个友好客户，确定1个场景，画出 schema</li>
+      <li><strong>Week 3-4：MVP 开发</strong> —— 接入1个数据源，实现活地图核心引擎，简单查询界面</li>
+      <li><strong>Week 5-6：内部测试</strong> —— 用真实数据测试，收集问题，调整 schema</li>
+      <li><strong>Week 7-8：客户试用</strong> —— 部署到客户环境，收集反馈，迭代</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">常见陷阱</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>陷阱1：</strong>想做"大而全"的活地图 → <strong>解法：</strong>从一个场景开始，验证价值再扩展</li>
+        <li><strong>陷阱2：</strong>把活地图做成 BI → <strong>解法：</strong>牢记活地图是"给 AI 用的"，不是给人看的报表</li>
+        <li><strong>陷阱3：</strong>过度依赖 LLM 做推演 → <strong>解法：</strong>简单规则用规则引擎，LLM 做复杂推理</li>
+      </ul>
+    </div>
+
+    <!-- ========== 七、成功指标 ========== -->
+    <h2 id="sec-7"><span class="sec-num">七</span>成功指标<a href="#sec-7" class="anchor">#</a></h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <h4>📊 技术指标</h4>
+        <ul>
+          <li>状态更新延迟 &lt; 5分钟</li>
+          <li>查询响应时间 &lt; 2秒</li>
+          <li>数据准确率 &gt; 99%</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>👥 业务指标</h4>
+        <ul>
+          <li>用户查询频率 &gt; 10次/天/用户</li>
+          <li>7日留存 &gt; 70%</li>
+          <li>续费率 &gt; 80%</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4>💵 商业指标</h4>
+        <ul>
+          <li>CAC &lt; LTV/3</li>
+          <li>实施周期 &lt; 1个月</li>
+          <li>NPS &gt; 40</li>
+        </ul>
+      </div>
+    </div>
+
+    <hr />
+
+    <div class="doc-footer">
+      <p>活地图不是"又一个 SaaS 工具"，它是 AI 时代的基础设施。就像搜索引擎索引了互联网，活地图索引了企业业务。做对了，你就是 AI 时代的"Google"。</p>
+      <p style="margin-top: 1em;"><strong>现在开始，从单场景 MVP 做起。</strong></p>
+    </div>
+
+  </article>
+</div>
+
+<script>
+  // Theme toggle
+  const themeBtn = document.getElementById('themeBtn');
+  const savedTheme = localStorage.getItem('huoditu-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', initialTheme);
+  themeBtn.textContent = initialTheme === 'dark' ? '☼' : '◐';
+  themeBtn.addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') || 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('huoditu-theme', next);
+    themeBtn.textContent = next === 'dark' ? '☼' : '◐';
+    initMermaid(next);
+  });
+
+  // Mermaid init
+  function initMermaid(theme) {
+    const dark = theme === 'dark';
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: dark ? 'dark' : 'default',
+      themeVariables: dark ? {
+        primaryColor: '#2a2440',
+        primaryTextColor: '#ececf0',
+        primaryBorderColor: '#a78bfa',
+        lineColor: '#888892',
+        secondaryColor: '#1f1f26',
+        tertiaryColor: '#15151a',
+        background: '#1f1f26',
+      } : {
+        primaryColor: '#ede9fe',
+        primaryTextColor: '#1c1c1e',
+        primaryBorderColor: '#4338ca',
+        lineColor: '#888',
+        background: '#ffffff',
+      },
+      flowchart: { curve: 'basis', useMaxWidth: true },
+      timeline: { useMaxWidth: true },
+    });
+    document.querySelectorAll('.mermaid').forEach((el) => {
+      if (el.dataset.original) {
+        el.innerHTML = el.dataset.original;
+      } else {
+        el.dataset.original = el.innerHTML;
+      }
+      el.removeAttribute('data-processed');
+    });
+    mermaid.run({ nodes: document.querySelectorAll('.mermaid') });
+  }
+  initMermaid(initialTheme);
+
+  // Build TOC
+  const toc = document.getElementById('toc');
+  const drawerToc = document.getElementById('drawerToc');
+  const headings = document.querySelectorAll('article h2, article h3');
+  headings.forEach(h => {
+    const li = document.createElement('li');
+    if (h.tagName === 'H3') li.classList.add('sub');
+    const a = document.createElement('a');
+    a.href = '#' + h.id;
+    a.textContent = h.textContent.replace(/#$/, '').trim();
+    li.appendChild(a);
+    toc.appendChild(li.cloneNode(true));
+    drawerToc.appendChild(li);
+  });
+
+  // Active section highlight
+  const allTocLinks = document.querySelectorAll('#toc a, #drawerToc a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        allTocLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+        });
+      }
+    });
+  }, { rootMargin: '-100px 0px -70% 0px', threshold: 0 });
+  headings.forEach(h => observer.observe(h));
+
+  // Mobile drawer
+  const tocBtn = document.getElementById('tocBtn');
+  const drawer = document.getElementById('drawer');
+  const drawerOverlay = document.getElementById('drawerOverlay');
+  if (tocBtn) {
+    const closeDrawer = () => {
+      drawer.classList.remove('open');
+      drawerOverlay.classList.remove('open');
+    };
+    tocBtn.addEventListener('click', () => {
+      drawer.classList.add('open');
+      drawerOverlay.classList.add('open');
+    });
+    drawerOverlay.addEventListener('click', closeDrawer);
+    drawer.addEventListener('click', (e) => { if (e.target.tagName === 'A') closeDrawer(); });
+  }
+</script>
+
+</body>
+</html>

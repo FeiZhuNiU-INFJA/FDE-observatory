@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI-Native Organization · 卷二：融合与实现</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@500;700;900&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   AI-Native Organization · 卷二 — "Academic Monograph" · Amber
+   仅覆盖主题色和字体，不重复 insight.css 已有的布局/组件样式
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --accent: #92400e;
+  --accent-soft: #fef3e2;
+  --serif: "Crimson Pro", "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+  --sans: "Plus Jakarta Sans", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+}
+[data-theme="dark"] {
+  --accent: #f59e0b;
+  --accent-soft: #2a1f0a;
+}
+
+body {
+  background-image: radial-gradient(circle, var(--border) .5px, transparent .5px);
+  background-size: 28px 28px;
+}
+
+/* ── Progress bar ───────────────────────────────── */
+.progress-bar {
+  position: fixed; top: 0; left: 0;
+  height: 3px; width: 0%;
+  background: linear-gradient(90deg, var(--accent), #d97706);
+  z-index: 200;
+  transition: width .08s linear;
+  pointer-events: none;
+}
+
+/* ── Hero ───────────────────────────────────────── */
+.insight-hero {
+  position: relative;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.8rem;
+  border-bottom: 1px solid var(--border);
+}
+.insight-hero::after {
+  content: "";
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(to right,
+    transparent,
+    color-mix(in srgb, var(--accent) 40%, transparent) 30%,
+    color-mix(in srgb, #d97706 40%, transparent) 70%,
+    transparent);
+}
+.insight-hero h1 {
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -.03em;
+  line-height: 1.1;
+  margin: 0 0 .15em;
+  color: var(--text);
+}
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  font-family: var(--sans);
+  font-weight: 400;
+  margin: 0 0 1.2em;
+  line-height: 1.5;
+}
+.hero-rule {
+  width: 48px; height: 2px;
+  background: linear-gradient(to right, var(--accent), #d97706);
+  margin: .7rem 0 .9rem;
+  border-radius: 1px;
+}
+.hero-meta {
+  display: flex; flex-wrap: wrap;
+  gap: .45rem; margin-top: .8em;
+}
+.hero-meta span {
+  padding: .22em .7em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: .78rem;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+.hero-meta span.meta-accent {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+}
+
+/* ── Part dividers (used as h2 with part-label class) ── */
+h2.part-label {
+  font-family: var(--sans);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-top: 3.5em;
+  padding: 1em 0;
+  border-top: 2px solid var(--accent);
+  border-bottom: 1px solid var(--border);
+}
+h2.part-label::after {
+  content: none;
+}
+
+/* ── Section numbers ────────────────────────────── */
+.sec-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px; height: 28px;
+  padding: 0 .45em;
+  background: linear-gradient(135deg, var(--accent), #d97706);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: .75rem;
+  font-weight: 700;
+  border-radius: 6px;
+  margin-right: .45em;
+  letter-spacing: 0;
+  vertical-align: middle;
+  position: relative;
+  top: -.05em;
+}
+[data-theme="dark"] .sec-num { color: var(--bg); }
+
+/* ── Section h2 accent underline ────────────────── */
+article h2:not(.part-label)::after {
+  content: "";
+  display: block;
+  width: 40px; height: 2px;
+  background: linear-gradient(to right, var(--accent), #d97706);
+  margin-top: .45em;
+  border-radius: 1px;
+}
+article h2:not(.part-label) {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 3.5em;
+}
+
+/* ── Lede accent ────────────────────────────────── */
+.lede {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, color-mix(in srgb, #d97706 8%, var(--accent-soft)) 100%);
+  padding: 1.2em 1.4em;
+  border-radius: 0 10px 10px 0;
+  font-size: 1.08rem;
+  line-height: 1.8;
+}
+
+/* ── Callout accent ─────────────────────────────── */
+.callout-accent {
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, #d97706 6%, var(--accent-soft)));
+}
+.callout-accent .callout-tag { color: var(--accent); }
+
+/* ── Table accent ───────────────────────────────── */
+.table-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03), 0 4px 12px rgba(0,0,0,.04);
+}
+table th {
+  background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, #d97706 8%, var(--accent-soft)));
+  font-family: var(--sans);
+  font-size: .82rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  border-bottom: 2px solid color-mix(in srgb, var(--accent) 40%, var(--border));
+}
+table td { padding: .7em 1em; }
+table tbody tr:hover { background: var(--accent-soft); }
+
+/* ── Mermaid ────────────────────────────────────── */
+.mermaid {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 2em;
+  box-shadow: 0 1px 3px rgba(0,0,0,.03), 0 8px 24px rgba(0,0,0,.04);
+}
+
+/* ── List markers ───────────────────────────────── */
+article ul li::marker { color: var(--accent); }
+article ol li::marker { color: var(--accent); font-weight: 600; }
+
+/* ── Links ──────────────────────────────────────── */
+article a {
+  color: var(--accent);
+  border-bottom-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+article a:hover { border-bottom-color: var(--accent); }
+
+/* ── HR ─────────────────────────────────────────── */
+article hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-strong) 20%, var(--border-strong) 80%, transparent);
+  margin: 3em 0;
+}
+
+/* ── TOC active ─────────────────────────────────── */
+.toc-aside a.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Doc footer ─────────────────────────────────── */
+.doc-footer a { color: var(--text-muted); border-bottom: none; }
+.doc-footer a:hover { color: var(--accent); border-bottom: none; }
+
+/* ── Mobile ─────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .insight-hero h1 { font-size: 1.6rem; }
+}
+
+/* ── Entrance animations ────────────────────────── */
+@media (prefers-reduced-motion: no-preference) {
+  .insight-hero { animation: heroIn .7s ease both; }
+  .lede         { animation: slideUp .55s ease .12s both; }
+  .callout      { animation: slideUp .55s ease .2s both; }
+  @keyframes heroIn  { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      AI-Native Org · 卷二<span class="brand-sub">跨市场 · 融合与实现 · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+  <article>
+
+    <header class="insight-hero">
+      <h1>AI-Native Organization · 卷二</h1>
+      <div class="hero-rule"></div>
+      <p class="hero-subtitle">三层统一模型 · 形态预期 · 六阶段实现路径</p>
+      <div class="hero-meta">
+        <span>2026-05-28</span>
+        <span>跨市场</span>
+        <span>组织转型</span>
+        <span class="meta-accent">实现路径</span>
+        <span>对内</span>
+      </div>
+    </header>
+
+    <div class="lede">【共识】AI-native 不是 Copilot 普及，而是 Layer 1–3 联动 redesign。Part C 六阶段可单独给决策者。</div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">系列导航</div>
+      <ul style="margin: .3em 0;">
+        <li><a href="./AI_Native_Organization_调研与机会_2026-05.html">系列索引</a></li>
+        <li><a href="./AI_Native_Organization_理论解读_2026-05.html">卷一：理论解读</a></li>
+      </ul>
+    </div>
+
+<h2 id="sec-1"><span class="sec-num">一</span>导读<a href="#sec-1" class="anchor">#</a></h2>
+<p>卷一逐条解读 10 套框架。本卷做三件事：</p>
+<ol>
+<li><strong>融合</strong>：提炼各理论的「最大公约数」，形成对 AI-native 组织的统一理解。</li>
+<li><strong>预期</strong>：描述 2027–2028 两种典型形态及可观测指标。</li>
+<li><strong>实现</strong>：六阶段路径、每阶段交付物、失败模式对照。</li>
+</ol>
+<p>文中 <strong>【共识】</strong> 标注多源一致判断；<strong>【推断】</strong> 标注本卷融合推断，供读者自行验证。</p>
+
+<h2 id="sec-part-a" class="part-label">Part A：融合理解</h2>
+
+<h2 id="sec-2"><span class="sec-num">二</span>A1. 三层统一模型<a href="#sec-2" class="anchor">#</a></h2>
+<p>【共识】各框架可收敛为三层——战略与价值、运营与人、智能底座：</p>
+<div class="mermaid">
+flowchart TB
+  subgraph L1 ["Layer 1 · Strategy &amp; Value"]
+    Maturity["T1–T3 与五层阶梯诊断"]
+    Strategy["Automation / Augmentation / Transformation"]
+    BM["Outcome 与商业模式"]
+  end
+  subgraph L2 ["Layer 2 · Operating &amp; Human"]
+    Team["Agentic Team"]
+    Func["五类结构职能"]
+    Roles["Block 三角色或编制问责"]
+  end
+  subgraph L3 ["Layer 3 · Intelligence Substrate"]
+    Context["Shared Context 或 World Model"]
+    Fleet["Agent Fleet 与编排"]
+    Gov["Governance 与 Trust Protocol"]
+    Learn["Learning Loop"]
+  end
+  L1 --> L2
+  L2 --> L3
+  L3 -->|"signal 与 knowledge"| L1
+</div>
+<div class="table-wrap"><table>
+<thead><tr><th>层</th><th>回答什么</th><th>卷一主要来源</th></tr></thead>
+<tbody>
+<tr><td><strong>Layer 1</strong></td><td>为何改、改到哪、卖什么</td><td>T0–T3；Auto/Aug/Trans；McKinsey BM；BCG autonomous execution</td></tr>
+<tr><td><strong>Layer 2</strong></td><td>谁负责、怎么协作</td><td>McKinsey OM；五职能；Block 三角色；BCG cross-functional teams</td></tr>
+<tr><td><strong>Layer 3</strong></td><td>靠什么跑、如何治理与学习</td><td>Intelligence Architecture；Frontier；Deloitte platform；BCG Trust Protocol</td></tr>
+</tbody>
+</table></div>
+<p><strong>Layer 间约束</strong>：缺 Layer 3 → Agent 无 context（McKinsey chaos）；缺 Layer 2 规格/验证 → T1.5 验证瓶颈（Framework）；缺 Layer 1 战略诚实 → 自动化项目被叫转型（AI Journal）。</p>
+
+<h2 id="sec-3"><span class="sec-num">三</span>A2. 融合版定义（一句话）<a href="#sec-3" class="anchor">#</a></h2>
+<p><strong>【推断】AI-native organization</strong> 是一种运营模型：组织将 <strong>可验证的业务 outcome</strong> 作为价值与协作单位；由 <strong>小规模跨职能人类</strong> 在 <strong>规格、验证、信任</strong> 边界内，监督 <strong>共享上下文上的 Agent 舰队</strong> 执行端到端工作；<strong>治理与学习</strong> 嵌入流程而非事后补丁；人类默认处于 <strong>above the loop</strong>（意图、判断、关系、政策变更），Agent 处于 <strong>within the loop</strong>（执行、综合、监控、常规决策）。</p>
+<p>这与任一单理论的区别：</p>
+<ul>
+<li>比 McKinsey <strong>更强调</strong> Layer 3 shared context（来自 Frontier / Intelligence Architecture）。</li>
+<li>比 Block <strong>更保留</strong> legacy 系统与 work chart（适合多数企业）。</li>
+<li>比 Framework <strong>更强调</strong> 商业模式与平台（BCG/McKinsey），不只个人 tier。</li>
+</ul>
+
+<h2 id="sec-4"><span class="sec-num">四</span>A3. 与 Legacy / T1.5 的本质差异（可观测）<a href="#sec-4" class="anchor">#</a></h2>
+<p>【共识+推断】满足 <strong>≥5 条</strong> 可认为走出 T1.5、进入 T2 通道：</p>
+<div class="table-wrap"><table>
+<thead><tr><th>#</th><th>可观测特征</th><th>理论依据</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>至少 1 条流程 <strong>AI-first 端到端重设计</strong>（非仅加 Copilot）</td><td>McKinsey、BCG 95%</td></tr>
+<tr><td>2</td><td>存在 <strong>agentic team</strong> 或等价单元，KPI 绑 outcome 非职能</td><td>McKinsey、BCG</td></tr>
+<tr><td>3</td><td><strong>Specification + Validation</strong> 有 explicit owner</td><td>Framework 五职能</td></tr>
+<tr><td>4</td><td>Agent 动作 <strong>风险分级 + 审计可追溯</strong></td><td>McKinsey Gov、BCG Trust Protocol</td></tr>
+<tr><td>5</td><td><strong>Shared context</strong> 或 world model 覆盖 lighthouse 域主数据/流程</td><td>Frontier、Block</td></tr>
+<tr><td>6</td><td>新 Agent 上线绑 <strong>eval / regression</strong></td><td>McKinsey TD、Frontier</td></tr>
+<tr><td>7</td><td>JD/晋升含 <strong>编排与评判</strong>，非仅工具使用</td><td>McKinsey WF、Block</td></tr>
+</tbody>
+</table></div>
+<p>T1.5 典型：<strong>仅满足 0–2 条</strong>（多为 Copilot 席位 + 个人 hero）。</p>
+
+<h2 id="sec-5"><span class="sec-num">五</span>A4. 两种形态预期（2027–2028）<a href="#sec-5" class="anchor">#</a></h2>
+<p>【推断】未来不会单一形态。主流为 <strong>A 为主、B 为局部试验</strong>：</p>
+
+<h3 id="sec-5-1">形态 A：Enterprise Agentic（主流大企业）<a href="#sec-5-1" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>预期</th></tr></thead>
+<tbody>
+<tr><td><strong>描述</strong></td><td>McKinsey 五柱 + agentic team + <strong>Frontier 式 overlay</strong> + ERP/CRM 仍为真相源</td></tr>
+<tr><td><strong>组织</strong></td><td>Work chart 网络；middle layer 压缩 30–45%（BCG/MIT 区间）</td></tr>
+<tr><td><strong>技术</strong></td><td>Shared semantic layer；Agent registry；MCP/连接器；eval 闭环</td></tr>
+<tr><td><strong>理论来源</strong></td><td>McKinsey、BCG、Frontier、Deloitte</td></tr>
+<tr><td><strong>适合</strong></td><td>金融、制造、零售等 legacy 深、合规强</td></tr>
+</tbody>
+</table></div>
+
+<h3 id="sec-5-2">形态 B：Intelligence-Native（激进 / 数字原生）<a href="#sec-5-2" class="anchor">#</a></h3>
+<div class="table-wrap"><table>
+<thead><tr><th>维度</th><th>预期</th></tr></thead>
+<tbody>
+<tr><td><strong>描述</strong></td><td>Block 式 <strong>company world model</strong> + 三角色 + intelligence 在 system</td></tr>
+<tr><td><strong>组织</strong></td><td>永久中层极少；DRI 90 天制；artifact 机器可读</td></tr>
+<tr><td><strong>技术</strong></td><td>Proactive intelligence layer；capabilities 组合；Goose 类 harness</td></tr>
+<tr><td><strong>理论来源</strong></td><td>Block、Intelligence Architecture</td></tr>
+<tr><td><strong>适合</strong></td><td>Remote-first、软件/金融科技、artifact 文化成熟</td></tr>
+</tbody>
+</table></div>
+
+<h3 id="sec-5-3">混合策略【推断】<a href="#sec-5-3" class="anchor">#</a></h3>
+<ul>
+<li><strong>集团</strong> = 形态 A 为 default。</li>
+<li><strong>创新 lab / 新 BU</strong> = 形态 B 试验 world model。</li>
+<li><strong>禁止</strong>：全集团无 context 狂上 Agent（McKinsey chaos）。</li>
+</ul>
+
+<h2 id="sec-part-b" class="part-label">Part B：形态预期 · 2028 目标态 Checklist</h2>
+<p>按五维给出 <strong>T3 / 形态 A 成熟 lighthouse</strong> 的可验收状态（可在单域先达成）：</p>
+
+<h3 id="sec-b1">B1. 编制<a href="#sec-b1" class="anchor">#</a></h3>
+<ul>
+<li>Agentic team（或等价）成为 lighthouse 域 <strong>默认单元</strong></li>
+<li>该域 middle coordination 角色减少或改责（非纯路由）</li>
+<li>五类职能中 Specification、Validation 有 <strong>named owner</strong></li>
+</ul>
+
+<h3 id="sec-b2">B2. 流程<a href="#sec-b2" class="anchor">#</a></h3>
+<ul>
+<li>≥1 条流程 <strong>AI-first</strong> 文档化（含 Agent 步与人类 gate）</li>
+<li>跨职能 handoff 通过 <strong>work chart / 统一 workflow</strong>，非邮件/层级</li>
+<li>BCG 式：<strong>sourcing→payment</strong> 或同等 E2E 至少一条打通</li>
+</ul>
+
+<h3 id="sec-b3">B3. 治理<a href="#sec-b3" class="anchor">#</a></h3>
+<ul>
+<li><strong>Graduated autonomy</strong> 表：低/中/高 action 对应 auto / rule / human</li>
+<li>100% 高风险 action 过 gate（资金、权限、对外法律承诺）</li>
+<li>单笔 Agent 决策可 <strong>replay</strong>（context + tool + outcome）</li>
+</ul>
+
+<h3 id="sec-b4">B4. 技术<a href="#sec-b4" class="anchor">#</a></h3>
+<ul>
+<li>Lighthouse 域有 <strong>shared context layer</strong>（Frontier 或自建 semantic layer）</li>
+<li><strong>Agent registry</strong>：谁在生产、版本、owner</li>
+<li>Eval/regression 为 promote 门禁</li>
+</ul>
+
+<h3 id="sec-b5">B5. 商业<a href="#sec-b5" class="anchor">#</a></h3>
+<ul>
+<li>至少 1 个 <strong>outcome 指标</strong> 与定价/内部 chargeback 试点挂钩</li>
+<li>客户或内部 SLA 用 <strong>可验证 rubric</strong>，非仅 seat</li>
+</ul>
+
+<h2 id="sec-part-c" class="part-label">Part C：如何实现 · 六阶段路径</h2>
+
+<h2 id="sec-6"><span class="sec-num">六</span>C0. 总原则<a href="#sec-6" class="anchor">#</a></h2>
+<p>【共识】</p>
+<ul>
+<li><strong>No partial optimization</strong>（McKinsey、BCG）</li>
+<li><strong>Future-back</strong> + <strong>lighthouse first</strong>（McKinsey）</li>
+<li><strong>Double transformation</strong>：组织与 tech 并行（McKinsey 2026）</li>
+<li><strong>战略诚实</strong>：Automation/Augmentation/Transformation 三选一（AI Journal）</li>
+</ul>
+
+<h2 id="sec-7"><span class="sec-num">七</span>阶段 0：诊断（2–4 周）<a href="#sec-7" class="anchor">#</a></h2>
+<p><strong>目标</strong>：知道在哪、选哪种战略、选哪个 lighthouse。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>T0–T3 评估</td><td>组织 + 抽样团队；证据：流程/编制/治理各 1 项</td></tr>
+<tr><td>五层阶梯定位</td><td>多数业务在 1–3 层；目标域要到 4–5</td></tr>
+<tr><td>Auto/Aug/Trans 决策</td><td>董事会/OKR 对齐真实战略</td></tr>
+<tr><td>Lighthouse 选型</td><td>高价值、可度量、数据可达、领导层愿改流程</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>成熟度评分表（T + 五层 + 五柱 1–5 分）</li>
+<li>Lighthouse 选型 memo（1–2 页：域、outcome、系统、风险）</li>
+<li>战略声明（三选一）与资源承诺</li>
+</ul>
+<p><strong>理论依据</strong>：Framework T；AI Journal；McKinsey lighthouse。</p>
+
+<h2 id="sec-8"><span class="sec-num">八</span>阶段 1：设计（4–8 周）<a href="#sec-8" class="anchor">#</a></h2>
+<p><strong>目标</strong>：AI-first 流程蓝图与职能/gate 设计。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>E2E 流程 mapping</td><td>消除/自动化/简化/保留人工（BCG FoF 序列之先）</td></tr>
+<tr><td>AI-first redesign</td><td>Agent 步 + human gate 标注</td></tr>
+<tr><td>五职能 RACI</td><td>尤其 Specification、Validation owner</td></tr>
+<tr><td>Outcome rubric 草案</td><td>与 Layer 1 商业模式对齐</td></tr>
+<tr><td>Agentic team charter</td><td>2–5 人、outcome、与 fleet 关系</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>AI-first 流程图（As-Is / To-Be）</li>
+<li>Gate 矩阵（action × 风险 × 处理方式）</li>
+<li>Outcome rubric 与验收标准草案</li>
+<li>Team charter 模板（含 DRI 若适用）</li>
+</ul>
+<p><strong>理论依据</strong>：McKinsey OM；BCG process redesign；Framework 五职能。</p>
+
+<h2 id="sec-9"><span class="sec-num">九</span>阶段 2：基建（2–4 月，与阶段 3 并行启动）<a href="#sec-9" class="anchor">#</a></h2>
+<p><strong>目标</strong>：Agent 能跑、有 context、可观测。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>Shared context / semantic layer</td><td>连接 lighthouse 域核心系统（Frontier 思路）</td></tr>
+<tr><td>Agent registry</td><td>注册、版本、owner、权限 scope</td></tr>
+<tr><td>连接器 + identity</td><td>MCP/API；最小权限</td></tr>
+<tr><td>Trace + cost</td><td>与 business task 关联</td></tr>
+<tr><td>Platform squad</td><td>Deloitte：CIO/platform 提供 building blocks</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>Context layer 设计 doc（数据源、刷新、权限）</li>
+<li>Registry 最小实现 + 命名规范</li>
+<li>Trace 字段标准（task_id、agent_id、outcome、tokens）</li>
+</ul>
+<p><strong>理论依据</strong>：Frontier；Intelligence Architecture；Deloitte。</p>
+
+<h2 id="sec-10"><span class="sec-num">十</span>阶段 3：治理（与阶段 2 并行）<a href="#sec-10" class="anchor">#</a></h2>
+<p><strong>目标</strong>：敢规模化；符合 Trust Protocol。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>Graduated autonomy 表</td><td>BCG Trust Protocol</td></tr>
+<tr><td>Policy / critic 机制</td><td>嵌入 workflow</td></tr>
+<tr><td>Eval + regression 集</td><td>promote 门禁</td></tr>
+<tr><td>审批/回滚</td><td>政策与 Agent 配置变更</td></tr>
+<tr><td>Audit 要求</td><td>满足监管/内控</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>Autonomy 分级表 + escalation 路径</li>
+<li>Eval rubric + 首批 regression cases</li>
+<li>变更管理流程（P0/P1/P2 或等价）</li>
+</ul>
+<p><strong>理论依据</strong>：McKinsey Gov；BCG Trust Protocol。</p>
+
+<h2 id="sec-11"><span class="sec-num">十一</span>阶段 4：编制（3–6 月）<a href="#sec-11" class="anchor">#</a></h2>
+<p><strong>目标</strong>：人与组织跟得上。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>JD 更新</td><td>Execute→Judge；五职能写入</td></tr>
+<tr><td>Reskill</td><td>Junior：spec/review；Senior：workflow architect</td></tr>
+<tr><td>Pilot agentic team</td><td>lighthouse 域运行 1 个 team</td></tr>
+<tr><td>考核口径</td><td>outcome + 编排；非仅 busy</td></tr>
+<tr><td>可选 Block 试验</td><td>创新域试 DRI 90 天 + 三角色</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>关键岗位 JD 修订包</li>
+<li>Pilot retrospective（outcome、gate 命中、人工占比）</li>
+<li>培训大纲（spec 写作、eval 解读、escalation）</li>
+</ul>
+<p><strong>理论依据</strong>：McKinsey WF；Block；Framework T3 个人 loop。</p>
+
+<h2 id="sec-12"><span class="sec-num">十二</span>阶段 5：扩展（6–18 月）<a href="#sec-12" class="anchor">#</a></h2>
+<p><strong>目标</strong>：T2→T3；lighthouse 复制；商业试点。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>动作</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>复制 playbook</td><td>第 2、3 个 lighthouse 域</td></tr>
+<tr><td>FoF 扩展</td><td>BCG：跨职能 unified workflow 增多</td></tr>
+<tr><td>Outcome 定价/chargeback 试点</td><td>Layer 1 闭环</td></tr>
+<tr><td>可选形态 B lab</td><td>world model 局部试验</td></tr>
+<tr><td>持续 learning loop</td><td>Intelligence Architecture</td></tr>
+</tbody>
+</table></div>
+<p><strong>交付物</strong>：</p>
+<ul>
+<li>复制 playbook（流程+gate+registry 模板）</li>
+<li>Outcome 商业实验设计（指标、争议、清算）</li>
+<li>年度 maturity 复评（T + 五柱）</li>
+</ul>
+<p><strong>理论依据</strong>：McKinsey lighthouse；BCG FoF；Framework T3。</p>
+
+<h2 id="sec-13"><span class="sec-num">十三</span>C6. 阶段总览表<a href="#sec-13" class="anchor">#</a></h2>
+<div class="table-wrap"><table>
+<thead><tr><th>阶段</th><th>时间</th><th>目标</th><th>关键交付物</th></tr></thead>
+<tbody>
+<tr><td>0 诊断</td><td>2–4 周</td><td>知所在、选域</td><td>成熟度表、lighthouse memo</td></tr>
+<tr><td>1 设计</td><td>4–8 周</td><td>AI-first 蓝图</td><td>流程图、gate 矩阵、rubric</td></tr>
+<tr><td>2 基建</td><td>2–4 月</td><td>能跑</td><td>context layer、registry、trace</td></tr>
+<tr><td>3 治理</td><td>并行</td><td>敢扩</td><td>autonomy 表、eval/regression</td></tr>
+<tr><td>4 编制</td><td>3–6 月</td><td>人跟上</td><td>JD、pilot charter</td></tr>
+<tr><td>5 扩展</td><td>6–18 月</td><td>默认 OM</td><td>playbook、outcome 试点</td></tr>
+</tbody>
+</table></div>
+<div class="mermaid">
+flowchart LR
+  P0["Phase 0 · Diagnose"]
+  P1["Phase 1 · Design"]
+  P2["Phase 2 · Platform"]
+  P3["Phase 3 · Govern"]
+  P4["Phase 4 · People"]
+  P5["Phase 5 · Scale"]
+  P0 --> P1
+  P1 --> P2
+  P1 --> P3
+  P2 --> P4
+  P3 --> P4
+  P4 --> P5
+</div>
+
+<h2 id="sec-14"><span class="sec-num">十四</span>C7. 失败模式 ↔ 理论对照<a href="#sec-14" class="anchor">#</a></h2>
+<div class="table-wrap"><table>
+<thead><tr><th>失败模式</th><th>表现</th><th>违反的理论/原则</th></tr></thead>
+<tbody>
+<tr><td>AI 悖论</td><td>投 AI 多，bottom-line 不变</td><td>McKinsey double transformation；BCG 95%</td></tr>
+<tr><td>验证瓶颈</td><td>人饱和审 AI</td><td>Framework T1.5；缺 Specification/Validation</td></tr>
+<tr><td>Agent 混沌</td><td>fleet 无 steering</td><td>McKinsey context warning；无 Frontier layer</td></tr>
+<tr><td>局部自动化</td><td>节点智能、流程蠢</td><td>BCG/McKinsey No partial optimization</td></tr>
+<tr><td>战略错位</td><td>自动化叫转型</td><td>AI Journal 三选一</td></tr>
+<tr><td>Shadow agents</td><td>各部门自建无 registry</td><td>McKinsey TD；Deloitte platform</td></tr>
+<tr><td>治理滞后</td><td>先上后补</td><td>BCG Trust Protocol；Deloitte 1/5 成熟</td></tr>
+<tr><td>编制不变</td><td>旧 KPI 驱动</td><td>McKinsey WF；Block 三角色未落地</td></tr>
+<tr><td>Overlay 幻想</td><td>无 artifact 抄 Block</td><td>Block 适用边界</td></tr>
+<tr><td>平台缺失</td><td>每函数自建</td><td>BCG shared platform</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="sec-15"><span class="sec-num">十五</span>C8. 给决策者的融合三句话<a href="#sec-15" class="anchor">#</a></h2>
+<ol>
+<li><strong>【共识】</strong> AI-native 不是 Copilot 普及，而是 <strong>Layer 1–3 联动 redesign</strong>；多数卡在 T1.5，因只改了 Layer 3 的工具、未改 Layer 2 流程与职能。</li>
+<li><strong>【推断】</strong> 2028 主流形态是 <strong>Enterprise Agentic（A）</strong>：agentic team + shared context + ERP 仍在；Block（B）是极限参照，适合 lab。</li>
+<li><strong>【共识+推断】</strong> 落地顺序：<strong>诊断 → 设计 → 基建∥治理 → 编制 → 扩展</strong>；lighthouse 单域五柱最小闭环，再复制。</li>
+</ol>
+
+<h2 id="sec-16"><span class="sec-num">十六</span>参考<a href="#sec-16" class="anchor">#</a></h2>
+<ul>
+<li>理论详情：<a href="./AI_Native_Organization_理论解读_2026-05.html">卷一：理论解读</a></li>
+<li>系列索引：<a href="./AI_Native_Organization_调研与机会_2026-05.html">系列索引</a></li>
+</ul>
+
+<div class="doc-footer">
+  <a href="./AI_Native_Organization_调研与机会_2026-05.html">← 系列索引</a>
+  · <a href="../insights/index.html">洞察总索引</a>
+</div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+<script>
+(function () {
+  var bar = document.getElementById('progressBar');
+  if (!bar) return;
+  function update() {
+    var y = window.scrollY;
+    var h = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.width = (h > 0 ? Math.min(y / h * 100, 100) : 0) + '%';
+  }
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>从数字痕迹蒸馏人 · Person Mining 作为底层能力与品类</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../../_assets/insight.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">从数字痕迹蒸馏人<span class="brand-sub">Person Mining · 2026-05</span></div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>从数字痕迹蒸馏人</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Person Mining 作为底层能力与品类</p>
+      <div class="doc-meta">
+        <span>2026-05-21</span>
+        <span>调研产出</span>
+        <span>品类洞察</span>
+        <span>~6,000 字</span>
+      </div>
+      <p style="color: var(--text-soft);">
+        与已有框架的关系：横切
+        <a href="./agent-future-2028/2028_Agent五种形态_现状与实现路径_2026-05.html">2028 Agent 五种形态</a>
+        的「第二大脑」形态、衔接
+        <a href="./agent_cognitive_power_2026-05.html">认知影响力</a>
+        的「认知透明」方向。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>「从一个人的全量数字痕迹中蒸馏出可计算的人物表示」</strong>是一个<strong>底层能力</strong>，不是一个产品。它可以衍生出至少 15 种上层应用，从离职交接、退休专家方法论提取，到临终数字 Agent、创作者 AI 副本。业界目前已经分裂成 5 个流派，但<strong>没有任何一家同时握住底层能力和应用层</strong>——这是当前最大的结构性空位。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页结论</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>不要做通用「人格 SDK」</strong>——大模型厂商和学术界两头夹击，正在把它做成 commodity</li>
+        <li><strong>不要做创作者 AI 副本</strong>——Delphi.ai 已经赢家通吃</li>
+        <li><strong>不要做临终 Agent</strong>——$125B 成熟产业 + 伦理黑洞</li>
+        <li><span class="pill pill-pro">推荐</span> <strong>做 ToB 离职交接 / 退休知识捕获</strong>——海外有验证、国内空白、当下变现</li>
+        <li><span class="pill pill-pro">推荐</span> <strong>做高客单的专家方法论提取</strong>（律师 / 医生 / 资深工程师 / 分析师）——市场零散无寡头</li>
+        <li><span class="pill pill-info">长期</span> <strong>评测 + 认知透明审计</strong>——所有现有玩家都没做</li>
+      </ul>
+      <p style="margin: 1em 0 0; padding-top: 1em; border-top: 1px dashed var(--border-strong); color: var(--text);">
+        真正的产品核心差异化是 <a href="#sec-2-6"><strong>Active Inquiry（主动追问）</strong></a>——不是被动 RAG，而是 AI 在试图复现决策时<strong>主动识别盲区并向当事人追问</strong>。这是把咨询型产品升级成 SaaS 的关键，也是竞品都没做透的地方。
+      </p>
+    </div>
+
+    <!-- ========== 一、核心洞察 ========== -->
+    <h2 id="sec-1"><span class="sec-num">一</span>核心洞察<a href="#sec-1" class="anchor">#</a></h2>
+
+    <h3 id="sec-1-1">1.1 底层是同一件事</h3>
+    <p>离职交接 Agent、临终数字 Agent、创作者 AI 替身、个人第二大脑、退休专家方法论提取、客户洞察镜像——这些看似不同的产品，<strong>底层都是同一个能力</strong>：</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">定义</div>
+      <p style="margin: 0;"><strong>Person Mining / Persona Distillation</strong>：把一个人的非结构化数字痕迹（邮件、聊天、文档、代码、声音、视频）压缩为可计算的人物表示（知识图谱、SOP、风格指纹、人格向量、可对话 Agent）。</p>
+    </div>
+
+    <h3 id="sec-1-2">1.2 但产品层会分叉</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>工程难点的位置</th></tr></thead>
+        <tbody>
+          <tr><td><strong>评估标准</strong></td><td>「对不对」（决策复现）vs「像不像」（情感载体）vs「商业化好不好」（创作者经济）</td></tr>
+          <tr><td><strong>数据访问</strong></td><td>企业合同已授权 vs 死者无法同意 vs 本人主动授权</td></tr>
+          <tr><td><strong>错误代价</strong></td><td>业务损失 vs 情感伤害 vs 法律风险 vs 商业声誉</td></tr>
+          <tr><td><strong>时间维度</strong></td><td>当下用爆 vs 跨 30 年使用 vs 持续运营</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><em>底层共享 ~60-70%，产品 / 工程共享 ~30-40%</em>。"同一底层能搞 N 个产品"是过头乐观，但"<strong>沉淀底层、专攻一两个应用、横向扩展</strong>"是真实可行的策略。</p>
+
+    <h3 id="sec-1-3">1.3 为什么是现在</h3>
+    <p>三个并行的技术红利在 2026 合流：</p>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">红利一</div>
+        <h4>长上下文 + RAG 成熟</h4>
+        <p>处理一个人全量数据从天文成本降到几百块。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">红利二</div>
+        <h4>激活空间人格抽取</h4>
+        <p>2026 多篇 arXiv 证明：人格是 LLM 表征空间里近似正交的方向向量，可做向量代数，不需要 fine-tune。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">红利三</div>
+        <h4>Memory 中间件成熟</h4>
+        <p>Mem0 / Letta / Zep 提供了基础设施，不用从零造轮子。</p>
+      </div>
+    </div>
+    <p>成本 / 精度的跃迁让以前只能玩票的应用变成可商用。</p>
+
+    <!-- ========== 二、底层通用原理 ========== -->
+    <h2 id="sec-2"><span class="sec-num">二</span>底层通用原理<a href="#sec-2" class="anchor">#</a></h2>
+
+    <h3 id="sec-2-1">2.1 完整 Pipeline</h3>
+    <div class="mermaid">
+flowchart TD
+  A[数据源<br/>邮件·聊天·文档·代码·声音·视频] --> B[采集脱敏]
+  B --> C[去噪去重]
+  C --> D[实体抽取<br/>人物·项目·概念·决策点]
+  D --> E[关系图谱<br/>谁知道什么·谁影响谁]
+  E --> F[风格指纹]
+  E --> G[知识结构化<br/>SOP·决策树]
+  E --> H[隐性知识挖掘]
+  F --> I[持续整理<br/>合并·淘汰·冲突]
+  G --> I
+  H --> I
+  I --> J[人物表示]
+  J --> K[应用层<br/>SOP / 对话 Agent / 风格注入]
+  K --> L[评估反馈]
+  L --> C
+  style J fill:#ede9fe,stroke:#4338ca,stroke-width:2px,color:#1c1c1e
+  style K fill:#ecfdf5,stroke:#16a34a,stroke-width:2px,color:#1c1c1e
+  style L fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#1c1c1e
+    </div>
+
+    <h3 id="sec-2-2">2.2 输入侧（数据源）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>类别</th><th>例子</th><th>对哪些应用最重要</th></tr></thead>
+        <tbody>
+          <tr><td>通讯</td><td>邮件、IM 聊天、会议录音</td><td>离职、临终、创作者</td></tr>
+          <tr><td>工作产物</td><td>文档、代码、PR、Jira、日历</td><td>离职、专家、第二大脑</td></tr>
+          <tr><td>内容</td><td>日记、社媒、博客、播客</td><td>临终、创作者、副本</td></tr>
+          <tr><td>行为</td><td>浏览历史、应用使用、决策日志</td><td>第二大脑、客户镜像</td></tr>
+          <tr><td>多模态</td><td>声音、照片、视频</td><td>临终、创作者、视频克隆</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-2-3">2.3 处理侧（关键步骤）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>步骤</th><th>关键问题</th></tr></thead>
+        <tbody>
+          <tr><td><strong>采集与脱敏</strong></td><td>连接器要做多少个、PII 怎么处理、合规出口</td></tr>
+          <tr><td><strong>去噪与去重</strong></td><td>自动滤掉模板话术、群发消息、转发内容</td></tr>
+          <tr><td><strong>实体抽取</strong></td><td>人物、项目、概念、决策点、关键事件</td></tr>
+          <tr><td><strong>关系图谱</strong></td><td>谁知道什么、谁在乎什么、谁影响谁</td></tr>
+          <tr><td><strong>风格指纹</strong></td><td>写作风格、决策模式、情感模式、口头禅、措辞偏好</td></tr>
+          <tr><td><strong>知识结构化</strong></td><td>SOP、决策树、原则集合、例外列表</td></tr>
+          <tr><td><strong>隐性知识挖掘</strong></td><td>通过主动追问、A/B 对比、反例采集，逼出未文档化的"为什么这么做"</td></tr>
+          <tr><td><strong>持续整理</strong></td><td>周期性合并、冲突解决、过时淘汰、版本控制</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-2-4">2.4 输出侧（人物表示的几种形态）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>输出形态</th><th>用途</th><th>成熟度</th></tr></thead>
+        <tbody>
+          <tr><td>结构化知识库（可查询）</td><td>搜索式问答</td><td><span class="pill pill-pro">高</span></td></tr>
+          <tr><td>SOP / 决策树（可执行）</td><td>自动化、培训</td><td><span class="pill pill-info">中</span></td></tr>
+          <tr><td>风格指纹（可注入）</td><td>自动写邮件、文风迁移</td><td><span class="pill pill-pro">高</span></td></tr>
+          <tr><td>关系图谱</td><td>"找谁问什么"</td><td><span class="pill pill-info">中</span></td></tr>
+          <tr><td><strong>人格向量</strong>（向量代数可操作）</td><td>强度调节、人格组合</td><td><span class="pill pill-accent">前沿</span></td></tr>
+          <tr><td>可对话的 Agent</td><td>终极形态</td><td><span class="pill pill-info">中</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-2-5">2.5 评估维度（业界几乎没人做透）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>怎么测</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><strong>忠实度 Fidelity</strong></td><td>让原人和 Agent 各自回答同一批问题，对比</td><td>学术有，产品没有</td></tr>
+          <tr><td><strong>完整度 Coverage</strong></td><td>覆盖了多少决策类型、多少业务场景</td><td>几乎没人做</td></tr>
+          <tr><td><strong>鲜活度 Freshness</strong></td><td>知识是否过时</td><td>没人做</td></tr>
+          <tr><td><strong>安全度 Safety</strong></td><td>是否会泄露 PII / 越权回答</td><td>Patronus 等做了一部分</td></tr>
+          <tr><td><strong>信任度 Trust</strong></td><td>使用方（继任者 / 家属 / 客户）的接受度</td><td>没人做</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-warn">
+      <div class="callout-tag">关键判断</div>
+      <p style="margin:0;">评测的空白是这个赛道里<strong>最被低估的子方向</strong>——没有评测，企业不敢付钱。</p>
+    </div>
+
+    <h3 id="sec-2-6">2.6 Active Inquiry：从被动挖掘到主动追问（关键差异化）</h3>
+
+    <p>前面所有处理步骤都是<strong>被动挖掘</strong>——只能拿到已被表达过的知识。但 42-60% 的隐性知识根本没被写下来，因为：</p>
+    <ul>
+      <li>员工自己觉得"理所当然"，意识不到这是知识</li>
+      <li>HR 不知道该问什么（没有当事人语境）</li>
+      <li>继任者<strong>不知道自己不知道什么</strong>（unknown unknowns）</li>
+    </ul>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">核心论点</div>
+      <p style="margin:0;"><strong>只有 AI 在试图复现一个决策时，才会发现"这里有个空白"</strong>——这是任何静态文档化都做不到的，也是被动挖掘的根本上限。</p>
+    </div>
+
+    <h4>这把产品形态从「一次性」变成「持续运行」</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>静态版（被动挖掘）</th><th>动态版（Active Inquiry）</th></tr></thead>
+        <tbody>
+          <tr><td>形态</td><td>离职前 4-6 次会谈 → 输出文档</td><td>离职前 30/60/90 天就部署的<strong>影子学徒</strong></td></tr>
+          <tr><td>商业模式</td><td>一次性咨询，¥10-50k/人</td><td>持续运行 SaaS + 月费</td></tr>
+          <tr><td>客户感知</td><td>"这些文档里也有"</td><td>"它发现了我们都没意识到的盲区"</td></tr>
+          <tr><td>续费逻辑</td><td>一锤子买卖</td><td>接班人也能用，越用越值钱</td></tr>
+          <tr><td>竞争壁垒</td><td>几个 prompt 能复刻</td><td>数据闭环 + 追问策略沉淀</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout callout-pro">
+      <div class="callout-tag">空位定位</div>
+      <p style="margin:0;"><strong>这才是能打 SaaS 的产品形态</strong>。竞品（KS-Agents / Exit Insights / Morphe）大多还停在"会谈式咨询"，<strong>没有人把它做成持续运行的 Agent</strong>——真正的空位在这里。</p>
+    </div>
+
+    <h4>触发追问的 6 种信号</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>信号</th><th>例子</th></tr></thead>
+        <tbody>
+          <tr><td>决策点附近数据缺失</td><td>"为什么 7 月 12 日突然换了供应商？前后邮件都没解释"</td></tr>
+          <tr><td>多源冲突</td><td>"Slack 里说要 push，但 PR 却 close 了，哪个是真实意图？"</td></tr>
+          <tr><td>模式异常</td><td>"你通常 review 一轮，这个 PR review 了三轮——发生了什么？"</td></tr>
+          <tr><td>时间断层</td><td>"这件事 6 月开始就没记录，但项目还在推进，谁在跟？"</td></tr>
+          <tr><td>词汇模糊</td><td>"客户『有点意见』是什么程度？要不要回退方案？"</td></tr>
+          <tr><td>图谱空节点</td><td>"这个人在你邮件里出现过 200 次，但没任何角色描述"</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>5 种追问方式（怎么不烦人）</h4>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>方式</th><th>节奏</th><th>适合什么</th></tr></thead>
+        <tbody>
+          <tr><td>IM 卡片式（钉钉/飞书/企微）</td><td>每天 5-10 条</td><td>短决策、是非选择</td></tr>
+          <tr><td>周会式 30 分钟</td><td>每周一次</td><td>复杂决策、需要展开</td></tr>
+          <tr><td>上下文嵌入式</td><td>员工写邮件时弹"上次类似情况怎么处理的"</td><td>自然、低打扰</td></tr>
+          <tr><td><strong>反例诱导</strong></td><td>不定期</td><td>暴露未文档化的原则</td></tr>
+          <tr><td>A/B 对比</td><td>不定期</td><td>挖出"什么时候用 A、什么时候用 B"</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>反例诱导最强</strong>——面对真实场景人只会说"这就该这么做"，但面对<em>反例</em>会自然解释"因为如果反过来会有 XX 风险"。这个解释才是真正的原则。</p>
+
+    <h4>沉淀格式：不是 QA，是「决策原则 + 适用条件」</h4>
+    <p>不要存成 <code>Q: 为什么换供应商？ A: 因为对方涨价 30%</code>。要存成：</p>
+    <pre style="background: var(--code-bg); padding: 1em 1.2em; border-radius: 8px; overflow-x: auto; font-family: var(--mono); font-size: .88rem; line-height: 1.65; color: var(--text); border: 1px solid var(--border);">原则：当原供应商单方面提价 &gt;20% 且无 SLA 改善，3 个月内启动替换流程
+触发条件：涨价幅度、SLA 变化、替换成本评估
+反例：如果对方因不可抗力（汇率/政策）涨价且 &lt;30 天可恢复，则不启动
+来源：2024-07-12 邮件 #324 + Active Inquiry 2026-05-15
+泛化层级：通用（不仅限于这个供应商）</pre>
+    <p>继任者来查"供应商涨价怎么办"时，Agent 不是给他翻邮件，<strong>是给出原则 + 当时为什么 + 反例</strong>。</p>
+
+    <h4>员工凭什么配合（最被低估的难题）</h4>
+    <p>员工已经要走了，<strong>为什么花时间回答 Agent</strong>？尤其是被裁员、跳槽到竞争对手、对公司不满的情况。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>激励</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><strong>绑离职补偿</strong></td><td>完成度作为离职流程 checklist，与 N 个月补偿绑定（HR 主动推）</td></tr>
+          <tr><td><strong>绑前同事骚扰</strong></td><td>卖点是"以后老同事不会半夜 IM 你"——直击人性痛点</td></tr>
+          <tr><td>绑职业声誉</td><td>完成度 → 给原公司的离职评价 → LinkedIn 推荐</td></tr>
+          <tr><td>绑接班人体验</td><td>接班人付小钱，反向给原员工现金奖励</td></tr>
+          <tr><td>绑学习沉淀</td><td>"你的经验本来就该结构化"——卖给他自己未来用</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><strong>最强的是前两个</strong>——前者搭便车 HR 流程，后者击中真实痛点。</p>
+
+    <h4>反向接力机制（长期价值的护城河）</h4>
+    <p>如果产品做得好，会产生这样的链：</p>
+    <div class="mermaid">
+flowchart LR
+  A[原员工] --> B[Agent]
+  B --> C[继任者]
+  C -.付费追问.-> A
+  A -.补充原则.-> B
+  style A fill:#ede9fe,stroke:#4338ca,stroke-width:2px,color:#1c1c1e
+  style B fill:#ecfdf5,stroke:#16a34a,stroke-width:2px,color:#1c1c1e
+  style C fill:#fef3c7,stroke:#b45309,stroke-width:2px,color:#1c1c1e
+    </div>
+    <p>接班人遇到 Agent 答不出的问题，可以<strong>付费向原员工发起一次追问</strong>。这给了原员工：</p>
+    <ul>
+      <li><strong>持续被需要</strong>的尊严</li>
+      <li><strong>持续收入</strong>（哪怕几年后）</li>
+      <li><strong>强动力一开始就配合 Agent</strong>——挖得越准，以后被反向追问越少</li>
+    </ul>
+    <div class="callout callout-accent">
+      <div class="callout-tag">独有优势</div>
+      <p style="margin:0;">把"一次性离职交接"扭成了<strong>长期关系网络</strong>——这是 Delphi 那种 ToC 创作者模式做不到的，<strong>只有 ToB 离职这个场景天然成立</strong>。</p>
+    </div>
+
+    <h4>对评测的反馈意义（连接「下注一」与「下注三」）</h4>
+    <p>Active Inquiry 还有一个副产物：<strong>它产生了天然的评测数据</strong>。</p>
+    <ul>
+      <li>Agent 触发追问 = 它认为这里有不确定</li>
+      <li>员工的回答 = 这次不确定被怎么解决</li>
+      <li>继任者后续是否还在追问同一类问题 = 知识库是否真的有用</li>
+    </ul>
+    <div class="callout callout-pro">
+      <div class="callout-tag">战略连接</div>
+      <p style="margin:0;"><strong>这是离职 Agent 给「数字分身评测尺」喂数据的最直接路径</strong>——也是「下注一（离职交接）」与「下注三（评测 + 透明审计）」在产品层的天然连接点。先做下注一，评测能力作为副产物沉淀；等积累足够，下注三自然成立。</p>
+    </div>
+
+    <!-- ========== 三、应用矩阵 ========== -->
+    <h2 id="sec-3"><span class="sec-num">三</span>应用矩阵：15 种可能<a href="#sec-3" class="anchor">#</a></h2>
+
+    <div class="callout">
+      <div class="callout-tag">阅读导引</div>
+      <p style="margin:0;"><strong>第 1 条「离职交接 Agent」是当下最值得切入的位置</strong>。它能"持续运行 + 主动追问"（见 <a href="#sec-2-6">2.6 Active Inquiry</a>），与海外现有的"会谈式咨询"竞品形成代际差。下方矩阵给的是所有 15 个候选应用的横向对比。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th><th>应用</th><th>评估</th><th>数据</th><th>错误代价</th><th>付费方</th><th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td><strong>离职交接 Agent</strong></td><td>决策可复现</td><td><span class="pill pill-pro">企业已授权</span></td><td>业务损失，可纠正</td><td>企业 CTO/HR</td><td><span class="pill pill-pro">海外 5+、国内空白</span></td></tr>
+          <tr><td>2</td><td><strong>退休专家方法论提取</strong></td><td>复现专家决策</td><td><span class="pill pill-pro">退休前签约</span></td><td>知识断层</td><td>企业 / 学会</td><td><span class="pill pill-pro">制造业有、其它空白</span></td></tr>
+          <tr><td>3</td><td>新员工接班训练</td><td>培训效果</td><td><span class="pill pill-pro">教学许可</span></td><td>培训成本高</td><td>企业 HR</td><td><span class="pill pill-pro">几乎空白</span></td></tr>
+          <tr><td>4</td><td>法务证据保全</td><td>法律合规</td><td><span class="pill pill-pro">企业合规</span></td><td>法律风险</td><td>企业法务</td><td><span class="pill pill-pro">空白</span></td></tr>
+          <tr><td>5</td><td>领导风格教练</td><td>反馈准确度</td><td><span class="pill pill-pro">主体本人</span></td><td>误导</td><td>高管 / 教练</td><td><span class="pill pill-pro">空白</span></td></tr>
+          <tr><td>6</td><td>名医 / 名师远程"上岗"</td><td>临床 / 教学等效</td><td><span class="pill pill-pro">本人合作</span></td><td>误诊 / 误教</td><td>医院 / 学校</td><td><span class="pill pill-pro">空白</span></td></tr>
+          <tr><td>7</td><td>客户洞察镜像</td><td>CRM 决策准确度</td><td><span class="pill pill-warn">消费协议</span></td><td>营销错配</td><td>B 端</td><td>几家在做</td></tr>
+          <tr><td>8</td><td>第二大脑 / 个人 OS</td><td>工作生产力</td><td><span class="pill pill-pro">本人同意</span></td><td>效率损失</td><td>知识工作者</td><td>Mem0 / Letta 占一部分</td></tr>
+          <tr><td>9</td><td>个人品牌 / 简历 Agent</td><td>招聘转化</td><td><span class="pill pill-pro">本人同意</span></td><td>错过机会</td><td>求职者</td><td><span class="pill pill-pro">空白</span></td></tr>
+          <tr><td>10</td><td>创作者 AI 替身</td><td>像不像 + 商业化</td><td><span class="pill pill-pro">本人同意</span></td><td>名誉 / 收入</td><td>创作者</td><td><span class="pill pill-con">Delphi 已赢</span></td></tr>
+          <tr><td>11</td><td>个人 AI 副本 / 我代我</td><td>像不像 + 实用</td><td><span class="pill pill-pro">本人同意</span></td><td>沟通失误</td><td>本人</td><td>拥挤</td></tr>
+          <tr><td>12</td><td>临终数字 Agent</td><td>像不像 + 不过度</td><td><span class="pill pill-con">死者无法同意</span></td><td>情感伤害</td><td>家属</td><td><span class="pill pill-con">$125B 成熟</span></td></tr>
+          <tr><td>13</td><td>遗嘱执行 Agent</td><td>意图执行准确度</td><td><span class="pill pill-pro">生前签约</span></td><td>财产错配</td><td>家庭信托</td><td>空白</td></tr>
+          <tr><td>14</td><td>历史人物 Agent</td><td>学术准确度</td><td><span class="pill pill-pro">公开史料</span></td><td>历史曲解</td><td>教育 / 文化</td><td>玩票居多</td></tr>
+          <tr><td>15</td><td>婚介 / 匹配 Agent</td><td>匹配满意度</td><td><span class="pill pill-pro">自愿同意</span></td><td>情感伤害</td><td>求偶者</td><td>空白</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <div class="callout-tag">规律</div>
+      <p style="margin:0;"><strong>伦理风险与机会强相关</strong>：风险越小（生前签约的 B 端）越容易商业化，风险越大（死者、未成年）市场天花板越高但合规黑洞越深。</p>
+    </div>
+
+    <!-- ========== 四、业界现状 ========== -->
+    <h2 id="sec-4"><span class="sec-num">四</span>业界现状地图（2026-05）<a href="#sec-4" class="anchor">#</a></h2>
+
+    <h3 id="sec-4-1">流派 1：创作者 / 专业人士的 AI 替身</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>玩家</th><th>形态</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Delphi.ai</strong></td><td>Digital Mind，从内容训练，可视频实时；$79–299/月；有用户做到 7 位数收入；和 Tavus 合作做实时 HD 视频 clone</td><td><span class="pill pill-con">赢家通吃中</span></td></tr>
+          <tr><td>Personal.ai</td><td>专家知识保存，SOC2 / GDPR / HIPAA</td><td>中等</td></tr>
+          <tr><td>Tavus</td><td>视频克隆 API，给开发者基础设施</td><td>中等</td></tr>
+          <tr><td>Persona.me</td><td>全栈替身（脸+声+脑），喊"2030 克隆 10 亿人"，平均替身月工作 243 小时</td><td>早期</td></tr>
+          <tr><td>Twintual / MoltClone / DupliSelf / TwinSelf</td><td>邮件 / 消息自动回复方向</td><td>早期小玩家</td></tr>
+          <tr><td><strong>Limitless（前 Rewind）</strong></td><td>全程录音 + 回忆</td><td><span class="pill pill-warn">2025.12 被 Meta 收购</span></td></tr>
+          <tr><td>Granola</td><td>会议级 personal memory layer</td><td>Limitless 替代位</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><em>判断：创作者赛道 Delphi 基本赢了。通用 ToC 副本已晚。</em></p>
+
+    <h3 id="sec-4-2">流派 2：离职 / 退休知识捕获（ToB）</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>玩家</th><th>形态</th></tr></thead>
+        <tbody>
+          <tr><td>KS-Agents</td><td>AI 离职面谈 + 知识沉淀</td></tr>
+          <tr><td>Exit Insights</td><td>员工知识转移</td></tr>
+          <tr><td>Morphe (Vooban)</td><td>跟离职员工 4–6 次会谈，建可搜索知识库</td></tr>
+          <tr><td>Harmony AI / Superkind / Dovient</td><td>制造业 tribal knowledge 提取</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="stat-num">78%</div><div class="stat-label">组织每年至少一次离职失败</div></div>
+      <div class="stat"><div class="stat-num">42-60%</div><div class="stat-label">隐性知识随离职流失</div></div>
+      <div class="stat"><div class="stat-num">$45k</div><div class="stat-label">平均员工替换成本</div></div>
+      <div class="stat"><div class="stat-num">10,000/天</div><div class="stat-label">婴儿潮退休（全球）</div></div>
+      <div class="stat"><div class="stat-num">40%</div><div class="stat-label">制造业劳动力 10 年内可退休</div></div>
+      <div class="stat"><div class="stat-num">$31.5B</div><div class="stat-label">全球每年知识共享差损失</div></div>
+    </div>
+    <p><em>判断：有竞品但没有寡头，都是几人到几十人小公司。ToB 仍然开放。</em></p>
+
+    <h3 id="sec-4-3">流派 3：学术研究（持续突破，所有产品吃红利）</h3>
+    <p>2026 年关键论文（arXiv <code>2602.07164</code>、<code>2512.07092</code>、<code>2602.15669</code>、EACL <code>2026.300</code>）证明：</p>
+    <ul>
+      <li>人格是 LLM 表征空间里<strong>近似正交的方向向量</strong></li>
+      <li><strong>Zero-Shot Personality Injection</strong> 不需要 fine-tune</li>
+      <li>向量代数：强度（标量乘法）、组合（加法）、抑制（减法）</li>
+      <li>可以监测训练中人格漂移、做 inference 时 steering</li>
+    </ul>
+    <div class="callout callout-accent">
+      <div class="callout-tag">含义</div>
+      <p style="margin:0;">未来 1-2 年人格克隆<strong>成本下降一个数量级、精度上升一个台阶</strong>。所有应用层都吃红利。</p>
+    </div>
+
+    <h3 id="sec-4-4">流派 4：中国数字分身</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>玩家</th><th>形态</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td><strong>WeClone</strong>（开源）</td><td>微信聊天 → LoRA 微调 Qwen2.5-7B + 声音克隆</td><td>开源社区活跃</td></tr>
+          <tr><td>Second Me（开源）</td><td>本地化私有数字分身</td><td>开源</td></tr>
+          <tr><td>中贝通信 ByteMe / AI72辩</td><td>"微对齐"技术，基于 Qwen / DeepSeek / Doubao</td><td>2026.2 发布</td></tr>
+          <tr><td>腾讯元宝</td><td>个人智能体 + 声音复刻</td><td>已上线</td></tr>
+          <tr><td>MediaJiaJia AI</td><td>个人分身平台</td><td>12,800+ 用户</td></tr>
+          <tr><td>腾讯元器</td><td>公众号数字分身</td><td>中等</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p><em>判断：完全偏 ToC / 内容创作 / 个人助手。<strong>ToB 离职交接、专家方法论提取在中国是真空。</strong></em></p>
+
+    <h3 id="sec-4-5">流派 5：临终 / 永生</h3>
+    <p>HereAfter / Eternos / Replika / Super Brain / You Only Virtual / Project December —— <strong>$125B 全球市场</strong>，已是成熟产业。剑桥呼吁遗嘱里写"Digital Do-Not-Reanimate"条款。</p>
+
+    <!-- ========== 五、空位与机会 ========== -->
+    <h2 id="sec-5"><span class="sec-num">五</span>空位与机会<a href="#sec-5" class="anchor">#</a></h2>
+
+    <h3 id="sec-5-1">5.1 已被占满，不该再做</h3>
+    <div class="card-grid">
+      <div class="card" style="border-color: var(--con); opacity: .85;">
+        <div class="card-eyebrow" style="color: var(--con);">已晚</div>
+        <h4>通用 ToC 个人副本</h4>
+        <p>Delphi 已成赢家。</p>
+      </div>
+      <div class="card" style="border-color: var(--con); opacity: .85;">
+        <div class="card-eyebrow" style="color: var(--con);">已晚</div>
+        <h4>创作者 AI 克隆</h4>
+        <p>Delphi 赢家通吃。</p>
+      </div>
+      <div class="card" style="border-color: var(--con); opacity: .85;">
+        <div class="card-eyebrow" style="color: var(--con);">已晚</div>
+        <h4>永生 / 哀悼 Agent</h4>
+        <p>已成熟产业、伦理黑洞。</p>
+      </div>
+      <div class="card" style="border-color: var(--con); opacity: .85;">
+        <div class="card-eyebrow" style="color: var(--con);">已晚</div>
+        <h4>通用人格克隆 SDK</h4>
+        <p>学术界 + 大模型厂商两头夹。</p>
+      </div>
+    </div>
+
+    <h3 id="sec-5-2">5.2 真正空白</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>空位</th><th>海外</th><th>国内</th><th>6 个月可达</th></tr></thead>
+        <tbody>
+          <tr><td><strong>国内 ToB 离职交接专精产品</strong></td><td>5+ 家小厂</td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">✓</span></td></tr>
+          <tr><td><strong>专家方法论提取</strong>（咨询 / 医生 / 工匠 / 律师 / 资深工程师 / 分析师）</td><td>制造业有人做</td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">✓</span></td></tr>
+          <tr><td>监管行业合规版（金融 / 医疗 / 政府）</td><td>Personal.ai 沾边</td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">✓</span></td></tr>
+          <tr><td>数字分身评测尺</td><td>学术有、产品没有</td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">✓</span></td></tr>
+          <tr><td>数字分身 + 认知透明审计</td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">完全空白</span></td><td><span class="pill pill-pro">✓</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 六、行动建议 ========== -->
+    <h2 id="sec-6"><span class="sec-num">六</span>行动建议<a href="#sec-6" class="anchor">#</a></h2>
+
+    <h3 id="sec-6-1">6.1 三条最实在的下注（中国语境）</h3>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">下注一 · 现金流</div>
+        <h4>国内 ToB 离职交接 Agent</h4>
+        <ul>
+          <li>海外 5+ 家小厂证明商业模式跑通</li>
+          <li>国内<strong>完全没有专精玩家</strong></li>
+          <li>客单价：每位离职员工 ¥5k-20k，按人头计费</li>
+          <li>6 个月可拿 5-10 个付费客户</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">下注二 · 高客单</div>
+        <h4>资深专家方法论提取</h4>
+        <ul>
+          <li>海外只有制造业，<strong>咨询 / 医生 / 律师 / 高级工程师 / 金融分析师</strong>全空白</li>
+          <li>精品咨询模式：单项目 ¥50k-500k</li>
+          <li>不需要规模，靠 reference 累</li>
+          <li>从一个特定行业切入（如券商研究员）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">下注三 · 长期</div>
+        <h4>数字分身评测 + 认知透明审计</h4>
+        <ul>
+          <li>当前所有玩家<strong>没人做"挖得对不对"的评测</strong></li>
+          <li>是「认知透明」概念的具体落地</li>
+          <li>短期赚钱难，长期是基础设施</li>
+          <li>两条腿走：做能力 → 给"下注一/二"提供能力 → 收编客户</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 id="sec-6-2">6.2 推荐组合路径（3-5 人小团队）</h3>
+    <div class="mermaid">
+timeline
+  title 18 个月双轨路径
+  section 第 1-6 个月
+    选离职交接做杀手应用 : 瞄准 50-500 人技术公司 : ¥5k-20k/位
+  section 第 7-12 个月
+    沉淀内部 SDK : 挖掘→蒸馏→输出
+  section 第 13-18 个月
+    SDK 开放 : 让别人做退休专家提取、接班训练、个人简历
+  section 第 18 个月+
+    评测能力对外 : 副产物变护城河
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">核心策略</div>
+      <p style="margin: 0;"><strong>应用赚现金、SDK 抢未来、评测建护城河。</strong></p>
+      <p style="margin-top: .6em;">不要从一开始就喊"我们做 Person Mining 平台"——太抽象、没有 reference、没人信。先用一个具体产品证明能力，再把能力卖第二次、第三次。</p>
+    </div>
+
+    <h3 id="sec-6-3">6.3 与已有 insights 的关系</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>对应文档</th><th>怎么对应</th></tr></thead>
+        <tbody>
+          <tr><td><code>agent_future_2028</code></td><td>Person Mining 是「第二大脑」形态的底层能力</td></tr>
+          <tr><td><code>agent_cognitive_power_2026-05</code></td><td>评测 + 透明审计这条线是「认知透明」的落地形态</td></tr>
+          <tr><td><code>tob_agent_research_2026/</code></td><td>离职交接 / 专家方法论是 ToB 行业 Pack 的具体形态</td></tr>
+          <tr><td><code>B端通用性与FDE工作边界结论</code></td><td>离职交接 / 专家提取天然契合 FDE 模式（先项目制、再产品化）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 七、风险 ========== -->
+    <h2 id="sec-7"><span class="sec-num">七</span>技术难点与风险<a href="#sec-7" class="anchor">#</a></h2>
+
+    <h3 id="sec-7-1">7.1 技术难点</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>难点</th><th>现状</th><th>影响</th></tr></thead>
+        <tbody>
+          <tr><td><strong>隐性知识抽取</strong></td><td>显性知识能挖、隐性知识需要主动追问 + 反例诱导</td><td>决定"决策能不能复现"</td></tr>
+          <tr><td><strong>数据连接器</strong></td><td>每接一个新数据源都是脏活</td><td>决定能不能规模化</td></tr>
+          <tr><td><strong>评估金标</strong></td><td>学术有方法、行业没标准</td><td>决定客户敢不敢用</td></tr>
+          <tr><td><strong>风格漂移</strong></td><td>时间长了会失真</td><td>决定 Agent 能不能长期用</td></tr>
+          <tr><td><strong>多源冲突</strong></td><td>邮件说 A、聊天说 B，怎么裁决</td><td>决定可信度</td></tr>
+          <tr><td><strong>去 PII</strong></td><td>法规越来越紧</td><td>决定能不能进合规客户</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-7-2">7.2 商业 / 法律风险</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>风险</th><th>程度</th><th>缓解</th></tr></thead>
+        <tbody>
+          <tr><td>个人信息保护法 / GDPR</td><td><span class="pill pill-con">高</span></td><td>私有部署 + 数据出境控制 + 知情同意</td></tr>
+          <tr><td>数据归属：员工还是企业</td><td><span class="pill pill-warn">中</span></td><td>合同条款 + 离职时双向签字</td></tr>
+          <tr><td>死者无法同意（临终类）</td><td><span class="pill pill-con">不做就没有</span></td><td>直接避开这条赛道</td></tr>
+          <tr><td>被大厂收编</td><td><span class="pill pill-warn">中</span></td><td>走 ToB 垂直 + 高客单逃离</td></tr>
+          <tr><td>激活空间技术成熟后被大模型厂吃掉</td><td><span class="pill pill-warn">中</span></td><td>把竞争力放在应用层和评测层而不是底层算法</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-7-3">7.3 观察信号</h3>
+    <p>以下事件发生意味着需要重新判断：</p>
+    <ul>
+      <li>Delphi.ai 或 Personal.ai 推出企业版离职交接专用产品</li>
+      <li>国内出现第一家专精"AI 离职交接"的公司，融资到 A 轮</li>
+      <li>大模型厂商（OpenAI / Anthropic / 字节）推出"基于历史对话训人格"的官方 SDK</li>
+      <li>Mem0 / Letta 推出企业知识沉淀产品线</li>
+      <li>中国劳动法 / 个人信息保护法对"员工数字遗产归属"出具体解释</li>
+      <li>出现专门做 Person Mining 评测的公司</li>
+      <li>出现 Person Mining 数据连接器开源标准</li>
+    </ul>
+
+    <!-- ========== 八、开放问题 ========== -->
+    <h2 id="sec-8"><span class="sec-num">八</span>开放问题<a href="#sec-8" class="anchor">#</a></h2>
+    <ol>
+      <li><strong>隐性知识真的能被挖出来吗？还是只能挖到"被表达过的"知识？</strong> —— 这是技术上的根本不确定性。如果不能，Person Mining 的天花板就是"显性知识 + 风格"。</li>
+      <li><strong>评测金标怎么定？</strong> —— 没有金标，企业不敢付钱。需要和早期客户共建"什么叫挖准了"。</li>
+      <li><strong>数据归属：员工写的邮件、PR、文档，是员工的还是企业的？</strong> —— 法规模糊，合同先行。</li>
+      <li><strong>激活空间技术成熟后，会不会把所有产品层 collapse 成"上传数据 → 拿到人格向量"？</strong> —— 如果会，应用层和评测层是仅存的护城河。</li>
+      <li><strong>国内监管路径</strong>：员工离职后企业用 AI 保留其工作模式，算"个人信息处理"还是"商业秘密保护"？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center; line-height: 1.7;">
+      修订记录：2026-05-21 初稿<br />
+      2026-05-21 新增 2.6 Active Inquiry，澄清主动追问是离职 Agent 的核心差异化
+    </p>
+
+    <div class="doc-footer">
+      <p>对应 Markdown 源：<a href="./person_mining_persona_distillation_2026-05.md">person_mining_persona_distillation_2026-05.md</a></p>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>OpenAI 税务智能体自改进机制洞察 · FDE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../../../../_assets/insight.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+        OpenAI 官方动态<span class="brand-sub">厂商追踪 · 2026-05</span>
+      </div>
+      <div class="actions">
+        <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+        <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="drawer-overlay" id="drawerOverlay"></div>
+  <aside class="drawer" id="drawer">
+    <h5>目录</h5>
+    <ul id="drawerToc"></ul>
+  </aside>
+
+  <div class="container">
+    <aside class="toc-aside">
+      <h5>目录</h5>
+      <ul id="toc"></ul>
+    </aside>
+
+    <article>
+      <header class="doc-header">
+        <h1>OpenAI《Building self-improving tax agents with Codex》洞察</h1>
+        <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+          从税务场景提炼可迁移的 Agent 自改进闭环方法
+        </p>
+        <div class="doc-meta">
+          <span>2026-05-28</span>
+          <span>跨市场</span>
+          <span>OpenAI动态</span>
+          <span>Agent进化闭环</span>
+          <span>对内</span>
+        </div>
+      </header>
+
+      <div class="lede">
+        <strong>核心结论：</strong>
+        这篇文章的真正价值不在税务自动化本身，而在于验证了一个可复用闭环：把生产中的专家修正变成结构化证据，经过聚类去噪转化为有边界的 eval 目标，再由 Codex 在受控环境里完成调查、修复与回归验证。
+      </div>
+
+      <h2 id="facts"><span class="sec-num">一</span>关键信息与结果<a href="#facts" class="anchor">#</a></h2>
+      <ul>
+        <li>OpenAI 与 Thrive Holdings / Crete 协作约六个月，构建 Tax AI。</li>
+        <li>试点覆盖 30+ 会计事务所，本税季处理约 7,000 份税表（1040/1041）。</li>
+        <li>文中披露指标包括：节省约三分之一准备时间、吞吐提升约 50%、部分口径字段准确率可达 97%。</li>
+        <li>按字段完成正确率看：75% 阈值从上线约 25% 提升到六周后约 86%，90% 和 100% 阈值也持续上升。</li>
+        <li>能力从 W-2/1099 扩展到 K-1、Schedule E 等复杂场景，体现了能力边界持续外扩。</li>
+      </ul>
+
+      <h2 id="loop"><span class="sec-num">二</span>三支柱闭环设计<a href="#loop" class="anchor">#</a></h2>
+      <h3 id="pillar-1">2.1 专家在环：定义“真失败”</h3>
+      <p>
+        预测值和最终申报值不一致，并不必然等于系统错误。差异可能来自提取遗漏、映射缺口、产品尚未支持、税务判断偏好，或正常流程噪声。文章强调由从业者参与标注和分流，避免将噪声误当模型缺陷。
+      </p>
+
+      <h3 id="pillar-2">2.2 产品 trace：定位失败来源</h3>
+      <p>
+        该系统记录从源文件到最终提交的完整链路：文档拆分分类、字段提取与引用、映射到税务引擎、人工修正、最终入账值。没有 trace 就只有“错了”，有 trace 才能回答“错在 schema、source selection、mapper 还是 grader”。
+      </p>
+
+      <h3 id="pillar-3">2.3 Codex 迭代：有边界地自动改进</h3>
+      <ol>
+        <li>字段级比对预测值与最终值；</li>
+        <li>聚类相似差异，筛出重复且可行动的问题；</li>
+        <li>将问题转成 bounded eval 与明确成功条件；</li>
+        <li>Codex 在受控任务环境中调查并生成修复；</li>
+        <li>通过 targeted + regression eval 后再进入人工评审与发布。</li>
+      </ol>
+      <p>这不是“自动修所有问题”，而是“以评测为边界的自动化工程加速”。</p>
+
+      <h2 id="insights"><span class="sec-num">三</span>方法论洞察<a href="#insights" class="anchor">#</a></h2>
+      <div class="callout callout-accent">
+        <div class="callout-tag">关键判断</div>
+        <ul style="margin: .3em 0;">
+          <li>自改进能力首先是评测系统能力，不是单纯模型能力。</li>
+          <li>任务环境与验证门禁设计，通常比“换更大模型”更决定迭代速度。</li>
+          <li>长期可迁移壁垒来自 failure taxonomy、eval 资产和工作流协议沉淀。</li>
+        </ul>
+      </div>
+
+      <h2 id="fde"><span class="sec-num">四</span>对 ToB Agent / FDE 的落地启发<a href="#fde" class="anchor">#</a></h2>
+      <p>建议优先构建最小闭环六件套：</p>
+      <ol>
+        <li>Trace 标准化：输入、处理中间态、输出、人工修正统一落盘；</li>
+        <li>Diff 结构化：字段级对比并打可行动标签；</li>
+        <li>Finding 聚类：把单点错误升维为模式化问题；</li>
+        <li>Eval 化：每类问题配置 targeted 集和通过阈值；</li>
+        <li>双轨验证：targeted 提升同时 regression 不退化；</li>
+        <li>发布闸门：候选变更必须经过人工评审。</li>
+      </ol>
+
+      <h2 id="caveats"><span class="sec-num">五</span>边界与保留意见<a href="#caveats" class="anchor">#</a></h2>
+      <ul>
+        <li>指标披露口径有限（如 97% 与阈值指标关系），外部复现需补充评测协议。</li>
+        <li>税务季节性强，淡季与跨年迁移稳定性仍需持续观察。</li>
+        <li>责任主体仍是从业者，AI 主要提升高重复、重录入、重对账环节效率。</li>
+      </ul>
+
+      <hr />
+      <p style="font-size: .9rem; color: var(--text-muted);">
+        原文链接：
+        <a href="https://openai.com/index/building-self-improving-tax-agents-with-codex/" target="_blank" rel="noopener noreferrer">
+          Building self-improving tax agents with Codex
+        </a>
+      </p>
+      <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">修订记录：2026-05-28 初稿</p>
+    </article>
+  </div>
+
+  <script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

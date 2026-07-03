@@ -1,0 +1,17 @@
+.claude/
+.cursor/
+.vscode/
+.trae/
+.DS_Store
+*.log
+.obsidian/
+*.zip
+*.pyc
+__pycache__/
+.pydeps/
+temp/
+.firecrawl/
+.env
+.env.*
+media/
+docs/

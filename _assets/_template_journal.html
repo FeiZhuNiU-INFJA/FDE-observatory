@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>YYYY-MM-DD · 【标题】· FDE 复盘</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<!-- journal entries 在 journal/entries/ 下，路径为 ../../_assets/ -->
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* Journal 不需要侧边 TOC，使用单栏布局 */
+  .container { grid-template-columns: 1fr; }
+  .toc-aside { display: none !important; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      【YYYY-MM-DD 标题】<span class="brand-sub">复盘 · FDE</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <article>
+
+    <header class="doc-header">
+      <h1>【标题】</h1>
+      <div class="doc-meta">
+        <span>YYYY-MM-DD</span>
+        <span>【状态：记录中 / 已验证 / 已归档】</span>
+      </div>
+    </header>
+
+    <!-- ── 背景 ─────────────────────────────── -->
+    <h2 id="background">背景</h2>
+    <ul>
+      <li>【背景条目 1】</li>
+    </ul>
+
+    <!-- ── 当前判断 ───────────────────────────── -->
+    <h2 id="judgment">当前判断（假设）</h2>
+    <div class="callout callout-accent">
+      <div class="callout-tag">假设</div>
+      <ul style="margin: .3em 0;">
+        <li>【假设 1】</li>
+      </ul>
+    </div>
+
+    <!-- ── 推导与影响 ─────────────────────────── -->
+    <h2 id="implications">推导与影响</h2>
+    <ul>
+      <li>【影响 1】</li>
+    </ul>
+
+    <!-- ── 关键挑战 ───────────────────────────── -->
+    <h2 id="challenges">关键挑战</h2>
+    <ul>
+      <li>【挑战 1】</li>
+    </ul>
+
+    <!-- ── 当前策略 ───────────────────────────── -->
+    <h2 id="strategy">当前策略</h2>
+    <ul>
+      <li>【策略 1】</li>
+    </ul>
+
+    <!-- ── 下一步行动 ─────────────────────────── -->
+    <h2 id="actions">下一步行动（1–2 周）</h2>
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动</div>
+      <ul style="margin: .3em 0;">
+        <li>【行动 1】</li>
+      </ul>
+    </div>
+
+    <!-- ── 待验证问题 ─────────────────────────── -->
+    <h2 id="open-questions">待验证问题</h2>
+    <ul>
+      <li>【问题 1】</li>
+    </ul>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 复盘日志</a>
+      &nbsp;·&nbsp;
+      <a href="../../index.html">← 首页</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

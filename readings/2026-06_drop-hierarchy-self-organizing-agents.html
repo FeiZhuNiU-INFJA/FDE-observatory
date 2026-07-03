@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>放弃层级与角色：自组织 LLM Agent 如何胜过人为设计的结构 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色（fuchsia）+ 暗色变体；其余设计令牌、字体、底纹、排版全部来自共享 insight.css */
+  :root {
+    --accent: #c026d3;
+    --accent-deep: #a21caf;
+    --accent-ink: #86198f;
+    --accent-soft: color-mix(in srgb, #c026d3 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent-soft: color-mix(in srgb, #c026d3 22%, #1a1a22);
+    --accent-ink: #f0abfc;
+  }
+
+  /* ═════════ 视觉一：内生性悖论 · 倒 U 型曲线 ═════════ */
+  .paradox {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); padding: 1.4rem 1.1rem 1rem;
+  }
+  .paradox svg { width: 100%; height: auto; display: block; }
+  .paradox-cap {
+    font-size: .82rem; color: var(--text-muted); text-align: center; margin: .8rem 0 0; line-height: 1.5;
+  }
+  .paradox-axis {
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .5rem;
+    font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--text-muted); margin-top: .2rem; padding: 0 .4rem;
+  }
+  .paradox-axis .mid { color: var(--accent); }
+
+  /* ═════════ 视觉二：四种协调协议卡 ═════════ */
+  .protos { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin: 1.6em 0; }
+  @media (max-width: 960px) { .protos { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .protos { grid-template-columns: 1fr; } }
+  .proto {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1rem 1.05rem;
+    background: var(--surface); position: relative; display: flex; flex-direction: column; gap: .55rem;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .proto:hover { transform: translateY(-4px); }
+  .proto-tag {
+    font-family: var(--mono); font-size: .58rem; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .proto-name { font-family: var(--display); font-weight: 700; font-size: 1.12rem; color: var(--text); margin: 0; line-height: 1.15; }
+  .proto-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .62rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .12em; }
+  .proto-row { font-size: .8rem; color: var(--text-soft); line-height: 1.45; margin: 0; }
+  .proto-row b {
+    font-family: var(--mono); font-size: .58rem; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom .1em;
+  }
+  .proto-q {
+    margin-top: auto; padding-top: .6rem; border-top: 1px dashed var(--border-strong);
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text);
+  }
+  .proto-q span { font-family: var(--mono); font-size: .6rem; font-weight: 500; color: var(--text-muted); letter-spacing: .06em; }
+  .proto.win {
+    border-color: var(--accent); border-width: 2px;
+    box-shadow: 0 0 0 4px var(--accent-soft), 0 10px 26px var(--accent-glow);
+  }
+  .proto.win .proto-tag { color: var(--accent); }
+  .proto.win .proto-q { color: var(--accent-deep); }
+  .proto.win::before {
+    content: "最优 WIN"; position: absolute; top: -.72rem; right: .85rem;
+    background: var(--accent); color: #fff; font-family: var(--mono); font-size: .56rem;
+    font-weight: 600; letter-spacing: .1em; padding: .22em .6em; border-radius: 999px;
+  }
+
+  /* ═════════ 视觉三：能力反转 · 强弱模型分水岭 ═════════ */
+  .reversal { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.6em 0; }
+  @media (max-width: 680px) { .reversal { grid-template-columns: 1fr; } }
+  .rev {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1.2rem;
+    background: var(--surface); position: relative; overflow: hidden;
+  }
+  .rev.good { border-left: 4px solid var(--pro); }
+  .rev.bad { border-left: 4px solid var(--con); }
+  .rev-eyebrow {
+    font-family: var(--mono); font-size: .58rem; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .rev.good .rev-eyebrow { color: var(--pro); }
+  .rev.bad .rev-eyebrow { color: var(--con); }
+  .rev-model { font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); margin: .15em 0 0; }
+  .rev-delta { font-family: var(--display); font-weight: 700; font-size: 2rem; line-height: 1; margin: .35rem 0; }
+  .rev.good .rev-delta { color: var(--pro); }
+  .rev.bad .rev-delta { color: var(--con); }
+  .rev-track { height: 9px; border-radius: 5px; background: var(--bg-soft); position: relative; margin: .7rem 0 .5rem; }
+  .rev-track .midline { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1.5px; background: var(--border-strong); }
+  .rev-track .fill { position: absolute; top: 0; bottom: 0; border-radius: 5px; }
+  .rev.good .fill { left: 50%; background: var(--pro); }
+  .rev.bad .fill { right: 50%; background: var(--con); }
+  .rev-note { font-size: .8rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+
+  /* ═════════ Sequential 运转：按序补位流水线 ═════════ */
+  .seq { margin: 1.8em 0; }
+  .seq-flow { display: grid; grid-template-columns: repeat(6, 1fr); gap: .5rem; position: relative; }
+  @media (max-width: 980px) { .seq-flow { grid-template-columns: repeat(3, 1fr); gap: .8rem; } }
+  @media (max-width: 560px) { .seq-flow { grid-template-columns: repeat(2, 1fr); } }
+  .seq-step {
+    border: 1px solid var(--border); border-radius: 12px; padding: .85rem .7rem .8rem;
+    background: var(--surface); position: relative; display: flex; flex-direction: column; gap: .35rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .seq-step:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .seq-step .agent { font-family: var(--mono); font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); }
+  .seq-step .role { font-family: var(--display); font-weight: 700; font-size: .92rem; color: var(--text); line-height: 1.2; margin: 0; }
+  .seq-step .sees { font-size: .72rem; color: var(--text-soft); line-height: 1.4; margin: 0; }
+  .seq-step .sees b { font-family: var(--mono); font-size: .55rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); display: block; margin-bottom: .1em; }
+  /* 步骤间箭头（桌面 → / 移动 ↓） */
+  .seq-step:not(:last-child)::after {
+    content: "→"; position: absolute; right: -.5rem; top: 50%; transform: translate(50%, -50%);
+    font-family: var(--display); color: var(--accent); font-size: 1.15rem; z-index: 2;
+    background: var(--bg); padding: 0 .12rem; line-height: 1;
+  }
+  @media (max-width: 980px) {
+    .seq-step:not(:last-child)::after { content: "↓"; right: 50%; top: auto; bottom: -.5rem; transform: translate(50%, 50%); }
+  }
+  /* 末端弃权 */
+  .seq-step.abs { border-style: dashed; }
+  .seq-step.abs .role { color: var(--con); }
+  .seq-step.abs .sees { color: var(--text-muted); }
+  .seq-legend {
+    margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center;
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .04em;
+  }
+  .seq-legend span { border: 1px solid var(--rule); padding: .28em .65em; border-radius: 999px; background: var(--surface); color: var(--accent); }
+
+  /* ═════════ 视觉四：三环宪政框架 ═════════ */
+  .rings { display: grid; grid-template-columns: minmax(280px, 400px) 1fr; gap: 2rem; align-items: center; margin: 1.8em 0; }
+  @media (max-width: 880px) { .rings { grid-template-columns: 1fr; } .rings-emblem { max-width: 400px; margin: 0 auto; } }
+  .rings-emblem svg { width: 100%; height: auto; display: block; }
+  .ring-legend { display: flex; flex-direction: column; gap: .7rem; }
+  .ring-legend .rl {
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline;
+    padding: .7rem .9rem; border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+  }
+  .ring-legend .badge { font-family: var(--display); font-style: italic; font-weight: 700; color: var(--accent); font-size: 1.05rem; white-space: nowrap; }
+  .ring-legend .rl b { font-family: var(--display); color: var(--text); }
+  .ring-legend .rl .ctrl { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); display: block; margin-top: .15em; }
+  .ring-principle {
+    margin-top: .3rem; padding: .8rem 1rem; border-radius: 10px; font-size: .85rem; line-height: 1.55;
+    color: var(--text-soft); background: var(--accent-soft); border: 1px dashed var(--accent);
+  }
+  .ring-principle b { color: var(--accent-deep); }
+
+  /* ── 涌现三联卡 ── */
+  .triad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.6em 0; }
+  @media (max-width: 820px) { .triad { grid-template-columns: 1fr; } }
+  .em {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1.15rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .5rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .em:hover { transform: translateY(-4px); border-color: var(--accent); }
+  .em-num { font-family: var(--display); font-style: italic; font-weight: 500; font-size: .95rem; color: var(--accent); }
+  .em-big { font-family: var(--display); font-weight: 700; font-size: 1.7rem; line-height: 1.05; color: var(--text); }
+  .em-big small { font-family: var(--mono); font-size: .7rem; font-weight: 500; color: var(--text-muted); }
+  .em-name { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); margin: 0; }
+  .em-desc { font-size: .82rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+
+  /* ── FDE 映射 / 待验证：复用轻量样式 ── */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li {
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline;
+    padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0;
+  }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li {
+    counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative;
+    border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent);
+    border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55;
+  }
+  .threads li::before {
+    content: "?" counter(th); position: absolute; left: .8rem; top: .78rem;
+    font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem;
+  }
+
+  /* reduced-motion：本页静态图为主，无需额外动画处理（.reveal 由共享样式处理） */
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      放弃层级与角色 Drop the Hierarchy<span class="brand-sub">跨市场 · 多 Agent 编排 · 2026-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>放弃层级与角色<span class="en"> Drop the Hierarchy &amp; Roles</span><br />自组织 LLM Agent 如何胜过人为设计的结构</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Victoria Dochkina (MIPT) · arXiv:2603.28990 · 25,000 任务实验 · 内生性悖论与「序贯」协议 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-06-21</span>
+        <span>跨市场</span>
+        <span>Multi-Agent</span>
+        <span>自组织</span>
+        <span>协调协议</span>
+        <span>Agent 编排</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">25K<small>+</small></div><div class="lab">任务实验<br />8 模型 · 4–256 Agent · 8 协议</div></div>
+        <div class="hero-stat"><div class="num">+14<small>%</small></div><div class="lab">Sequential vs 中央协调<br />p&lt;0.001</div></div>
+        <div class="hero-stat"><div class="num">44<small>%</small></div><div class="lab">协议间质量极差<br />Cohen&#39;s d=1.86</div></div>
+        <div class="hero-stat"><div class="num">5,006</div><div class="lab">8 个 Agent<br />自发涌现的角色</div></div>
+        <div class="hero-stat"><div class="num">24<small>×</small></div><div class="lab">开源更便宜<br />95% 闭源质量</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        论文：<a href="https://arxiv.org/abs/2603.28990" target="_blank" rel="noopener">arXiv:2603.28990 · Drop the Hierarchy and Roles</a>（2026-03-30，投 IEEE Access，6 图 9 表） ·
+        <a href="https://arxiv.org/html/2603.28990v1" target="_blank" rel="noopener">全文 HTML</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>多 Agent 系统不该照搬人类组织的「固定角色 + 层级」。一项 25,000 任务的实验揭示了<strong>内生性悖论（Endogeneity Paradox）</strong>——既不是最强外部控制（Coordinator 中央协调）最优，也不是最彻底的自主（Shared 全自治）最优。胜出的是<strong>混合的「序贯 / Sequential」协议</strong>：固定发言顺序，但角色由 Agent 自主选择；它比中央协调高 <strong>+14%</strong>、比全自治高 <strong>44%</strong>（Cohen's d=1.86）。更反直觉的是：自组织是<strong>强模型的特权</strong>——弱模型放开自主反而更差。给 Agent 三样东西——<strong>使命、协议、足够强的模型</strong>，而不是一个预设角色。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>内生性悖论</strong>：质量随自主度呈<strong>倒 U 型</strong>，峰值落在「最小脚手架 + 最大角色自主」的 Sequential，而非两极</li>
+        <li><strong>信息论根因</strong>：Sequential 让每个 Agent 看到前序同伴的<strong>已完成产出</strong>（事实），优于意图（可能变）、历史（可能过时）、他人计划（受限于一人）</li>
+        <li><strong>自组织是强模型特权</strong>：Claude 放开 +3.5%，GLM-5 放开 −9.6%——低于能力阈值时刚性结构反而更好</li>
+        <li><strong>涌现</strong>：8 个 Agent 自发产生 5,006 个角色（RSI→0）、主动弃权（38/60 自愿）、浅层级（深度仅 1→2）</li>
+        <li><strong>规模亚线性</strong>：4→256 Agent 质量不降（p=0.61），成本仅 +11.8%；N=256 时约 45% Agent 自发闲置</li>
+        <li><strong>实操配方</strong>：使命 + 协议 + 强模型；并组合模型（开源 DeepSeek = 95% Claude 质量、24× 便宜）</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>背景：横纵两条路，与一个被忽视的问题<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">The Gap · 被忽视的核心问题</p>
+
+    <p>多 Agent 研究分两条路。<strong>纵向（vertical）</strong>让单个 Agent 变强——如 Meta 的 DGM-Hyperagents，靠元认知自我改造实现开放式自改进；<strong>横向（horizontal）</strong>解决一群 Agent 如何协作，主流框架（ChatDev、MetaGPT、AutoGen、AgentVerse）几乎都<strong>照搬人类组织</strong>：固定角色、中央任务分配、刚性层级。</p>
+
+    <p>但论文指出一个根本错位：LLM Agent 与人类员工本质不同——<strong>角色切换零成本</strong>（瞬时从架构师变分析师）、<strong>可瞬时处理全部组织上下文</strong>、<strong>空闲时边际成本为零</strong>。把人类组织的角色与层级<strong>照搬</strong>到这样的实体上，等于把人类本没有的局限强加给它们。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">被忽视的问题</div>
+      <p style="margin:.3em 0;">什么样的<strong>协调架构</strong>能在<strong>质量 / 成本 / 可扩展性 / 韧性</strong>之间取得最优权衡？此前无人系统性地沿「外部强加 → 内生涌现」的谱系去比较协议、把规模推到 256 Agent、横跨 8 个模型并实现<strong>零样本运行时自组织</strong>。本文补上这块。</p>
+    </div>
+
+    <!-- 二 -->
+    <h2 id="sec-paradox"><span class="sec-num">二</span>内生性悖论：最大控制与最大自由都不赢<a href="#sec-paradox" class="anchor">#</a></h2>
+    <p class="kicker">The Endogeneity Paradox · 本文中枢</p>
+
+    <p>论文区分两种协调：<strong>外生（exogenous）</strong>——结构由外部强加（如 Coordinator 由 Agent 0 给所有人派角色）；<strong>内生（endogenous）</strong>——结构由系统内部涌现。中枢发现是<strong>内生性悖论</strong>：质量与自主度之间是<strong>非单调的倒 U 型关系</strong>——既不是最强控制，也不是最彻底自主，而是两者之间的混合最优。</p>
+
+    <!-- ▼ 视觉一：倒 U 型曲线 -->
+    <div class="paradox reveal">
+      <svg viewBox="0 0 760 300" role="img" aria-label="内生性悖论：质量随自主度呈倒 U 型，Sequential 处于峰值">
+        <defs>
+          <radialGradient id="peakGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".28"/>
+            <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <!-- 网格 -->
+        <g stroke="var(--border)" stroke-width="1">
+          <line x1="80" y1="60" x2="700" y2="60" stroke-dasharray="2 5" opacity=".6"/>
+          <line x1="80" y1="130" x2="700" y2="130" stroke-dasharray="2 5" opacity=".6"/>
+          <line x1="80" y1="200" x2="700" y2="200" stroke-dasharray="2 5" opacity=".6"/>
+        </g>
+        <!-- 坐标轴 -->
+        <line x1="80" y1="40" x2="80" y2="245" stroke="var(--border-strong)" stroke-width="1.5"/>
+        <line x1="80" y1="245" x2="705" y2="245" stroke="var(--border-strong)" stroke-width="1.5"/>
+        <!-- 轴标 -->
+        <text x="74" y="44" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="var(--mono)">质量 Q</text>
+        <text x="705" y="262" text-anchor="end" font-size="10" fill="var(--text-muted)" font-family="var(--mono)">自主度 autonomy →</text>
+        <text x="74" y="248" text-anchor="end" font-size="9" fill="var(--text-muted)" font-family="var(--mono)">低</text>
+        <text x="74" y="44" text-anchor="end" font-size="9" fill="var(--text-muted)" font-family="var(--mono)" dy="-6">高</text>
+        <!-- 倒 U 曲线下方淡填充 -->
+        <path d="M180,125 C250,80 300,58 350,58 C405,58 460,110 520,150 C575,180 625,196 650,198 L650,245 L180,245 Z"
+              fill="var(--accent-soft)" opacity=".5"/>
+        <!-- 倒 U 曲线 -->
+        <path d="M180,125 C250,80 300,58 350,58 C405,58 460,110 520,150 C575,180 625,196 650,198"
+              fill="none" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round"/>
+        <!-- 峰值光晕 -->
+        <circle cx="350" cy="58" r="34" fill="url(#peakGlow)"/>
+        <!-- 节点 -->
+        <g font-family="var(--mono)">
+          <!-- Coordinator -->
+          <circle cx="180" cy="125" r="7" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2"/>
+          <text x="180" y="108" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text-soft)">Coordinator</text>
+          <text x="180" y="151" text-anchor="middle" font-size="9" fill="var(--text-muted)">中央协调</text>
+          <!-- Sequential (peak) -->
+          <circle cx="350" cy="58" r="11" fill="var(--accent)" stroke="var(--surface)" stroke-width="2.5"/>
+          <text x="350" y="34" text-anchor="middle" font-size="12" font-weight="700" fill="var(--accent-deep)">Sequential 序贯</text>
+          <text x="350" y="86" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--accent-deep)">Q = 0.875</text>
+          <!-- Broadcast -->
+          <circle cx="520" cy="150" r="7" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="2"/>
+          <text x="520" y="138" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text-soft)">Broadcast</text>
+          <text x="520" y="176" text-anchor="middle" font-size="9" fill="var(--text-muted)">广播</text>
+          <!-- Shared -->
+          <circle cx="650" cy="198" r="7" fill="var(--surface)" stroke="var(--con)" stroke-width="2"/>
+          <text x="650" y="186" text-anchor="middle" font-size="11" font-weight="600" fill="var(--text-soft)">Shared</text>
+          <text x="650" y="224" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--con)">Q = 0.503</text>
+        </g>
+        <!-- 44% 极差标注 -->
+        <g font-family="var(--mono)" stroke="var(--text-muted)" fill="var(--text-muted)">
+          <line x1="362" y1="58" x2="638" y2="198" stroke-dasharray="3 4" stroke-width="1.2" opacity=".7"/>
+          <text x="515" y="128" text-anchor="middle" font-size="10" font-weight="600" stroke="none">44% 极差 · d=1.86</text>
+        </g>
+      </svg>
+      <div class="paradox-axis">
+        <span>← 外生 exogenous · 协调控制</span>
+        <span class="mid">▲ 峰值：最小结构 + 最大角色自由</span>
+        <span>内生 endogenous · 自主自治 →</span>
+      </div>
+      <p class="paradox-cap">同模型、同任务下，<strong>协调机制对质量的影响堪比甚至超过模型选择</strong>。倒 U 的峰值不在两极，而在「固定顺序 + 自主选角」的 Sequential。</p>
+    </div>
+
+    <h3 id="sec-why">2.1 为什么是 Sequential？一个信息论解释</h3>
+    <p>Sequential 让每个 Agent 收到的是<strong>事实性的、任务相关的、累积的</strong>信息——前序同伴<strong>在本任务里已完成的产出</strong>。论文论证这种信息类型压倒性地优于其它三者：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>协议</th><th>Agent 看到的信息</th><th>缺陷</th></tr></thead>
+        <tbody>
+          <tr><td>Broadcast 广播</td><td>他人<strong>意图</strong>（两轮：先广播意图再定）</td><td>意图可能改变</td></tr>
+          <tr><td>Shared 共享</td><td><strong>历史</strong>角色记录（共享组织记忆）</td><td>历史可能过时、不适用当前任务</td></tr>
+          <tr><td>Coordinator 中央</td><td>单一协调者的<strong>计划</strong></td><td>受限于一个 Agent 的判断</td></tr>
+          <tr><td><strong>Sequential 序贯</strong></td><td>前序同伴的<strong>已完成产出</strong></td><td>（O(N) 延迟，见局限）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      类比<strong>体育选秀</strong>：每支球队在 knowing all previous picks 的情况下选择，自然补齐互补位置——无需中央规划。悖论在于：<strong>最小结构释放最大涌现</strong>——一个简单约束（固定顺序）解锁了任何显式设计都达不到的角色分化、主动弃权与使命对齐。
+    </blockquote>
+
+    <!-- 三 -->
+    <h2 id="sec-protocols"><span class="sec-num">三</span>四种协调协议：从中央指挥到全自治<a href="#sec-protocols" class="anchor">#</a></h2>
+    <p class="kicker">The Four Protocols · 协议谱系</p>
+
+    <!-- ▼ 视觉二：四种协议卡 -->
+    <div class="protos reveal">
+      <article class="proto">
+        <span class="proto-tag">外生 · 集中</span>
+        <h4 class="proto-name">协调者<span class="en">Coordinator</span></h4>
+        <p class="proto-row"><b>谁定角色</b>Agent 0 分析任务，给所有人派角色与阶段，其余并行执行</p>
+        <p class="proto-row"><b>看到什么</b>单一协调者的计划</p>
+        <p class="proto-row"><b>调用</b>N+1（1 串行 + N 并行）</p>
+        <div class="proto-q">中位 <span>单点失败</span></div>
+      </article>
+      <article class="proto win">
+        <span class="proto-tag">混合 · 最优</span>
+        <h4 class="proto-name">序贯<span class="en">Sequential</span></h4>
+        <p class="proto-row"><b>谁定角色</b>固定顺序，每人自主选角、自主决定参与或弃权</p>
+        <p class="proto-row"><b>看到什么</b>前序同伴的已完成产出</p>
+        <p class="proto-row"><b>调用</b>N（串行）</p>
+        <div class="proto-q">0.875 <span>N=16 · L3</span></div>
+      </article>
+      <article class="proto">
+        <span class="proto-tag">内生 · 信号</span>
+        <h4 class="proto-name">广播<span class="en">Broadcast</span></h4>
+        <p class="proto-row"><b>谁定角色</b>两轮：先同时广播角色意图，再据全部意图定夺</p>
+        <p class="proto-row"><b>看到什么</b>他人的意图</p>
+        <p class="proto-row"><b>调用</b>2N（每轮并行）</p>
+        <div class="proto-q">中下 <span>意图易变</span></div>
+      </article>
+      <article class="proto">
+        <span class="proto-tag">内生 · 全自治</span>
+        <h4 class="proto-name">共享<span class="en">Shared</span></h4>
+        <p class="proto-row"><b>谁定角色</b>共享组织记忆，所有人同时独立决策</p>
+        <p class="proto-row"><b>看到什么</b>历史角色记录（可能过时）</p>
+        <p class="proto-row"><b>调用</b>N（并行）</p>
+        <div class="proto-q">0.503 <span>角色重复 · 最差</span></div>
+      </article>
+    </div>
+
+    <p>四张卡的对比说明：<strong>「谁定角色」与「Agent 看到什么」共同决定质量</strong>。Coordinator 把判断权收归一人（单点失败），Shared 让所有人盲选（角色重复），Broadcast 协调的是易变的意图——只有 Sequential 协调的是<strong>既成事实</strong>。论文还测试了四种仿生协议（形态发生、克隆、嗅迹、涟漪），结果将在后续论文报告；初步显示<strong>涟漪（波式信息传播）</strong>在对抗性任务上质量逼近 Sequential，同时并行度更高。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">两个效应量</div>
+      <ul style="margin:.3em 0;">
+        <li>Sequential vs Shared（同模型同任务）：<strong>+44%</strong>，Cohen's d=1.86，p&lt;0.0001</li>
+        <li>Sequential vs Coordinator（N=16，L3，三强模型复现）：<strong>+14%</strong>，p&lt;0.001</li>
+      </ul>
+    </div>
+
+    <h3 id="sec-sequential">3.1 Sequential 如何运转：按序补位，末端可弃权</h3>
+    <p class="kicker">Inside Sequential · 胜出协议的内部机制</p>
+
+    <p>把胜出的 Sequential 拆开，它就是<strong>一条规则 + 三个自主决策</strong>。规则只有一条：<strong>固定顺序</strong> A₁→A₂→…→Aₙ（整套机制里唯一的外生结构）。轮到 Aᵢ 时，他读到的是<strong>前面所有人在本任务里已完成的产出</strong>——事实，而非意图、历史或某人的计划。在这份上下文上，Aᵢ <strong>完全自主</strong>地做三件事：<strong>选角</strong>（看缺什么补什么）、<strong>参与或弃权</strong>（自评边际价值够不够）、<strong>贡献</strong>（产出立刻对后续所有人可见）。没有主管、没有预设角色表。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">那顺序按什么排?</div>
+      <p style="margin:.3em 0;">顺序是<strong>外生给定</strong>的——agent 只决定「演什么角色」，不决定「什么时候上」。论文把 ordering 当成固定实验常量（像 temperature 一样给定、不优化），<strong>既未披露确切排序规则，也未做顺序消融</strong>（倒序 / 每任务重排，质量会变吗？）。合理推断：实验里 N 个 agent 是<strong>同一模型的 N 份拷贝</strong>、无能力梯度（角色当场涌现，RSI→0），所以「谁排第一」没有能力依据可排——顺序实为<strong>任意 index</strong>；正因 agent 可交换，论文把它当不重要的常量略过。唯一概念上不对称的是<strong>信息量</strong>（A₁ 只看到任务、Aₙ 看到全部），但期望意义上可交换，故非论文的杠杆。</p>
+    </div>
+
+    <!-- ▼ Sequential 运转流水线 -->
+    <div class="seq reveal">
+      <div class="seq-flow">
+        <div class="seq-step">
+          <span class="agent">A₁ · 首发</span>
+          <p class="role">资产盘点</p>
+          <p class="sees"><b>看到</b>只有任务本身</p>
+        </div>
+        <div class="seq-step">
+          <span class="agent">A₂</span>
+          <p class="role">威胁建模</p>
+          <p class="sees"><b>看到</b>A₁ 的产出</p>
+        </div>
+        <div class="seq-step">
+          <span class="agent">A₃</span>
+          <p class="role">IAM 架构</p>
+          <p class="sees"><b>看到</b>A₁ + A₂</p>
+        </div>
+        <div class="seq-step">
+          <span class="agent">A₄</span>
+          <p class="role">迁移路径</p>
+          <p class="sees"><b>看到</b>前 3 块</p>
+        </div>
+        <div class="seq-step">
+          <span class="agent">A₅</span>
+          <p class="role">回滚与应急</p>
+          <p class="sees"><b>看到</b>前 4 块</p>
+        </div>
+        <div class="seq-step abs">
+          <span class="agent">A₆</span>
+          <p class="role">× 自愿弃权</p>
+          <p class="sees"><b>判断</b>方案已完整 · 边际价值低</p>
+        </div>
+      </div>
+      <div class="seq-legend">
+        <span>① 固定顺序 · 唯一外生结构</span>
+        <span>② 看到前序已完成产出</span>
+        <span>③ 自主选角 / 可弃权（内生）</span>
+      </div>
+    </div>
+
+    <p style="font-size:.8rem;color:var(--text-muted);margin:-.4em 0 0;">示意：按论文机制 reconstruct 的 L3 任务（零信任迁移）走查，用以说明「互补填充 + 末端弃权」如何发生；论文的实证形式是 Fig.4 角色热力图——16 个 Agent × 10 个任务涌现 <strong>115 个不同角色</strong>、弃权处打 ×，而非逐条 transcript。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">关键 nuance · 合作 ≠ 对话</div>
+      <p style="margin:.3em 0;">Sequential 下的「配合」是<strong>通过共享产物的间接协调</strong>（stigmergy 式）：Agent 之间不互相说话，而是读「目前共同作品的状态」、写下一段增量。这带来一个结构性后果——<strong>信息不对称</strong>：A₁ 信息最少（只有任务），Aₙ 信息最多（看过所有人），于是自然形成「<strong>前期打地基、后期补空位 / 修剪</strong>」的分工。也正因协调靠本任务内的累积产出，它<strong>不依赖跨任务记忆</strong>（不像 Shared 依赖会过时的角色历史）——这是它信息更新鲜、质量更高的根因之一。</p>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-threshold"><span class="sec-num">四</span>自组织是强模型的特权<a href="#sec-threshold" class="anchor">#</a></h2>
+    <p class="kicker">The Capability Threshold · 自主的分水岭</p>
+
+    <p>论文最实操、也最反直觉的发现：<strong>自组织不是免费的</strong>——它要求模型足够强。在自由（自组织）与固定角色两种运行方式间比较，出现了<strong>反转效应</strong>：</p>
+
+    <!-- ▼ 视觉三：能力反转 -->
+    <div class="reversal reveal">
+      <div class="rev good">
+        <span class="rev-eyebrow">强模型 · 自主有帮助</span>
+        <div class="rev-model">Claude Sonnet 4.6</div>
+        <div class="rev-delta">+3.5%</div>
+        <div class="rev-track"><span class="midline"></span><span class="fill" style="width:35%"></span></div>
+        <p class="rev-note">自由形态 Q=0.594 &gt; 固定角色 0.574——<strong>能力足以支撑自我反思与协调</strong>。</p>
+      </div>
+      <div class="rev bad">
+        <span class="rev-eyebrow">弱模型 · 自主有害</span>
+        <div class="rev-model">GLM-5</div>
+        <div class="rev-delta">−9.6%</div>
+        <div class="rev-track"><span class="midline"></span><span class="fill" style="width:48%"></span></div>
+        <p class="rev-note">自由形态 Q=0.519 &lt; 固定角色 0.574——<strong>低于阈值，刚性结构反而更好</strong>。</p>
+      </div>
+    </div>
+
+    <p>阈值要求三种能力同时具备：</p>
+    <ol>
+      <li><strong>自我反思</strong>——能评估自身胜任度（Claude 主动弃权率 8.6%，GLM-5 仅 0.8%）；</li>
+      <li><strong>深度推理</strong>——多步逻辑链；</li>
+      <li><strong>指令遵循</strong>——精确遵守协调协议。</li>
+    </ol>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">部署门禁</div>
+      <p style="margin:.3em 0;">不要把自组织<strong>无差别</strong>套到任何模型上。低于能力阈值时，放开自主会让质量<strong>反向劣化</strong>——此时保留刚性结构 / 人工 gate 才是对的。好消息：阈值会随基座模型变强而下移，<strong>自主协调的适用范围将持续扩大</strong>。</p>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-emergent"><span class="sec-num">五</span>涌现属性：角色、弃权与浅层级<a href="#sec-emergent" class="anchor">#</a></h2>
+    <p class="kicker">Emergence · 无设计者而自发生成</p>
+
+    <p>给最小脚手架后，系统自发产生三种组织现象——<strong>没有任何外部设计或预设角色</strong>：</p>
+
+    <!-- ▼ 涌现三联卡 -->
+    <div class="triad reveal">
+      <article class="em">
+        <div class="em-num">01</div>
+        <div class="em-big">5,006 <small>角色 / 8 Agent</small></div>
+        <h4 class="em-name">动态角色分化</h4>
+        <p class="em-desc">RSI→0：Agent 不固定位，而是<strong>每个任务重写自己的专长</strong>。N=4 时 75% 角色唯一，N=64 时 91%。</p>
+      </article>
+      <article class="em">
+        <div class="em-num">02</div>
+        <div class="em-big">38/60 <small>自愿弃权</small></div>
+        <h4 class="em-name">主动自弃权</h4>
+        <p class="em-desc">Sequential 中 38/60 非贡献者是<strong>自愿退出</strong>（内生）；Coordinator 中 60/60 全被<strong>指令排除</strong>。自愿弃权对应更高质量（0.875 vs 0.767）。</p>
+      </article>
+      <article class="em">
+        <div class="em-num">03</div>
+        <div class="em-big">1 → 2 <small>层级深度</small></div>
+        <h4 class="em-name">浅自组织层级</h4>
+        <p class="em-desc">从 4 到 64 Agent，层级深度仅从 1.0 涨到 2.0——系统偏好<strong>扁平结构</strong>，至多两层管理，无需外部指令。</p>
+      </article>
+    </div>
+
+    <h3 id="sec-scale">5.1 规模亚线性 &amp; 任务自适应</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>现象</th><th>数据</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td>规模不降质</td><td>64→256 Agent，Kruskal-Wallis H=1.84，<strong>p=0.61</strong></td><td>团队再大质量不退化</td></tr>
+          <tr><td>成本亚线性</td><td>8× Agent 仅 <strong>+11.8%</strong> 成本（CV=4.4%）</td><td>摊薄边际成本</td></tr>
+          <tr><td>内生成本优化</td><td>N=256 时约 <strong>45% Agent 自发闲置</strong></td><td>主动弃权即节流</td></tr>
+          <tr><td>任务越难结构越深</td><td>L1→L4 质量降 37.7%（d=22.9），但层级深度自发 <strong>1.22→1.56</strong></td><td>无需指令的结构自适应</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>闭源 vs 开源：DeepSeek v3.2 达到 Claude 的 <strong>95%</strong> L3 质量（−5.5%，p&lt;0.001），API 成本约 <strong>24× 便宜</strong>；在 L4 上甚至有占优趋势（+6.0%，p=0.082）。不同模型演化出不同策略——Claude 最大化角色多样性（1,272 角色，Gini=0.055），DeepSeek 在 Coordinator 下激进过滤（22.4% 闲置）换取最高单位 token 质量。</p>
+
+    <!-- 六 -->
+    <h2 id="sec-rings"><span class="sec-num">六</span>三环宪政框架：给自组织画边界<a href="#sec-rings" class="anchor">#</a></h2>
+    <p class="kicker">Constitutional Framework · 有界自主</p>
+
+    <p>自组织需要边界：近乎全自主的 Shared 最差（Q=0.503），有界自主的 Sequential 最好（Q=0.875）。论文据此提出<strong>三环宪政框架</strong>——越靠近「为什么」越多人类掌控，越靠近「怎么做」越多系统自主。</p>
+
+    <!-- ▼ 视觉四：三环框架 -->
+    <div class="rings reveal">
+      <div class="rings-emblem">
+        <svg viewBox="0 0 400 380" role="img" aria-label="三环宪政框架：从内到外，人类控制递减、系统自主递增">
+          <!-- Ring 3 外环（自主） -->
+          <circle cx="200" cy="180" r="158" fill="var(--accent-soft)" opacity=".35" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="2 5"/>
+          <!-- Ring 2 中环（人+系统） -->
+          <circle cx="200" cy="180" r="110" fill="var(--accent-soft)" opacity=".6" stroke="var(--accent)" stroke-width="1.6"/>
+          <!-- Ring 1 内环（仅人类） -->
+          <circle cx="200" cy="180" r="62" fill="var(--accent)" opacity=".92" stroke="var(--accent-deep)" stroke-width="2"/>
+          <!-- 环带标签 -->
+          <g font-family="var(--mono)" text-anchor="middle">
+            <text x="200" y="38" font-size="11" font-weight="700" fill="var(--accent-deep)">Ring 3 · 协议 / 批次 / 阈值</text>
+            <text x="200" y="54" font-size="9" fill="var(--text-muted)">全自主 · A/B 测试</text>
+            <text x="200" y="86" font-size="11" font-weight="700" fill="var(--accent-deep)">Ring 2 · 指标 / 治理 / 审计</text>
+            <text x="200" y="102" font-size="9" fill="var(--text-muted)">系统提议 · 人类批准</text>
+          </g>
+          <!-- 内核文字 -->
+          <g text-anchor="middle" font-family="var(--display)" fill="#fff">
+            <text x="200" y="170" font-size="13" font-weight="700">Ring 1</text>
+            <text x="200" y="190" font-size="11" font-weight="600">使命 · 价值</text>
+            <text x="200" y="206" font-size="11" font-weight="600">弃权权</text>
+          </g>
+          <text x="200" y="226" text-anchor="middle" font-size="9" fill="#fff" opacity=".85" font-family="var(--mono)">仅人类 · IMMUTABLE</text>
+          <!-- 控制梯度箭头（左侧） -->
+          <g font-family="var(--mono)" fill="var(--text-muted)" font-size="8.5">
+            <text x="30" y="180" text-anchor="middle">人类 👤</text>
+            <text x="200" y="362" text-anchor="middle">系统 / 自主 ⚙</text>
+            <path d="M40 168 L40 60 L185 60" fill="none" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="3 3" opacity=".6"/>
+            <path d="M200 350 L200 340 M196 344 L200 340 L204 344" fill="none" stroke="var(--text-muted)" stroke-width="1" opacity=".6"/>
+          </g>
+        </svg>
+      </div>
+      <div class="ring-legend">
+        <div class="rl">
+          <span class="badge">Ring 1</span>
+          <span><b>不可变核心 · 仅人类</b>：使命、价值观、弃权权。错误会在全系统级联。<span class="ctrl">👤 human only</span></span>
+        </div>
+        <div class="rl">
+          <span class="badge">Ring 2</span>
+          <span><b>标准 · 人 + 系统</b>：指标、治理、审计。<strong>系统提议，人类批准</strong>。<span class="ctrl">👤⚙ human + system</span></span>
+        </div>
+        <div class="rl">
+          <span class="badge">Ring 3</span>
+          <span><b>协议 · 全自主</b>：协调参数、批次大小、阈值。完全自主 + A/B 测试自调优。<span class="ctrl">⚙ autonomous</span></span>
+        </div>
+        <div class="ring-principle">
+          <b>原则：</b>越靠近「<b>为什么</b>」，越多人类掌控；越靠近「<b>怎么做</b>」，越多系统自主。
+        </div>
+      </div>
+    </div>
+
+    <!-- 七 -->
+    <h2 id="sec-recipe"><span class="sec-num">七</span>实操配方：使命、协议、模型——不是角色<a href="#sec-recipe" class="anchor">#</a></h2>
+    <p class="kicker">The Recipe · 落地四条</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">1</span><span><strong>定义使命与价值观，而非角色分配。</strong>LLM Agent 不受身体或固定技能束缚——预设角色是把人类局限复制到没有它的实体上。给使命 + 自由，<strong>使命相关性达 4.00/4.00</strong>；给角色描述反而达不到。</span></li>
+      <li><span class="ix">2</span><span><strong>选对协议。</strong>强模型中协议选择解释 <strong>44%</strong> 质量变异（Sequential vs Shared，同模型同任务）——协议是集体能力的<strong>放大器</strong>。</span></li>
+      <li><span class="ix">3</span><span><strong>投资模型质量，而非 Agent 数量。</strong>64→256 Agent 无质量提升（p=0.61）却 4.6× 成本；模型间质量极差 <strong>174%</strong>——「乐手」比「座位数」重要。</span></li>
+      <li><span class="ix">4</span><span><strong>组合模型，别只选一个。</strong>DeepSeek 达 Claude 95% 质量、24× 便宜；<strong>强模型打 L3–L4，高效模型打 L1–L2</strong>，没有任何单一模型在所有维度称王。</span></li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断</div>
+      <p style="margin:.3em 0;">「放弃层级与角色」不是无政府，而是<strong>有界自主</strong>。最小结构（固定顺序）+ 最大角色自由 + 足够强的模型，三者<strong>乘性叠加</strong>，胜过任何精心设计的组织图。编排的本质，正从「<strong>指挥</strong>」转向「<strong>设定让涌现发生的条件</strong>」。</p>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-fde"><span class="sec-num">八</span>FDE / ToB 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 落到客户现场</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>角色预设是反模式</strong>：客户多 Agent POC 里常见的「planner / coder / reviewer」固定角色设计，应让位于<strong>使命驱动 + 协议选择</strong>——这直接挑战现有框架（MetaGPT / ChatDev 类）的默认假设。</span></li>
+      <li><span class="ix">ii</span><span><strong>协议优先于拓扑</strong>：选型应问「协议是否可审计、弃权是否可追溯、产出是否可回滚」，而非一味堆 Agent 数或画更复杂的流程图。</span></li>
+      <li><span class="ix">iii</span><span><strong>能力阈值 = 部署门禁</strong>：弱模型场景必须保留刚性结构 / 人工 gate，否则自主反而劣化——这条直接影响交付 SLA 与质量承诺。</span></li>
+      <li><span class="ix">iv</span><span><strong>使命契约 = 新的需求规格</strong>：把「mission + values + 弃权权」写成不可变核心（Ring 1），对应企业的治理、合规与红线边界。</span></li>
+      <li><span class="ix">v</span><span><strong>多模型成本策略</strong>：强模型攻坚 + 开源模型摊量，是 ToB 降本的可行路径（24× 成本差，95% 质量）——把模型组合写进报价与架构。</span></li>
+    </ol>
+
+    <!-- 九 -->
+    <h2 id="sec-limits"><span class="sec-num">九</span>局限与保留<a href="#sec-limits" class="anchor">#</a></h2>
+    <div class="callout callout-warn">
+      <div class="callout-tag">读这份结论前先看这五条</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>LLM-as-judge</strong>：所有质量评估依赖 LLM 评判（GPT-4o / GPT-5.4），无人审，可能偏好冗长回答；计划做 50–100 任务人工校验。</li>
+        <li><strong>评判模型跨系列变更</strong>（GPT-4o → GPT-5.4）：系列内比较有效，<strong>跨系列绝对值不可直接比</strong>。</li>
+        <li><strong>合成任务</strong>：L1–L4 均为合成，缺真实业务工作流验证。</li>
+        <li><strong>Sequential 延迟 O(N)</strong>：大规模可能受限；分批 Sequential（K 个并行→下一组观察全部前序）是缓解方向。</li>
+        <li><strong>API 稳定性 / 限流</strong>：部分模型因限流降低完成率，引入潜在选择偏差。（多重比较经 Bonferroni 校正后主结论仍显著：α=0.0025。）</li>
+      </ul>
+    </div>
+
+    <!-- 十 -->
+    <h2 id="sec-open"><span class="sec-num">十</span>待验证问题<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 留给后续</p>
+
+    <ol class="threads">
+      <li>真实 ToB 工作流（合规分析、战略规划、事件响应）下，内生性悖论与 Sequential 优势是否依然成立？</li>
+      <li>分批 Sequential（K 个并行→下一组观察全部前序）能否兼顾 Sequential 的质量与 Broadcast 的速度？</li>
+      <li>能力阈值在具体业务模型组合上如何量化？哪类任务低于阈值、必须保留人工 gate？</li>
+      <li>三环框架作为<strong>在线治理机制</strong>——Ring 3 协议由系统经 A/B 测试自调优、Ring 1 使命由人锁定——能否在生产环境落地？</li>
+      <li>纵向（自改进 Agent）× 横向（Sequential 协调）的增益，是否真如论文所测是<strong>乘性复合</strong>？</li>
+    </ol>
+
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-06-21 初稿 · 视觉重构版 · 论文 arXiv:2603.28990
+    </p>
+
+    <div class="doc-footer">
+      <a href="index.html">← 论文索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenHuman Memory Tree 深度拆解 · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="../_assets/insight.css" />
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      OpenHuman Memory Tree<span class="brand-sub">开源拆解 · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>OpenHuman Memory Tree 深度拆解</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">反共识的本地 Memory 架构，及它没解决的十个问题</p>
+      <div class="doc-meta">
+        <span>2026-05-22</span>
+        <span>跨市场</span>
+        <span>架构拆解 · 个人 Agent · Memory</span>
+        <span>对内</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .9rem;">
+        项目：<a href="https://github.com/tinyhumansai/openhuman">tinyhumansai/openhuman</a>
+        &nbsp;·&nbsp;
+        Star 25.2k · Rust 64% / TS 32% · GPL-3.0 · 2026-05 GitHub Trending #1
+        <br />
+        官方文档：<a href="https://tinyhumans.gitbook.io/openhuman/features/memory-tree">Memory Trees | OpenHuman</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>OpenHuman 用「<strong>本地 Markdown vault + 确定性层级摘要</strong>」替换了行业默认的 vector DB，把「不可信、不可读」的记忆变成「可打开、可编辑、可纠错」的资产。它解决了 <em>冷启动慢 + 记忆黑盒 + vendor lock-in</em> 三个顽疾，但还没解决<strong>有损摘要不可回溯、Active Inquiry 缺失、单用户协作盲区、评测层空白</strong>这四个更深的问题——这正是后来者的差异化窗口。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页结论</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>架构反共识</strong>：拒绝 vector DB，用 deterministic pipeline + 三棵摘要树（source / topic / global）做语义压缩。</li>
+        <li><strong>关键护城河 = 可读性</strong>：同一份 chunk 既进 SQLite 也落 <code>.md</code> 到 Obsidian vault，用户改一行下次检索就对了。这是 vector DB 永远做不到的「信任修复」。</li>
+        <li><strong>冷启动 = 分钟级</strong>：118+ OAuth 一键连 + 20min auto-fetch loop。对比 Hermes「看你工作几周」、OpenClaw「等插件喂」是代际差。</li>
+        <li><strong>十个局限性</strong>分布在「摘要不可逆、hotness 滞后、时间扁平化、单用户隔离、score 单点信任、Active Inquiry 缺失、跨 chunk 召回、联邦协议缺位」等维度。</li>
+        <li><strong>对企业级 Memory OS 的直接启示</strong>：可读性 + 评测层 + Active Inquiry 是最大的三个未被占领的位势。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、项目定位 ========== -->
+    <h2 id="positioning"><span class="sec-num">一</span>项目定位与产品锚点<a href="#positioning" class="anchor">#</a></h2>
+
+    <p>OpenHuman 是一个开源的桌面 AI 助手（Rust + Tauri），自我定位为「个人 AI 超级智能体」。它的核心差异化不在模型，而在于一个反共识的设计：</p>
+
+    <blockquote>
+      <p><strong>Most agents start cold. OpenHuman reads you first.</strong></p>
+    </blockquote>
+
+    <p>灵感明确来自 Karpathy 的「LLM 知识库 / Obsidian wiki」工作流——一个手工维护的 <code>.md</code> 仓库给 AI 当上下文。OpenHuman 把这个过程<strong>自动化</strong>：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>OpenHuman 的回答</th></tr></thead>
+        <tbody>
+          <tr><td>记忆载体</td><td>本地 SQLite + Obsidian-compatible Markdown vault（双写）</td></tr>
+          <tr><td>数据源</td><td>118+ OAuth 集成（Gmail / Slack / GitHub / Notion / Linear / Stripe / ...）</td></tr>
+          <tr><td>填充节奏</td><td>20 分钟 auto-fetch 循环 + on-demand sync</td></tr>
+          <tr><td>桌面形态</td><td>有「脸」的 mascot：会说话、加入 Google Meet、后台持续思考</td></tr>
+          <tr><td>token 优化</td><td>TokenJuice 压缩层（HTML→MD、长 URL 缩、去重、CJK 保字素）—— 自称降本 80%</td></tr>
+          <tr><td>许可证</td><td>GPL-3.0（具传染性，企业商用需谨慎）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 二、Memory Tree 架构 ========== -->
+    <h2 id="architecture"><span class="sec-num">二</span>Memory Tree 架构拆解<a href="#architecture" class="anchor">#</a></h2>
+
+    <h3 id="philosophy">2.1 设计哲学：拒绝 vector soup</h3>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">原文引用</div>
+      <p style="margin:0;">"It is <strong>not a vector database with a thin 'memory' wrapper</strong>. It is a <strong>deterministic, bucket-sealed pipeline</strong> that turns the messy stream of your day into structured, queryable, summary-backed Markdown that lives on your machine."</p>
+    </div>
+
+    <p>这句话比 README 里所有营销词都重要。它在说三件事：</p>
+    <ol>
+      <li><strong>反对嵌入向量的概率检索</strong>：相似度 ≠ 相关度，黑盒检索不可调试。</li>
+      <li><strong>用「层级摘要」做语义压缩</strong>：从原始 chunk 经过若干次 LLM seal，最终落到一个紧凑、可读的树。</li>
+      <li><strong>把记忆变成「物」</strong>：你能 <code>cd ~/.openhuman/wiki && ls</code>，能 <code>vim</code> 改它。</li>
+    </ol>
+
+    <h3 id="pipeline">2.2 七段流水线</h3>
+
+    <div class="mermaid">
+flowchart TD
+  A[Source Adapters<br/>118+ OAuth 集成] --> B[Canonicalize<br/>统一 Markdown + provenance]
+  B --> C[Chunker<br/>deterministic ID · ≤3k token]
+  C --> D[Content Store<br/>原子写入 .md 文件]
+  D --> E[Store<br/>SQLite: chunks · scores · summaries · jobs]
+  E --> F[Score<br/>信号 + embedding + 实体抽取]
+  F --> G1[Source Tree<br/>per-source L0→L1→L2 级联]
+  F --> G2[Topic Tree<br/>per-entity 懒构建 by hotness]
+  F --> G3[Global Tree<br/>每 UTC 日一节点]
+  G1 --> H[Retrieval<br/>search · drill_down · topic · global · fetch]
+  G2 --> H
+  G3 --> H
+  style F fill:#ede9fe,stroke:#4338ca,stroke-width:2px,color:#1c1c1e
+  style H fill:#ecfdf5,stroke:#16a34a,stroke-width:2px,color:#1c1c1e
+    </div>
+
+    <h3 id="three-trees">2.3 三棵树的分工</h3>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">树一 · Source Tree</div>
+        <h4>每源一棵 · 时间序级联</h4>
+        <p>一个 Gmail label / 一个 Slack 频道 / 一个上传文档对应一棵树。新 leaf 进 L0 buffer，buffer 满或 stale-flush 触发 <code>seal</code> → 写 L1 摘要 → 向上级联到 L2、L3…</p>
+        <p><strong>回答：</strong>「这个频道最近发生了什么」</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">树二 · Topic Tree</div>
+        <h4>每实体一棵 · 按 hotness 懒构建</h4>
+        <p>路由器（topic_route）判断一个实体（人、项目、ticker、repo）是否「足够 hot」，决定是否给它开 topic tree。冷实体不浪费算力。</p>
+        <p><strong>回答：</strong>「关于这个客户 / 这个项目，所有跨源的信息」</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">树三 · Global Tree</div>
+        <h4>每天一节点 · 跨源全局摘要</h4>
+        <p>每天 UTC 00:00 调度器触发 <code>digest_daily</code>，把当天所有 ingest 汇总为一个节点；日子累积后向上汇总成周、月。</p>
+        <p><strong>回答：</strong>「上周整体最重要的事」</p>
+      </div>
+    </div>
+
+    <h3 id="engineering">2.4 工程实现要点</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>组件</th><th>实现</th><th>意义</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Durable job queue</strong></td><td>与 chunks 同库（SQLite），带 kind / payload / dedupe key / retry / scheduling window</td><td>断电 / 重启不丢任务；avoid 重复 seal</td></tr>
+          <tr><td><strong>Background workers</strong></td><td>3 个 worker + semaphore 限并发</td><td>避免 ingest 风暴打死 LLM API</td></tr>
+          <tr><td><strong>Chunk ID 决定论</strong></td><td>从内容哈希派生</td><td>同内容反复 ingest 不会重复存储；冷启动可重建</td></tr>
+          <tr><td><strong>Atomic content store</strong></td><td>每个 chunk 一个独立 <code>.md</code>（body + frontmatter tags）</td><td>vault 可被 Obsidian 直接打开；可 grep</td></tr>
+          <tr><td><strong>Workspace layout</strong></td><td><code>~/.openhuman/memory_tree/chunks.db</code> + <code>~/.openhuman/wiki/</code></td><td>用户可拷走、可备份、可改</td></tr>
+          <tr><td><strong>TokenJuice 压缩</strong></td><td>每次 tool 调用结果在进 LLM 前过滤；CJK 保字素</td><td>对中文场景友好（很多压缩库会切坏 UTF-8）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="lifecycle">2.5 一个 chunk 的生命周期</h3>
+
+    <ol>
+      <li><strong>采集</strong>：source adapter 拉到原始 payload（如 Gmail 一封信）。</li>
+      <li><strong>规范化</strong>：转 Markdown，附加 provenance（来源、时间、URL）。</li>
+      <li><strong>切片</strong>：按 ≤3k token 切，ID 来自内容哈希。</li>
+      <li><strong>落盘</strong>：写 <code>.md</code> 到 vault；写一行到 SQLite。</li>
+      <li><strong>打分</strong>：score 决定 <code>admitted</code> 或 <code>dropped</code>。</li>
+      <li><strong>入 buffer</strong>：admitted 的 chunk 进入对应 source 的 L0；可能触发 <code>seal</code>。</li>
+      <li><strong>topic 路由</strong>：检查实体 hotness，决定是否进 topic tree 的 buffer。</li>
+      <li><strong>全局日聚</strong>：UTC 00:00 进入当天 global node。</li>
+      <li><strong>检索</strong>：上层 agent 调 <code>search / drill_down / topic / global / fetch</code> 五个 retrieval API。</li>
+    </ol>
+
+    <!-- ========== 三、为什么聪明 ========== -->
+    <h2 id="strengths"><span class="sec-num">三</span>这个设计为什么聪明<a href="#strengths" class="anchor">#</a></h2>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">① 可读性 = 信任</div>
+      <p style="margin:0;">最被低估的设计决策。vector DB 错了你没法改，因为你看不见；Markdown 错了你 <code>vim</code> 改一行下次就对了。这把 <strong>memory 从「黑盒服务」变成「可拥有的资产」</strong>。Karpathy 2024 在 X 上反复强调这件事，OpenHuman 是第一个把它产品化的。</p>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">② 三棵树正交</div>
+      <p style="margin:0;">Source / Topic / Global 各回答完全不同维度的问题（"这个源"/"这个实体"/"这一天"），同一份原始 chunk 通过不同 buffer 进入不同树。<strong>检索时按问题类型选树</strong>，避免单棵巨型树的 fan-out 爆炸。</p>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">③ Hotness-driven 懒构建</div>
+      <p style="margin:0;">Topic tree 不预先建——只对高频实体投入摘要算力。<strong>避免「为冷实体过度建模」的浪费</strong>，长尾自然下沉到 source tree 即可。</p>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">④ 决定性 chunk ID</div>
+      <p style="margin:0;">从内容哈希派生 ID 意味着<strong>幂等 ingest + 可重建 + 可去重</strong>。这是 Mem0 / Letta 等 memory 中间件常常处理不干净的地方。</p>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">⑤ 冷启动时间的代际差</div>
+      <p style="margin:0;">官方 README 的对比表里 auto-fetch 一栏是 OpenHuman 唯一独占的 ✅。<strong>「连接账号 → 20 分钟后能答你」</strong> vs Hermes 的「看你工作几周」vs OpenClaw 的「等插件喂」是质变。</p>
+    </div>
+
+    <!-- ========== 四、十个局限性 ========== -->
+    <h2 id="limitations"><span class="sec-num">四</span>十个局限性（深度思考）<a href="#limitations" class="anchor">#</a></h2>
+
+    <p>下面这些不是 bug，是<strong>当前架构选择的必然代价</strong>，也是后来者的差异化窗口。</p>
+
+    <h3 id="l1">4.1 摘要级联的「有损压缩不可逆」</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ①</div>
+      <p style="margin:.3em 0 .5em;">L0 → L1 → L2 每次 <code>seal</code> 都是 LLM 压缩，<strong>信息单向丢失</strong>。一个被 score <code>dropped</code> 的 leaf，chunk row 留着但永远不进 retrieval。结果：</p>
+      <ul style="margin:.3em 0;">
+        <li>「我隐约记得三月份某封邮件提过这事」这种<strong>模糊回忆</strong>没法支持——因为它可能根本没被 admit，或者被压进了 L1 摘要的某句省略号里。</li>
+        <li>没有 vector 兜底意味着<strong>没有 graceful degradation</strong>。要么进树要么消失。</li>
+      </ul>
+      <p style="margin:0;"><strong>类比：</strong>有了「目录索引 + 章节摘要」，但丢了「全文搜索」。</p>
+    </div>
+
+    <h3 id="l2">4.2 Hotness 是滞后指标</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ②</div>
+      <p style="margin:0;">一个<strong>突然变重要</strong>的实体（新客户、突发项目）需要时间累积 hotness 才能获得 topic tree。反之，<strong>过去重要、现在静默</strong>的实体（去年完结的大客户）会「褪色」。缺少 explicit pinning（用户主动指认「这个人/项目对我永远重要」），全靠系统统计学。</p>
+    </div>
+
+    <h3 id="l3">4.3 时间维度的扁平化</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ③</div>
+      <p style="margin:0;">Global tree 每天一节点是<strong>粗粒度</strong>。回答「本周邮件 A 引发会议 B 进而触发 PR C」这种<strong>跨天 + 跨主题 + 因果序列推理</strong>，需要 retrieval 拼装多次。没有显式的<strong>事件因果图</strong>结构。</p>
+    </div>
+
+    <h3 id="l4">4.4 单用户隔离 = 协作盲区</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ④</div>
+      <p style="margin:0;">完全 local-first 是隐私优势，但意味着：</p>
+      <ul style="margin:.3em 0;">
+        <li>团队无法共享 memory（你的 Slack 频道总结只在你机器上）</li>
+        <li>多设备同步不在当前架构里</li>
+        <li>跨人「事实对齐」做不了（你看到的 vs 同事看到的可能不一致）</li>
+      </ul>
+      <p style="margin:0;"><strong>这是个人 Agent → 团队 Agent 的硬墙</strong>。</p>
+    </div>
+
+    <h3 id="l5">4.5 118+ 集成的长期维护负债</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑤</div>
+      <p style="margin:0;">每个集成 = 一个 OAuth + 一套 schema canonicalize 逻辑 + 一套 rate limit / 重试 / scope 变更适配。Composio 代理层是缓冲，但也是<strong>供应商风险</strong>——代理挂了 118 个连接都歪。也限制了「让我把内网 ERP 接进来」这种企业场景。</p>
+    </div>
+
+    <h3 id="l6">4.6 Score 函数是「单点信任」</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑥</div>
+      <p style="margin:0;">「admitted vs dropped」的判官就是 score 函数自身。如果它偏置（倾向短文本、低估代码 PR、低估反向决策），<strong>重要信息会被静默丢弃</strong>。没有公开的 evaluation harness 让用户验证「我的 memory 准不准、漏了什么」。</p>
+      <p style="margin:.6em 0 0;">这正是我们写过的 <a href="../insights/cross/person_mining_persona_distillation_2026-05.html">Person Mining</a> 里提到的<strong>评测金标空白</strong>——Fidelity / Coverage / Freshness / Safety / Trust 五个维度在 OpenHuman 几乎全空。</p>
+    </div>
+
+    <h3 id="l7">4.7 Active Inquiry 完全缺失</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑦ · 最关键</div>
+      <p style="margin:0;">OpenHuman 是<strong>纯被动挖掘</strong>——它只能拿到「已经被表达过的」信息。它<strong>不会反过来问你</strong>：</p>
+      <ul style="margin:.3em 0;">
+        <li>「7 月 12 日你换了供应商，前后邮件没解释，发生了什么？」</li>
+        <li>「Slack 里说要 push，但 PR 却 close 了，哪个是真实意图？」</li>
+        <li>「这个 PR 你 review 了三轮，平时只一轮，发生了什么？」</li>
+      </ul>
+      <p style="margin:0;">这是<a href="../insights/cross/person_mining_persona_distillation_2026-05.html#sec-2-6">Person Mining 那篇文章 2.6 节</a>里反复强调的关键差异点：<strong>42-60% 的隐性知识根本没被写下来过</strong>，被动挖掘碰不到它，只有 AI 在试图复现一个决策时<strong>主动追问</strong>才能挖出来。OpenHuman 缺这一层意味着它的天花板就是「显性知识 + 风格」。</p>
+    </div>
+
+    <h3 id="l8">4.8 跨 chunk 的「针尖召回」会丢</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑧</div>
+      <p style="margin:0;">≤3k token chunk + deterministic ID 意味着<strong>chunk 边界对回答质量影响巨大</strong>。跨 chunk 的实体共指、长链路推理依赖 topic tree 汇总，但 topic tree 是懒构建 + hotness-driven。<strong>冷门但关键的「针尖信息」可能永远不会被汇总</strong>，只能依赖运气走 <code>search</code> retrieval 命中。</p>
+    </div>
+
+    <h3 id="l9">4.9 端侧聚合风险（被 TechTimes 点出）</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑨</div>
+      <p style="margin:0;">同时持有用户的<strong>邮件 / 代码 / 日历 / 支付 / 通讯</strong>的 OAuth token，意味着客户端漏洞 = 整个数字身份暴露。"data lives local" 把云端风险转嫁到了用户的笔记本电脑。Mascot 持续录音 / 屏幕监控 / 加入会议的能力扩大了 attack surface。没看到 secure enclave / OS-level key storage 的明确承诺。</p>
+    </div>
+
+    <h3 id="l10">4.10 没有 Memory 联邦协议</h3>
+    <div class="callout callout-con">
+      <div class="callout-tag">局限 ⑩</div>
+      <p style="margin:0;">agentmemory backend 是好开端，但只是把 KV 存储桥过去。「Claude Code 和 OpenHuman 共享对项目的理解」仍需要双方<strong>各自构建索引</strong>。还没有跨 agent 的<strong>memory 联邦协议</strong>（schema、provenance、查询接口的标准化）。MCP 是工具协议，不是 memory 协议——这个空位还在。</p>
+    </div>
+
+    <!-- ========== 五、对企业级 Memory OS 的启示 ========== -->
+    <h2 id="implications"><span class="sec-num">五</span>对企业级 Memory OS 的启示<a href="#implications" class="anchor">#</a></h2>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">启示一</div>
+        <h4>可读性 = 产品级护城河</h4>
+        <p>vector DB 大家都做，<strong>Markdown vault + 用户可编辑</strong>是反共识但极强。企业版尤其如此：合规和审计同事必须能打开看。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示二</div>
+        <h4>冷启动时间才是 ToB Agent 真正的瓶颈</h4>
+        <p>不是 benchmark 分数。客户问 POC 周期能不能压到 1 周——20min auto-fetch 是这个问题的工程答案。国内云厂商的客户场景包应该参考这个节奏。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示三</div>
+        <h4>评测层是真正的空白</h4>
+        <p>OpenHuman 自己都没有「Memory 准不准、漏了什么」的评测 harness。这是 <a href="../insights/cross/person_mining_persona_distillation_2026-05.html">Person Mining</a> 里点出的「下注三」——做能力的副产物，最终建护城河。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示四</div>
+        <h4>Active Inquiry 是差异化锚点</h4>
+        <p>OpenHuman 之上叠加「会主动追问」的层，把 ToC 形态变成「<strong>有产能</strong>」的 ToB 形态——尤其适合离职交接、专家方法论提取这两个市场空位。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示五</div>
+        <h4>企业版需要补五件事</h4>
+        <ul>
+          <li>Multi-user + 权限层</li>
+          <li>Explicit pinning（用户指认重要实体）</li>
+          <li>跨设备同步（E2E 加密）</li>
+          <li>Score 可审计 / 可注入规则</li>
+          <li>内网系统接入（不依赖 Composio）</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示六</div>
+        <h4>Memory 联邦协议是下一个 MCP 时刻</h4>
+        <p>MCP 解决了 tool 协议，但 memory 协议还没出现。谁先定义这个标准（schema + provenance + query），谁就是下一代基础设施。</p>
+      </div>
+    </div>
+
+    <!-- ========== 六、待验证问题 ========== -->
+    <h2 id="open-questions"><span class="sec-num">六</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>「层级摘要 + 决定性切片」 vs 「vector 检索」 在<strong>模糊召回</strong>任务上的差距有多大？OpenHuman 是否会被混合架构（Markdown vault + 旁挂 embedding 索引）打败？</li>
+      <li>Topic tree 的 hotness 函数实际表现如何？「热度衰减 + 突然变热」的过渡时间是多少？能否替换成<strong>用户行为信号</strong>（你最近看了谁的邮件 = 谁更重要）？</li>
+      <li>当 vault 规模到 10 万 / 100 万 <code>.md</code> 文件级，<code>seal</code> 的递归成本和 SQLite 索引会先在哪里崩？</li>
+      <li>GPL-3.0 对企业版分发的限制有多硬？是否会逼国内大厂做<strong>从头实现的克隆版</strong>而不是 fork？</li>
+      <li>Active Inquiry 能否作为「<strong>独立 SaaS 层</strong>」叠加在 OpenHuman 之上而不分叉？（即「OpenHuman 当 memory 引擎，我做追问层」的产品形态是否成立？）</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-05-22 初稿（基于 v0.54.0 / 2026-05-19 release）<br />
+      参考资料：<a href="https://tinyhumans.gitbook.io/openhuman/features/memory-tree">Memory Trees gitbook</a> · <a href="https://github.com/tinyhumansai/openhuman/blob/main/gitbooks/features/obsidian-wiki/memory-tree.md">memory-tree.md 源码</a> · <a href="https://alphasignalai.substack.com/p/how-openhuman-works-and-how-to-set">alphasignal 拆解</a>
+    </p>
+
+    <div class="doc-footer">
+      <a href="index.html">← 开源分析索引</a>
+      &nbsp;·&nbsp;
+      <a href="../index.html">← 首页</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>
