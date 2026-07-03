@@ -299,8 +299,16 @@ body {
 .featured-eyebrow { display: flex; align-items: center; gap: .6rem; margin-bottom: 1rem; }
 .featured-badge {
   font-family: var(--mono); font-size: .58rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--void); background: var(--mint-bright); padding: .25em .6em; border-radius: 5px;
+  color: var(--mint-bright); background: none; padding: 0; border: none; border-radius: 0;
+  display: inline-flex; align-items: center; gap: .45em;
 }
+.featured-badge::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mint-bright);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--mint-bright) 70%, transparent);
+  animation: live 2.2s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) { .featured-badge::before { animation: none; } }
 .featured-type { font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; text-transform: uppercase; color: var(--sky-muted); }
 .featured-title { font-family: var(--display); font-weight: 600; font-size: 1.5rem; line-height: 1.26; letter-spacing: -.012em; margin: 0 0 1rem; color: var(--sky-text); transition: color .2s; }
 .featured-card:hover .featured-title { color: var(--coral-soft); }
