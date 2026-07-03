@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude for the legal industry：Office + MCP + 插件生态 · FDE 深度解读</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页 accent：archival deep blue（避开 info=#2563eb 与其他已登记色） */
+  :root {
+    --accent: #0369a1;
+    --accent-deep: #075985;
+    --accent-ink: #0c4a6e;
+    --accent-soft: color-mix(in srgb, #0369a1 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #38bdf8;
+    --accent-soft: color-mix(in srgb, #0369a1 26%, #1a1a22);
+    --accent-ink: #7dd3fc;
+  }
+
+  /* ═════════ 视觉一：三层堆栈（stack） · 法务 Agent 公式 ═════════ */
+  .stack { margin: 1.9em 0; display: flex; flex-direction: column; gap: .8rem; }
+  .stack-layer {
+    border: 1.5px solid var(--border-strong); border-radius: 14px;
+    padding: 1rem 1.2rem 1.1rem; background: var(--surface);
+    position: relative; transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .stack-layer:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 26px rgba(0,0,0,.06); }
+  .stack-layer.s-surface { background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 82%, transparent)); border-color: var(--accent); }
+  .stack-layer.s-assets { background: var(--surface); }
+  .stack-layer.s-connect { background: var(--bg-soft); border-style: dashed; }
+  .stack-head { display: flex; align-items: center; gap: .8rem; margin-bottom: .5rem; flex-wrap: wrap; }
+  .stack-num {
+    font-family: var(--display); font-style: italic; font-weight: 500; font-size: 1.6rem;
+    color: var(--accent); line-height: 1; width: 1.8em; text-align: center;
+  }
+  .stack-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); }
+  .stack-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .68rem; letter-spacing: .1em; color: var(--text-muted); text-transform: uppercase; margin-top: .1em; }
+  .stack-tag { font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); border: 1px solid var(--accent); padding: .18em .55em; border-radius: 999px; margin-left: auto; }
+  .stack-items { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .35rem; }
+  .stack-item {
+    font-family: var(--mono); font-size: .78rem; color: var(--text-soft);
+    border: 1px solid var(--border); padding: .32em .7em; border-radius: 6px;
+    background: color-mix(in srgb, var(--surface) 65%, transparent);
+  }
+  .stack-item b { color: var(--accent); font-weight: 600; margin-right: .3em; }
+  .stack-arrow { display: flex; justify-content: center; color: var(--accent); font-family: var(--display); font-size: 1.4rem; line-height: 1; opacity: .6; }
+
+  /* ═════════ 视觉二：MCP 连接器八分类放射图（map） ═════════ */
+  .mcp-map { display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 2rem; align-items: center; margin: 2em 0; }
+  @media (max-width: 900px) { .mcp-map { grid-template-columns: 1fr; } .mcp-emblem { max-width: 380px; margin: 0 auto; } }
+  .mcp-emblem svg { width: 100%; height: auto; display: block; }
+  .mcp-emblem text { font-family: var(--mono); }
+  .mcp-emblem .center text { font-family: var(--display); }
+  .mcp-legend { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+  @media (max-width: 640px) { .mcp-legend { grid-template-columns: 1fr; } }
+  .mcp-cat {
+    border: 1px solid var(--border); border-radius: 10px; padding: .55rem .75rem;
+    background: var(--surface); font-size: .82rem; color: var(--text-soft);
+    display: flex; align-items: baseline; gap: .5rem;
+  }
+  .mcp-cat b { font-family: var(--mono); color: var(--accent); font-size: .7rem; font-weight: 700; width: 1.2em; }
+  .mcp-cat span { font-family: var(--display); color: var(--text); font-weight: 700; font-size: .86rem; margin-right: .35em; }
+
+  /* pulse 呼吸圈 */
+  .live-pulse { transform-origin: center; animation: live-pulse 3.2s ease-in-out infinite; }
+  @keyframes live-pulse { 0%,100% { opacity: .35; transform: scale(1); } 50% { opacity: .1; transform: scale(1.18); } }
+  .orbit-slow { transform-origin: 200px 200px; animation: orbit-slow 30s linear infinite; }
+  @keyframes orbit-slow { to { transform: rotate(360deg); } }
+
+  /* ═════════ 视觉三：三种打包并列（duo/tri） · Skill/Plugin/Managed Agent ═════════ */
+  .tri { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.9em 0; }
+  @media (max-width: 820px) { .tri { grid-template-columns: 1fr; } }
+  .tri-card {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1.15rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .55rem;
+    border-top: 3px solid var(--c, var(--accent)); transition: transform .2s, box-shadow .2s;
+    position: relative; overflow: hidden;
+  }
+  .tri-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,.07); }
+  .tri-card.t-skill { --c: var(--accent); }
+  .tri-card.t-plugin { --c: #ca8a04; }
+  .tri-card.t-managed { --c: #7c3aed; }
+  .tri-eyebrow {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--c); font-weight: 700;
+  }
+  .tri-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; }
+  .tri-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .64rem; letter-spacing: .05em; color: var(--text-muted); margin-top: .15em; }
+  .tri-fig { display: flex; align-items: center; justify-content: center; padding: .8rem 0 .5rem; }
+  .tri-fig svg { width: 96px; height: 68px; color: var(--c); }
+  .tri-body { font-size: .88rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .tri-kv {
+    margin: .3rem 0 0; padding-top: .6rem; border-top: 1px dashed var(--border-strong);
+    font-family: var(--mono); font-size: .74rem; color: var(--text-muted); line-height: 1.55;
+  }
+  .tri-kv b { color: var(--c); margin-right: .4em; }
+
+  /* ═════════ 视觉四：进化机制评估条（evo） · autonomous 与否 ═════════ */
+  .evo { margin: 1.9em 0; display: flex; flex-direction: column; gap: .5rem; }
+  .evo-row {
+    display: grid; grid-template-columns: 1.4fr 1.4fr auto; gap: 1rem; align-items: center;
+    padding: .85rem 1.05rem; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .evo-row:hover { transform: translateX(4px); border-color: var(--accent); }
+  @media (max-width: 720px) { .evo-row { grid-template-columns: 1fr; } }
+  .evo-mech { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); }
+  .evo-mech .en { font-family: var(--mono); font-weight: 500; font-size: .68rem; color: var(--text-muted); display: block; margin-top: .1em; }
+  .evo-mean { font-size: .87rem; color: var(--text-soft); line-height: 1.5; }
+  .evo-badge {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    padding: .3em .8em; border-radius: 999px; font-weight: 700; white-space: nowrap;
+    display: flex; align-items: center; gap: .3em;
+  }
+  .evo-badge.no { color: var(--con); background: var(--con-soft); border: 1px solid var(--con); }
+  .evo-badge.semi { color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn); }
+  .evo-badge.human { color: var(--info); background: var(--info-soft); border: 1px solid var(--info); }
+  .evo-badge svg { width: 12px; height: 12px; }
+  .evo-verdict {
+    margin-top: 1rem; padding: .85rem 1.1rem;
+    background: var(--accent-soft); border-left: 3px solid var(--accent); border-radius: 6px;
+    font-size: .92rem; color: var(--accent-ink); line-height: 1.6;
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .live-pulse, .orbit-slow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Claude for Legal<span class="brand-sub">跨市场 · Anthropic · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Claude for the legal industry<br /><span class="en">Office 内嵌 + MCP + 12 插件生态</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Anthropic 法务方案深度解读 · 系统竞赛而非模型竞赛 · 对 ToB/FDE 的映射</p>
+      <div class="doc-meta">
+        <span>2026-05-12</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>行业方案</span>
+        <span>MCP</span>
+        <span>可运营 Agent 资产</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">20<small>+</small></div><div class="lab">MCP 连接器<br />法务全栈接入</div></div>
+        <div class="hero-stat"><div class="num">12</div><div class="lab">practice-area 插件<br />角色化任务包</div></div>
+        <div class="hero-stat"><div class="num">4</div><div class="lab">Office 工作面<br />Word/Outlook/Excel/PPT</div></div>
+        <div class="hero-stat"><div class="num">4.7</div><div class="lab">Opus 版本<br />长文档法务推理</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        官方：<a href="https://claude.com/blog/claude-for-the-legal-industry" target="_blank" rel="noopener">博客</a> ·
+        <a href="https://github.com/anthropics/claude-for-legal" target="_blank" rel="noopener">GitHub / claude-for-legal</a> ·
+        <a href="https://claude.ai/directory/connectors" target="_blank" rel="noopener">Connectors Directory</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Anthropic 把法务场景打成 <strong>「Office 内嵌 + MCP 接全栈法务系统 + 12 个 practice-area 插件 + 开放生态」</strong> 的标准打法；竞争焦点已从模型能力转向 <strong>可信、权限边界、playbook 级 Skills、可运营 Agent 资产</strong>——对 ToB 进化 POC 的参考价值在于「连接器 + 领域插件 + 治理」三件套，而非单纯 memory/skill 算法。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>产品形态</strong>：法务工作在哪里发生，Claude 就跟到哪里——Office 四件套 + Cowork + Projects + Scheduled</li>
+        <li><strong>连接器地图</strong>：CLM / VDR / DMS / eDiscovery / 法律研究 / 权威内容——按法务技术栈分层，非通用 chat</li>
+        <li><strong>Practice-area 插件</strong>：<code>setup interview</code> 采集 playbook 与升级链，写入用户本机 <code>CLAUDE.md</code></li>
+        <li><strong>「进化」= 可迭代资产 + 治理</strong>，不是黑盒 mem 自改；插件安装前有安全/许可/新鲜度审查</li>
+        <li><strong>与 Harvey / CoCounsel 竞合共存</strong>：MCP 互操作而非一家通吃</li>
+        <li><strong>ToB 启示</strong>：先画系统连接器清单，再谈 skill/mem；治理即产品；scheduled tasks 是可度量闭环</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-what"><span class="sec-num">一</span>发布了什么<a href="#sec-what" class="anchor">#</a></h2>
+    <p class="kicker">The Launch · 事实摘要</p>
+
+    <h3 id="sec-what-surface">1.1 工作面：法务工作在哪里，Claude 就跟到哪里</h3>
+    <ul>
+      <li><strong>Microsoft 365 四件套内嵌</strong>（Word / Outlook / Excel / PowerPoint），跨应用携带上下文：Word 红线 → Outlook 附函 → Excel 交割清单 → PPT 董事会摘要。</li>
+      <li><strong>Claude Cowork</strong>：跨多文档批量任务（合同分拣、上线法务评审、监管动态董事会备忘）。</li>
+      <li><strong>Projects</strong>：按 matter 持久化先例与历史草稿。</li>
+      <li><strong>Scheduled tasks</strong>：周期性任务（监管周报、intake 分拣）。</li>
+    </ul>
+
+    <h3 id="sec-what-mcp">1.2 20+ MCP 连接器（按法务技术栈分层）</h3>
+
+    <!-- ▼ 视觉二：MCP 八分类地图 -->
+    <div class="mcp-map reveal">
+      <div class="mcp-emblem">
+        <svg viewBox="0 0 400 400" role="img" aria-label="MCP 连接器八分类围绕 Claude 编排中枢">
+          <defs>
+            <radialGradient id="cnHub" cx="50%" cy="50%" r="55%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".22"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- 呼吸中心 -->
+          <circle cx="200" cy="200" r="70" fill="url(#cnHub)"/>
+          <circle cx="200" cy="200" r="52" class="live-pulse" style="fill:var(--accent)" opacity=".18"/>
+          <g class="center" style="color:var(--accent)">
+            <circle cx="200" cy="200" r="46" style="fill:var(--surface)" stroke="currentColor" stroke-width="2"/>
+            <text x="200" y="196" text-anchor="middle" font-size="17" font-weight="700" style="fill:var(--accent-ink)" stroke="none">Claude</text>
+            <text x="200" y="215" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">编排 · MCP Host</text>
+          </g>
+          <!-- 八条辐条 + 节点：CLM/VDR/DMS/eDisc/研究/权威/技能/公益 -->
+          <g class="orbit-slow" style="transform-origin:200px 200px">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+              <!-- 8 spokes -->
+              <line x1="200" y1="200" x2="200" y2="72"/>
+              <line x1="200" y1="200" x2="291" y2="109"/>
+              <line x1="200" y1="200" x2="328" y2="200"/>
+              <line x1="200" y1="200" x2="291" y2="291"/>
+              <line x1="200" y1="200" x2="200" y2="328"/>
+              <line x1="200" y1="200" x2="109" y2="291"/>
+              <line x1="200" y1="200" x2="72" y2="200"/>
+              <line x1="200" y1="200" x2="109" y2="109"/>
+            </g>
+          </g>
+          <!-- 节点圆 + 标签（不随转动） -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <g><circle cx="200" cy="60" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="200" y="58" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">CLM</text><text x="200" y="70" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Ironclad</text></g>
+            <g><circle cx="300" cy="100" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="300" y="98" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">VDR</text><text x="300" y="110" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Datasite</text></g>
+            <g><circle cx="340" cy="200" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="340" y="198" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">DMS</text><text x="340" y="210" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">iManage</text></g>
+            <g><circle cx="300" cy="300" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="300" y="298" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">eDisc</text><text x="300" y="310" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Relativity</text></g>
+            <g><circle cx="200" cy="340" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="200" y="338" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">研究</text><text x="200" y="350" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Midpage</text></g>
+            <g><circle cx="100" cy="300" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="100" y="298" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">权威</text><text x="100" y="310" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">CoCounsel</text></g>
+            <g><circle cx="60" cy="200" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="60" y="198" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">技能</text><text x="60" y="210" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Lawve</text></g>
+            <g><circle cx="100" cy="100" r="24" stroke-width="2" style="fill:var(--surface)"/><text x="100" y="98" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none">公益</text><text x="100" y="110" text-anchor="middle" font-size="7" style="fill:var(--text-muted)" stroke="none">Free Law</text></g>
+          </g>
+        </svg>
+      </div>
+      <div class="mcp-legend">
+        <div class="mcp-cat"><b>①</b><span>CLM</span>Definely · Docusign · Ironclad</div>
+        <div class="mcp-cat"><b>②</b><span>VDR</span>Box · Datasite</div>
+        <div class="mcp-cat"><b>③</b><span>DMS</span>iManage · NetDocuments</div>
+        <div class="mcp-cat"><b>④</b><span>eDiscovery</span>Consilio · Everlaw · Relativity</div>
+        <div class="mcp-cat"><b>⑤</b><span>法律研究</span>Legal Data Hunter · Midpage · Trellis</div>
+        <div class="mcp-cat"><b>⑥</b><span>可信内容</span>Thomson Reuters CoCounsel</div>
+        <div class="mcp-cat"><b>⑦</b><span>技能/专家</span>Lawve AI · The L Suite</div>
+        <div class="mcp-cat"><b>⑧</b><span>公益/自助</span>Free Law · Courtroom5</div>
+      </div>
+    </div>
+
+    <h3 id="sec-what-plugin">1.3 12 个 practice-area 插件</h3>
+    <p>每个插件启动有 <strong>setup interview</strong>，采集 playbook、升级链、风险偏好、文风，使输出非泛化。覆盖 Commercial / Corporate / Employment / Privacy / Product / Regulatory / AI Governance / IP / Litigation / Law Student / Legal Clinic / Legal Builder Hub。部分插件提供 <strong>cookbook → Managed Agents</strong>（Commercial / Corporate / Litigation / Product 等）。</p>
+
+    <h3 id="sec-what-eco">1.4 开放生态与双向集成</h3>
+    <ul>
+      <li>插件与 skill 基于开放协议；Box、Legal Quants、Lawve、Thomson Reuters 等已贡献。</li>
+      <li><strong>CoCounsel 基于 Claude Agent SDK 重建</strong>；本次实现 <strong>双向</strong> MCP 集成（Harvey、Solve Intelligence 同理）。</li>
+      <li>强调 <strong>Opus 4.7</strong> 在长文档法务推理上的能力；合作伙伴引用 BigLaw Bench、引用忠实度等垂直指标。</li>
+    </ul>
+
+    <!-- 二 -->
+    <h2 id="sec-arch"><span class="sec-num">二</span>架构与机制拆解<a href="#sec-arch" class="anchor">#</a></h2>
+    <p class="kicker">Three-Layer Stack · 法务 Agent 公式</p>
+
+    <!-- ▼ 视觉一：三层堆栈 -->
+    <div class="stack reveal">
+      <div class="stack-layer s-surface">
+        <div class="stack-head">
+          <div class="stack-num">Ⅰ</div>
+          <div class="stack-name">工作面层 <span class="en">Surface</span></div>
+          <div class="stack-tag">高频动作在此</div>
+        </div>
+        <p style="margin:.15em 0 .35em;font-size:.9rem;color:var(--text-soft);">保证律师在现有工具链完成动作，降低 adoption 摩擦。</p>
+        <div class="stack-items">
+          <div class="stack-item"><b>Office 内嵌</b>Word / Outlook / Excel / PPT</div>
+          <div class="stack-item"><b>Cowork</b>跨文档批量任务</div>
+          <div class="stack-item"><b>Projects</b>matter 级持久上下文</div>
+          <div class="stack-item"><b>Scheduled</b>周期性任务</div>
+        </div>
+      </div>
+      <div class="stack-arrow">↓</div>
+      <div class="stack-layer s-assets">
+        <div class="stack-head">
+          <div class="stack-num">Ⅱ</div>
+          <div class="stack-name">可运营资产层 <span class="en">Assets</span></div>
+          <div class="stack-tag">播报 / 复用</div>
+        </div>
+        <p style="margin:.15em 0 .35em;font-size:.9rem;color:var(--text-soft);">把律所/企业 playbook、升级链、文风编码为可复用指令；插件 = 角色化任务包 + 启动访谈个性化。</p>
+        <div class="stack-items">
+          <div class="stack-item"><b>Skills</b>可执行 SOP</div>
+          <div class="stack-item"><b>Practice-area Plugins × 12</b>NDA / M&amp;A / Litigation …</div>
+          <div class="stack-item"><b>Setup Interview</b>写入本机 CLAUDE.md</div>
+        </div>
+      </div>
+      <div class="stack-arrow">↓</div>
+      <div class="stack-layer s-connect">
+        <div class="stack-head">
+          <div class="stack-num">Ⅲ</div>
+          <div class="stack-name">连接与治理层 <span class="en">Connectors &amp; Governance</span></div>
+          <div class="stack-tag">scoped to permissions</div>
+        </div>
+        <p style="margin:.15em 0 .35em;font-size:.9rem;color:var(--text-soft);">matter 级真实数据接进 Agent，强调权限边界、审计、marketplace 审查。</p>
+        <div class="stack-items">
+          <div class="stack-item"><b>MCP Connectors × 20+</b>CLM / VDR / DMS / eDiscovery / 研究</div>
+          <div class="stack-item"><b>权限 &amp; 审计</b>Enterprise 合规向</div>
+          <div class="stack-item"><b>Open Directory</b>社区 skill 安装前审查</div>
+        </div>
+      </div>
+    </div>
+
+    <h3 id="sec-arch-evo">2.1 「进化」在这篇文章里如何体现</h3>
+    <p>文章 <strong>没有</strong> 宣传 Hermes 式 autonomous self-evolution，而是围绕「可迭代、可审计、可扩展的 Agent 资产」组织。</p>
+
+    <!-- ▼ 视觉四：进化机制评估条 -->
+    <div class="evo reveal">
+      <div class="evo-row">
+        <div class="evo-mech">Skills = team playbooks<span class="en">机构沉淀，Agent 执行时引用</span></div>
+        <div class="evo-mean">人工/机构定义的资产，Agent 只是「按图执行」；不涉及运行时改写。</div>
+        <span class="evo-badge no">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="3" x2="9" y2="9"/><line x1="9" y1="3" x2="3" y2="9"/></svg>
+          非自动
+        </span>
+      </div>
+      <div class="evo-row">
+        <div class="evo-mech">Plugin Setup Interview<span class="en">每次部署校准团队规则</span></div>
+        <div class="evo-mean">通过访谈把组织规则注入 Agent，本质是配置型个性化，不是学习。</div>
+        <span class="evo-badge human">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="6" cy="4" r="2"/><path d="M2 11a4 4 0 0 1 8 0"/></svg>
+          人工配置
+        </span>
+      </div>
+      <div class="evo-row">
+        <div class="evo-mech">Legal Builder Hub<span class="en">社区 skill 安装前审查</span></div>
+        <div class="evo-mean">安全 / 许可 / 新鲜度审查——治理型「进化」，非黑盒自改。</div>
+        <span class="evo-badge semi">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M6 2v4l2.5 2.5"/><circle cx="6" cy="6" r="4"/></svg>
+          治理型
+        </span>
+      </div>
+      <div class="evo-row">
+        <div class="evo-mech">合作伙伴「self-improving systems」<span class="en">Legora 等厂商侧工程迭代</span></div>
+        <div class="evo-mean">生态方在自家系统内做工程化迭代，非 Claude 内核自动进化。</div>
+        <span class="evo-badge no">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="3" x2="9" y2="9"/><line x1="9" y1="3" x2="3" y2="9"/></svg>
+          非 Claude
+        </span>
+      </div>
+      <div class="evo-row">
+        <div class="evo-mech">Opus 4.7 + 垂直评测<span class="en">BigLaw Bench / 引用忠实度</span></div>
+        <div class="evo-mean">模型代际升级，按发布节奏推进；不是环境驱动进化。</div>
+        <span class="evo-badge no">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="3" y1="3" x2="9" y2="9"/><line x1="9" y1="3" x2="3" y2="9"/></svg>
+          代际升级
+        </span>
+      </div>
+    </div>
+
+    <div class="evo-verdict">
+      <strong>结论：</strong>Anthropic 法务路线的「进化」= <strong>可迭代、可审计、可扩展的 Agent 资产体系</strong>（skill / plugin / connector）+ <strong>模型版本升级</strong>；企业关心的仍是「人审、权限、可追溯」，与 ToB 治理分级一致。
+    </div>
+
+    <h3 id="sec-arch-harvey">2.2 与 Harvey / Thomson Reuters 的竞合</h3>
+    <ul>
+      <li><strong>竞合共存</strong>：Harvey connector 进 Claude；CoCounsel 基于 Claude SDK 又反向接入 Claude。</li>
+      <li>平台策略：<strong>Claude 做编排与工作面 + 垂直厂商做权威内容与垂直工作流</strong>，通过 MCP 互操作而非一家通吃。</li>
+    </ul>
+
+    <!-- 三 -->
+    <h2 id="sec-impl"><span class="sec-num">三</span>核心实现拆解（剧透式）<a href="#sec-impl" class="anchor">#</a></h2>
+    <p class="kicker">Under the Hood · 三种打包形态</p>
+
+    <p>法务方案在工程上 <strong>几乎无业务后端</strong>：开源仓 <a href="https://github.com/anthropics/claude-for-legal" target="_blank" rel="noopener">claude-for-legal</a> 主体是 <strong>可安装配置包</strong>（JSON + Markdown + MCP URL）。同一套 Markdown 资产被打包成三种运行时形态：</p>
+
+    <!-- ▼ 视觉三：三种打包并列 -->
+    <div class="tri reveal">
+      <div class="tri-card t-skill">
+        <div class="tri-eyebrow">Runtime · Interactive</div>
+        <h4 class="tri-name">Skill<span class="en">skills/*/SKILL.md</span></h4>
+        <div class="tri-fig">
+          <svg viewBox="0 0 96 68" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Skill：Markdown 表 SOP">
+            <rect x="8" y="8" width="80" height="52" rx="4"/>
+            <line x1="16" y1="20" x2="70" y2="20"/>
+            <line x1="16" y1="30" x2="60" y2="30"/>
+            <line x1="16" y1="40" x2="66" y2="40"/>
+            <line x1="16" y1="50" x2="52" y2="50"/>
+            <circle cx="76" cy="14" r="2" fill="currentColor"/>
+          </svg>
+        </div>
+        <p class="tri-body">YAML frontmatter + Markdown 步骤。<strong>无 if/else 业务代码</strong>，分支由 LLM 读文执行。</p>
+        <div class="tri-kv"><b>装载</b>Claude Code 扫描 → 匹配任务时注入正文</div>
+      </div>
+
+      <div class="tri-card t-plugin">
+        <div class="tri-eyebrow">Package · Distribution</div>
+        <h4 class="tri-name">Plugin<span class="en">practice-area 目录</span></h4>
+        <div class="tri-fig">
+          <svg viewBox="0 0 96 68" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Plugin：目录集合">
+            <rect x="10" y="14" width="70" height="46" rx="4"/>
+            <path d="M10 22h70"/>
+            <path d="M22 32h20M22 42h30M22 52h16"/>
+            <rect x="70" y="8" width="18" height="10" rx="2" style="fill:var(--surface)"/>
+            <path d="M74 13h10"/>
+          </svg>
+        </div>
+        <p class="tri-body">目录内含 <code>plugin.json</code> + <code>.mcp.json</code> + <code>skills/</code> + <code>agents/</code> + <code>hooks/</code>。</p>
+        <div class="tri-kv"><b>分发</b>Legal Marketplace 一键安装 · 12 领域插件</div>
+      </div>
+
+      <div class="tri-card t-managed">
+        <div class="tri-eyebrow">Deploy · Programmable</div>
+        <h4 class="tri-name">Managed Agent<span class="en">cookbooks/*/agent.yaml</span></h4>
+        <div class="tri-fig">
+          <svg viewBox="0 0 96 68" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="Managed Agent：YAML API 部署">
+            <rect x="8" y="12" width="42" height="44" rx="4"/>
+            <line x1="14" y1="22" x2="42" y2="22"/>
+            <line x1="14" y1="32" x2="38" y2="32"/>
+            <line x1="14" y1="42" x2="42" y2="42"/>
+            <path d="M50 34h20l-6-6M64 40l6-6"/>
+            <circle cx="82" cy="34" r="8"/>
+            <path d="M78 34l3 3 5-6"/>
+          </svg>
+        </div>
+        <p class="tri-body">YAML 包装同一套 <code>agents/*.md</code>，供 <strong>Claude Platform API</strong> 部署定时任务（renewal-watcher 等）。</p>
+        <div class="tri-kv"><b>约束</b>Orchestrator 本地工具 · MCP/Write 放 subagent</div>
+      </div>
+    </div>
+
+    <h3 id="sec-impl-path">3.1 主路径（一次 <code>/nda-review</code>）</h3>
+    <ol>
+      <li>用户从 Legal Marketplace 安装 → Claude Code <strong>扫描</strong> <code>plugin.json</code> / <code>skills</code> / <code>.mcp.json</code> → <strong>拉起</strong> Ironclad / DocuSign 等 HTTP MCP。</li>
+      <li>用户 <code>/nda-review</code> + 合同 → 路由加载 <code>nda-review/SKILL.md</code> → 模型按正文「先读 config 里 NDA playbook」→ <code>mcp__ironclad__*</code> 查条款 → 输出 <strong>GREEN / YELLOW / RED</strong>。</li>
+      <li>Managed Agents（<code>managed-agent-cookbooks/*.yaml</code>）把同一套 <code>agents/*.md</code> 用 YAML 包一层，供 Claude Platform API 部署——Cowork 交互插件与 API 定时任务是 <strong>同一套 Markdown 资产、两种运行时</strong>。</li>
+    </ol>
+
+    <h3 id="sec-impl-diff">3.2 与「表面叙事」的差异</h3>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>对外话术</th><th>代码层现实</th></tr></thead>
+        <tbody>
+          <tr><td>「12 个法务 AI 产品」</td><td>12 个<strong>目录插件</strong> + prompt/SOP，不是 12 个微服务</td></tr>
+          <tr><td>「MCP 连接器集成」</td><td>插件内<strong>只声明 MCP URL</strong>；Ironclad API 在厂商侧</td></tr>
+          <tr><td>「Setup interview 个性化模型」</td><td><strong>写用户本机 Markdown 配置</strong>，不是 fine-tune</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:1rem;">代码层完整细节：<a href="2026-05-12_claude-for-legal-industry_实现拆解.html">实现拆解全文</a>（插件目录、Skill/Agent/MCP、执行链路）。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-tob"><span class="sec-num">四</span>对 ToB Agent 的启示<a href="#sec-tob" class="anchor">#</a></h2>
+    <p class="kicker">FDE Mapping · 物流/顺丰类场景</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">01 · 连接器地图</div>
+        <p><strong>行业落地 = 连接器地图 + 角色化插件，不是通用 Chat。</strong>法务按 CLM/DMS/eDiscovery 切；物流应对 WMS/TMS/OMS/工单/客服切——进化 POC 先画<strong>系统连接器清单</strong>，再谈 skill/mem。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">02 · Playbook 先行</div>
+        <p><strong>Playbook 优先于 prompt 调优。</strong>Word 里的 Skills（红线、fallback、格式检查）= 把 SOP 变可执行资产；顺丰高频任务应先<strong>显性化 playbook</strong>，再决定写 skill 还是 memory。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">03 · Setup Interview</div>
+        <p><strong>访谈 = 轻量进化前置。</strong>插件启动访谈本质是<strong>把组织规则注入 Agent</strong>；ToB 可做成每次 matter/客户/仓区的配置 profile，而不是指望黑盒自学习。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">04 · 治理即产品</div>
+        <p><strong>Legal Builder Hub 的安装审查 ≈ P0/P1 变更审批；</strong>进化系统必须带 <code>notify + approve + rollback</code>。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">05 · 采购话术</div>
+        <p>客户买的是「接进现有栈 + 可运营模板 + 可信输出」，不是「更聪明的模型」；FDE 材料应对齐<strong>完成率、人工接管率、审计、权限</strong>。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">06 · Scheduled = 可度量闭环</div>
+        <p>监管周报、intake 分拣等 recurring work 适合作为 POC 第一批<strong>可度量闭环</strong>——不受创始人时间波动，直接可算 ROI。</p>
+      </div>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-relate"><span class="sec-num">五</span>与当前工作的关联<a href="#sec-relate" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>本项目 / 文档</th><th>关联点</th></tr></thead>
+        <tbody>
+          <tr><td>顺丰进化 POC</td><td>应先做<strong>现状 workflow + 系统连接器盘点</strong>（对标本文 MCP 地图），再定 skill/mem 进化范围</td></tr>
+          <tr><td>Evolution one-pager</td><td>Anthropic 侧更重<strong>skill/playbook 资产化</strong>；memory 体现在 Projects/matter 上下文，而非强调 autonomous mem 进化</td></tr>
+          <tr><td>技术选型（POC）</td><td>A 路线对齐「插件+skill」；B 路线对齐权限/审计/回滚；C 路线对齐 Word 式 reflection/校验</td></tr>
+          <tr><td>ToB Agent 研究</td><td>印证「系统竞赛」：Office + MCP + Managed Agents</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-track"><span class="sec-num">六</span>待跟踪信号<a href="#sec-track" class="anchor">#</a></h2>
+
+    <ul>
+      <li>Legal Marketplace 上社区 skill 的实际安装量与审查标准是否公开</li>
+      <li>Managed Agents cookbook 与 Cowork 插件的能力差异（API 可编程边界）</li>
+      <li>CoCounsel ↔ Claude 双向 MCP 的权限与计费模型</li>
+      <li>Opus 4.7 在长文档任务上的官方 benchmark 与第三方（Harvey BigLaw Bench）是否一致</li>
+      <li>非法务行业是否复制同一模板（金融已有 finance agents，物流是否跟进）</li>
+    </ul>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">修订：2026-05-12 深度分析 · 转 HTML 版 2026-07-03</p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="../../README.md">Anthropic 索引</a>
+      · <a href="2026-05-12_claude-for-legal-industry_实现拆解.html">代码层实现拆解 →</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

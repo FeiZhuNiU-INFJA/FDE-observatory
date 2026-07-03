@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>前沿科技公司动态·总结思考 · 模型竞赛 → 系统竞赛 · FDE 观察</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页 accent：deep violet（避开 warn/con/pro/info 与其他已登记色） */
+  :root {
+    --accent: #5b21b6;
+    --accent-deep: #4c1d95;
+    --accent-ink: #3b0764;
+    --accent-soft: color-mix(in srgb, #5b21b6 12%, white);
+    --oai: #059669;
+    --oai-soft: color-mix(in srgb, #059669 14%, white);
+    --ant: #ca8a04;
+    --ant-soft: color-mix(in srgb, #ca8a04 14%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #a78bfa;
+    --accent-soft: color-mix(in srgb, #5b21b6 30%, #1a1a22);
+    --accent-ink: #c4b5fd;
+    --oai: #34d399;
+    --oai-soft: color-mix(in srgb, #059669 26%, #1a1a22);
+    --ant: #fbbf24;
+    --ant-soft: color-mix(in srgb, #ca8a04 26%, #1a1a22);
+  }
+
+  /* ═════════ 视觉一：三段跃迁台阶（stage-shift） ═════════ */
+  .shift { margin: 2em 0; display: flex; flex-direction: column; gap: 0; position: relative; }
+  .shift-step {
+    display: grid; grid-template-columns: minmax(160px, 220px) 1fr;
+    gap: 1.5rem; align-items: center;
+    padding: 1.15rem 1.3rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    position: relative;
+    transition: transform .25s, box-shadow .25s;
+  }
+  .shift-step:hover { transform: translateX(4px); box-shadow: 0 10px 24px rgba(0,0,0,.05); }
+  .shift-step:first-child { border-top-left-radius: 14px; border-top-right-radius: 14px; }
+  .shift-step:last-child { border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
+  .shift-step + .shift-step { border-top: none; }
+  @media (max-width: 720px) { .shift-step { grid-template-columns: 1fr; gap: .6rem; } }
+
+  .shift-from-to {
+    display: flex; flex-direction: column; gap: .3rem;
+    font-family: var(--mono); font-size: .78rem; color: var(--text-muted);
+    line-height: 1.35;
+  }
+  .shift-from { text-decoration: line-through; opacity: .55; }
+  .shift-arrow {
+    color: var(--accent); font-family: var(--display); font-weight: 700;
+    font-size: 1.1rem; line-height: 1;
+  }
+  .shift-to { color: var(--accent-ink); font-weight: 700; font-size: .92rem; text-transform: uppercase; letter-spacing: .04em; }
+  [data-theme="dark"] .shift-to { color: var(--accent); }
+
+  .shift-body { display: flex; flex-direction: column; gap: .35rem; }
+  .shift-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0; }
+  .shift-desc { font-size: .88rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .shift-desc b { color: var(--accent); font-weight: 700; }
+
+  .shift-num {
+    position: absolute; top: -10px; left: 18px;
+    font-family: var(--display); font-style: italic; font-weight: 700; font-size: .9rem;
+    color: var(--accent); background: var(--bg-soft);
+    padding: 0 .55em; letter-spacing: .05em;
+  }
+
+  /* ═════════ 视觉二：Claude Design 能力放射（parts） ═════════ */
+  .parts { display: grid; grid-template-columns: minmax(280px, 340px) 1fr; gap: 1.8rem; align-items: center; margin: 2em 0; }
+  @media (max-width: 900px) { .parts { grid-template-columns: 1fr; } .parts-emblem { max-width: 340px; margin: 0 auto; } }
+  .parts-emblem svg { width: 100%; height: auto; display: block; }
+
+  .parts-list { display: flex; flex-direction: column; gap: .55rem; }
+  .parts-item {
+    display: grid; grid-template-columns: auto 1fr; gap: .8rem; align-items: baseline;
+    padding: .65rem .9rem;
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent-soft) 55%, transparent);
+    border-radius: 0 8px 8px 0;
+    transition: transform .2s;
+  }
+  .parts-item:hover { transform: translateX(4px); }
+  .parts-num {
+    font-family: var(--display); font-style: italic; font-weight: 700;
+    color: var(--accent); font-size: 1.3rem; line-height: 1; min-width: 1.3em;
+  }
+  .parts-title { font-family: var(--display); font-weight: 700; font-size: .98rem; color: var(--text); margin: 0 0 .15em; }
+  .parts-title .en { display: inline-block; font-family: var(--mono); font-style: normal; font-weight: 500;
+    font-size: .66rem; letter-spacing: .04em; color: var(--text-muted); margin-left: .55em; }
+  .parts-desc { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+
+  .core-pulse { transform-origin: center; animation: core-pulse 3.6s ease-in-out infinite; }
+  @keyframes core-pulse { 0%,100% { opacity: .38; transform: scale(1); } 50% { opacity: .1; transform: scale(1.16); } }
+
+  /* ═════════ 视觉三：Creative Work 连接器网格（connector-web） ═════════ */
+  .web { margin: 2em 0; padding: 1.6rem 1.8rem;
+    border: 1px solid var(--border-strong); border-radius: 14px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 5%, var(--surface)), var(--surface));
+    display: grid; grid-template-columns: 1fr minmax(220px, 280px); gap: 1.8rem; align-items: center;
+  }
+  @media (max-width: 900px) { .web { grid-template-columns: 1fr; } .web-svg { max-width: 300px; margin: 0 auto; } }
+  .web-svg svg { width: 100%; height: auto; display: block; }
+  .web-title { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--accent-ink); margin: 0 0 .5em; }
+  [data-theme="dark"] .web-title { color: var(--accent); }
+  .web-lead { font-size: .92rem; color: var(--text-soft); line-height: 1.6; margin: 0 0 .8em; }
+  .web-lead b { color: var(--accent); font-weight: 700; }
+  .web-nodes {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem;
+    font-family: var(--mono); font-size: .68rem;
+  }
+  @media (max-width: 520px) { .web-nodes { grid-template-columns: repeat(2, 1fr); } }
+  .web-node {
+    padding: .32em .5em; border-radius: 5px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-soft); text-align: center;
+    transition: transform .2s, border-color .2s, color .2s;
+  }
+  .web-node:hover { transform: translateY(-2px); border-color: var(--accent); color: var(--accent); }
+
+  .spoke-anim line { stroke-dasharray: 3 3; animation: spoke-flow 8s linear infinite; }
+  @keyframes spoke-flow { to { stroke-dashoffset: -60; } }
+
+  /* ═════════ 视觉四：双阵天平（verdict-scale） ═════════ */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 2em 0; }
+  @media (max-width: 780px) { .duo { grid-template-columns: 1fr; } }
+  .duo-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.35rem;
+    background: var(--surface);
+    border-top: 3px solid var(--c);
+    display: flex; flex-direction: column; gap: .8rem;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .duo-side:hover { transform: translateY(-3px); box-shadow: 0 12px 28px rgba(0,0,0,.06); }
+  .duo-side.d-oai { --c: var(--oai); }
+  .duo-side.d-ant { --c: var(--ant); }
+  .duo-head {
+    display: flex; align-items: center; gap: .8rem;
+    padding-bottom: .55rem; border-bottom: 1px dashed var(--border-strong);
+  }
+  .duo-badge {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: color-mix(in srgb, var(--c) 14%, transparent);
+    border: 2px solid var(--c);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--c); font-family: var(--display); font-weight: 700; font-size: 1rem;
+    flex-shrink: 0;
+  }
+  .duo-name { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: var(--text); margin: 0; }
+  .duo-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500;
+    font-size: .64rem; letter-spacing: .04em; color: var(--text-muted); margin-top: .12em; }
+
+  .duo-slogan {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 1rem; color: var(--c); margin: 0; line-height: 1.4;
+  }
+  .duo-layers { display: flex; flex-direction: column; gap: .35rem; margin: 0; padding: 0; list-style: none; }
+  .duo-layer {
+    font-family: var(--mono); font-size: .78rem; color: var(--text-soft);
+    padding: .45em .7em;
+    border: 1px solid var(--border); border-left: 3px solid var(--c);
+    border-radius: 4px; background: color-mix(in srgb, var(--surface) 65%, transparent);
+    line-height: 1.4;
+    display: flex; align-items: baseline; gap: .55em;
+  }
+  .duo-layer b { color: var(--c); font-weight: 700; min-width: 3.4em; font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; }
+
+  .duo-verdict {
+    margin: 2em 0 1em; padding: 1.15rem 1.4rem;
+    background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 82%, transparent));
+    border: 1px solid var(--accent); border-radius: 14px;
+    display: grid; grid-template-columns: auto 1fr; gap: 1.2rem; align-items: center;
+  }
+  @media (max-width: 720px) { .duo-verdict { grid-template-columns: 1fr; } }
+  .duo-verdict-svg { width: 130px; height: 130px; }
+  .duo-verdict-title { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--accent-ink); margin: 0 0 .35em; }
+  [data-theme="dark"] .duo-verdict-title { color: var(--accent); }
+  .duo-verdict-desc { font-size: .92rem; color: var(--text-soft); line-height: 1.6; margin: 0; }
+  .duo-verdict-desc b { color: var(--accent); font-weight: 700; }
+
+  .beam-swing { transform-origin: 65px 40px; animation: beam-swing 6.5s ease-in-out infinite; }
+  @keyframes beam-swing { 0%,100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .core-pulse, .spoke-anim line, .beam-swing { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      前沿动态·阵型思考<span class="brand-sub">跨市场 · Digest #01 配套 · 2026-05-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>前沿科技公司动态·总结思考<br /><span class="en">From Model Race to System Race</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">配合 Digest #01 · 三大跃迁 · 两条商业化路线 · Claude Design / Creative Work 两个专题</p>
+      <div class="doc-meta">
+        <span>2026-05-06</span>
+        <span>跨市场</span>
+        <span>厂商观察</span>
+        <span>Digest 配套</span>
+        <span>OpenAI vs Anthropic</span>
+        <span>Claude Design</span>
+        <span>可运营 Agent</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">3</div><div class="lab">阶段跃迁<br />模型 → 系统 → 资产</div></div>
+        <div class="hero-stat"><div class="num">2</div><div class="lab">双轨路线<br />平台化 vs 行业化</div></div>
+        <div class="hero-stat"><div class="num">8<small>+</small></div><div class="lab">Creative 连接器<br />工作流入口</div></div>
+        <div class="hero-stat"><div class="num">6-12</div><div class="lab">月观察窗口<br />胜负手落在部署</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        输入源：<a href="2026-05-06_前沿AI公司动态.html">Digest #01 双厂商动态</a> ·
+        <a href="https://www.anthropic.com/news/claude-design-anthropic-labs" target="_blank" rel="noopener">Claude Design</a> ·
+        <a href="https://www.anthropic.com/news/claude-for-creative-work" target="_blank" rel="noopener">Claude for Creative Work</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>本期动态里，模型升级仍在发生，但真正决定胜负的是 <strong>「系统竞赛」</strong>——谁能把 Agent 变成可复用、可治理、可审计的<strong>数字流程组件</strong>，把 Agent 变成企业里的<strong>可运营资产</strong>。OpenAI 走「通用平台 + 广告 + 云渠道」，Anthropic 走「行业模板 + 交付体系 + 算力承诺」，两条路都成立，但对组织能力的要求截然不同。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>行业阶段跃迁</strong>：模型竞赛 → 系统竞赛；对话 → 可运营资产；单轨 → 双轨（平台 / 行业）</li>
+        <li><strong>Claude Design</strong>：不是文生图，是「对话驱动的设计工作台」——从概念到 handoff 给 Claude Code 的完整链路</li>
+        <li><strong>Claude for Creative Work</strong>：连接器战略而非单一 App，Claude 变成跨工具编排层</li>
+        <li><strong>组织能力差异</strong>：OpenAI 需分发 + 通用；Anthropic 需伙伴网络 + 深度交付</li>
+        <li><strong>观察窗口</strong>：6-12 个月内，胜负手是「把 Agent 变成稳定生产力的可复制方法论」</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-shift"><span class="sec-num">一</span>行业进入新阶段：三段跃迁<a href="#sec-shift" class="anchor">#</a></h2>
+    <p class="kicker">Three Shifts · 从本期动态里读到的信号</p>
+
+    <!-- ▼ 视觉一：三段跃迁台阶 -->
+    <div class="shift reveal">
+
+      <div class="shift-step">
+        <span class="shift-num">Shift 01</span>
+        <div class="shift-from-to">
+          <div class="shift-from">Model Race</div>
+          <div class="shift-arrow">↓</div>
+          <div class="shift-to">System Race</div>
+        </div>
+        <div class="shift-body">
+          <p class="shift-title">从「模型竞赛」转向「系统竞赛」</p>
+          <p class="shift-desc">模型升级仍在（GPT-5.5 / 5.5 Instant），但更关键是<b>谁能把模型嵌进企业真实流程并稳定运行</b>。信号：OpenAI 推 Workspace Agents + AWS 渠道；Anthropic 推金融行业模板 + 交付公司 + 算力合作。未来核心差异不在模型分数，而在<b>「Agent 工程 + 渠道 + 交付 + 合规」的组合优势</b>。</p>
+        </div>
+      </div>
+
+      <div class="shift-step">
+        <span class="shift-num">Shift 02</span>
+        <div class="shift-from-to">
+          <div class="shift-from">Conversation</div>
+          <div class="shift-arrow">↓</div>
+          <div class="shift-to">Operable Asset</div>
+        </div>
+        <div class="shift-body">
+          <p class="shift-title">Agent 从「对话」变成「可运营资产」</p>
+          <p class="shift-desc">OpenAI 的 Symphony、Anthropic 的 financial-services 模板，都在推同一方向：企业不再把 Agent 当一次性 prompt，而是当<b>可复用、可治理、可审计、可迭代</b>的数字流程组件。采购逻辑从「买最强模型 API」变成「买一套持续产出的 agent 生产系统」；评估指标从「回答质量」扩展到<b>端到端完成率、人工接管率、合规风险、维护成本</b>。</p>
+        </div>
+      </div>
+
+      <div class="shift-step">
+        <span class="shift-num">Shift 03</span>
+        <div class="shift-from-to">
+          <div class="shift-from">Single Track</div>
+          <div class="shift-arrow">↓</div>
+          <div class="shift-to">Dual Track</div>
+        </div>
+        <div class="shift-body">
+          <p class="shift-title">商业模式出现双轨并行</p>
+          <p class="shift-desc"><b>OpenAI 路线</b>：消费端（广告、默认模型）+ 企业端（AWS、workspace agents）并行推进；<b>Anthropic 路线</b>：更集中押注企业深水区（行业模板、交付体系、算力保障）。两条都成立，但组织能力要求不同——一个像「平台 + 分发 + 通用」，一个像「高价值行业深耕 + 伙伴交付网络」。</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 二 -->
+    <h2 id="sec-design"><span class="sec-num">二</span>重点调研：Claude Design<a href="#sec-design" class="anchor">#</a></h2>
+    <p class="kicker">Product Anatomy · 对话驱动的设计工作台</p>
+
+    <p>官方发布：<a href="https://www.anthropic.com/news/claude-design-anthropic-labs" target="_blank" rel="noopener">Anthropic Labs · Claude Design</a>（2026-04-17）</p>
+
+    <h3 id="sec-design-what">2.1 产品定义：不是文生图，是设计工作台</h3>
+    <p>Claude Design 不是一个「生成一张图」的工具，而是一个<strong>对话驱动的设计工作台</strong>：从文本 / 文件 / 代码库启动设计，支持 inline comment、直接编辑、参数滑杆微调；能导出 Canva / PDF / PPTX / HTML；可把设计 handoff 给 Claude Code 实现；强调组织级共享与 design system 一致性。</p>
+
+    <!-- ▼ 视觉二：Claude Design 五能力放射 -->
+    <div class="parts reveal">
+      <div class="parts-emblem">
+        <svg viewBox="0 0 320 320" role="img" aria-label="Claude Design 五个能力节点围绕对话工作台中心">
+          <defs>
+            <radialGradient id="dsHub" cx="50%" cy="50%" r="55%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".24"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- 中心呼吸圈 -->
+          <circle cx="160" cy="160" r="76" fill="url(#dsHub)"/>
+          <circle cx="160" cy="160" r="60" class="core-pulse" style="fill:var(--accent)" opacity=".16"/>
+          <g style="color:var(--accent)">
+            <circle cx="160" cy="160" r="52" style="fill:var(--surface)" stroke="currentColor" stroke-width="2"/>
+            <text x="160" y="156" text-anchor="middle" font-size="13" font-weight="700"
+              style="fill:var(--accent-ink);font-family:var(--display)">Design</text>
+            <text x="160" y="172" text-anchor="middle" font-size="9"
+              style="fill:var(--text-muted);font-family:var(--mono)">对话工作台</text>
+          </g>
+          <!-- 五个节点：Input / Edit / Export / Handoff / DesignSystem -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 4">
+            <line x1="160" y1="160" x2="160" y2="46"/>
+            <line x1="160" y1="160" x2="268" y2="118"/>
+            <line x1="160" y1="160" x2="240" y2="248"/>
+            <line x1="160" y1="160" x2="80" y2="248"/>
+            <line x1="160" y1="160" x2="52" y2="118"/>
+          </g>
+          <g style="color:var(--accent)" fill="var(--surface)" stroke="currentColor" stroke-width="1.6">
+            <g><circle cx="160" cy="40" r="24"/>
+              <text x="160" y="38" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none" style="font-family:var(--mono)">INPUT</text>
+              <text x="160" y="50" text-anchor="middle" font-size="7" style="fill:var(--text-muted);font-family:var(--mono)" stroke="none">文本/文件</text></g>
+            <g><circle cx="276" cy="112" r="24"/>
+              <text x="276" y="110" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none" style="font-family:var(--mono)">EDIT</text>
+              <text x="276" y="122" text-anchor="middle" font-size="7" style="fill:var(--text-muted);font-family:var(--mono)" stroke="none">inline评论</text></g>
+            <g><circle cx="248" cy="256" r="24"/>
+              <text x="248" y="254" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none" style="font-family:var(--mono)">EXPORT</text>
+              <text x="248" y="266" text-anchor="middle" font-size="7" style="fill:var(--text-muted);font-family:var(--mono)" stroke="none">Canva/PPTX</text></g>
+            <g><circle cx="72" cy="256" r="24"/>
+              <text x="72" y="254" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none" style="font-family:var(--mono)">HANDOFF</text>
+              <text x="72" y="266" text-anchor="middle" font-size="7" style="fill:var(--text-muted);font-family:var(--mono)" stroke="none">→ Claude Code</text></g>
+            <g><circle cx="44" cy="112" r="24"/>
+              <text x="44" y="110" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" stroke="none" style="font-family:var(--mono)">SYSTEM</text>
+              <text x="44" y="122" text-anchor="middle" font-size="7" style="fill:var(--text-muted);font-family:var(--mono)" stroke="none">组织共享</text></g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="parts-list">
+        <div class="parts-item">
+          <span class="parts-num">1</span>
+          <div>
+            <p class="parts-title">多模启动 <span class="en">Multi-Modal Input</span></p>
+            <p class="parts-desc">从文本、文件或代码库直接生成设计——降低设计师使用门槛，让工程/PM 也能启动早期原型。</p>
+          </div>
+        </div>
+        <div class="parts-item">
+          <span class="parts-num">2</span>
+          <div>
+            <p class="parts-title">交互式编辑 <span class="en">Inline Comment · Sliders</span></p>
+            <p class="parts-desc">支持 inline comment、直接编辑和参数滑杆微调——把「设计」变成对话可控的连续操作，而不是一次性生成。</p>
+          </div>
+        </div>
+        <div class="parts-item">
+          <span class="parts-num">3</span>
+          <div>
+            <p class="parts-title">多格式导出 <span class="en">Export</span></p>
+            <p class="parts-desc">导出到 Canva / PDF / PPTX / HTML，兼容常见交付形态，降低团队协作切换成本。</p>
+          </div>
+        </div>
+        <div class="parts-item">
+          <span class="parts-num">4</span>
+          <div>
+            <p class="parts-title">Handoff 到实现 <span class="en">→ Claude Code</span></p>
+            <p class="parts-desc">把设计交给 Claude Code 做实现，把「概念 → 原型 → 代码」的链路压缩到一个平台内。</p>
+          </div>
+        </div>
+        <div class="parts-item">
+          <span class="parts-num">5</span>
+          <div>
+            <p class="parts-title">组织级 Design System <span class="en">Team Shared</span></p>
+            <p class="parts-desc">强调组织共享与 design system 一致性——本质在提高迁移成本、放大协作网络效应。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3 id="sec-design-strategy">2.2 战略意义</h3>
+    <ol>
+      <li><strong>切入应用层高价值环节</strong>：从「回答问题」走向「生产可交付物」（原型、PPT、营销素材）。</li>
+      <li><strong>打通设计到开发链路</strong>：通过 handoff 到 Claude Code，尝试吃下「从概念到实现」的更长价值链。</li>
+      <li><strong>增强团队粘性</strong>：组织共享 + 设计系统复用，本质在提高迁移成本和协作网络效应。</li>
+    </ol>
+
+    <h3 id="sec-design-risk">2.3 风险与可跟踪信号</h3>
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险</div>
+      <ul style="margin:.3em 0;">
+        <li>「可用」与「优秀」之间仍有鸿沟，最后一公里仍依赖资深设计师</li>
+        <li>若不能深度嵌入 Figma/Adobe/Canva 等主工具链，可能停留在早期探索工具</li>
+        <li>设计系统自动抽取若不稳定，企业大规模采用会受阻</li>
+      </ul>
+    </div>
+    <div class="callout callout-info">
+      <div class="callout-tag">可跟踪信号</div>
+      <ul style="margin:.3em 0;">
+        <li>是否从 research preview 快速进入广泛 GA</li>
+        <li>是否与 Figma / Adobe / Canva 出现更深入的双向集成</li>
+        <li>是否披露「从设计到代码」的转化效率指标（周期缩短、返工率降低）</li>
+      </ul>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-creative"><span class="sec-num">三</span>重点调研：Claude for Creative Work<a href="#sec-creative" class="anchor">#</a></h2>
+    <p class="kicker">Connector Strategy · 从模型入口到工作流入口</p>
+
+    <p>官方发布：<a href="https://www.anthropic.com/news/claude-for-creative-work" target="_blank" rel="noopener">Claude for Creative Work</a>（2026-04-28）</p>
+
+    <h3 id="sec-creative-def">3.1 产品定义：连接器战略而非单一 App</h3>
+    <p>Creative Work 的核心不是一个应用，而是<strong>通过 connectors（基于 MCP）把 Claude 接入创意生产链</strong>：Ableton、Adobe、Affinity by Canva、Autodesk Fusion、Blender、Resolume、SketchUp、Splice……用户不换软件，Claude 变成跨工具编排层。</p>
+
+    <!-- ▼ 视觉三：Creative Work 连接器网格 -->
+    <div class="web reveal">
+      <div>
+        <p class="web-title">Claude = 跨工具编排层</p>
+        <p class="web-lead">把 Claude 接入用户熟悉的创意工具，让 <b>Claude 成为跨软件的编排层</b>——用户留在 Ableton、Adobe、Blender、Autodesk Fusion 里，Claude 处理跨工具的批处理、脚本化、格式转换。押注开放生态 <b>MCP</b>，连接器可复用具互操作性。</p>
+        <div class="web-nodes">
+          <div class="web-node">Ableton</div>
+          <div class="web-node">Adobe</div>
+          <div class="web-node">Affinity</div>
+          <div class="web-node">Autodesk</div>
+          <div class="web-node">Blender</div>
+          <div class="web-node">Resolume</div>
+          <div class="web-node">SketchUp</div>
+          <div class="web-node">Splice</div>
+        </div>
+      </div>
+      <div class="web-svg">
+        <svg viewBox="0 0 260 260" role="img" aria-label="Claude 作为创意工具编排层的连接器网络">
+          <defs>
+            <radialGradient id="cwHub" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".28"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="130" cy="130" r="60" fill="url(#cwHub)"/>
+          <!-- 中心 -->
+          <g style="color:var(--accent)">
+            <circle cx="130" cy="130" r="34" style="fill:var(--surface)" stroke="currentColor" stroke-width="2"/>
+            <text x="130" y="127" text-anchor="middle" font-size="11" font-weight="700"
+              style="fill:var(--accent-ink);font-family:var(--display)">Claude</text>
+            <text x="130" y="141" text-anchor="middle" font-size="7"
+              style="fill:var(--text-muted);font-family:var(--mono)">MCP Layer</text>
+          </g>
+          <!-- 八连接线（流动虚线） -->
+          <g class="spoke-anim" style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <line x1="130" y1="130" x2="130" y2="34"/>
+            <line x1="130" y1="130" x2="198" y2="62"/>
+            <line x1="130" y1="130" x2="226" y2="130"/>
+            <line x1="130" y1="130" x2="198" y2="198"/>
+            <line x1="130" y1="130" x2="130" y2="226"/>
+            <line x1="130" y1="130" x2="62" y2="198"/>
+            <line x1="130" y1="130" x2="34" y2="130"/>
+            <line x1="130" y1="130" x2="62" y2="62"/>
+          </g>
+          <!-- 八个节点 -->
+          <g style="color:var(--accent)" fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+            <circle cx="130" cy="26" r="12"/>
+            <circle cx="204" cy="56" r="12"/>
+            <circle cx="234" cy="130" r="12"/>
+            <circle cx="204" cy="204" r="12"/>
+            <circle cx="130" cy="234" r="12"/>
+            <circle cx="56" cy="204" r="12"/>
+            <circle cx="26" cy="130" r="12"/>
+            <circle cx="56" cy="56" r="12"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <h3 id="sec-creative-vs">3.2 与 Claude Design 的关系</h3>
+    <div class="callout callout-accent">
+      <div class="callout-tag">互补组合</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>Claude Design</strong>：偏前端创意与原型探索（<code>idea → prototype</code>）</li>
+        <li><strong>Creative Work Connectors</strong>：偏生产链执行与工具协同（<code>prototype → production pipeline</code>）</li>
+        <li>两者组合后，Anthropic 实际在尝试覆盖「创意到生产」的完整链路，而不仅是一个 chat 助手插件</li>
+      </ul>
+    </div>
+
+    <h3 id="sec-creative-risk">3.3 风险与可跟踪信号</h3>
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险</div>
+      <ul style="margin:.3em 0;">
+        <li>连接器数量不等于真实活跃度，关键是「高频工作是否被重写」</li>
+        <li>跨工具自动化涉及权限、版本、稳定性，企业 IT 审批和安全治理会拖慢扩张</li>
+        <li>生态伙伴关系若变化，会影响连接器长期可用性</li>
+      </ul>
+    </div>
+    <div class="callout callout-info">
+      <div class="callout-tag">可跟踪信号</div>
+      <ul style="margin:.3em 0;">
+        <li>连接器月活、留存和任务完成率是否有公开案例</li>
+        <li>是否出现行业模板化（游戏美术、广告制作、工业设计等）</li>
+        <li>教育合作是否转化为职业创作团队规模化采用</li>
+      </ul>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-duo"><span class="sec-num">四</span>OpenAI vs Anthropic：阶段性判断<a href="#sec-duo" class="anchor">#</a></h2>
+    <p class="kicker">Two Paths · 两条商业化路线的组织能力差异</p>
+
+    <!-- ▼ 视觉四：双阵对比 + 天平结论 -->
+    <div class="duo reveal">
+      <div class="duo-side d-oai">
+        <div class="duo-head">
+          <div class="duo-badge">OA</div>
+          <div>
+            <p class="duo-name">OpenAI<span class="en">Universal Intelligence Platform</span></p>
+          </div>
+        </div>
+        <p class="duo-slogan">通用智能工作平台</p>
+        <ul class="duo-layers">
+          <li class="duo-layer"><b>上层</b> ChatGPT / Ads · 消费级触达</li>
+          <li class="duo-layer"><b>中层</b> Workspace Agents / Codex · Agent 产品化</li>
+          <li class="duo-layer"><b>底层</b> AWS 渠道 · 企业分发</li>
+          <li class="duo-layer"><b>能力</b> 平台 + 分发 + 通用</li>
+        </ul>
+      </div>
+
+      <div class="duo-side d-ant">
+        <div class="duo-head">
+          <div class="duo-badge">AN</div>
+          <div>
+            <p class="duo-name">Anthropic<span class="en">Industrial Agent Delivery</span></p>
+          </div>
+        </div>
+        <p class="duo-slogan">行业化 Agent 交付体系</p>
+        <ul class="duo-layers">
+          <li class="duo-layer"><b>模板</b> Finance Agent Templates · KYC / 估值</li>
+          <li class="duo-layer"><b>生态</b> Connectors + MCP · 工作流入口</li>
+          <li class="duo-layer"><b>交付</b> Blackstone / H&F / Goldman 联合服务公司</li>
+          <li class="duo-layer"><b>能力</b> 高价值行业深耕 + 伙伴交付网络</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="duo-verdict reveal">
+      <svg class="duo-verdict-svg" viewBox="0 0 130 130" role="img" aria-label="双路线并存的阶段结论天平">
+        <!-- 底座 -->
+        <g style="color:var(--accent-ink);color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="65" y1="40" x2="65" y2="105"/>
+          <line x1="35" y1="105" x2="95" y2="105"/>
+        </g>
+        <!-- 摇摆的横梁 -->
+        <g class="beam-swing">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="15" y1="40" x2="115" y2="40"/>
+            <line x1="15" y1="40" x2="15" y2="58"/>
+            <line x1="115" y1="40" x2="115" y2="58"/>
+          </g>
+          <!-- 左盘 OpenAI (emerald) -->
+          <g style="color:var(--oai)" fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="15" cy="66" rx="15" ry="4"/>
+            <text x="15" y="70" text-anchor="middle" font-size="7" font-weight="700"
+              fill="currentColor" stroke="none" style="font-family:var(--mono)">OAI</text>
+          </g>
+          <!-- 右盘 Anthropic (gold) -->
+          <g style="color:var(--ant)" fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+            <ellipse cx="115" cy="66" rx="15" ry="4"/>
+            <text x="115" y="70" text-anchor="middle" font-size="7" font-weight="700"
+              fill="currentColor" stroke="none" style="font-family:var(--mono)">ANT</text>
+          </g>
+        </g>
+        <!-- 支点 -->
+        <circle cx="65" cy="40" r="5" style="fill:var(--accent)"/>
+      </svg>
+      <div>
+        <p class="duo-verdict-title">阶段结论：胜负手在部署，不在 benchmark</p>
+        <p class="duo-verdict-desc">未来 <b>6-12 个月</b>，竞争的胜负手大概率<b>不是「谁再多提几点 benchmark」</b>，而是谁能在关键行业把 Agent 变成<b>稳定生产力</b>，并形成<b>可复制的部署与交付方法论</b>。两条路都成立，但通向的是不同的组织能力：一个像平台公司，一个像深度咨询 + 交付伙伴网络。</p>
+      </div>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-next"><span class="sec-num">五</span>后续每周建议补充的观察字段<a href="#sec-next" class="anchor">#</a></h2>
+    <p class="kicker">Tracking Fields · 从「事件流」到「结构化信号」</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">观察字段</div>
+      <ul style="margin:.3em 0;">
+        <li><b>类型</b>：模型能力 / Agent 产品 / 连接器生态 / 开源 / 商业化 / 合规</li>
+        <li><b>目标用户</b>：个人 / 团队 / 企业 / 行业垂类</li>
+        <li><b>落地形态</b>：插件 / 模板 / 托管 Agent / 平台集成 / 交付服务</li>
+        <li><b>可量化价值</b>：效率 / 成本 / 质量 / 风险</li>
+        <li><b>关键不确定性</b>：技术可行性 / 组织变革阻力 / 商业可持续性</li>
+      </ul>
+    </div>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-05-06 初稿 · 配合 Digest #01 阅读
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="../README.html">Anthropic 索引</a>
+      · <a href="2026-05-06_前沿AI公司动态.html">← 返回 Digest #01</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude 法务领域插件 · 代码层实现拆解 · FDE</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页 accent：cyan（与主篇 archival blue 呼应但独立） */
+  :root {
+    --accent: #0891b2;
+    --accent-deep: #0e7490;
+    --accent-ink: #164e63;
+    --accent-soft: color-mix(in srgb, #0891b2 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #22d3ee;
+    --accent-soft: color-mix(in srgb, #0891b2 26%, #1a1a22);
+    --accent-ink: #67e8f9;
+  }
+
+  /* ═════════ 视觉一：仓库目录树（tree）—— ASCII 感 + 高亮关键路径 ═════════ */
+  .tree {
+    margin: 1.8em 0; padding: 1.2rem 1.4rem; border: 1px solid var(--border-strong); border-radius: 12px;
+    background: var(--surface); font-family: var(--mono); font-size: .82rem; line-height: 1.65;
+    color: var(--text-soft); position: relative; overflow-x: auto;
+  }
+  .tree::before {
+    content: "claude-for-legal / repo tree"; position: absolute; top: -.55rem; left: 1rem;
+    font-size: .62rem; letter-spacing: .16em; text-transform: uppercase;
+    background: var(--bg); padding: 0 .5em; color: var(--accent); font-weight: 700;
+  }
+  .tree .lvl { color: var(--text-muted); }
+  .tree .dir { color: var(--accent); font-weight: 600; }
+  .tree .key { color: var(--text); font-weight: 600; }
+  .tree .cm { color: var(--text-muted); font-style: italic; margin-left: .8em; font-family: var(--sans); font-size: .78rem; }
+  .tree .hot { background: var(--accent-soft); border-radius: 3px; padding: 0 .3em; }
+
+  /* ═════════ 视觉二：Plugin 组件卡（parts）—— 单目录里的六件资产 ═════════ */
+  .parts { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.9em 0; }
+  @media (max-width: 900px) { .parts { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .parts { grid-template-columns: 1fr; } }
+  .part {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1rem .9rem;
+    background: var(--surface); transition: transform .2s, border-color .2s, box-shadow .2s;
+    display: flex; flex-direction: column; gap: .4rem; position: relative;
+  }
+  .part::before {
+    content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+    background: var(--accent); transform: scaleY(0); transform-origin: top; transition: transform .25s;
+  }
+  .part:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 24px rgba(0,0,0,.06); }
+  .part:hover::before { transform: scaleY(1); }
+  .part-head { display: flex; align-items: center; gap: .6rem; }
+  .part-ic { color: var(--accent); flex-shrink: 0; }
+  .part-ic svg { width: 22px; height: 22px; }
+  .part-name { font-family: var(--mono); font-size: .82rem; color: var(--text); font-weight: 600; }
+  .part-role { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: .78rem; }
+  .part-desc { font-size: .8rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+
+  /* ═════════ 视觉三：一次请求的执行链（seq）—— 五泳道 + 步骤 ═════════ */
+  .seq { margin: 2em 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem 1.2rem 1.2rem; overflow-x: auto; }
+  .seq svg { width: 100%; min-width: 640px; height: auto; display: block; }
+  .seq text { font-family: var(--mono); }
+  .seq .disp { font-family: var(--display); font-weight: 700; }
+
+  /* ═════════ 视觉四：Claude vs 传统 SaaS 双卡对比（duo） ═════════ */
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.9em 0; align-items: stretch; position: relative; }
+  @media (max-width: 760px) { .duo { grid-template-columns: 1fr; } }
+  .duo-side {
+    border: 1.5px solid var(--border-strong); border-radius: 14px; padding: 1.2rem 1.3rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .55rem;
+    transition: transform .2s;
+  }
+  .duo-side:hover { transform: translateY(-4px); }
+  .duo-side.d-saas { border-color: var(--border-strong); background: color-mix(in srgb, var(--surface) 60%, var(--bg-soft)); }
+  .duo-side.d-plugin { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .duo-eyebrow { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; display: flex; align-items: center; gap: .5em; }
+  .duo-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .d-saas .duo-eyebrow { color: var(--text-muted); }
+  .d-saas .duo-eyebrow .dot { background: var(--text-muted); }
+  .d-plugin .duo-eyebrow { color: var(--accent); }
+  .d-plugin .duo-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .duo-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; }
+  .duo-list { list-style: none; padding: 0; margin: .4rem 0 0; display: flex; flex-direction: column; gap: .4rem; }
+  .duo-list li {
+    font-size: .84rem; color: var(--text-soft); line-height: 1.5;
+    padding-left: 1.3em; position: relative;
+  }
+  .duo-list li::before {
+    content: ""; position: absolute; left: 0; top: .55em; width: 8px; height: 2px;
+    background: currentColor; opacity: .5;
+  }
+  .duo-list li b { color: var(--text); font-family: var(--mono); font-size: .78rem; }
+  .duo-vs {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    background: var(--bg); border: 2px solid var(--accent); border-radius: 999px;
+    width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-style: italic; font-weight: 700; color: var(--accent); font-size: .95rem;
+    z-index: 5;
+  }
+  @media (max-width: 760px) {
+    .duo-vs { position: static; transform: none; margin: 0 auto; width: 40px; height: 40px; }
+  }
+
+  /* code blocks（json/yaml） */
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.1rem; overflow-x: auto; font-size: .82rem; line-height: 1.55; }
+  code { background: var(--code-bg); padding: .1em .35em; border-radius: 3px; font-size: .88em; }
+  pre code { background: transparent; padding: 0; }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .part:hover, .duo-side:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Claude Legal · 实现拆解<span class="brand-sub">跨市场 · Anthropic · 代码层</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Claude 法务领域插件<br /><span class="en">Code-level Anatomy</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">代码层实现拆解 · 目录 = 配置包 · Skill/Agent/MCP · 不是业务后端</p>
+      <div class="doc-meta">
+        <span>2026-05-12</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>实现拆解</span>
+        <span>MCP</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">6</div><div class="lab">单插件资产种类<br />plugin.json/mcp/skills/agents/hooks/CLAUDE.md</div></div>
+        <div class="hero-stat"><div class="num">0</div><div class="lab">业务代码行<br />全部 Markdown + JSON + YAML</div></div>
+        <div class="hero-stat"><div class="num">2</div><div class="lab">运行时打包<br />Cowork 交互 · Managed Agent API</div></div>
+        <div class="hero-stat"><div class="num">12</div><div class="lab">practice-area<br />目录形式并列</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        战略解读：<a href="2026-05-12_claude-for-legal-industry.html">Claude for the legal industry</a> ·
+        源码：<a href="https://github.com/anthropics/claude-for-legal" target="_blank" rel="noopener">github.com/anthropics/claude-for-legal</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>领域插件在代码层<strong>几乎不是业务后端</strong>，而是 <strong>可加载的配置包</strong>：JSON 清单 + Markdown 里的 prompt/SOP（Skills、Agents）+ MCP 声明 + 用户本机实践配置。运行时由 Claude Code / Cowork 扫描加载，交给 LLM + MCP 工具执行。仓库自述：<em>「Most work here is editing prompt content — not application code.」</em>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li>仓库结构 = <code>marketplace.json</code> + N 个领域插件目录 + <code>managed-agent-cookbooks</code></li>
+        <li>单插件 = 6 件资产：<code>plugin.json</code> + <code>.mcp.json</code> + <code>skills/</code> + <code>agents/</code> + <code>hooks/</code> + <code>CLAUDE.md</code>（模板）</li>
+        <li>「个性化」= <code>cold-start-interview</code> 写入 <code>~/.claude/plugins/config/…/CLAUDE.md</code>，不是 fine-tune</li>
+        <li>Skill 分支写在正文里，由 LLM 读文执行；<strong>没有</strong> 自研 if/else 业务代码</li>
+        <li>Managed Agent = YAML 包 <code>agents/*.md</code>，对外走 Claude Platform API；与 Cowork 插件同资产两运行时</li>
+        <li>「进化」不在此仓库；企业级进化需在治理层（notify/approve/rollback）叠加</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-repo"><span class="sec-num">一</span>仓库级结构<a href="#sec-repo" class="anchor">#</a></h2>
+    <p class="kicker">Repo Layout · 目录即产品</p>
+
+    <!-- ▼ 视觉一：目录树 -->
+    <div class="tree reveal">
+<span class="dir">claude-for-legal/</span>
+<span class="lvl">├──</span> <span class="dir">.claude-plugin/</span><span class="key">marketplace.json</span>   <span class="cm">应用商店清单：列出所有插件</span>
+<span class="lvl">├──</span> <span class="dir">commercial-legal/</span>                <span class="cm hot">← 一个领域插件 = 一个目录</span>
+<span class="lvl">├──</span> <span class="dir">litigation-legal/</span>
+<span class="lvl">├──</span> <span class="dir">privacy-legal/</span>
+<span class="lvl">├──</span> <span class="dir">managed-agent-cookbooks/</span>          <span class="cm">可 API 部署的版本（YAML）</span>
+<span class="lvl">└──</span> <span class="dir">external_plugins/</span><span class="dir">cocounsel-legal/</span>  <span class="cm">厂商维护的插件</span>
+    </div>
+
+    <p><code>marketplace.json</code> 示例：</p>
+<pre><code>{
+  "name": "commercial-legal",
+  "source": "./commercial-legal",
+  "description": "Reviews vendor agreements, NDAs..."
+}
+</code></pre>
+    <p>用户从 Legal Marketplace 安装时：把 <code>commercial-legal/</code> 目录装进 Claude，运行时注册。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-plugin"><span class="sec-num">二</span>单个领域插件目录<a href="#sec-plugin" class="anchor">#</a></h2>
+    <p class="kicker">Six Parts of a Plugin · 六件资产</p>
+
+    <p>以 <code>commercial-legal/</code> 为例：</p>
+
+    <!-- ▼ 视觉二：六件资产卡片 -->
+    <div class="parts reveal">
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="10" y1="4" x2="10" y2="20"/></svg></span>
+          <span class="part-name">plugin.json</span>
+        </div>
+        <div class="part-role">注册名片</div>
+        <p class="part-desc">name / version / description，Claude Code 装载时读它。</p>
+      </div>
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.2 11l7.5-4"/><path d="M8.2 13l7.5 4"/></svg></span>
+          <span class="part-name">.mcp.json</span>
+        </div>
+        <div class="part-role">连接器声明</div>
+        <p class="part-desc">列出要拉起的 HTTP MCP（Ironclad / DocuSign / …）；不实现业务 API。</p>
+      </div>
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h11l5 5v11a1 1 0 0 1-1 1H4z"/><path d="M15 4v5h5"/><path d="M8 13h8M8 17h5"/></svg></span>
+          <span class="part-name">skills/*/SKILL.md</span>
+        </div>
+        <div class="part-role">可执行 SOP</div>
+        <p class="part-desc">YAML frontmatter + Markdown 步骤；nda-review / renewal-tracker 等。</p>
+      </div>
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/><circle cx="6" cy="14" r="1.5"/><circle cx="18" cy="14" r="1.5"/></svg></span>
+          <span class="part-name">agents/*.md</span>
+        </div>
+        <div class="part-role">子 Agent 定义</div>
+        <p class="part-desc">frontmatter 声明 model + tools 白名单；正文即系统提示。</p>
+      </div>
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v6"/><circle cx="12" cy="14" r="3"/><path d="M6 20l3-3M18 20l-3-3"/></svg></span>
+          <span class="part-name">hooks/hooks.json</span>
+        </div>
+        <div class="part-role">事件钩子</div>
+        <p class="part-desc">SessionStart / Stop 等事件绑 shell；确定性副作用。</p>
+      </div>
+      <div class="part">
+        <div class="part-head">
+          <span class="part-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l3 3v15H6z"/><path d="M9 9h7M9 13h7M9 17h5"/></svg></span>
+          <span class="part-name">CLAUDE.md</span>
+        </div>
+        <div class="part-role">实践配置模板</div>
+        <p class="part-desc">安装后由 cold-start 复制到 <code>~/.claude/…/config/</code>，非项目 context。</p>
+      </div>
+    </div>
+
+    <h3 id="sec-plugin-json">2.1 plugin.json（注册名片）</h3>
+<pre><code>{
+  "name": "commercial-legal",
+  "version": "1.0.2",
+  "description": "Reviews vendor agreements, NDAs..."
+}
+</code></pre>
+
+    <h3 id="sec-plugin-mcp">2.2 .mcp.json（连接器声明）</h3>
+<pre><code>{
+  "mcpServers": {
+    "Ironclad": {
+      "type": "http",
+      "url": "https://mcp.na1.ironcladapp.com/mcp"
+    },
+    "DocuSign": {
+      "type": "http",
+      "url": "https://mcp.docusign.com/mcp"
+    }
+  }
+}
+</code></pre>
+    <p>此处 <strong>不实现</strong> Ironclad API，只声明启用插件时要拉起的 MCP HTTP 端点，模型才能使用 <code>mcp__ironclad__*</code> 类工具。</p>
+
+    <!-- 三 -->
+    <h2 id="sec-skill"><span class="sec-num">三</span>Skill：最小执行单元<a href="#sec-skill" class="anchor">#</a></h2>
+    <p class="kicker">Structured Prompt · 不是函数</p>
+
+    <p>路径：<code>skills/&lt;name&gt;/SKILL.md</code>：</p>
+<pre><code>---
+name: nda-review
+description: >
+  Fast triage of inbound NDAs into GREEN / YELLOW / RED...
+user-invocable: false
+---
+
+# NDA Review
+
+## Load the playbook first
+Before triaging, read
+`~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md`
+→ `## Playbook` → `NDA triage positions`...
+</code></pre>
+
+    <p><strong>运行时：</strong></p>
+    <ol>
+      <li>Claude Code 扫描 <code>skills/*/SKILL.md</code>，将 <code>description</code> 纳入可选 skill 列表</li>
+      <li>用户输入或路由匹配时，将 SKILL 正文注入上下文</li>
+      <li>模型按 Markdown 步骤执行（读配置、调 MCP、输出）</li>
+    </ol>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">关键洞察</div>
+      Skill 的「代码」= <strong>结构化 prompt + 操作步骤</strong>，不是传统函数。分支写在正文里，由 LLM 读文执行——<strong>没有</strong> 自研的 <code>if (clause.type == "NDA")</code> 业务代码。
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-interview"><span class="sec-num">四</span>Setup Interview：个性化写入用户本机<a href="#sec-interview" class="anchor">#</a></h2>
+    <p class="kicker">Config as Markdown · 不是 fine-tune</p>
+
+    <p><code>skills/cold-start-interview/SKILL.md</code> 会：</p>
+    <ol>
+      <li>访谈用户（playbook、升级链、风险偏好…）</li>
+      <li>读取合同样本</li>
+      <li><strong>写入</strong> <code>~/.claude/plugins/config/claude-for-legal/commercial-legal/CLAUDE.md</code></li>
+    </ol>
+    <p>其他 skill（如 <code>nda-review</code>）执行前强制读取该文件。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>层</th><th>位置</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td>通用领域逻辑</td><td>仓库内 <code>skills/*.md</code></td><td>流程、检查项、输出格式</td></tr>
+          <tr><td>团队个性化</td><td>用户机 <code>config/.../CLAUDE.md</code></td><td>playbook、升级矩阵、文风</td></tr>
+          <tr><td>Matter 级（可选）</td><td><code>config/.../matters/&lt;id&gt;/</code></td><td>单案件上下文</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">注意</div>
+      插件根目录的 <code>CLAUDE.md</code> 是 <strong>模板</strong>，由 cold-start 复制到 config 路径；安装时 <strong>不会</strong> 自动当 project context 加载（<code>claude plugin validate</code> 会提示，属预期行为）。
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-agent"><span class="sec-num">五</span>Agent：子代理定义（仍是 Markdown）<a href="#sec-agent" class="anchor">#</a></h2>
+    <p class="kicker">Frontmatter + Prompt · 工具白名单</p>
+
+    <p><code>agents/renewal-watcher.md</code>：</p>
+<pre><code>---
+name: renewal-watcher
+description: Scheduled agent that checks the renewal register...
+model: sonnet
+tools: ["Read", "Write", "mcp__ironclad__*", "mcp__*__slack_send_message"]
+---
+
+# Renewal Watcher Agent
+1. Read CLAUDE.md to get alert destination
+2. Load renewal-tracker skill, run Mode 2...
+3. Post report to Slack
+</code></pre>
+
+    <p>运行时：Claude Code 将该 md 作为 <strong>子 Agent 的系统提示 + 工具白名单</strong>，可配合 Scheduled tasks 定时触发。</p>
+
+    <!-- 六 -->
+    <h2 id="sec-flow"><span class="sec-num">六</span>一次请求的执行链<a href="#sec-flow" class="anchor">#</a></h2>
+    <p class="kicker">User → Runtime → Plugin → MCP → LLM</p>
+
+    <!-- ▼ 视觉三：泳道图 -->
+    <div class="seq reveal">
+      <svg viewBox="0 0 720 340" role="img" aria-label="nda-review 一次请求：用户 / 运行时 / 插件 / 配置 / MCP / LLM 六泳道">
+        <!-- 泳道背景 -->
+        <g style="color:var(--border)" stroke="currentColor" stroke-width="1">
+          <line x1="80" y1="34" x2="80" y2="320" />
+          <line x1="200" y1="34" x2="200" y2="320" />
+          <line x1="320" y1="34" x2="320" y2="320" />
+          <line x1="440" y1="34" x2="440" y2="320" />
+          <line x1="560" y1="34" x2="560" y2="320" />
+          <line x1="680" y1="34" x2="680" y2="320" />
+        </g>
+        <!-- 泳道头（accent 色带） -->
+        <g style="color:var(--accent)" fill="currentColor">
+          <text class="disp" x="80" y="22" text-anchor="middle" font-size="12" stroke="none">User</text>
+          <text class="disp" x="200" y="22" text-anchor="middle" font-size="12" stroke="none">Runtime</text>
+          <text class="disp" x="320" y="22" text-anchor="middle" font-size="12" stroke="none">Plugin</text>
+          <text class="disp" x="440" y="22" text-anchor="middle" font-size="12" stroke="none">Config</text>
+          <text class="disp" x="560" y="22" text-anchor="middle" font-size="12" stroke="none">MCP</text>
+          <text class="disp" x="680" y="22" text-anchor="middle" font-size="12" stroke="none">LLM</text>
+        </g>
+
+        <!-- 步骤箭头 -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- 1. User -> Runtime: 安装 -->
+          <line x1="82" y1="60" x2="196" y2="60" marker-end="url(#arr)"/>
+          <text x="139" y="52" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">① 安装 marketplace</text>
+          <!-- 2. Runtime -> Plugin: 扫描 -->
+          <line x1="202" y1="94" x2="316" y2="94" marker-end="url(#arr)"/>
+          <text x="259" y="86" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">② scan plugin.json / skills / .mcp.json</text>
+          <!-- 3. Runtime -> MCP: 拉起 -->
+          <line x1="202" y1="128" x2="556" y2="128" marker-end="url(#arr)"/>
+          <text x="379" y="120" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">③ boot Ironclad / DocuSign HTTP MCP</text>
+          <!-- 4. User -> Runtime: /nda-review -->
+          <line x1="82" y1="164" x2="196" y2="164" marker-end="url(#arr)"/>
+          <text x="139" y="156" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">④ /nda-review + 合同</text>
+          <!-- 5. Runtime -> Config: 读 playbook -->
+          <line x1="202" y1="198" x2="436" y2="198" marker-end="url(#arr)"/>
+          <text x="319" y="190" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">⑤ read NDA playbook</text>
+          <!-- 6. Runtime -> LLM: 注入 SKILL + config -->
+          <line x1="202" y1="232" x2="676" y2="232" marker-end="url(#arr)"/>
+          <text x="439" y="224" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">⑥ system + SKILL.md + config 片段</text>
+          <!-- 7. LLM -> MCP: 查条款 -->
+          <line x1="678" y1="266" x2="564" y2="266" marker-end="url(#arr)"/>
+          <text x="621" y="258" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">⑦ mcp__ironclad__search</text>
+          <!-- 8. LLM -> User: 输出 -->
+          <line x1="678" y1="300" x2="82" y2="300" marker-end="url(#arr)" stroke-dasharray="4 4"/>
+          <text x="380" y="292" text-anchor="middle" font-size="10.5" fill="currentColor" font-weight="700" stroke="none">⑧ GREEN / YELLOW / RED 报告</text>
+        </g>
+
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" style="fill:var(--accent)"/>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+
+    <p>分支逻辑写在 SKILL 正文里，由模型按说明执行，<strong>没有</strong> 自研的 <code>if (clause.type == "NDA")</code> 业务代码。</p>
+
+    <!-- 七 -->
+    <h2 id="sec-yaml"><span class="sec-num">七</span>Managed Agents：YAML 面向 API 部署<a href="#sec-yaml" class="anchor">#</a></h2>
+    <p class="kicker">Same md, second runtime</p>
+
+    <p><code>managed-agent-cookbooks/renewal-watcher/agent.yaml</code>：</p>
+<pre><code>name: renewal-watcher
+model: claude-opus-4-7
+system:
+  file: ../../commercial-legal/agents/renewal-watcher.md
+tools:
+  - type: agent_toolset_20260401
+    configs:
+      - { name: read, enabled: true }
+mcp_servers:
+  - { type: url, name: ironclad, url: "${IRONCLAD_MCP_URL}" }
+skills:
+  - { from_plugin: ../../commercial-legal }
+callable_agents:
+  - { manifest: ./subagents/repo-reader.yaml }
+</code></pre>
+
+    <p>同一套 <code>renewal-watcher.md</code>，外包 YAML 定义工具范围、子 Agent、环境变量——<strong>Cowork 交互插件</strong> 与 <strong>Claude Platform 可编程 Agent</strong> 的第二种打包。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">Cookbook 约束（仓库 lint）</div>
+      <ul style="margin:.3em 0;">
+        <li>Orchestrator 仅本地工具（<code>read/grep/glob</code>）；MCP 与 <code>Write</code> 放在 subagent leaves</li>
+        <li>README 安全表与 <code>agent.yaml</code> 授权必须一致</li>
+      </ul>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-evo"><span class="sec-num">八</span>与「进化」的边界<a href="#sec-evo" class="anchor">#</a></h2>
+    <p class="kicker">Boundary · 什么此仓库不做</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>机制</th><th>是否代码内 self-evolve</th></tr></thead>
+        <tbody>
+          <tr><td>新 skill 写入仓库</td><td>人工发版，git 管理</td></tr>
+          <tr><td>cold-start 写 <code>CLAUDE.md</code></td><td>访谈生成配置</td></tr>
+          <tr><td>skill 发现 playbook 缺项，写回 <code>CLAUDE.md</code></td><td>交互式沉淀，半自动</td></tr>
+          <tr><td>renewal-watcher 定时跑</td><td>调度 + prompt</td></tr>
+          <tr><td>Hermes 式 GEPA 优化</td><td><strong>不在</strong> 此仓库</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断</div>
+      领域插件 = <strong>声明式组件 + Prompt 资产 + 用户配置 + MCP。</strong>企业级「进化」若要做，需在 <strong>变更治理层</strong>（notify / approve / rollback）上叠加，不是插件目录开箱即有。
+    </div>
+
+    <!-- 九 -->
+    <h2 id="sec-tob"><span class="sec-num">九</span>仿造领域插件的最小技术清单（ToB / 物流场景）<a href="#sec-tob" class="anchor">#</a></h2>
+
+    <ol>
+      <li>Plugin manifest（name、version、description）</li>
+      <li><code>skills/&lt;task&gt;/SKILL.md</code>：每个高频任务一份 SOP prompt</li>
+      <li><code>agents/*.md</code>：定时/多步任务，声明 <code>model</code> + <code>tools</code></li>
+      <li><code>.mcp.json</code>：WMS / TMS / 工单等 MCP URL</li>
+      <li><code>config/&lt;tenant&gt;/PLAYBOOK.md</code>：对标 <code>CLAUDE.md</code>，访谈或导入生成</li>
+      <li>（可选）<code>agent.yaml</code>：API / Managed Agent 部署</li>
+      <li>运行时：扫描加载 + 权限 + 审计 + <strong>变更 notify / approve / rollback</strong></li>
+    </ol>
+
+    <!-- 十 -->
+    <h2 id="sec-vs"><span class="sec-num">十</span>Claude 插件 vs 传统 SaaS 集成<a href="#sec-vs" class="anchor">#</a></h2>
+    <p class="kicker">Duo · 心智模型对照</p>
+
+    <!-- ▼ 视觉四：双卡对比 -->
+    <div class="duo reveal">
+      <div class="duo-side d-saas">
+        <span class="duo-eyebrow"><span class="dot"></span>传统 SaaS 法务集成</span>
+        <h4 class="duo-name">应用后端 + Webhook + UI</h4>
+        <ul class="duo-list">
+          <li><b>后端</b>业务代码（Python/Java 分支、状态机）</li>
+          <li><b>Storage</b>PostgreSQL / mongo</li>
+          <li><b>UI</b>React 页面 + 表单</li>
+          <li><b>集成</b>Webhook 拉 API</li>
+          <li><b>迭代</b>发版流程 · 灰度 · rollback 由 CI/CD</li>
+        </ul>
+      </div>
+      <div class="duo-vs">vs</div>
+      <div class="duo-side d-plugin">
+        <span class="duo-eyebrow"><span class="dot"></span>Claude 领域插件</span>
+        <h4 class="duo-name">Markdown + JSON + MCP</h4>
+        <ul class="duo-list">
+          <li><b>后端</b>零业务代码 · LLM 读 SKILL.md 执行</li>
+          <li><b>Storage</b>用户机 Markdown 配置</li>
+          <li><b>UI</b>Office 内嵌 / Cowork / CLI</li>
+          <li><b>集成</b><code>.mcp.json</code> URL 声明</li>
+          <li><b>迭代</b>PR 改 <code>SKILL.md</code> · marketplace 分发 · 治理需外挂</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 十一 -->
+    <h2 id="sec-map"><span class="sec-num">十一</span>概念对照表<a href="#sec-map" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>概念</th><th>实现形态</th></tr></thead>
+        <tbody>
+          <tr><td>领域插件</td><td>一个目录 + <code>plugin.json</code> + marketplace 注册</td></tr>
+          <tr><td>领域 Skill</td><td><code>skills/*/SKILL.md</code></td></tr>
+          <tr><td>子 Agent</td><td><code>agents/*.md</code> + frontmatter</td></tr>
+          <tr><td>系统连接</td><td><code>.mcp.json</code> → HTTP MCP</td></tr>
+          <tr><td>团队 playbook</td><td>用户机 <code>~/.claude/plugins/config/.../CLAUDE.md</code></td></tr>
+          <tr><td>可编程部署</td><td><code>managed-agent-cookbooks/*/agent.yaml</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">修订：2026-05-12 代码层拆解 · 转 HTML 版 2026-07-03</p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="2026-05-12_claude-for-legal-industry.html">战略解读主篇</a>
+      · <a href="../../README.md">Anthropic 索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,0 +1,670 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Code 在大代码库：Harness > Model · FDE 深度解读</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页 accent：emerald（避开：teal/blue/violet/orange/indigo/archival-blue/cyan/fuchsia） */
+  :root {
+    --accent: #059669;
+    --accent-deep: #047857;
+    --accent-ink: #064e3b;
+    --accent-soft: color-mix(in srgb, #059669 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #34d399;
+    --accent-soft: color-mix(in srgb, #059669 26%, #1a1a22);
+    --accent-ink: #6ee7b7;
+  }
+
+  /* ═════════ 视觉一：Agentic Search vs RAG 双态对照 ═════════ */
+  .vs { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 2em 0; }
+  @media (max-width: 820px) { .vs { grid-template-columns: 1fr; } .vs-mid { transform: rotate(90deg); } }
+  .vs-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .7rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .vs-side:hover { transform: translateY(-3px); }
+  .vs-rag { border-color: var(--border-strong); }
+  .vs-rag .vs-eyebrow { color: var(--text-muted); }
+  .vs-rag .vs-eyebrow .dot { background: var(--text-muted); }
+  .vs-agentic { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .vs-agentic .vs-eyebrow { color: var(--accent); }
+  .vs-agentic .vs-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .vs-eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 700; letter-spacing: .14em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .vs-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .vs-title { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; line-height: 1.2; }
+  .vs-title .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .68rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .15em; text-transform: uppercase; }
+  .vs-svg { display: block; margin: .3em auto; width: 100%; max-width: 260px; height: auto; }
+  .vs-svg text { font-family: var(--mono); }
+  .vs-cap { font-size: .87rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .vs-cap b { color: var(--text); }
+  .vs-cost {
+    font-family: var(--mono); font-size: .72rem; margin-top: .3em; padding-top: .55rem;
+    border-top: 1px dashed var(--border-strong); color: var(--text-muted); line-height: 1.55;
+  }
+  .vs-cost b { color: var(--accent); margin-right: .3em; }
+  .vs-mid {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .35rem; color: var(--accent); padding: 0 .3rem;
+  }
+  .vs-mid .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .vs-mid .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 820px) { .vs-mid .lab { writing-mode: horizontal-tb; } }
+
+  /* pulse 呼吸 */
+  .rag-stale { animation: rag-stale 3s ease-in-out infinite; transform-origin: center; }
+  @keyframes rag-stale { 50% { opacity: .35; } }
+  .live-blink { animation: live-blink 1.4s ease-in-out infinite; }
+  @keyframes live-blink { 50% { opacity: .3; } }
+
+  /* ═════════ 视觉二：Harness 五扩展点 顺序阶梯 ═════════ */
+  .harness { margin: 2em 0; display: flex; flex-direction: column; gap: .55rem; }
+  .h-step {
+    display: grid; grid-template-columns: 60px 130px 1fr auto; gap: 1rem; align-items: center;
+    padding: .95rem 1.15rem; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+    border-left: 4px solid var(--accent);
+    position: relative;
+  }
+  @media (max-width: 820px) { .h-step { grid-template-columns: 44px 1fr; } .h-step .h-when, .h-step .h-tag { grid-column: 1 / -1; } }
+  .h-step:hover { transform: translateX(4px); border-color: var(--accent); }
+  .h-step.hs-1 { margin-left: 0; }
+  .h-step.hs-2 { margin-left: 1.4rem; }
+  .h-step.hs-3 { margin-left: 2.8rem; }
+  .h-step.hs-4 { margin-left: 4.2rem; }
+  .h-step.hs-5 { margin-left: 5.6rem; }
+  @media (max-width: 820px) { .h-step { margin-left: 0 !important; } }
+  .h-num {
+    font-family: var(--display); font-style: italic; font-weight: 500; font-size: 2rem;
+    color: var(--accent); line-height: 1; width: 44px; text-align: center;
+  }
+  .h-name { font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); line-height: 1.3; }
+  .h-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .65rem; letter-spacing: .05em; color: var(--text-muted); margin-top: .15em; text-transform: uppercase; }
+  .h-mean { font-size: .87rem; color: var(--text-soft); line-height: 1.55; }
+  .h-mean code { font-size: .82em; }
+  .h-when {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--accent); padding: .32em .7em; border: 1px solid var(--accent); border-radius: 999px;
+    white-space: nowrap;
+    background: color-mix(in srgb, var(--accent) 6%, transparent);
+  }
+
+  /* ═════════ 视觉三：分层配置模式（层次卡） ═════════ */
+  .modes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.9em 0; }
+  @media (max-width: 900px) { .modes { grid-template-columns: 1fr; } }
+  .mode {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .6rem;
+    border-top: 3px solid var(--c, var(--accent));
+    transition: transform .2s, box-shadow .2s;
+  }
+  .mode:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,.06); }
+  .mode.m-A { --c: var(--accent); }
+  .mode.m-B { --c: var(--warn); }
+  .mode.m-C { --c: #7c3aed; }
+  .mode-eyebrow {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--c); font-weight: 700;
+  }
+  .mode-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; }
+  .mode-icon { color: var(--c); margin: .2em 0; }
+  .mode-icon svg { width: 34px; height: 34px; }
+  .mode-body { font-size: .87rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .mode-list { margin: 0; padding-left: 1.2em; font-size: .85rem; color: var(--text-soft); line-height: 1.5; }
+  .mode-list li { margin: .18em 0; }
+  .mode-list code { font-size: .82em; }
+  .mode-kv {
+    margin: .3em 0 0; padding-top: .55rem; border-top: 1px dashed var(--border-strong);
+    font-family: var(--mono); font-size: .72rem; color: var(--text-muted); line-height: 1.55;
+  }
+  .mode-kv b { color: var(--c); margin-right: .4em; }
+
+  /* ═════════ 视觉四：主路径 时序泳道 ═════════ */
+  .seq { margin: 2em 0; }
+  .seq-svg { width: 100%; max-width: 940px; margin: 0 auto; display: block; }
+  .seq-svg text { font-family: var(--mono); }
+  .seq-svg .disp { font-family: var(--display); font-weight: 700; }
+  .seq-legend {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem;
+    margin: .8rem 0 .3em; font-size: .8rem;
+  }
+  @media (max-width: 720px) { .seq-legend { grid-template-columns: repeat(2, 1fr); } }
+  .seq-legend .l {
+    padding: .5rem .7rem; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-soft); line-height: 1.4;
+  }
+  .seq-legend .l b { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: .15em; }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .rag-stale, .live-blink { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Claude Code 在大代码库<span class="brand-sub">跨市场 · Anthropic · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>How Claude Code works<br /><span class="en">in Large Codebases</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Agentic Search、Harness 五扩展点、组织 DRI——企业级 Coding Agent 的建设顺序</p>
+      <div class="doc-meta">
+        <span>2026-05-14</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>Claude Code</span>
+        <span>Harness 工程</span>
+        <span>组织落地</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5</div><div class="lab">Harness 扩展点<br />md/hook/skill/plugin/mcp</div></div>
+        <div class="hero-stat"><div class="num">3–6</div><div class="lab">月度配置审计<br />新模型后 plateau 时</div></div>
+        <div class="hero-stat"><div class="num">0</div><div class="lab">中央 embedding 索引<br />live filesystem 直读</div></div>
+        <div class="hero-stat"><div class="num">1<small>DRI</small></div><div class="lab">Agent Manager<br />adoption 乘数</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        官方：<a href="https://claude.com/blog/how-claude-code-works-in-large-codebases-best-practices-and-where-to-start" target="_blank" rel="noopener">Anthropic 博客</a> ·
+        <a href="https://claude.com/product/claude-code/enterprise" target="_blank" rel="noopener">Claude Code for Enterprise</a> ·
+        <a href="https://code.claude.com/docs" target="_blank" rel="noopener">Docs</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Anthropic 在大代码库场景押注 <strong>Agentic Search（本地实时读盘 + grep/LSP）而非 RAG 全库索引</strong>；企业级成功更多取决于 <strong>Harness 分层建设顺序</strong>（CLAUDE.md → Hooks → Skills → Plugins → MCP）与 <strong>组织侧 DRI/Agent Manager</strong>，而非单纯换更强模型——这与 Computer Use 文里的 harness 叙事一脉相承。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>不做 embedding 索引</strong>：靠 live grep/read + LSP，代价是需精心设计起点上下文</li>
+        <li><strong>建设顺序有讲究</strong>：CLAUDE.md → Hooks → Skills → Plugins → MCP，跳阶就是碎片化</li>
+        <li><strong>CLAUDE.md 精简分层</strong>：root 只放指针，子目录放本域约定；每 session 向上 walk 自动叠加</li>
+        <li><strong>3–6 月配置审计</strong>：新模型 plateau 时敢删旧约束——为旧模型写的规则可能<strong>阻碍</strong>新模型</li>
+        <li><strong>组织侧最小可行</strong>：1 名 Agent Manager DRI + marketplace + 3–6 月节奏</li>
+        <li><strong>受监管行业</strong>：先窄后宽——批准清单、代码评审、跨职能 working group</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-what"><span class="sec-num">一</span>发布了什么<a href="#sec-what" class="anchor">#</a></h2>
+    <p class="kicker">The Launch · 事实摘要</p>
+
+    <p><strong>Claude Code at scale</strong> 系列首篇，基于 Applied AI 在多客户（百万行 monorepo、数十年 legacy、跨数十 repo 微服务、数千开发者组织）的部署观察。「大」不仅指 monorepo，也包含 <strong>C/C++/C#/Java/PHP</strong> 等传统语言栈。假设环境：<strong>Git、常规目录结构、工程师为主贡献者</strong>；游戏引擎大 binary、非 Git VCS、非工程师写码需额外配置。</p>
+
+    <h3 id="sec-what-nav">1.1 导航机制：Agentic Search vs RAG</h3>
+
+    <!-- ▼ 视觉一：Agentic vs RAG -->
+    <div class="vs reveal">
+      <div class="vs-side vs-rag">
+        <div class="vs-eyebrow"><span class="dot"></span>RAG 类工具</div>
+        <h4 class="vs-title">全库 embedding 检索<span class="en">Stale by design</span></h4>
+        <svg class="vs-svg" viewBox="0 0 260 140" role="img" aria-label="RAG：全库索引，检索时可能返回已删/已改名的 chunk">
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="14" y="18" width="90" height="104" rx="6" style="fill:var(--surface)"/>
+            <text x="59" y="35" text-anchor="middle" font-size="9" style="fill:var(--text)" stroke="none">Index</text>
+            <line x1="24" y1="46" x2="94" y2="46"/>
+            <line x1="24" y1="58" x2="94" y2="58"/>
+            <line x1="24" y1="70" x2="88" y2="70"/>
+            <line x1="24" y1="82" x2="94" y2="82"/>
+            <line x1="24" y1="94" x2="80" y2="94"/>
+            <line x1="24" y1="106" x2="90" y2="106"/>
+          </g>
+          <g class="rag-stale" style="color:var(--con)">
+            <text x="59" y="120" text-anchor="middle" font-size="7.5" style="fill:currentColor" stroke="none">2 days ago</text>
+          </g>
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.3">
+            <line x1="110" y1="70" x2="140" y2="70" marker-end="url(#hArrow2)"/>
+          </g>
+          <defs>
+            <marker id="hArrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" style="fill:var(--text-muted)"/>
+            </marker>
+          </defs>
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="148" y="34" width="98" height="72" rx="6" style="fill:var(--surface)"/>
+            <text x="197" y="52" text-anchor="middle" font-size="9" style="fill:var(--text)" stroke="none">chunk</text>
+            <line x1="158" y1="62" x2="238" y2="62"/>
+            <line x1="158" y1="72" x2="228" y2="72"/>
+            <line x1="158" y1="82" x2="228" y2="82"/>
+            <line x1="158" y1="92" x2="220" y2="92"/>
+          </g>
+          <g style="color:var(--con)">
+            <text x="197" y="122" text-anchor="middle" font-size="8" font-weight="700" style="fill:currentColor" stroke="none">renamed / deleted?</text>
+          </g>
+        </svg>
+        <p class="vs-cap"><b>路径：</b>预先建 embedding → 查询时向量匹配 → 返回 chunk。<b>痛点：</b>索引滞后（天/周级），返回已改名/已删符号。</p>
+        <div class="vs-cost"><b>前提</b>索引新鲜度</div>
+      </div>
+
+      <div class="vs-mid">
+        <span class="gly">vs</span>
+        <span class="lab">Anthropic 明确选后者</span>
+      </div>
+
+      <div class="vs-side vs-agentic">
+        <div class="vs-eyebrow"><span class="dot"></span>Claude Code（Agentic）</div>
+        <h4 class="vs-title">Live grep + read + LSP<span class="en">Every task, current truth</span></h4>
+        <svg class="vs-svg" viewBox="0 0 260 140" role="img" aria-label="Agentic Search：本地文件系统实时读取 + grep 遍历 + LSP 精准符号">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="14" y="18" width="90" height="104" rx="6" style="fill:var(--accent-soft)"/>
+            <text x="59" y="35" text-anchor="middle" font-size="9" font-weight="700" style="fill:var(--accent-ink)" stroke="none">Live FS</text>
+            <path d="M24 46h70M24 58h60M24 70h68M24 82h54M24 94h64M24 106h70"/>
+          </g>
+          <g class="live-blink" style="color:var(--accent)">
+            <circle cx="94" cy="30" r="4" style="fill:currentColor" stroke="none"/>
+          </g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M110 55 l14 6 -14 6" marker-end="url(#hArrow3)"/>
+            <text x="130" y="52" font-size="7.5" style="fill:var(--text-soft)" stroke="none">grep</text>
+            <path d="M110 78 l14 6 -14 6" marker-end="url(#hArrow3)"/>
+            <text x="130" y="75" font-size="7.5" style="fill:var(--text-soft)" stroke="none">read</text>
+            <path d="M110 100 l14 6 -14 6" marker-end="url(#hArrow3)"/>
+            <text x="130" y="97" font-size="7.5" style="fill:var(--text-soft)" stroke="none">lsp refs</text>
+          </g>
+          <defs>
+            <marker id="hArrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/>
+            </marker>
+          </defs>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <circle cx="200" cy="80" r="30" style="fill:var(--surface)"/>
+            <text x="200" y="76" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--accent-ink)" stroke="none" class="disp">Claude</text>
+            <text x="200" y="90" text-anchor="middle" font-size="7.5" style="fill:var(--text-muted)" stroke="none">Agent loop</text>
+          </g>
+        </svg>
+        <p class="vs-cap"><b>路径：</b>本地 FS 遍历 → grep / read / LSP → agent 循环。<b>关键：</b>每次任务面对 <strong>live codebase</strong>，无中间索引可 stale。</p>
+        <div class="vs-cost"><b>前提</b>足够起点上下文 + 目录 legibility</div>
+      </div>
+    </div>
+
+    <p><strong>结论</strong>：Anthropic 不维护 embedding pipeline；导航质量由 <strong>代码库可 legibility</strong>（CLAUDE.md 分层、skills、ignore）决定。代价是每次任务消耗更多 agent 步（读盘、grep）；全库模糊搜索仍受 context window 硬限。</p>
+
+    <h3 id="sec-what-harness">1.2 Harness 五扩展点 + 两项能力</h3>
+
+    <p>建设顺序建议：<strong>CLAUDE.md → Hooks → Skills → Plugins → MCP</strong>；LSP 对 C/C++ 等多语言大库高 ROI；Subagents 在 harness 就绪后用于「只读探索 → 主 agent 编辑」。</p>
+
+    <!-- ▼ 视觉二：Harness 五扩展点阶梯 -->
+    <div class="harness reveal">
+      <div class="h-step hs-1">
+        <div class="h-num">Ⅰ</div>
+        <div class="h-name"><span class="h-when">每 session 自动</span><br /><br />CLAUDE.md<span class="en">Layered memory</span></div>
+        <div class="h-mean">项目 / 子目录约定与 codebase 知识；启动时从 cwd 向上 walk 合并所有 <code>CLAUDE.md</code>。<strong>误区</strong>：把应放 skill 的可复用专长全塞进 md，撑爆每轮 context。</div>
+        <div class="h-tag"></div>
+      </div>
+      <div class="h-step hs-2">
+        <div class="h-num">Ⅱ</div>
+        <div class="h-name"><span class="h-when">事件触发</span><br /><br />Hooks<span class="en">Deterministic side effects</span></div>
+        <div class="h-mean">确定性 lint/format；<code>stop</code> hook <strong>反思并提议</strong>更新 <code>CLAUDE.md</code>；<code>SessionStart</code> hook 动态加载模块上下文。<strong>误区</strong>：用 prompt 代替应自动化的行为。</div>
+      </div>
+      <div class="h-step hs-3">
+        <div class="h-num">Ⅲ</div>
+        <div class="h-name"><span class="h-when">按需 progressive</span><br /><br />Skills<span class="en">Path-scoped playbook</span></div>
+        <div class="h-mean">专项工作流；可 <strong>path-scoped</strong>（如仅 <code>payments/</code> 目录生效）；扫描 <code>SKILL.md</code> YAML description，命中时才注入正文。<strong>误区</strong>：全塞进 CLAUDE.md 撑爆 context。</div>
+      </div>
+      <div class="h-step hs-4">
+        <div class="h-num">Ⅳ</div>
+        <div class="h-name"><span class="h-when">配置后常驻</span><br /><br />Plugins<span class="en">Managed marketplace</span></div>
+        <div class="h-mean">打包 <code>skills + hooks + MCP</code>；企业级 <strong>managed marketplace</strong> 组织分发。<strong>误区</strong>：好配置停留在部落知识，人人抄一份 prompt。</div>
+      </div>
+      <div class="h-step hs-5">
+        <div class="h-num">Ⅴ</div>
+        <div class="h-name"><span class="h-when">配置后常驻</span><br /><br />MCP<span class="en">Internal tools bridge</span></div>
+        <div class="h-mean">内网工具 / 文档 / 工单 / 结构化搜索。<strong>误区</strong>：基础（Ⅰ–Ⅳ）未稳就先堆 MCP，任务定位仍找不准。</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">两项能力</div>
+      <p style="margin:.2em 0;"><strong>LSP</strong>（经 code intelligence plugin）：符号级 go-to-def / find-refs，多语言同名消歧——grep 常见函数名可能上千匹配，LSP 只返回同 symbol。<br /><strong>Subagents</strong>：独立 context 会话，探索与编辑分离，只回传结果——避免同 session 又探又改挤爆 context。</p>
+    </div>
+
+    <!-- 二 -->
+    <h2 id="sec-arch"><span class="sec-num">二</span>架构与机制拆解<a href="#sec-arch" class="anchor">#</a></h2>
+    <p class="kicker">Three-Layer Bottleneck · 找得到 / 装得下 / 传得开</p>
+
+    <p>大代码库 Agent 的三层瓶颈：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>层</th><th>问题</th><th>手段</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>1 · 导航（找得到）</td><td>起点上下文 + 符号消歧</td><td>Layered CLAUDE.md · Live grep · LSP</td></tr>
+          <tr><td>2 · 上下文（装得下）</td><td>context window 硬限</td><td>Progressive Skills · Subagent 分流 · <code>.ignore</code> / <code>permissions.deny</code></td></tr>
+          <tr><td>3 · 组织（传得开）</td><td>tribal knowledge 碎片化</td><td>Plugin marketplace · DRI · 3–6 月审计</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-arch-modes">2.1 三大配置模式（成功部署共性）</h3>
+
+    <!-- ▼ 视觉三：三大配置模式 -->
+    <div class="modes reveal">
+      <div class="mode m-A">
+        <div class="mode-eyebrow">A · Legibility</div>
+        <div class="mode-icon">
+          <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 8h4M6 14h6M6 20h6M6 26h4"/>
+            <path d="M14 6l14 14M14 10l10 10"/>
+            <circle cx="26" cy="10" r="2.5"/>
+          </svg>
+        </div>
+        <h4 class="mode-name">让代码库可导航</h4>
+        <ul class="mode-list">
+          <li>Root CLAUDE.md 仅指针 + critical gotchas</li>
+          <li>子目录初始化而非总在 repo root——向上 walk 仍会合并</li>
+          <li>子目录级 <code>test</code> / <code>lint</code> 命令，避免每次跑全量</li>
+          <li><code>.ignore</code> + 版本化 <code>permissions.deny</code></li>
+          <li>Codebase map：root md 表每 top-level 一行说明</li>
+          <li>LSP：grep 上千命中 → symbol references 精准</li>
+        </ul>
+        <div class="mode-kv"><b>产出</b>可导航 + context 干净</div>
+      </div>
+
+      <div class="mode m-B">
+        <div class="mode-eyebrow">B · Evolution</div>
+        <div class="mode-icon">
+          <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 6v22"/>
+            <circle cx="10" cy="10" r="3"/>
+            <circle cx="24" cy="17" r="3"/>
+            <circle cx="10" cy="24" r="3"/>
+            <path d="M13 10h4M21 17h-4M13 24h4"/>
+          </svg>
+        </div>
+        <h4 class="mode-name">随模型演进维护配置</h4>
+        <ul class="mode-list">
+          <li>每 3–6 月 或新模型 plateau 时 review</li>
+          <li>为旧模型写的规则可能 <strong>阻碍</strong> 新模型</li>
+          <li>为弥补旧工具的 hook/skill 变冗余开销</li>
+          <li>例：Perforce <code>p4 edit</code> 拦截 hook → 原生 mode 后删除</li>
+        </ul>
+        <div class="mode-kv"><b>关键</b>敢删 · 不只增</div>
+      </div>
+
+      <div class="mode m-C">
+        <div class="mode-eyebrow">C · Ownership</div>
+        <div class="mode-icon">
+          <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="17" cy="11" r="4"/>
+            <path d="M8 27a9 9 0 0 1 18 0"/>
+            <path d="M17 15v6"/>
+            <path d="M14 18h6"/>
+          </svg>
+        </div>
+        <h4 class="mode-name">组织 ownership</h4>
+        <ul class="mode-list">
+          <li>Rollout 前小团队先把 plugins + MCP 接好——首日 productive</li>
+          <li>职能：DevEx / DevProd + 新角色 <strong>Agent Manager</strong>（PM+工程）</li>
+          <li>最小可行 DRI：配置 / 权限 / marketplace / md 约定</li>
+          <li>无中心化 → bottom-up 热情碎片化 plateau</li>
+          <li>受监管行业：批准清单 + 代码评审 + 有限初始权限</li>
+        </ul>
+        <div class="mode-kv"><b>乘数</b>Agent Manager × marketplace</div>
+      </div>
+    </div>
+
+    <h3 id="sec-arch-evo">2.2 「进化」在这篇文章里如何体现</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>机制</th><th>含义</th><th>是否 autonomous</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Stop hook → 提议 CLAUDE.md 更新</td><td>会话级经验沉淀为配置资产</td><td><strong>半自动</strong>——人审后合入</td></tr>
+          <tr><td>Skills / Plugins</td><td>组织 playbook 编码 + marketplace 分发</td><td>人工编写</td></tr>
+          <tr><td>3–6 月配置 review</td><td>随模型能力<strong>删减</strong>过时约束</td><td>人工治理（<em>负向进化</em>）</td></tr>
+          <tr><td>MCP 连内网系统</td><td>集成扩展</td><td>非 mem 自学习</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>结论</strong>：与 <code>sf_claw_evolution_poc</code> 讨论的 evolution 对照，此文更接近「可运营配置 + 周期性修剪」，而非黑盒 mem 改写；hooks 提议 md 更新 ≈ <strong>有治理的 evolution 出口</strong>（应对齐 approve / rollback）。</p>
+
+    <h3 id="sec-arch-resonance">2.3 与 Computer Use 文的共振</h3>
+
+    <p>两篇共同论点：<strong>Harness &gt; Model</strong>。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Computer Use 文</th><th>本文</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>截图 downscale + 坐标</td><td>CLAUDE.md 分层 + ignore</td></tr>
+          <tr><td>cache-aware prune</td><td>Skills progressive disclosure</td></tr>
+          <tr><td>Teach Mode 演示资产</td><td>Plugins 分发 tribal knowledge</td></tr>
+          <tr><td>PI 分类器 + human-in-the-loop</td><td>批准 plugins/skills + code review</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-impl"><span class="sec-num">三</span>核心实现拆解（剧透式）<a href="#sec-impl" class="anchor">#</a></h2>
+    <p class="kicker">Under the Hood · 运行时行为归纳</p>
+
+    <p>Claude Code 本体为 <strong>闭源 CLI/桌面运行时</strong>；下文据官方博客 + <a href="https://code.claude.com/docs" target="_blank" rel="noopener">公开文档</a>归纳运行时行为。与 RAG 编码产品的关键差异：<strong>没有</strong>「上传 / 构建 codebase index」这一步。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>模块</th><th>职责</th><th>关键机制</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>上下文加载器</td><td>每 session 注入项目知识</td><td>从 <code>cwd</code> 向上 walk 合并路径上所有 <code>CLAUDE.md</code>；子目录启动也会带上祖先 md</td></tr>
+          <tr><td>Skill 注册表</td><td>按需专长，不撑爆每轮 context</td><td>扫描 <code>skills/**/SKILL.md</code> 的 YAML frontmatter <code>description</code> → 匹配任务时<strong>注入 SKILL 正文</strong>（progressive disclosure）</td></tr>
+          <tr><td>Hook 运行时</td><td>确定性副作用 + 配置进化</td><td><code>hooks.json</code> 绑定事件（<code>Stop</code> / <code>SessionStart</code>）→ 执行 shell；stop hook 可<strong>提议</strong>改 CLAUDE.md</td></tr>
+          <tr><td>Plugin 装载器</td><td>组织级复制最佳实践</td><td>读 <code>plugin.json</code> + 打包的 skills / hooks / <code>.mcp.json</code> → 注册到上述子系统；Enterprise <strong>managed marketplace</strong> 分发</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-impl-path">3.1 主路径：大库里的「改一个函数」</h3>
+
+    <!-- ▼ 视觉四：主路径时序泳道 -->
+    <div class="seq reveal">
+      <svg class="seq-svg" viewBox="0 0 940 300" role="img" aria-label="主路径时序：开发者 → Claude Code Runtime → Live FS → LLM">
+        <defs>
+          <marker id="seqArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/>
+          </marker>
+        </defs>
+
+        <!-- 泳道 4 条 -->
+        <g style="color:var(--accent)">
+          <rect x="10" y="14" width="120" height="26" rx="6" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="70" y="31" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" class="disp">Developer</text>
+          <line x1="70" y1="46" x2="70" y2="280" stroke="currentColor" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>
+
+          <rect x="150" y="14" width="180" height="26" rx="6" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="240" y="31" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" class="disp">Claude Code Runtime</text>
+          <line x1="240" y1="46" x2="240" y2="280" stroke="currentColor" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>
+
+          <rect x="360" y="14" width="140" height="26" rx="6" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="430" y="31" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" class="disp">Live Filesystem</text>
+          <line x1="430" y1="46" x2="430" y2="280" stroke="currentColor" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>
+
+          <rect x="540" y="14" width="120" height="26" rx="6" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="600" y="31" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" class="disp">LLM (Claude)</text>
+          <line x1="600" y1="46" x2="600" y2="280" stroke="currentColor" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>
+
+          <rect x="680" y="14" width="120" height="26" rx="6" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <text x="740" y="31" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" class="disp">Hooks · LSP</text>
+          <line x1="740" y1="46" x2="740" y2="280" stroke="currentColor" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>
+        </g>
+
+        <!-- 消息线 -->
+        <g style="color:var(--accent)" font-family="var(--mono)" font-size="9.5">
+          <!-- 1. cwd -->
+          <line x1="70" y1="60" x2="240" y2="60" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="155" y="55" text-anchor="middle" style="fill:var(--text-soft)">cwd = services/payments/</text>
+
+          <!-- 2. walk load md -->
+          <path d="M240 82 C 280 82 280 108 240 108" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <text x="290" y="98" style="fill:var(--text-soft)">walk up CLAUDE.md chain</text>
+
+          <!-- 3. task -->
+          <line x1="70" y1="128" x2="240" y2="128" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="155" y="123" text-anchor="middle" style="fill:var(--text-soft)">task: rename fn X</text>
+
+          <!-- 4. SKILL.md 命中注入 -->
+          <path d="M240 146 C 300 146 300 168 240 168" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 3"/>
+          <text x="330" y="160" style="fill:var(--text-soft)">match SKILL.md → inject body</text>
+
+          <!-- 5. LLM grep/read -->
+          <line x1="240" y1="188" x2="600" y2="188" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="420" y="183" text-anchor="middle" style="fill:var(--text-soft)">system + md chain + tools</text>
+
+          <!-- 6. LLM ↔ FS -->
+          <line x1="600" y1="210" x2="430" y2="210" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="515" y="205" text-anchor="middle" style="fill:var(--text-soft)">Grep / Read / LSP refs</text>
+          <line x1="430" y1="228" x2="600" y2="228" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="515" y="223" text-anchor="middle" style="fill:var(--text-soft)">current file contents</text>
+
+          <!-- 7. Edit -->
+          <line x1="600" y1="250" x2="240" y2="250" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="420" y="245" text-anchor="middle" style="fill:var(--text-soft)">Edit tool calls</text>
+
+          <!-- 8. Hooks -->
+          <line x1="240" y1="270" x2="740" y2="270" stroke="currentColor" stroke-width="1.4" marker-end="url(#seqArrow)"/>
+          <text x="490" y="265" text-anchor="middle" style="fill:var(--text-soft)">Stop hook → propose CLAUDE.md diff</text>
+        </g>
+      </svg>
+
+      <div class="seq-legend">
+        <div class="l"><b>Step 1–2</b>子目录启动 · 向上 walk md</div>
+        <div class="l"><b>Step 3–4</b>任务描述 · SKILL 命中注入</div>
+        <div class="l"><b>Step 5–7</b>Live FS 探索 · LLM 编辑</div>
+        <div class="l"><b>Step 8</b>Hook 提议 md 更新供人 merge</div>
+      </div>
+    </div>
+
+    <h3 id="sec-impl-diff">3.2 与「表面叙事」的差异</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>常见误解</th><th>实际机制</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>「Claude Code = 更强的 Copilot 补全」</td><td>默认是 <strong>agent loop + 工具调用</strong>，补全只是能力子集</td></tr>
+          <tr><td>「大库要靠向量索引」</td><td>官方路线明确<strong>反对</strong>滞后 RAG；靠导航配置 + agentic 搜索，代价是步数与 context 管理</td></tr>
+          <tr><td>「CLAUDE.md 越大越好」</td><td>每层 md <strong>每 session 都加载</strong>；专长应下沉到 Skills，否则拖慢/挤占所有任务</td></tr>
+          <tr><td>「Plugin = 新模型」</td><td>Plugin 是 <strong>配置与 prompt 资产包</strong>，运行时仍是同一 LLM + MCP</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-tob"><span class="sec-num">四</span>对 ToB Agent 的启示<a href="#sec-tob" class="anchor">#</a></h2>
+    <p class="kicker">FDE Mapping · 通用组织落地</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">01 · 优先 live 数据源</div>
+        <p>物流、工单、配置中心若用「昨晚的索引」会犯与 RAG 代码库相同的 stale 错误。Agentic 读 API/DB/实时 grep 日志更贴 Anthropic 路线，但需设计<strong>起点上下文</strong>（哪条链路、哪个服务）。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">02 · 资产分层</div>
+        <p>全局 md / 路径 skill / 组织 plugin：root 只放架构指针；WMS/TMS 子目录放本域 lint/测试/术语；跨团队用 plugin 统一分发，避免每人一份 prompt。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">03 · Hooks 做确定性</div>
+        <p>Hooks 做确定性、Skills 做专长、别把一切都写进 system prompt。P0 规则用 hook 强制执行；领域 SOP 用 skill；mem 进化若做，不应替代 hook 的确定性边界。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">04 · 符号导航</div>
+        <p>LSP/结构化查询 ≈ 大库里的「符号导航」。非代码场景对标：schema-aware 查询、trace ID、主数据 ID 解析——减少「全文 grep 业务日志」烧 context。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">05 · 组织 DRI 是乘数</div>
+        <p>技术栈就绪 &lt; 首日体验。最小投入：1 名 Agent Manager/DRI + 批准清单 + 3–6 月配置审计节奏——rollout 前先把首日 productive 打磨到位。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">06 · 敢删配置</div>
+        <p>模型升级时要敢删配置。ToB 常见债务：为旧模型写的冗长约束阻碍新模型；进化系统需<strong>「退役规则」</strong>与版本化配置，而非只增不减。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">07 · 受监管：先窄后宽</div>
+        <p>与法务/金融部署文一致——approved skills、评审门禁、跨职能 working group，再扩权限。</p>
+      </div>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-relate"><span class="sec-num">五</span>与当前工作的关联<a href="#sec-relate" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>本项目 / 文档</th><th>关联点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>顺丰进化 POC</td><td>产物应对齐 <strong>CLAUDE.md / Skills / Plugins 分层</strong>；hook 提议更新 ≈ 进化候选需审批入库</td></tr>
+          <tr><td>Evolution one-pager</td><td>Anthropic「进化」= 配置资产迭代 + 模型代际后修剪，非 autonomous mem</td></tr>
+          <tr><td>技术选型对比</td><td>Cursor / Claude Code / 自建 Agent：索引 vs agentic 是架构分叉</td></tr>
+          <tr><td><a href="2026-05-13_computer-browser-use-best-practices.html">Computer Use 最佳实践</a></td><td>同属 harness-first 企业 Agent 方法论</td></tr>
+          <tr><td><a href="2026-05-12_claude-for-legal-industry.html">Claude for Legal</a></td><td>法务：MCP+插件生态；本文：工程侧 MCP+plugin marketplace——企业双翼</td></tr>
+          <tr><td>本仓库 <code>AGENTS.md</code> / <code>.cursor/rules</code></td><td>可直接映射为「分层 CLAUDE.md + path-scoped rules + 精简 root」实践</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-track"><span class="sec-num">六</span>待跟踪信号<a href="#sec-track" class="anchor">#</a></h2>
+
+    <ul>
+      <li><strong>Claude Code at scale</strong> 系列后续：超大规模文件夹、非 Git VCS 的专项方案</li>
+      <li>Managed marketplace 与 Enterprise 的权限/审计 API 是否公开</li>
+      <li>Stop hook 自动提议 CLAUDE.md 更新的默认模板与合入工作流</li>
+      <li>LSP code intelligence plugin 对各语言覆盖矩阵与 monorepo 性能</li>
+      <li>Agent Manager 职能是否在客户案例中有 JD / 编制参考</li>
+      <li>Anthropic 是否发布 Agentic vs RAG 的量化 benchmark（大库检索准确率 / 新鲜度）</li>
+      <li>与 Cursor 的 codebase indexing 策略差异是否会在后续博文正面回应</li>
+    </ul>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">修订：2026-05-14 深度分析 · 转 HTML 版 2026-07-03</p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="../README.html">Anthropic 索引</a>
+      · <a href="2026-05-13_computer-browser-use-best-practices.html">← Computer/Browser Use</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

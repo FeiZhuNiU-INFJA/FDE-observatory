@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Computer/Browser Use 最佳实践：Harness 工程 · FDE 深度解读</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页 accent：fuchsia（避开已登记：teal/blue/violet/orange/indigo/archival-blue/cyan） */
+  :root {
+    --accent: #c026d3;
+    --accent-deep: #a21caf;
+    --accent-ink: #86198f;
+    --accent-soft: color-mix(in srgb, #c026d3 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #e879f9;
+    --accent-soft: color-mix(in srgb, #c026d3 26%, #1a1a22);
+    --accent-ink: #f0abfc;
+  }
+
+  /* ═════════ 视觉一：Harness 数据流 · 六阶段管线 ═════════ */
+  .harness { margin: 2em 0; }
+  .harness-svg { width: 100%; max-width: 940px; margin: 0 auto; display: block; }
+  .harness-svg text { font-family: var(--mono); }
+  .harness-svg .disp { font-family: var(--display); font-weight: 700; }
+  .harness-legend {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: .55rem;
+    margin: 1rem 0 .3em; font-size: .85rem;
+  }
+  @media (max-width: 640px) { .harness-legend { grid-template-columns: 1fr; } }
+  .harness-legend .l {
+    display: grid; grid-template-columns: auto 1fr; gap: .55rem; align-items: baseline;
+    padding: .55rem .8rem; border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface); color: var(--text-soft); line-height: 1.5;
+  }
+  .harness-legend .l b {
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .08em;
+    color: var(--accent); text-transform: uppercase; padding-top: .18em;
+  }
+  .harness-legend .l span { color: var(--text); font-weight: 600; font-family: var(--display); margin-right: .3em; }
+  .harness-trap {
+    margin-top: 1.1rem; padding: .95rem 1.2rem;
+    background: var(--con-soft); border-left: 3px solid var(--con); border-radius: 0 8px 8px 0;
+    font-size: .92rem; color: var(--text-soft);
+  }
+  .harness-trap b { color: var(--con); font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; margin-right: .5em; }
+
+  /* dash flow 动画（发送前箭头） */
+  .dash-send { stroke-dasharray: 5 7; animation: dashsend 1.6s linear infinite; }
+  @keyframes dashsend { to { stroke-dashoffset: -24; } }
+
+  /* ═════════ 视觉二：Thinking effort 分型（trio） ═════════ */
+  .think { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.9em 0; }
+  @media (max-width: 820px) { .think { grid-template-columns: 1fr; } }
+  .th-card {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1.15rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .55rem;
+    border-top: 3px solid var(--c, var(--accent)); position: relative; overflow: hidden;
+    transition: transform .2s, box-shadow .2s;
+  }
+  .th-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,.07); }
+  .th-card.tc-med { --c: var(--accent); }
+  .th-card.tc-high { --c: #7c3aed; }
+  .th-card.tc-max { --c: var(--con); }
+  .th-eyebrow {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--c); font-weight: 700;
+  }
+  .th-model { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; }
+  .th-effort {
+    display: inline-flex; align-items: center; gap: .5em;
+    font-family: var(--mono); font-size: .85rem; color: var(--c); font-weight: 700;
+    margin: .1em 0 .35em; padding: .28em .7em; border: 1px solid var(--c); border-radius: 6px;
+    background: color-mix(in srgb, var(--c) 8%, transparent); align-self: flex-start;
+  }
+  .th-desc { font-size: .87rem; color: var(--text-soft); margin: .1em 0; line-height: 1.55; }
+  .th-verdict {
+    margin-top: .3em; padding-top: .55rem; border-top: 1px dashed var(--border-strong);
+    font-family: var(--mono); font-size: .72rem; color: var(--text-muted); line-height: 1.5;
+  }
+  .th-verdict b { color: var(--c); margin-right: .4em; }
+  .th-meter { display: flex; gap: 3px; align-items: center; margin-top: .3em; }
+  .th-meter .b { width: 18px; height: 6px; border-radius: 2px; background: var(--border); }
+  .th-meter .b.on { background: var(--c); }
+
+  /* ═════════ 视觉三：长会话三层组合（cake） ═════════ */
+  .ctx { margin: 2em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .ctx-lyr {
+    display: grid; grid-template-columns: 60px 1fr auto; gap: 1rem; align-items: center;
+    padding: .95rem 1.2rem; border: 1.5px solid var(--border-strong); border-radius: 12px;
+    background: var(--surface); transition: transform .2s, border-color .2s, box-shadow .2s;
+    position: relative;
+  }
+  @media (max-width: 720px) { .ctx-lyr { grid-template-columns: 1fr; text-align: left; } }
+  .ctx-lyr:hover { transform: translateX(4px); border-color: var(--accent); box-shadow: 0 8px 20px rgba(0,0,0,.05); }
+  .ctx-lyr.l1 { background: linear-gradient(90deg, var(--accent-soft), color-mix(in srgb, var(--surface) 85%, transparent)); border-color: var(--accent); }
+  .ctx-lyr.l3 { background: var(--bg-soft); border-style: dashed; }
+  .ctx-icon {
+    width: 48px; height: 48px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    color: var(--accent);
+  }
+  .ctx-icon svg { width: 26px; height: 26px; }
+  .ctx-body { display: flex; flex-direction: column; gap: .15em; }
+  .ctx-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); }
+  .ctx-name .en { font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .68rem; letter-spacing: .06em; color: var(--text-muted); margin-left: .5em; text-transform: uppercase; }
+  .ctx-mean { font-size: .87rem; color: var(--text-soft); line-height: 1.5; }
+  .ctx-param {
+    font-family: var(--mono); font-size: .72rem; color: var(--accent);
+    padding: .35em .7em; border: 1px solid var(--accent); border-radius: 6px;
+    background: color-mix(in srgb, var(--accent) 6%, transparent); white-space: nowrap;
+  }
+
+  /* ═════════ 视觉四：Teach Mode 录制回放（record→play） ═════════ */
+  .teach { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 2em 0; }
+  @media (max-width: 820px) { .teach { grid-template-columns: 1fr; } .teach-mid { transform: rotate(90deg); } }
+  .teach-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.15rem 1.2rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .6rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .teach-side:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .teach-rec { border-color: var(--border-strong); }
+  .teach-play {
+    border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .teach-eyebrow {
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .12em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .teach-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .teach-rec .teach-eyebrow { color: var(--text-muted); }
+  .teach-rec .teach-eyebrow .dot { background: var(--text-muted); }
+  .teach-play .teach-eyebrow { color: var(--accent); }
+  .teach-play .teach-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: rec 1.4s ease-in-out infinite; }
+  @keyframes rec { 50% { opacity: .35; } }
+  .teach-title { font-family: var(--display); font-weight: 700; font-size: 1.15rem; margin: 0; color: var(--text); }
+  .teach-svg { display: block; margin: .2em auto; width: 100%; max-width: 240px; height: auto; }
+  .teach-svg text { font-family: var(--mono); }
+  .teach-list { margin: 0; padding-left: 1.2em; font-size: .85rem; color: var(--text-soft); line-height: 1.55; }
+  .teach-list li { margin: .2em 0; }
+  .teach-list code { font-size: .82em; }
+  .teach-mid {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .35rem; color: var(--accent); padding: 0 .3rem;
+  }
+  .teach-mid .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .teach-mid .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 820px) { .teach-mid .lab { writing-mode: horizontal-tb; } }
+  .teach-modes {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; margin-top: .8rem;
+  }
+  @media (max-width: 500px) { .teach-modes { grid-template-columns: 1fr; } }
+  .teach-mode {
+    padding: .55rem .7rem; border: 1px solid var(--border); border-radius: 8px;
+    font-size: .78rem; color: var(--text-soft); line-height: 1.5;
+    background: color-mix(in srgb, var(--surface) 65%, transparent);
+  }
+  .teach-mode b { font-family: var(--mono); color: var(--accent); font-size: .72rem; display: block; margin-bottom: .2em; text-transform: uppercase; letter-spacing: .08em; }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .dash-send, .teach-play .teach-eyebrow .dot { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Computer/Browser Use 最佳实践<span class="brand-sub">跨市场 · Anthropic · 2026-05</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Computer &amp; Browser Use<br /><span class="en">Best Practices with Claude</span></h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Harness 工程：把点击准确率、长会话成本、演示资产做成生产可靠性</p>
+      <div class="doc-meta">
+        <span>2026-05-13</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>Computer Use</span>
+        <span>Harness 工程</span>
+        <span>上下文管理</span>
+        <span>对内</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">1568<small>px</small></div><div class="lab">Claude 4.6 长边上限<br />Opus 4.7 可到 2576</div></div>
+        <div class="hero-stat"><div class="num">&lt;100</div><div class="lab">200k 窗口步数上限<br />截图 1k–1.8k tokens/张</div></div>
+        <div class="hero-stat"><div class="num">3+25</div><div class="lab">Cache-aware prune<br />keep_n=3 / interval=25</div></div>
+        <div class="hero-stat"><div class="num">4.6/4.7</div><div class="lab">effort 分型<br />medium · high · 慎用 max</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        官方：<a href="https://claude.com/blog/best-practices-for-computer-and-browser-use-with-claude" target="_blank" rel="noopener">Anthropic 博客</a> ·
+        <a href="https://github.com/anthropics/claude-quickstarts/tree/main/computer-use-best-practices" target="_blank" rel="noopener">quickstart demo</a> ·
+        <a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool" target="_blank" rel="noopener">Computer Use 文档</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Anthropic 把 Computer/Browser Use 的生产可靠性归结为 <strong>Harness 工程</strong>——发送前主动 downscale 并对齐坐标系，比换模型更重要；长会话靠 <strong>cache-aware 批量 prune + compaction</strong> 控成本；安全默认靠官方 tool 的 prompt injection 分类器，但 <strong>人机确认 + 最小权限</strong> 不可省。对 ToB Agent 的启示是「感知-执行一致性 + 可审计轨迹 + 演示资产化」，而非堆 thinking token。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>点击准确率的最高 ROI</strong>：发送前 downscale、<code>display_*</code> = 实际图像尺寸、坐标 scale 回真实屏幕——三件都要做</li>
+        <li><strong>模型选择</strong>：4.6 Sonnet 空间精度佳；Opus 4.7 像素预算大；Haiku 4.5 走高吞吐</li>
+        <li><strong>Adaptive Thinking</strong>：4.6 默认 medium、Opus 4.7 默认 high、几乎不用 max</li>
+        <li><strong>上下文</strong>：cache-aware rolling buffer（keep_n=3 / interval=25 批量占位替换）+ 低频 compaction</li>
+        <li><strong>安全</strong>：官方 <code>computer_20251124</code> 自带 PI 分类器；自定义 tool 靠 VM 隔离 + 人机闸门</li>
+        <li><strong>演示资产</strong>：Teach Mode = 录屏 + 标注 → 可复用 workflow，取代重复 prompt 迭代</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-what"><span class="sec-num">一</span>发布了什么<a href="#sec-what" class="anchor">#</a></h2>
+    <p class="kicker">The Launch · 事实摘要</p>
+
+    <p>Anthropic 发布 Computer &amp; Browser Use 最佳实践博客，配套开源 quickstart <a href="https://github.com/anthropics/claude-quickstarts/tree/main/computer-use-best-practices" target="_blank" rel="noopener">computer-use-best-practices</a>（含 trajectory viewer / tool debug panel / localization playground）；适用 Claude 4.6 家族与 Opus 4.7，分辨率上限、thinking 建议在两代之间有分叉。</p>
+
+    <h3 id="sec-what-res">1.1 分辨率与坐标（Claude 4.6 家族 vs Opus 4.7）</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>约束</th><th>Claude 4.6 家族</th><th>Opus 4.7</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>长边上限</td><td>1568 px</td><td>2576 px</td></tr>
+          <tr><td>总像素上限</td><td>1.15 MP</td><td>3.75 MP</td></tr>
+          <tr><td>超限行为</td><td>API <strong>静默 downscale</strong></td><td>同上</td></tr>
+          <tr><td>推荐默认分辨率</td><td><strong>1280×720</strong></td><td><strong>1080p</strong> 起步</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-what-model">1.2 模型选择（点击 vs 吞吐）</h3>
+    <ul>
+      <li><strong>4.6 家族</strong>：Sonnet 空间精度更好；重度 downscale 时比 Opus 4.6 更稳。</li>
+      <li><strong>Opus 4.7</strong>：点击精度接近 Sonnet，但 <strong>像素预算更大</strong>，压缩损失更少。</li>
+      <li><strong>Haiku 4.5</strong>：高吞吐；复杂任务可组合「规划模型 + Sonnet/Haiku 执行点击」。</li>
+      <li><strong>小目标</strong>：开启 <code>enable_zoom: True</code>；键盘替代极小的点击目标；macOS Retina 注意 <strong>device pixel ratio 2×</strong> 错位。</li>
+      <li><strong>实测无效</strong>：分块 tile、坐标网格 overlay、不同 resize 算法（LANCZOS vs sips）。</li>
+    </ul>
+
+    <h3 id="sec-what-safe">1.3 安全：Prompt Injection</h3>
+    <ul>
+      <li>官方 <code>computer_20251124</code>：<strong>内置分类器默认开启</strong>，近零额外延迟与费用。</li>
+      <li>自定义 screenshot/click tool：<strong>不跑</strong>内置分类器（需填 interest form）。</li>
+      <li>工程侧仍须：<strong>人机确认</strong>（提交/付款/发消息）、<strong>最小权限</strong>、全链路日志、system prompt 区分用户指令与页面内容。</li>
+    </ul>
+
+    <!-- 二 -->
+    <h2 id="sec-arch"><span class="sec-num">二</span>架构与机制拆解<a href="#sec-arch" class="anchor">#</a></h2>
+    <p class="kicker">Six-Stage Pipeline · 坐标系一致性</p>
+
+    <h3 id="sec-arch-harness">2.1 Harness 数据流（点击准确性的核心）</h3>
+
+    <!-- ▼ 视觉一：Harness 六阶段管线 -->
+    <div class="harness reveal">
+      <svg class="harness-svg" viewBox="0 0 940 260" role="img" aria-label="Harness 六阶段数据流：Screen → Shot → Downscale → Display → Model → Scale → Click">
+        <defs>
+          <marker id="hArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/>
+          </marker>
+        </defs>
+
+        <!-- 上排：Capture / Prep -->
+        <g style="color:var(--accent)">
+          <!-- Screen -->
+          <rect x="20" y="70" width="130" height="90" rx="10" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.6"/>
+          <text x="85" y="55" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">CAPTURE</text>
+          <text x="85" y="102" text-anchor="middle" font-size="14" class="disp" style="fill:var(--text)">物理屏幕</text>
+          <text x="85" y="122" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">native_w × native_h</text>
+          <text x="85" y="140" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">Retina 可能 2×</text>
+        </g>
+
+        <!-- Downscale -->
+        <g style="color:var(--accent)">
+          <rect x="180" y="60" width="150" height="110" rx="10" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="2"/>
+          <text x="255" y="45" text-anchor="middle" font-size="10" style="fill:var(--accent)" font-weight="700">PREP · 必做</text>
+          <text x="255" y="92" text-anchor="middle" font-size="13" class="disp" style="fill:var(--accent-ink)">主动 downscale</text>
+          <text x="255" y="112" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">发送前压到预算内</text>
+          <text x="255" y="130" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">设 display_* = 图像尺寸</text>
+          <text x="255" y="148" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">text 指令在 image 之前</text>
+        </g>
+
+        <!-- Model -->
+        <g style="color:var(--accent)">
+          <rect x="360" y="70" width="150" height="90" rx="10" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.6"/>
+          <text x="435" y="55" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">API</text>
+          <text x="435" y="102" text-anchor="middle" font-size="14" class="disp" style="fill:var(--text)">Claude 预测</text>
+          <text x="435" y="122" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">(x, y) ∈ sent 空间</text>
+          <text x="435" y="140" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">Sonnet 4.6 / Opus 4.7</text>
+        </g>
+
+        <!-- Scale-back -->
+        <g style="color:var(--accent)">
+          <rect x="540" y="60" width="150" height="110" rx="10" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="2"/>
+          <text x="615" y="45" text-anchor="middle" font-size="10" style="fill:var(--accent)" font-weight="700">EXEC · 必做</text>
+          <text x="615" y="92" text-anchor="middle" font-size="13" class="disp" style="fill:var(--accent-ink)">scale 回真实屏幕</text>
+          <text x="615" y="112" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">screen_x = x · screen_w / sent_w</text>
+          <text x="615" y="130" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">Retina: 逻辑像素 ≠ 物理</text>
+          <text x="615" y="148" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">key/JS 备选</text>
+        </g>
+
+        <!-- Click -->
+        <g style="color:var(--accent)">
+          <rect x="720" y="70" width="130" height="90" rx="10" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.6"/>
+          <text x="785" y="55" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">TARGET</text>
+          <text x="785" y="102" text-anchor="middle" font-size="14" class="disp" style="fill:var(--text)">真实点击</text>
+          <text x="785" y="122" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">pyautogui / DOM</text>
+          <text x="785" y="140" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">enable_zoom 兜底</text>
+        </g>
+
+        <!-- 箭头链 -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.8">
+          <line x1="150" y1="115" x2="180" y2="115" marker-end="url(#hArrow)"/>
+          <line x1="330" y1="115" x2="360" y2="115" class="dash-send" marker-end="url(#hArrow)"/>
+          <line x1="510" y1="115" x2="540" y2="115" marker-end="url(#hArrow)"/>
+          <line x1="690" y1="115" x2="720" y2="115" marker-end="url(#hArrow)"/>
+        </g>
+
+        <!-- 静默 downscale 陷阱标注 -->
+        <g style="color:var(--con)">
+          <path d="M85 178 Q85 210 435 210" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 5"/>
+          <path d="M435 210 L430 205 M435 210 L430 215" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="260" y="215" width="350" height="34" rx="6" style="fill:var(--con-soft)" stroke="currentColor" stroke-width="1.2"/>
+          <text x="435" y="230" text-anchor="middle" font-size="10" font-weight="700" style="fill:var(--con)" class="disp">陷阱：跳过 PREP → API 静默 downscale</text>
+          <text x="435" y="243" text-anchor="middle" font-size="9" style="fill:var(--text-soft)">模型在缩后图像预测 · harness 声明原生 · 点击系统性偏移</text>
+        </g>
+      </svg>
+
+      <div class="harness-legend">
+        <div class="l"><b>①</b><div><span>发送前 downscale</span>勿发原生 4K / 超限 1080p，主动压到 1568/2576 长边预算内</div></div>
+        <div class="l"><b>②</b><div><span>display_*</span>值 = <strong>实际发送图片尺寸</strong>，不是物理屏幕分辨率</div></div>
+        <div class="l"><b>③</b><div><span>坐标 scale 回</span>按 <code>screen_w / sent_w</code> 比例映射回真实屏幕再点击</div></div>
+        <div class="l"><b>④</b><div><span>消息顺序</span>text 指令放在 image 之前，模型才能把上下文与像素对齐</div></div>
+      </div>
+
+      <div class="harness-trap">
+        <b>静默 downscale 陷阱</b>若 harness 跳过 Prep 直接送原生大图，API 内部会缩图；模型坐标仍落在 harness 声明的 display 空间——即使模型完美，最终点击仍系统性偏移。这是全文强调的 <strong>单一最高 ROI 优化</strong>。
+      </div>
+    </div>
+
+    <h3 id="sec-arch-think">2.2 Adaptive Thinking：effort 按任务分型</h3>
+
+    <p>UI 自动化以感知 + 机械操作为主，thinking 收益递减。文内明确 <strong>无脑 <code>max</code> 是浪费</strong>。</p>
+
+    <!-- ▼ 视觉二：Thinking effort 分型 -->
+    <div class="think reveal">
+      <div class="th-card tc-med">
+        <div class="th-eyebrow">Claude 4.6 家族</div>
+        <h4 class="th-model">Sonnet / Haiku 4.6</h4>
+        <div class="th-effort">effort = medium</div>
+        <div class="th-meter"><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b"></span><span class="b"></span></div>
+        <p class="th-desc">性价比最高；有重试机制时 medium 与 high 最终成功率接近。<strong>极短、固定、低延迟流程可禁用 thinking</strong>。</p>
+        <div class="th-verdict"><b>推荐</b>大部分 UI 自动化默认起点；固定 SOP 可下调至禁用</div>
+      </div>
+      <div class="th-card tc-high">
+        <div class="th-eyebrow">Opus 4.7</div>
+        <h4 class="th-model">复杂规划 · 探索导航</h4>
+        <div class="th-effort">effort = high</div>
+        <div class="th-meter"><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b"></span></div>
+        <p class="th-desc">OSWorld 上接近最优；适合意外 UI 恢复、多步规划再执行、专业软件复杂项目。</p>
+        <div class="th-verdict"><b>推荐</b>Opus 4.7 默认起点；配合像素预算 3.75 MP</div>
+      </div>
+      <div class="th-card tc-max">
+        <div class="th-eyebrow">避免</div>
+        <h4 class="th-model">Blanket max</h4>
+        <div class="th-effort">effort = max</div>
+        <div class="th-meter"><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b on"></span><span class="b on"></span></div>
+        <p class="th-desc">相对 <code>high</code> 无收益、更贵；仅一次性极难任务考虑。<strong>UI 任务默认 max 是浪费</strong>。</p>
+        <div class="th-verdict"><b>慎用</b>成本翻倍 · 无明显质量增益</div>
+      </div>
+    </div>
+
+    <h3 id="sec-arch-ctx">2.3 长会话：Cache + Prune + Compact 三层组合</h3>
+
+    <p>每张截图约 <strong>1000–1800 tokens</strong>；200k 窗口 <strong>&lt;100 步</strong>就可能满。推荐三层组合，且必须<strong> cache-aware</strong>——每步改 prefix 会打爆 cache。</p>
+
+    <!-- ▼ 视觉三：长会话三层 -->
+    <div class="ctx reveal">
+      <div class="ctx-lyr l1">
+        <div class="ctx-icon">
+          <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="18" height="14" rx="2"/><path d="M4 10h18"/><circle cx="8" cy="8" r=".6" fill="currentColor"/></svg>
+        </div>
+        <div class="ctx-body">
+          <div class="ctx-name">Prompt Caching<span class="en">Layer 1 · Cache prefix</span></div>
+          <div class="ctx-mean">稳定前缀 1 个 breakpoint + 最近 3 个 <code>tool_result</code> ephemeral（共 <strong>4 个上限</strong>），保证多轮字节相同以命中 cache。</div>
+        </div>
+        <div class="ctx-param">4 breakpoints</div>
+      </div>
+      <div class="ctx-lyr l2">
+        <div class="ctx-icon">
+          <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h18M4 13h18M4 18h10"/><path d="M18 18l4 4M22 18l-4 4"/></svg>
+        </div>
+        <div class="ctx-body">
+          <div class="ctx-name">Cache-aware Rolling Buffer<span class="en">Layer 2 · Batch prune</span></div>
+          <div class="ctx-mean"><code>keep_n=3</code>：保留最近 3 张真实截图；每 <code>interval=25</code> 张 <strong>批量</strong>把旧图替换成 <code>[Image omitted]</code>，避免每步改 prefix 打爆 cache。</div>
+        </div>
+        <div class="ctx-param">keep_n=3 · interval=25</div>
+      </div>
+      <div class="ctx-lyr l3">
+        <div class="ctx-icon">
+          <svg viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v16"/><path d="M4 5h14l-4 5 4 5H4"/><circle cx="20" cy="21" r="2"/></svg>
+        </div>
+        <div class="ctx-body">
+          <div class="ctx-name">LLM Compaction<span class="en">Layer 3 · Semantic squash</span></div>
+          <div class="ctx-mean">自定义 <code>COMPACT_PROMPT</code>：必须保留 <strong>用户原文指令 · 进度 · 错误修复</strong>。服务端 <code>compact_20260112</code> beta；客户端 mirror 截断与 server 对齐。<strong>触发即 cache 失效</strong>，应低频。</div>
+        </div>
+        <div class="ctx-param">低频触发</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">陷阱</div>
+      <p style="margin:.2em 0;"><strong>Naive rolling buffer</strong>（每张图到期即删）会让 prefix 每轮变化 → cache 持续失效。批量 prune 的关键是<strong>在 interval 轮内前缀字节稳定</strong>。</p>
+    </div>
+
+    <h3 id="sec-arch-exp">2.4 实验性能力（非 blanket 推荐）</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>能力</th><th>适用</th><th>风险</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>computer_batch</code> / <code>browser_batch</code></td><td>互不依赖视觉状态的连续操作</td><td>中间失败会基于陈旧状态继续</td></tr>
+          <tr><td><strong>Advisor tool</strong></td><td>长任务偶发需 Opus 级规划</td><td>按次 Opus 计费；停用 tool 须 strip orphaned advisor blocks</td></tr>
+          <tr><td>Reminder nudges</td><td>提醒用 batch/advisor</td><td>少量 token；可能扰动 cache</td></tr>
+          <tr><td><strong>Teach Mode</strong> / 演示回放</td><td>录屏 + 标注 + 步骤作 context</td><td>非严格 replay；长 workflow 需先 compact</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-arch-teach">2.5 Teach Mode：Show, don&rsquo;t tell</h3>
+
+    <p>把用户一次真实演示编码为 <code>WorkflowStep</code> 序列（action / description / selector / coordinates / screenshot / viewport / speech），回放时 <strong>非严格坐标 replay</strong>——Claude 根据当前 UI 找等价元素。三档严格度：Strict / Adaptive（默认）/ Goal-oriented。</p>
+
+    <!-- ▼ 视觉四：Teach Mode 录制回放 -->
+    <div class="teach reveal">
+      <div class="teach-side teach-rec">
+        <div class="teach-eyebrow"><span class="dot"></span>Record · 一次演示</div>
+        <h4 class="teach-title">WorkflowStep 序列化</h4>
+        <svg class="teach-svg" viewBox="0 0 240 130" role="img" aria-label="录制：用户操作被结构化为 workflow step">
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="15" y="18" width="80" height="55" rx="4" style="fill:var(--surface)"/>
+            <rect x="20" y="25" width="24" height="14" rx="2"/>
+            <rect x="20" y="43" width="70" height="6"/>
+            <rect x="20" y="53" width="50" height="6"/>
+            <rect x="20" y="63" width="60" height="6"/>
+          </g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+            <circle cx="45" cy="32" r="12" opacity=".8"/>
+            <line x1="45" y1="20" x2="45" y2="44"/>
+            <line x1="33" y1="32" x2="57" y2="32"/>
+          </g>
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.3">
+            <line x1="105" y1="45" x2="130" y2="45" marker-end="url(#hArrow)"/>
+          </g>
+          <g style="color:var(--accent)">
+            <rect x="140" y="18" width="85" height="94" rx="5" style="fill:var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+            <text x="150" y="34" font-size="8" style="fill:var(--accent-ink)">step:</text>
+            <text x="150" y="47" font-size="7.5" style="fill:var(--text-soft)">action: click</text>
+            <text x="150" y="60" font-size="7.5" style="fill:var(--text-soft)">selector: [aria-label…]</text>
+            <text x="150" y="73" font-size="7.5" style="fill:var(--text-soft)">coord: [x, y]</text>
+            <text x="150" y="86" font-size="7.5" style="fill:var(--text-soft)">screenshot: b64</text>
+            <text x="150" y="99" font-size="7.5" style="fill:var(--text-soft)">viewport: [w, h]</text>
+          </g>
+        </svg>
+        <ul class="teach-list">
+          <li>捕获 <code>action · selector · coord · screenshot · viewport</code></li>
+          <li>可选 <code>speech</code> 备注该步意图</li>
+          <li>存入 <code>SavedWorkflow</code>——可版本化、可分享</li>
+        </ul>
+      </div>
+
+      <div class="teach-mid">
+        <span class="gly">➜</span>
+        <span class="lab">Replay</span>
+      </div>
+
+      <div class="teach-side teach-play">
+        <div class="teach-eyebrow"><span class="dot"></span>Play · Adaptive 回放</div>
+        <h4 class="teach-title">Claude 找等价元素执行</h4>
+        <svg class="teach-svg" viewBox="0 0 240 130" role="img" aria-label="回放：Claude 按当前 UI 找等价元素">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="15" y="18" width="90" height="94" rx="5" style="fill:var(--accent-soft)"/>
+            <text x="25" y="32" font-size="8" style="fill:var(--accent-ink)" stroke="none">context:</text>
+            <text x="25" y="45" font-size="7.5" style="fill:var(--text-soft)" stroke="none">demonstration</text>
+            <text x="25" y="57" font-size="7.5" style="fill:var(--text-soft)" stroke="none">+ 意图</text>
+            <text x="25" y="69" font-size="7.5" style="fill:var(--text-soft)" stroke="none">+ 标注截图</text>
+          </g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <line x1="108" y1="65" x2="132" y2="65" marker-end="url(#hArrow)"/>
+          </g>
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="140" y="18" width="85" height="94" rx="5" style="fill:var(--surface)"/>
+            <rect x="147" y="26" width="24" height="14" rx="2"/>
+            <rect x="147" y="45" width="70" height="6"/>
+            <rect x="147" y="55" width="60" height="6"/>
+            <rect x="147" y="65" width="55" height="6"/>
+            <rect x="147" y="80" width="30" height="10" rx="2"/>
+          </g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="162" cy="85" r="10"/>
+            <path d="M170 90 l6 6"/>
+          </g>
+        </svg>
+        <ul class="teach-list">
+          <li>Adaptive：不锁死坐标，按 selector 与视觉找等价</li>
+          <li>Strict：严格坐标复现，仅 UI 完全不变时有效</li>
+          <li>Goal-oriented：先摘要 workflow 再由 Claude 组织</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="teach-modes">
+      <div class="teach-mode"><b>Strict</b>逐步复现坐标；仅原环境</div>
+      <div class="teach-mode"><b>Adaptive · 默认</b>结构 + 视觉匹配，UI 漂移可容错</div>
+      <div class="teach-mode"><b>Goal-oriented</b>先摘要意图，Claude 自组织步骤</div>
+    </div>
+
+    <h3 id="sec-arch-fail">2.6 失败诊断</h3>
+    <ul>
+      <li>非点击问题：系统级下拉、浏览器外 UI → 改用 JS、键盘、DOM。</li>
+      <li>调试：overlay 预测点击、localization playground、trajectory viewer。</li>
+    </ul>
+
+    <!-- 三 -->
+    <h2 id="sec-impl"><span class="sec-num">三</span>核心实现拆解（剧透式）<a href="#sec-impl" class="anchor">#</a></h2>
+    <p class="kicker">Under the Hood · quickstart demo 主路径</p>
+
+    <p>参考实现 <a href="https://github.com/anthropics/claude-quickstarts/tree/main/computer-use-best-practices" target="_blank" rel="noopener">computer-use-best-practices</a> 是 Python harness——<strong>非</strong> Anthropic 闭源服务端；博客最佳实践在此落地为可读的 <code>loop.py</code> + <code>tools/</code>。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>模块</th><th>职责</th><th>关键接口/产物</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><code>image.py</code></td><td>发送前 resize，保证模型所见像素 = 声明坐标系</td><td><code>target_image_size()</code> 二分搜最大合法 (w,h)；<code>resize_and_encode()</code> → JPEG base64 + <code>(sent_w, sent_h)</code></td></tr>
+          <tr><td><code>tools/computer.py</code></td><td>截图、点击、缩放坐标、Retina 修正</td><td><code>_scale_to_screen()</code>；<code>to_hosted_param()</code> 填 <code>display_width_px/height_px</code></td></tr>
+          <tr><td><code>formatters.py</code> + <code>loop.py</code></td><td>cache-aware 截图 prune、API 调用、compaction 对齐</td><td><code>image_prune_strategy="interval"</code>；<code>cache_control</code> on system + 最近 tool_result</td></tr>
+          <tr><td><code>tools/*.py</code> 显式 schema</td><td>模型看到的 tool 定义在客户端，执行也在客户端</td><td>默认<strong>非</strong> hosted <code>computer_20251124</code> → <strong>无</strong>官方 PI 分类器，靠 VM 隔离</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 id="sec-impl-path">3.1 主路径：一轮「截图 → 点击」</h3>
+    <ol>
+      <li><strong><code>ComputerTool.__init__</code></strong>：用 <code>pyautogui.size()</code> 得逻辑屏 <code>screen_w×screen_h</code>，预计算 <code>sent_w×sent_h = target_image_size(...)</code>（与 hosted tool 的 <code>display_*</code> 一致）。</li>
+      <li><strong>模型调 <code>screenshot</code></strong>：<code>take_screenshot()</code> → Retina 时先把物理像素图 resize 到逻辑分辨率 → <code>resize_and_encode()</code> → tool_result 带 <code>base64_image</code> + meta <code>sent_size</code> / <code>screen_size</code>。</li>
+      <li><strong>模型返回坐标 (x, y)</strong>（sent 图像空间）：<code>left_click</code> 等走 <code>_scale_to_screen</code>：<code>screen_x = round(x · screen_w / sent_w)</code>。</li>
+      <li><strong><code>loop.py</code> 下一轮请求前</strong>：<code>formatters</code> 按 interval 策略把最老一批截图换成占位文本（前缀多轮字节相同以命中 prompt cache）；若 <code>enable_autocompaction</code> 且 token 超阈，服务端 compact 后客户端 truncate 本地 <code>messages</code> 与 server 对齐。</li>
+    </ol>
+
+    <h3 id="sec-impl-diff">3.2 与「表面叙事」的差异</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>博客/文档说法</th><th>参考实现里实际做法</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>博客示例用 PNG + <code>prepare_screenshot(1280,720)</code></td><td>Demo 默认 <strong>JPEG</strong> + API 同款 <strong>28×28 tile 预算</strong>的 <code>target_image_size</code>（注释写明 port API reference algorithm，避免静默二次缩放）</td></tr>
+          <tr><td>官方 <code>computer_20251124</code> 自带 PI 分类器</td><td>Demo 默认<strong>显式 tool schema</strong>；分类器仅在 <code>use_hosted_computer_tool=True</code> 时通过改声明开启，执行仍本地</td></tr>
+          <tr><td>博客 <code>keep_n=3, interval=25</code></td><td>Demo 默认 <code>image_prune_min=3</code>, <strong><code>image_prune_interval=40</code></strong>（README 解释：在触发 autocompaction 前先靠 prune 控图）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-tob"><span class="sec-num">四</span>对 ToB Agent 的启示<a href="#sec-tob" class="anchor">#</a></h2>
+    <p class="kicker">FDE Mapping · 桌面/浏览器自动化通用</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">01 · 感知-执行一致性</div>
+        <p><strong>生产 Agent 的第一性原理。</strong>任何截图/坐标集成（含自建 Playwright、RPA、桌面自动化）都要显式实现：<strong>downscale → display 声明 → scale 回物理坐标</strong>；否则升级模型也救不了偏移。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">02 · 上下文工程 > 换大模型</div>
+        <p>成本与延迟的主杠杆是上下文工程。截图 token 线性累积；cache-aware 批量 prune + 低频 compaction 对长 horizon POC（客服多轮、工单流转）比换 Opus 更划算。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">03 · Effort 按任务分型采购</div>
+        <p>固定 UI 流程可 4.6 + low/禁用 thinking；探索性导航用 medium/high；<strong>避免 UI 任务默认 <code>max</code></strong>。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">04 · 安全 = 分类器 + 边界 + 闸门</div>
+        <p>自定义 tool 集成方需自建或等待 PI 分类器；<strong>提交 / 转账 / 删数据必须 human-in-the-loop</strong>——与进化 POC 的 P0/P1 审批一致。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">05 · 演示录制 > prompt 迭代</div>
+        <p>Teach Mode 适合 <strong>高频、步骤固定、偶发 UI 漂移</strong> 的流程（填单、状态查询）：先录 SOP，再 adaptive 回放，等同 playbook / skill 资产化。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">06 · Batch × Advisor 旋钮</div>
+        <p>Batch 降 round-trip，仅用于无视觉依赖链；Advisor 在「多数机械 + 少数规划」长任务中替代全 Opus 循环。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">07 · 验收指标对齐 harness</div>
+        <p>采购与验收看 <strong>点击命中率、坐标偏移分布、cache 命中率、每任务 input tokens、人工接管率</strong>——不是端到端「能不能完成一次 demo」。</p>
+      </div>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-relate"><span class="sec-num">五</span>与当前工作的关联<a href="#sec-relate" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>本项目 / 文档</th><th>关联点</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>浏览器/桌面自动化 POC</td><td>先做 <strong>harness checklist</strong>（分辨率、坐标、消息顺序）；进化 mem/skill 前先保证感知层不错位</td></tr>
+          <tr><td>Evolution one-pager</td><td>此文「进化」= harness + 演示/workflow 资产 + 模型代际；<strong>非</strong> autonomous 改写 mem</td></tr>
+          <tr><td>技术选型对比</td><td>Computer Use API vs 自建 Playwright/MCP browser：前者坐标 harness 要求硬；后者可用 DOM/ref，但长会话仍要 prune/compaction</td></tr>
+          <tr><td>ToB Agent 研究</td><td>印证 Agent 竞赛进入 <strong>integration reliability + cost engineering</strong> 阶段</td></tr>
+          <tr><td>Cursor <code>cursor-ide-browser</code> MCP</td><td>借鉴「每步 fresh snapshot、text 先于行动、高 stakes 停手」；坐标原则映射为 ref 与 viewport 一致性</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-track"><span class="sec-num">六</span>待跟踪信号<a href="#sec-track" class="anchor">#</a></h2>
+
+    <ul>
+      <li><code>computer-use-best-practices</code> quickstart 与官方 doc 的版本差（tool type、beta 名）</li>
+      <li>自定义 tool 的 <strong>PI 分类器</strong>开放时间表与计费</li>
+      <li>Opus 4.7 在 OSWorld 与真实企业 UI（legacy Win32、Citrix）上的外推有效性</li>
+      <li>Server-side compaction <code>pause_after_compaction</code> 与 rolling buffer 同时开启时的 cache 行为</li>
+      <li>Teach Mode 是否产品化为 API 一等能力，或仅 Chrome/Cowork 侧</li>
+      <li>Batch tools 在官方 API 中的标准化程度（目前为 reference impl 自定义 tool）</li>
+    </ul>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">修订：2026-05-13 深度分析 · 转 HTML 版 2026-07-03</p>
+
+    <div class="doc-footer">
+      <a href="../../../index.html">← 厂商动态索引</a>
+      · <a href="../README.html">Anthropic 索引</a>
+      · <a href="2026-05-12_claude-for-legal-industry.html">← Claude for Legal</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

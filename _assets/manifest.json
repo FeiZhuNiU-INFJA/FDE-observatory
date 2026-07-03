@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T05:46:40.145479+00:00",
+  "generated_at": "2026-07-03T08:10:19.917249+00:00",
   "insights": [
     {
       "path": "insights/cross/活地图落地指南.html",
@@ -150,48 +150,67 @@
       }
     },
     {
-      "path": "frontier/vendors/anthropic/deep_dives/2026-05-14_claude-code-large-codebases.md",
-      "title": "How Claude Code works in large codebases — 深度分析",
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-14_claude-code-large-codebases.html",
+      "title": "How Claude Code worksin Large Codebases",
       "date": "2026-05-14",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "Claude Code",
+        "Harness 工程",
+        "组织落地"
+      ],
       "category": "frontier-deep",
       "extra": {
         "vendor": "anthropic"
       }
     },
     {
-      "path": "frontier/vendors/anthropic/deep_dives/2026-05-13_computer-browser-use-best-practices.md",
-      "title": "Best practices for computer and browser use with Claude — 深度分析",
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-13_computer-browser-use-best-practices.html",
+      "title": "Computer & Browser UseBest Practices with Claude",
       "date": "2026-05-13",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "Computer Use",
+        "Harness 工程",
+        "上下文管理"
+      ],
       "category": "frontier-deep",
       "extra": {
         "vendor": "anthropic"
       }
     },
     {
-      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry.md",
-      "title": "Claude for the legal industry — 深度分析",
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry.html",
+      "title": "Claude for the legal industryOffice 内嵌 + MCP + 12 插件生态",
       "date": "2026-05-12",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "行业方案",
+        "MCP",
+        "可运营 Agent 资产"
+      ],
       "category": "frontier-deep",
       "extra": {
         "vendor": "anthropic"
       }
     },
     {
-      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry_实现拆解.md",
-      "title": "Claude 法务领域插件 — 代码层实现拆解",
+      "path": "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry_实现拆解.html",
+      "title": "Claude 法务领域插件Code-level Anatomy",
       "date": "2026-05-12",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "实现拆解",
+        "MCP"
+      ],
       "category": "frontier-deep",
       "extra": {
         "vendor": "anthropic"
@@ -200,24 +219,34 @@
   ],
   "frontier_digest": [
     {
-      "path": "frontier/vendors/anthropic/digests/前沿科技公司动态总结思考.md",
-      "title": "前沿科技公司动态总结思考",
-      "date": "2026-07",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "path": "frontier/vendors/anthropic/digests/2026-05-06_前沿AI公司动态.html",
+      "title": "前沿 AI 公司动态Frontier Digest #01 · 2026-05-06",
+      "date": "2026-05-06",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "厂商 Digest",
+        "OpenAI · Anthropic",
+        "Agent 落地"
+      ],
       "category": "frontier-digest",
       "extra": {
         "vendor": "anthropic"
       }
     },
     {
-      "path": "frontier/vendors/anthropic/digests/2026-05-06_前沿AI公司动态.md",
-      "title": "前沿 AI 公司动态（第 1 期）",
+      "path": "frontier/vendors/anthropic/digests/2026-05-06_frontier-vendor-thinking.html",
+      "title": "前沿科技公司动态·总结思考From Model Race to System Race",
       "date": "2026-05-06",
-      "audience": null,
-      "status": null,
-      "tags": [],
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商观察",
+        "Digest 配套",
+        "OpenAI vs Anthropic",
+        "Claude Design",
+        "可运营 Agent"
+      ],
       "category": "frontier-digest",
       "extra": {
         "vendor": "anthropic"
