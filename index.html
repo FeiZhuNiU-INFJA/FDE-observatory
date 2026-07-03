@@ -379,13 +379,111 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
    页脚
    ════════════════════════════════════════════════════ */
 .obs-foot { border-top: 1px solid var(--border); background: var(--bg-soft); }
-.foot-inner { max-width: 1180px; margin: 0 auto; padding: 2.4rem 1.2rem; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; }
+
+.foot-top {
+  max-width: 1180px; margin: 0 auto;
+  padding: 3.4rem 1.2rem 2.2rem;
+  display: grid; grid-template-columns: 1.4fr .9fr;
+  gap: 2.4rem; align-items: center;
+  border-bottom: 1px dashed var(--border);
+}
+.foot-cta-eyebrow {
+  font-family: var(--mono); font-size: .7rem; letter-spacing: .18em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: .5rem;
+}
+.foot-cta-h {
+  font-family: var(--display); font-weight: 700;
+  font-size: clamp(1.4rem, 2.2vw, 1.8rem);
+  color: var(--text); margin: 0 0 .5rem; letter-spacing: -.01em;
+  line-height: 1.25;
+}
+.foot-star {
+  display: inline-block; color: #eab308;
+  filter: drop-shadow(0 0 8px color-mix(in srgb, #eab308 40%, transparent));
+  animation: foot-star-pulse 2.4s ease-in-out infinite;
+}
+@keyframes foot-star-pulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.15) rotate(6deg); }
+}
+@media (prefers-reduced-motion: reduce) { .foot-star { animation: none; } }
+.foot-cta-sub { color: var(--text-muted); font-size: .92rem; margin: 0 0 1rem; line-height: 1.6; }
+.foot-cta-row { display: flex; gap: .6rem; flex-wrap: wrap; }
+.foot-primary,
+.foot-ghost {
+  display: inline-flex; align-items: center; gap: .45rem;
+  padding: .55rem 1rem; border-radius: 999px;
+  font-size: .82rem; font-weight: 600; letter-spacing: .01em;
+  text-decoration: none; transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.foot-primary {
+  background: linear-gradient(135deg, #eab308, #f97316);
+  color: #1a1a1a;
+  border: 1px solid transparent;
+  box-shadow: 0 6px 20px -8px color-mix(in srgb, #eab308 60%, transparent);
+}
+.foot-primary:hover { transform: translateY(-1px); }
+.foot-ghost {
+  background: transparent; color: var(--text);
+  border: 1px solid var(--border-strong);
+}
+.foot-ghost:hover { background: var(--bg); border-color: var(--text-muted); }
+
+.foot-badges { display: flex; flex-wrap: wrap; gap: .55rem; justify-content: flex-end; }
+.foot-badges img { height: 26px; opacity: .92; transition: opacity .15s ease, transform .15s ease; }
+.foot-badges a:hover img { opacity: 1; transform: translateY(-1px); }
+
+.foot-inner {
+  max-width: 1180px; margin: 0 auto;
+  padding: 1.6rem 1.2rem; display: flex; flex-wrap: wrap;
+  align-items: center; justify-content: space-between; gap: 1rem;
+}
+.foot-brand-wrap { display: flex; flex-direction: column; gap: .3rem; }
 .foot-brand { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); letter-spacing: -.01em; }
-.foot-author { display: flex; align-items: center; gap: .8rem; font-size: .85rem; color: var(--text-muted); }
-.foot-author strong { color: var(--text); font-weight: 600; }
-.author-email { font-family: var(--mono); font-size: .76rem; color: var(--teal); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s; }
-.author-email:hover { border-bottom-color: var(--teal); }
 .foot-meta { font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); }
+.foot-nav { display: flex; flex-wrap: wrap; gap: .2rem .3rem; }
+.foot-nav a {
+  color: var(--text-muted); text-decoration: none;
+  font-size: .85rem; padding: .35rem .7rem;
+  border-radius: 6px; transition: background .15s ease, color .15s ease;
+}
+.foot-nav a:hover { color: var(--text); background: var(--bg); }
+
+.foot-legal {
+  max-width: 1180px; margin: 0 auto;
+  padding: .8rem 1.2rem 2rem;
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  font-family: var(--mono); font-size: .72rem; color: var(--text-muted);
+  border-top: 1px solid var(--border);
+}
+.foot-legal a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid transparent; transition: border-color .15s, color .15s; }
+.foot-legal a:hover { color: var(--text); border-bottom-color: var(--text); }
+.foot-dot { opacity: .5; }
+
+@media (max-width: 720px) {
+  .foot-top { grid-template-columns: 1fr; gap: 1.6rem; padding: 2.4rem 1.2rem 1.6rem; }
+  .foot-badges { justify-content: flex-start; }
+  .foot-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── GitHub Star CTA in topbar ─────────────────────── */
+.topbar .gh-star-cta {
+  display: inline-flex; align-items: center; gap: .35rem;
+  width: auto; padding: 0 .7rem; height: 32px;
+  text-decoration: none;
+}
+.gh-star-label {
+  font-size: .78rem; font-weight: 600; letter-spacing: .01em;
+  color: currentColor;
+}
+.topbar .gh-star-cta:hover {
+  background: color-mix(in srgb, #eab308 18%, transparent);
+  border-color: color-mix(in srgb, #eab308 40%, var(--hero-line));
+}
+@media (max-width: 480px) {
+  .gh-star-label { display: none; }
+  .topbar .gh-star-cta { padding: 0; width: 32px; justify-content: center; }
+}
 
 /* ── 入场编排 ─────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
@@ -411,6 +509,10 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
   <div class="topbar-inner">
     <div class="brand">FDE<span class="dot">·</span>OBS<span class="brand-sub">前沿观测站</span></div>
     <div class="actions">
+      <a class="icon-btn gh-star-cta" href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory" target="_blank" rel="noopener" title="在 GitHub 上给个 Star ⭐" aria-label="GitHub repository">
+        <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <span class="gh-star-label">Star</span>
+      </a>
       <button class="icon-btn" id="topSearch" title="搜索全部内容" aria-label="搜索">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
       </button>
@@ -498,13 +600,64 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
 </main>
 
 <footer class="obs-foot">
-  <div class="foot-inner">
-    <div class="foot-brand">FDE 洞察站 · 走在最前沿</div>
-    <div class="foot-author">
-      <span>作者 <strong>FeiZhuNiU-INFJA</strong></span>
-      <a class="author-email" href="https://github.com/FeiZhuNiU-INFJA" target="_blank" rel="noopener">github.com/FeiZhuNiU-INFJA</a>
+  <div class="foot-top">
+    <div class="foot-cta-block">
+      <div class="foot-cta-eyebrow">喜欢这个观测站？</div>
+      <h3 class="foot-cta-h">给个 <span class="foot-star">★</span> 就是最好的鼓励</h3>
+      <p class="foot-cta-sub">开源、无广告、持续更新。你的 Star 是我继续写下去的燃料。</p>
+      <div class="foot-cta-row">
+        <a class="foot-primary" href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span>Star on GitHub</span>
+        </a>
+        <a class="foot-ghost" href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/subscription" target="_blank" rel="noopener" title="Watch releases">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span>Watch</span>
+        </a>
+        <a class="foot-ghost" href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/fork" target="_blank" rel="noopener">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5 3.25a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm0 2.122a2.25 2.25 0 10-1.5 0v.878A2.25 2.25 0 005.75 8.5h1.5v2.128a2.251 2.251 0 101.5 0V8.5h1.5a2.25 2.25 0 002.25-2.25v-.878a2.25 2.25 0 10-1.5 0v.878a.75.75 0 01-.75.75h-4.5A.75.75 0 015 6.25v-.878zm3.75 7.378a.75.75 0 11-1.5 0 .75.75 0 011.5 0zm3-8.75a.75.75 0 100-1.5.75.75 0 000 1.5z"/></svg>
+          <span>Fork</span>
+        </a>
+      </div>
     </div>
-    <div class="foot-meta">持续观测中</div>
+    <div class="foot-badges">
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/stargazers" target="_blank" rel="noopener">
+        <img alt="GitHub stars" src="https://img.shields.io/github/stars/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=eab308" />
+      </a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/network/members" target="_blank" rel="noopener">
+        <img alt="GitHub forks" src="https://img.shields.io/github/forks/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=6366f1" />
+      </a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/watchers" target="_blank" rel="noopener">
+        <img alt="GitHub watchers" src="https://img.shields.io/github/watchers/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=10b981" />
+      </a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/commits/main" target="_blank" rel="noopener">
+        <img alt="Last commit" src="https://img.shields.io/github/last-commit/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=git&color=f97316" />
+      </a>
+    </div>
+  </div>
+
+  <div class="foot-inner">
+    <div class="foot-brand-wrap">
+      <div class="foot-brand">FDE·OBS · 前沿观测站</div>
+      <div class="foot-meta">持续观测中 · 走在最前沿</div>
+    </div>
+    <nav class="foot-nav" aria-label="Footer navigation">
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory" target="_blank" rel="noopener">Repo</a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/issues" target="_blank" rel="noopener">Issues</a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/discussions" target="_blank" rel="noopener">Discussions</a>
+      <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/blob/main/README.md" target="_blank" rel="noopener">README</a>
+      <a href="https://github.com/FeiZhuNiU-INFJA" target="_blank" rel="noopener">@FeiZhuNiU-INFJA</a>
+    </nav>
+  </div>
+
+  <div class="foot-legal">
+    <span>© 2026 <a href="https://github.com/FeiZhuNiU-INFJA" target="_blank" rel="noopener">FeiZhuNiU-INFJA</a></span>
+    <span class="foot-dot">·</span>
+    <span>内容 <a href="https://creativecommons.org/licenses/by-nc/4.0/" target="_blank" rel="noopener">CC BY-NC 4.0</a></span>
+    <span class="foot-dot">·</span>
+    <span>代码 <a href="https://opensource.org/licenses/MIT" target="_blank" rel="noopener">MIT</a></span>
+    <span class="foot-dot">·</span>
+    <span>Built with <a href="https://pages.github.com/" target="_blank" rel="noopener">GitHub Pages</a></span>
   </div>
 </footer>
 
