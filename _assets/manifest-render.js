@@ -25,11 +25,22 @@
 (function () {
   const MANIFEST_URLS = ["/_manifest.json"];
 
-  // 子页面 fallback：直接拉静态 _assets/manifest.json（相对路径根据当前页面深度）
+  // 记录本脚本自己的 URL —— 用于在 GitHub Pages 子路径部署下反推 manifest.json 位置
+  const SELF_SRC = (document.currentScript && document.currentScript.src) || "";
+
+  // 子页面 fallback：
+  //   ① 从本 script (_assets/manifest-render.js) 的 src 直推同目录下的 manifest.json，
+  //      与部署 base path 无关（能兼容 GitHub Pages 的 /<repo>/ 子路径）。
+  //   ② 保留旧的深度探测做二次兜底（本地 serve.py / 站点根 = 服务器根 的场景）。
   function fallbackManifestUrls() {
+    const urls = [];
+    if (SELF_SRC) {
+      urls.push(SELF_SRC.replace(/manifest-render\.js(\?.*)?$/, "manifest.json"));
+    }
     const depth = (location.pathname.replace(/\/$/, "").match(/\//g) || []).length;
     const prefix = depth > 1 ? "../".repeat(depth - 1) : "";
-    return [prefix + "_assets/manifest.json"];
+    urls.push(prefix + "_assets/manifest.json");
+    return urls;
   }
 
   const AUDIENCE_PILL = {
@@ -421,7 +432,7 @@
       console.warn("[manifest] fetch failed:", err);
       containers.forEach((c) => {
         if (c.querySelector(".placeholder")) {
-          c.innerHTML = `<li style="color:var(--text-muted);font-style:italic;padding:.6em 0;">⚠ 无法加载 manifest（请用 <code>python3 serve.py</code> 启动本地服务）</li>`;
+          c.innerHTML = `<li style="color:var(--text-muted);font-style:italic;padding:.6em 0;">⚠ 无法加载 manifest（本地开发请用 <code>python3 serve.py</code>；线上部署请重跑 <code>python3 _assets/build_manifest.py</code> 生成静态快照后再发布）</li>`;
         }
       });
     }

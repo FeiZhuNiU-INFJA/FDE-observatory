@@ -1,0 +1,891 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Claude Managed Agents 深度调研：Anthropic 的第三条路 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：离子紫 (Ion Violet) ═════════ */
+  :root {
+    --accent: #a855f7;
+    --accent-deep: #7e22ce;
+    --accent-ink: #581c87;
+    --accent-soft: color-mix(in srgb, #a855f7 12%, white);
+    --accent-glow: color-mix(in srgb, #a855f7 22%, transparent);
+    --accent-ion: #d8b4fe;   /* 离子薄雾：hero 与外圈微光 */
+  }
+  [data-theme="dark"] {
+    --accent: #c084fc;
+    --accent-soft: color-mix(in srgb, #a855f7 26%, #14101f);
+    --accent-ink: #e9d5ff;
+    --accent-glow: color-mix(in srgb, #a855f7 28%, transparent);
+    --accent-ion: #a855f7;
+  }
+
+  /* SVG 内文字统一走 CSS（var() 只在 CSS 上下文解析） */
+  .dream text, .ladder text, .decouple text { font-family: var(--mono); }
+  .dream .disp, .ladder .disp, .decouple .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 共享动画（受 prefers-reduced-motion 兜底） */
+  .rem-pulse { animation: rempulse 4.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes rempulse {
+    0%, 100% { opacity: .35; transform: scale(1); }
+    50%      { opacity: .95; transform: scale(1.06); }
+  }
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 2.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -56; } }
+  .dash-flow-slow { stroke-dasharray: 4 10; animation: dashflow 5s linear infinite; }
+  .synapse { animation: synapse 3s ease-in-out infinite; transform-origin: center; }
+  @keyframes synapse {
+    0%, 100% { opacity: .15; }
+    50%      { opacity: 1; }
+  }
+  .orbit-slow { transform-origin: center; animation: orbit 22s linear infinite; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+
+  /* ═════════════════════════════════════════════════
+     视觉一（Hero）：Dreaming 神经回路
+     ═════════════════════════════════════════════════ */
+  .dream {
+    position: relative; margin: 2rem 0 2.4rem;
+    border-radius: 20px;
+    padding: 1.6rem 1.4rem 1.2rem;
+    background: radial-gradient(120% 100% at 50% 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--surface)) 0%,
+      var(--surface) 60%);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 18px 44px var(--accent-glow), inset 0 0 0 1px var(--accent-soft);
+    overflow: hidden;
+  }
+  .dream::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(60% 40% at 50% 55%, var(--accent-glow), transparent 70%);
+    opacity: .55;
+  }
+  .dream-eyebrow {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: .6em;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .6rem;
+  }
+  .dream-eyebrow .lamp {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+    animation: rempulse 2.6s ease-in-out infinite;
+  }
+  .dream-title {
+    position: relative; z-index: 1;
+    font-family: var(--display); font-weight: 700; font-size: 1.35rem;
+    margin: 0 0 .3em; color: var(--text);
+    letter-spacing: -.005em;
+  }
+  .dream-title .en { font-style: italic; font-weight: 500; color: var(--accent); margin-left: .35em; font-size: .85em; }
+  .dream-sub {
+    position: relative; z-index: 1;
+    font-size: .92rem; color: var(--text-soft);
+    margin: 0 0 1.1rem; max-width: 62ch;
+  }
+  .dream-vis { position: relative; z-index: 1; width: 100%; margin: .2rem auto .4rem; }
+  .dream-vis svg { display: block; width: 100%; height: auto; max-width: 860px; margin: 0 auto; }
+  .dream-legend {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem;
+    margin: .8rem 0 .1rem;
+  }
+  @media (max-width: 760px) { .dream-legend { grid-template-columns: 1fr; } }
+  .dream-op {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    padding: .75rem .85rem;
+    display: flex; gap: .7rem; align-items: flex-start;
+    transition: transform .2s, border-color .2s;
+  }
+  .dream-op:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .dream-op-icon {
+    flex-shrink: 0; width: 30px; height: 30px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent);
+  }
+  .dream-op-body { flex: 1; min-width: 0; }
+  .dream-op-title {
+    font-family: var(--display); font-weight: 700; font-size: .95rem; margin: 0 0 .15em; color: var(--text);
+  }
+  .dream-op-title .en { font-family: var(--mono); font-size: .7rem; font-weight: 500; letter-spacing: .1em; color: var(--accent); margin-left: .4em; text-transform: uppercase; }
+  .dream-op-desc { margin: 0; font-size: .82rem; color: var(--text-soft); line-height: 1.55; }
+
+  /* ═════════════════════════════════════════════════
+     视觉二：抽象度阶梯（Abstraction Ladder）
+     ═════════════════════════════════════════════════ */
+  .ladder {
+    display: grid; grid-template-columns: 1fr;
+    gap: .5rem; margin: 1.8em 0;
+    position: relative;
+  }
+  .ladder-tier {
+    display: grid; grid-template-columns: 3.4rem 1fr 4.8rem;
+    gap: 1rem; align-items: center;
+    border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 1rem 1.2rem;
+    background: var(--surface);
+    position: relative;
+    transition: transform .2s, border-color .2s;
+  }
+  @media (max-width: 760px) { .ladder-tier { grid-template-columns: 2.4rem 1fr; } .ladder-owner { grid-column: 1 / -1; } }
+  .ladder-tier:hover { transform: translateX(4px); border-color: var(--accent); }
+  .ladder-tier.top {
+    border-color: var(--accent); border-width: 2px;
+    background: linear-gradient(90deg, var(--accent-soft), var(--surface) 60%);
+    box-shadow: 0 6px 18px var(--accent-glow);
+  }
+  .ladder-tier.mid { background: color-mix(in srgb, var(--surface) 96%, var(--bg-soft)); }
+  .ladder-tier.bot { background: var(--bg-soft); border-color: var(--border-strong); }
+  .ladder-num {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 1.6rem; color: var(--accent); line-height: 1;
+    text-align: center;
+  }
+  .ladder-tier.bot .ladder-num, .ladder-tier.mid .ladder-num { color: var(--text-muted); }
+  .ladder-body h4 {
+    font-family: var(--display); font-size: 1.05rem; margin: 0 0 .2em; color: var(--text); font-weight: 700;
+  }
+  .ladder-body h4 .en { font-style: italic; font-weight: 500; font-size: .85em; color: var(--accent); margin-left: .3em; }
+  .ladder-tier.bot .ladder-body h4 .en, .ladder-tier.mid .ladder-body h4 .en { color: var(--text-muted); }
+  .ladder-body p { margin: 0; font-size: .86rem; color: var(--text-soft); line-height: 1.55; }
+  .ladder-body code {
+    font-family: var(--mono); font-size: .78rem;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--accent-ink);
+    padding: .05em .4em; border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
+  }
+  [data-theme="dark"] .ladder-body code { color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .ladder-owner {
+    text-align: right;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    display: flex; flex-direction: column; align-items: flex-end; gap: .1rem;
+  }
+  .ladder-owner b { color: var(--accent); font-weight: 700; font-size: .78rem; letter-spacing: .05em; }
+  .ladder-tier.bot .ladder-owner b { color: var(--con); }
+  .ladder-tier.mid .ladder-owner b { color: var(--warn); }
+  .ladder-axis {
+    display: grid; grid-template-columns: 3.4rem 1fr 4.8rem; gap: 1rem;
+    padding: 0 1.2rem; margin: .1rem 0 .4rem;
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  @media (max-width: 760px) { .ladder-axis { grid-template-columns: 1fr auto; } .ladder-axis .axis-mid { display:none; } }
+  .ladder-axis .axis-left::before { content: "▲"; font-size: .6em; margin-right: .3em; color: var(--accent); }
+  .ladder-axis .axis-right { text-align: right; }
+  .ladder-axis .axis-right::before { content: "▼"; font-size: .6em; margin-right: .3em; color: var(--text-muted); }
+
+  /* ═════════════════════════════════════════════════
+     视觉三：Agent-Sandbox 解耦架构（Before / After）
+     ═════════════════════════════════════════════════ */
+  .decouple {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 1rem; margin: 1.8em 0;
+  }
+  @media (max-width: 860px) { .decouple { grid-template-columns: 1fr; } .decouple-arrow { transform: rotate(90deg); justify-self: center; } }
+  .decouple-side {
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.2rem 1.1rem 1rem;
+    background: var(--surface);
+    display: flex; flex-direction: column; gap: .7rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .decouple-side:hover { transform: translateY(-3px); }
+  .decouple-eyebrow {
+    display: flex; align-items: center; gap: .55em;
+    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+  }
+  .decouple-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .decouple-old { border-color: var(--border-strong); }
+  .decouple-old .decouple-eyebrow { color: var(--text-muted); }
+  .decouple-old .decouple-eyebrow .dot { background: var(--text-muted); }
+  .decouple-new { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .decouple-new .decouple-eyebrow { color: var(--accent); }
+  .decouple-new .decouple-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .decouple-title {
+    font-family: var(--display); font-weight: 700; font-size: 1rem;
+    margin: 0; color: var(--text);
+  }
+  .decouple-vis svg { width: 100%; height: auto; max-width: 340px; display: block; margin: 0 auto; }
+  .decouple-cap { font-size: .85rem; color: var(--text-soft); line-height: 1.55; margin: 0; }
+  .decouple-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .3rem; padding: 0 .3rem; color: var(--accent);
+  }
+  .decouple-arrow .gly { font-family: var(--display); font-size: 2rem; line-height: 1; font-weight: 500; }
+  .decouple-arrow .lab {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--text-muted);
+    writing-mode: vertical-rl;
+  }
+  @media (max-width: 860px) { .decouple-arrow .lab { writing-mode: horizontal-tb; } }
+
+  /* ═════════════════════════════════════════════════
+     竞品对比表 微美化
+     ═════════════════════════════════════════════════ */
+  .cmp-yes { color: var(--pro); font-weight: 700; }
+  .cmp-no  { color: var(--con); font-weight: 700; }
+  .cmp-mid { color: var(--warn); font-weight: 600; }
+  table.cmp td, table.cmp th { font-size: .87rem; }
+
+  /* 版本时间线 mini card */
+  .milestones { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.4em 0 1.6em; }
+  @media (max-width: 860px) { .milestones { grid-template-columns: 1fr; } }
+  .ms {
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 1rem 1.1rem; background: var(--surface);
+    position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .ms::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: var(--accent);
+  }
+  .ms:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .ms-date { font-family: var(--mono); font-size: .72rem; font-weight: 600; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; }
+  .ms-title { font-family: var(--display); font-weight: 700; font-size: 1rem; margin: .3em 0 .3em; color: var(--text); }
+  .ms-body { font-size: .84rem; color: var(--text-soft); line-height: 1.55; margin: 0; }
+
+  /* 全局：SVG 无障碍与 reduced-motion 兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .rem-pulse, .dash-flow, .dash-flow-slow, .synapse, .orbit-slow, .dream-eyebrow .lamp {
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      Claude Managed Agents 深度调研<span class="brand-sub">跨市场 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Anthropic Managed Agents<span class="en"> · 第三条路</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        当 harness 与 sandbox 解耦、agent 学会「做梦」——AI Agent 基础设施进入第三世代。
+      </p>
+      <div class="doc-meta">
+        <span>2026-07-03</span>
+        <span>跨市场</span>
+        <span>Agent 基础设施</span>
+        <span>Dreaming</span>
+        <span>Self-Improving Agent</span>
+        <span>可对外</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">6<small>×</small></div>
+          <div class="lab">Harvey 任务完成率<br/>（Dreaming 内测）</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">+10<small>pt</small></div>
+          <div class="lab">Outcomes rubric<br/>宏观任务改进</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">20<small>×25</small></div>
+          <div class="lab">Multiagent 最大<br/>specialist × 并发</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">4<small>-01</small></div>
+          <div class="lab">Beta Header<br/>managed-agents-2026</div>
+        </div>
+      </div>
+
+      <p style="font-size: .82rem; color: var(--text-muted); margin: 1.2em 0 0;">
+        <strong>信源</strong>：
+        <a href="https://platform.claude.com/docs/en/managed-agents/overview" target="_blank" rel="noopener">Claude Managed Agents overview</a> ·
+        <a href="https://claude.com/blog/building-with-claude-managed-agents" target="_blank" rel="noopener">The evolution of agentic surfaces</a> ·
+        <a href="https://claude.com/blog/new-in-claude-managed-agents" target="_blank" rel="noopener">Dreaming / Outcomes / Multiagent</a> ·
+        <a href="https://claude.com/blog/claude-managed-agents-updates" target="_blank" rel="noopener">Self-hosted sandboxes &amp; MCP tunnels</a> ·
+        <a href="https://docs.langchain.com/oss/python/deepagents/comparison" target="_blank" rel="noopener">LangChain Deep Agents 对比</a>
+      </p>
+    </header>
+
+    <!-- ═════════ 核心论点 ═════════ -->
+    <div class="lede">
+      <strong>核心论点：</strong>Managed Agents 不是又一个 API，而是 Anthropic 把「Claude Code 的 harness × 托管沙箱 × 会话/事件基础设施」封装为一个独立、可持续演进的运行时。<b style="color:var(--accent)">Dreaming</b> 让 agent 学会跨会话自我巩固记忆、<b style="color:var(--accent)">Outcomes</b> 把 rubric-grader 变成 API、<b style="color:var(--accent)">Self-hosted Sandbox</b> 让 loop 与执行边界解耦——三条线共同定义了「第三世代 agent 基础设施」的形态。
+    </div>
+
+    <!-- ═════════ 一页要点 ═════════ -->
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><b>三层塔</b>：Messages API（自写循环）→ Agent SDK（自托 harness）→ <b style="color:var(--accent)">Managed Agents（全托管）</b>。定位是第三条路，不是替代。</li>
+        <li><b>四件套</b>：Agent（可复用人设）× Environment（容器模板）× Session（有状态实例）× Events（SSE 双通道）。Agent 与 Environment <em>一次定义、多次复用</em>；Session 是唯一算钱的对象。</li>
+        <li><b>Dreaming 是自进化的官方入场券</b>：定时异步 Job 读 memory + ≤100 条会话 transcript，输出<em>全新 memory 副本</em>（不覆写、可回滚），做「合并去重 / 更新矛盾 / 挖掘跨会话模式」三件事。灵感来自 REM 睡眠。</li>
+        <li><b>Outcomes = Reflexion 的产品化</b>：独立 grader 用<em>独立上下文窗口</em>打分（防止 self-grading bias），agent 自我修正。宏观 +10 分，docx/pptx +8–10%。</li>
+        <li><b>架构分水岭</b>：从 5 月开始，Agent Loop 与 Sandbox 解耦——Anthropic 云上跑 loop，用户侧（Cloudflare / Daytona / Modal / Vercel / 自建）跑 sandbox，内网 MCP 通过反向 tunnel 连接。</li>
+        <li><b>硬缺口</b>：不支持 ZDR / HIPAA BAA（有状态）；对中国用户/企业实施全链路封锁（含 Claude Code 客户端隐蔽指纹标记）。合规与地缘是它的两个天花板。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 一、定位 ═════════ -->
+    <h2 id="position"><span class="sec-num">一</span>定位：Anthropic 三条路里的第三条<a href="#position" class="anchor">#</a></h2>
+    <p class="kicker">— From tokens-in-tokens-out to a hosted runtime</p>
+
+    <p>2023 年 Anthropic 把 API 交给开发者时，契约极简：<em>tokens in, tokens out</em>。三年后，「让 Claude 把一个任务完整跑到结束」的诉求把这个契约撑不住了。Anthropic 的回应是把开发者接入面分成三层——Managed Agents 是最上面那一层。</p>
+
+    <!-- 视觉二：抽象度阶梯 -->
+    <div class="ladder reveal">
+      <div class="ladder-axis">
+        <span class="axis-left">托管度</span>
+        <span class="axis-mid">&nbsp;</span>
+        <span class="axis-right">自建量</span>
+      </div>
+
+      <div class="ladder-tier top">
+        <div class="ladder-num disp">Ⅲ</div>
+        <div class="ladder-body">
+          <h4>Claude Managed Agents<span class="en">Hosted Harness × Hosted Sandbox</span></h4>
+          <p>你只定义 <code>Agent</code> 和 <code>Environment</code>，然后发消息、订阅事件。Agent 循环、沙箱容器、工具执行、会话持久化、prompt 缓存与压缩全部托管。</p>
+        </div>
+        <div class="ladder-owner">Anthropic 托管<br/><b>≈ 95%</b></div>
+      </div>
+
+      <div class="ladder-tier mid">
+        <div class="ladder-num disp">Ⅱ</div>
+        <div class="ladder-body">
+          <h4>Claude Agent SDK<span class="en">Same Harness · You Host</span></h4>
+          <p>开源 Python/TypeScript 库，把驱动 Claude Code 的同款 loop 嵌进你的应用。Harness 现成、hosting 与安全边界自建。</p>
+        </div>
+        <div class="ladder-owner">Anthropic 托管<br/><b>≈ 40%</b></div>
+      </div>
+
+      <div class="ladder-tier bot">
+        <div class="ladder-num disp">Ⅰ</div>
+        <div class="ladder-body">
+          <h4>Messages API<span class="en">Bring Your Own Loop</span></h4>
+          <p>最底层。发送 prompt、拿 completion，agent 循环 / 工具 / 沙箱 / 状态 / 事件全部自写。适合对 harness 要有<em>全定制权</em>的场景。</p>
+        </div>
+        <div class="ladder-owner">Anthropic 托管<br/><b>≈ 5%</b></div>
+      </div>
+    </div>
+
+    <p>三层之间不是替代关系，而是「同一颗模型 × 不同抽象度」。Anthropic 官方博客点得很直白：<em>Managed Agents 是让团队「几天而不是几个月」把 agent 送进生产的那条路。</em>一句话背后的技术含义是——把「你原本不用写的六件事」从开发路径里拿走：agent 循环、沙箱、工具集、会话状态、事件流、prompt 缓存与压缩。</p>
+
+    <!-- ═════════ 二、四件套架构 ═════════ -->
+    <h2 id="architecture"><span class="sec-num">二</span>四件套架构<a href="#architecture" class="anchor">#</a></h2>
+    <p class="kicker">— Agent × Environment × Session × Events</p>
+
+    <p>整个服务只需要背四个概念。它们的关系是「模板 → 实例 → 事件流」：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 12rem;">概念</th>
+            <th>一句话</th>
+            <th style="width: 8rem;">生命周期</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b style="color:var(--accent)">Agent</b></td>
+            <td>可复用的「人设模板」= <code>model + system prompt + tools + MCP servers + skills</code>，有版本号，通过 ID 引用。</td>
+            <td>一次创建<br/>多次复用</td>
+          </tr>
+          <tr>
+            <td><b style="color:var(--accent)">Environment</b></td>
+            <td>容器模板 = 预装包（Python / Node / Go 等）+ 网络策略 + 挂载文件 + runtime 镜像。</td>
+            <td>一次创建<br/>多次复用</td>
+          </tr>
+          <tr>
+            <td><b style="color:var(--accent)">Session</b></td>
+            <td>某个 Agent × 某个 Environment 的运行实例。<em>服务端持久化</em>文件系统、对话历史与状态；关掉 SSE 半小时后再连仍在。</td>
+            <td>唯一算钱<br/>的对象</td>
+          </tr>
+          <tr>
+            <td><b style="color:var(--accent)">Events</b></td>
+            <td>双通道：<code>POST /events</code> 发用户消息，<code>GET /stream</code> 消费 agent SSE。中途可 <em>steer</em>（插话改向）或 <em>interrupt</em>（打断）。</td>
+            <td>会话内<br/>流式</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>内置工具是把 Claude Code 那套「搬到云上」：<b>Bash</b> · <b>File ops</b>（read/write/edit/glob/grep）· <b>Web search &amp; fetch</b> · <b>MCP servers</b>。当前所有端点仍在 beta，需要 <code>managed-agents-2026-04-01</code> beta header。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">硬缺口</div>
+      <p style="margin:.2em 0;">Managed Agents 是<em>有状态的</em>（会话历史、沙箱 fs、outputs 全部服务端持久化）——因此<b>不适用 Zero Data Retention</b>，也<b>不适用 HIPAA BAA</b>。金融/医疗生产工作负载要慎重，或走 self-hosted sandbox + MCP tunnel 组合把数据留在你自己的边界内。</p>
+    </div>
+
+    <!-- ═════════ 三、演化节点 ═════════ -->
+    <h2 id="evolution"><span class="sec-num">三</span>演化：2026 年的三波跃迁<a href="#evolution" class="anchor">#</a></h2>
+    <p class="kicker">— Beta → Cognition → Perimeter</p>
+
+    <div class="milestones reveal">
+      <div class="ms">
+        <div class="ms-date">Apr 08 · Beta</div>
+        <div class="ms-title">Public Beta 首发</div>
+        <p class="ms-body">沙箱执行 / Checkpoints（断线自动恢复）/ Scoped permissions / 长会话（分钟到小时）。同日把 Claude Code SDK 更名 Claude Agent SDK——harness 正式变成<em>通用</em> agent 底座。</p>
+      </div>
+      <div class="ms">
+        <div class="ms-date">May 06 · Cognition</div>
+        <div class="ms-title">Dreaming + Outcomes + Multiagent</div>
+        <p class="ms-body">Code w/ Claude 大会一次性推出三个「元技能」：跨会话记忆巩固、独立 grader rubric 打分、最多 20 specialist × 25 并发的多智能体编排。还加了 Webhooks，把 agent 变成异步任务原语。</p>
+      </div>
+      <div class="ms">
+        <div class="ms-date">May 19 · Perimeter</div>
+        <div class="ms-title">Self-hosted Sandbox + MCP Tunnels</div>
+        <p class="ms-body">Agent Loop 留在 Anthropic 云，工具执行搬到用户侧（Cloudflare / Daytona / Modal / Vercel / 自建）；反向 tunnel 让 agent 调用你内网 MCP，不开公网入向端口。企业级正式落地。</p>
+      </div>
+    </div>
+
+    <h3 id="dreaming-detail">3.1 Dreaming · 让 agent 学会做梦</h3>
+    <p>Dreaming 是本轮更新里最有想象力的一件。它不是新研究——Reflexion / Voyager / MemGPT 各有做法——但 Anthropic 把它做成了<em>基础设施级别的定时任务</em>：不改模型权重、只写 memory 副本、审查即回滚。这套「安全 + 可控 + 官方 blessed」的组合，恰好把「自进化 agent」从论文推向了生产。</p>
+
+    <!-- ═════════ 视觉一：Dreaming 神经回路（Hero） ═════════ -->
+    <figure class="dream reveal">
+      <div class="dream-eyebrow"><span class="lamp"></span>Hero · Neural REM Loop</div>
+      <div class="dream-title">Dreaming 神经回路<span class="en">Sleep-time Memory Consolidation</span></div>
+      <p class="dream-sub">agent 不工作的时段，Dreaming Job 异步读入 memory store + 过去最多 100 条会话 transcript，产出一份<em>全新的 memory store 副本</em>——重复项合并、矛盾条目更新、跨会话模式挖掘。整个过程可 SSE 订阅、可人工审查、不覆写原库。</p>
+
+      <div class="dream-vis">
+        <svg viewBox="0 0 860 340" role="img" aria-label="Dreaming 神经回路：session transcripts 汇入中央脑区，输出新的 memory store 副本" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="brainGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"  stop-color="var(--accent-ion)" stop-opacity=".55"/>
+              <stop offset="60%" stop-color="var(--accent)"     stop-opacity=".15"/>
+              <stop offset="100%" stop-color="var(--accent)"    stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="synInflow" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"  stop-color="var(--text-muted)" stop-opacity=".2"/>
+              <stop offset="100%" stop-color="var(--accent)"    stop-opacity="1"/>
+            </linearGradient>
+            <linearGradient id="synOutflow" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"  stop-color="var(--accent)"     stop-opacity="1"/>
+              <stop offset="100%" stop-color="var(--pro)"       stop-opacity=".7"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 中央光晕 -->
+          <circle cx="430" cy="170" r="150" fill="url(#brainGlow)" class="rem-pulse"/>
+
+          <!-- 左：session transcripts 4 条 -->
+          <g style="color: var(--text-muted)" stroke="currentColor" stroke-width="1.4" fill="none">
+            <g transform="translate(30, 60)">
+              <rect x="0" y="0" width="130" height="30" rx="4"/>
+              <line x1="10" y1="10" x2="90" y2="10" stroke-width="1"/>
+              <line x1="10" y1="18" x2="70" y2="18" stroke-width="1"/>
+              <line x1="10" y1="24" x2="100" y2="24" stroke-width="1"/>
+            </g>
+            <g transform="translate(20, 120)">
+              <rect x="0" y="0" width="130" height="30" rx="4"/>
+              <line x1="10" y1="10" x2="80" y2="10" stroke-width="1"/>
+              <line x1="10" y1="18" x2="100" y2="18" stroke-width="1"/>
+              <line x1="10" y1="24" x2="60" y2="24" stroke-width="1"/>
+            </g>
+            <g transform="translate(30, 180)">
+              <rect x="0" y="0" width="130" height="30" rx="4"/>
+              <line x1="10" y1="10" x2="100" y2="10" stroke-width="1"/>
+              <line x1="10" y1="18" x2="60" y2="18" stroke-width="1"/>
+              <line x1="10" y1="24" x2="90" y2="24" stroke-width="1"/>
+            </g>
+            <g transform="translate(20, 240)">
+              <rect x="0" y="0" width="130" height="30" rx="4"/>
+              <line x1="10" y1="10" x2="70" y2="10" stroke-width="1"/>
+              <line x1="10" y1="18" x2="100" y2="18" stroke-width="1"/>
+              <line x1="10" y1="24" x2="80" y2="24" stroke-width="1"/>
+            </g>
+          </g>
+          <text x="30" y="45" font-size="10" fill="var(--text-muted)" letter-spacing="2">SESSION TRANSCRIPTS ≤ 100</text>
+
+          <!-- 左侧流线（synapse 汇入） -->
+          <g fill="none" stroke-width="1.6">
+            <path d="M 160 75  C 240 90, 320 130, 380 150" stroke="url(#synInflow)" class="dash-flow"/>
+            <path d="M 150 135 C 240 145, 320 155, 380 165" stroke="url(#synInflow)" class="dash-flow" style="animation-delay: -.6s"/>
+            <path d="M 160 195 C 240 195, 320 195, 380 195" stroke="url(#synInflow)" class="dash-flow" style="animation-delay: -1.2s"/>
+            <path d="M 150 255 C 240 240, 320 220, 380 205" stroke="url(#synInflow)" class="dash-flow" style="animation-delay: -1.8s"/>
+          </g>
+
+          <!-- 中央脑区（REM 双环） -->
+          <g transform="translate(430, 170)">
+            <circle r="90" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="2 4" class="orbit-slow"/>
+            <circle r="70" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+            <circle r="70" fill="none" stroke="var(--accent-ion)" stroke-width="1" opacity=".5" class="rem-pulse"/>
+
+            <!-- 三个 dreaming operation 节点 -->
+            <g style="color: var(--accent)" fill="currentColor">
+              <circle cx="0"  cy="-40" r="6" class="synapse"/>
+              <circle cx="35" cy="20"  r="6" class="synapse" style="animation-delay: -1s"/>
+              <circle cx="-35" cy="20" r="6" class="synapse" style="animation-delay: -2s"/>
+            </g>
+
+            <!-- 中央标签 -->
+            <text text-anchor="middle" y="-4" font-size="10" fill="var(--accent)" letter-spacing="3">REM · DREAM JOB</text>
+            <text text-anchor="middle" y="16" font-size="14" class="disp" fill="var(--text)" font-weight="700">/v1/dreams</text>
+
+            <!-- 三个操作连接 -->
+            <g stroke="var(--accent)" stroke-width=".8" fill="none" opacity=".4">
+              <line x1="0" y1="-40" x2="0" y2="-4"/>
+              <line x1="35" y1="20" x2="4" y2="8"/>
+              <line x1="-35" y1="20" x2="-4" y2="8"/>
+            </g>
+          </g>
+
+          <!-- 右：new memory store 副本 -->
+          <g transform="translate(670, 90)">
+            <rect x="0" y="0" width="160" height="160" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2"/>
+            <rect x="8" y="8" width="160" height="160" rx="10" fill="none" stroke="var(--accent)" stroke-width="1.2" opacity=".35"/>
+            <g style="color: var(--accent)" stroke="currentColor" stroke-width="1.4" fill="none">
+              <line x1="16" y1="30" x2="140" y2="30"/>
+              <line x1="16" y1="50" x2="120" y2="50"/>
+              <line x1="16" y1="70" x2="130" y2="70"/>
+              <line x1="16" y1="90" x2="110" y2="90"/>
+              <line x1="16" y1="110" x2="140" y2="110"/>
+              <line x1="16" y1="130" x2="125" y2="130"/>
+              <line x1="16" y1="145" x2="100" y2="145"/>
+            </g>
+            <text x="16" y="20" font-size="10" fill="var(--accent)" letter-spacing="2">NEW MEMORY (COPY)</text>
+          </g>
+
+          <!-- 中央 → 副本 输出流 -->
+          <g fill="none" stroke-width="1.6">
+            <path d="M 520 170 C 580 170, 620 170, 670 170" stroke="url(#synOutflow)" class="dash-flow"/>
+          </g>
+
+          <!-- 右下：审查节点 -->
+          <g transform="translate(670, 275)">
+            <rect x="0" y="0" width="160" height="34" rx="6" fill="none" stroke="var(--pro)" stroke-width="1.4" stroke-dasharray="4 4"/>
+            <text x="80" y="21" text-anchor="middle" font-size="11" fill="var(--pro)" letter-spacing="1">HUMAN REVIEW / ROLLBACK</text>
+          </g>
+          <path d="M 750 250 L 750 275" stroke="var(--pro)" stroke-width="1.2" fill="none" opacity=".7"/>
+
+          <!-- 底部注脚 -->
+          <text x="430" y="330" text-anchor="middle" font-size="10" fill="var(--text-muted)" letter-spacing="2">
+            MERGE DUPLICATES · UPDATE CONFLICTS · MINE CROSS-SESSION PATTERNS
+          </text>
+        </svg>
+      </div>
+
+      <div class="dream-legend">
+        <div class="dream-op">
+          <div class="dream-op-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="合并">
+              <path d="M8 6 L12 10 L16 6"/><path d="M12 10 V 20"/><circle cx="12" cy="4" r="2"/>
+            </svg>
+          </div>
+          <div class="dream-op-body">
+            <div class="dream-op-title">合并重复项<span class="en">Merge</span></div>
+            <p class="dream-op-desc">多 agent 独立写入的高度相似记忆整合为一条精炼记忆。</p>
+          </div>
+        </div>
+        <div class="dream-op">
+          <div class="dream-op-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="更新">
+              <path d="M3 12 A9 9 0 0 1 21 12"/><path d="M21 5 V 12 H 14"/><path d="M21 12 A9 9 0 0 1 3 12"/><path d="M3 19 V 12 H 10"/>
+            </svg>
+          </div>
+          <div class="dream-op-body">
+            <div class="dream-op-title">更新过时/矛盾<span class="en">Update</span></div>
+            <p class="dream-op-desc">用最新值替换已过时或互相矛盾的条目，让记忆库保持一致。</p>
+          </div>
+        </div>
+        <div class="dream-op">
+          <div class="dream-op-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="模式">
+              <circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="12" cy="18" r="2"/>
+              <path d="M6 8 V 14 L 12 16 L 18 14 V 8"/><path d="M6 8 L 18 8"/>
+            </svg>
+          </div>
+          <div class="dream-op-body">
+            <div class="dream-op-title">挖掘跨会话模式<span class="en">Mine</span></div>
+            <p class="dream-op-desc">识别单个 agent 看不到的 recurring mistakes、workflow convergence、团队 preferences。</p>
+          </div>
+        </div>
+      </div>
+    </figure>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">技术细节</div>
+      <ul style="margin:.2em 0;">
+        <li><b>不修改原库</b>：Dreaming 始终产出一份 <em>new memory store 副本</em>，可审查、可回滚，也可选自动接管。</li>
+        <li><b>API 端点</b>：<code>/v1/dreams</code>；job 启动后暴露 <code>session_id</code>，完整过程可 SSE 订阅。</li>
+        <li><b>Harvey 数据</b>：任务完成率约 6×——但基线未公开，需谨慎读数。</li>
+        <li><b>研究根基</b>：与 Anthropic 内部 Sleep-time Compute 研究、Claude Code 3 月泄漏出的 Auto Dream 一脉相承。</li>
+      </ul>
+    </div>
+
+    <h3 id="outcomes-detail">3.2 Outcomes · rubric-grader 的产品化</h3>
+    <p>你写一份 rubric 描述「什么算成功」，一个独立的 grader 用<em>独立上下文窗口</em>打分。当结果不达标，grader 指出具体差距，agent 再跑一遍。</p>
+    <p>核心妙处在「grader 独立上下文」——不受 agent 推理过程影响，避免 self-grading 常见的自我合理化。内测数据：宏观任务成功率 <b>+10 pt</b>；docx 生成 <b>+8.4%</b>、pptx 生成 <b>+10.1%</b>。配合 Webhooks，agent 从「同步流」正式变成「异步任务」原语——发起任务、放着跑、完成回调。</p>
+
+    <h3 id="multiagent-detail">3.3 Multiagent Orchestration · 20 × 25 的分工</h3>
+    <p>一个 lead agent 把任务拆分成小块，最多分配给 <b>20 个 specialist</b>（各自独立 model / prompt / tools），最多 <b>25 个并发</b>，共享一个文件系统。lead agent 可以在中途 check-in，Console 里可完整追溯每个子 agent 的时序。已披露的用例：Netflix 平台组用它做跨源日志分析；Every 家的 Spiral 用 Haiku-Lead + Opus-Draft 的作家 agent。</p>
+
+    <h3 id="self-hosted-detail">3.4 Self-hosted Sandbox + MCP Tunnels · 边界解耦</h3>
+    <p>5 月 19 日这波是真正把 Managed Agents 变企业级的更新——Agent Loop 与 Sandbox 解耦。</p>
+
+    <!-- ═════════ 视觉三：Agent-Sandbox 解耦 ═════════ -->
+    <div class="decouple reveal">
+      <div class="decouple-side decouple-old">
+        <div class="decouple-eyebrow"><span class="dot"></span>Before · Coupled</div>
+        <h4 class="decouple-title">Agent 跑在 Sandbox 里</h4>
+        <div class="decouple-vis">
+          <svg viewBox="0 0 300 200" role="img" aria-label="Agent 与 Sandbox 同进程" xmlns="http://www.w3.org/2000/svg">
+            <rect x="30" y="20" width="240" height="160" rx="14" fill="none" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="4 4"/>
+            <text x="150" y="14" text-anchor="middle" font-size="10" fill="var(--text-muted)" letter-spacing="2">SANDBOX (same process)</text>
+
+            <g style="color: var(--text-muted)" stroke="currentColor" stroke-width="1.4" fill="none">
+              <rect x="60" y="50" width="80" height="40" rx="6"/>
+              <text x="100" y="75" text-anchor="middle" font-size="11" fill="currentColor">Agent</text>
+
+              <rect x="160" y="50" width="80" height="40" rx="6"/>
+              <text x="200" y="75" text-anchor="middle" font-size="11" fill="currentColor">Tools</text>
+
+              <rect x="60" y="120" width="180" height="40" rx="6"/>
+              <text x="150" y="145" text-anchor="middle" font-size="11" fill="currentColor">Local Filesystem</text>
+
+              <line x1="140" y1="70" x2="160" y2="70"/>
+              <line x1="100" y1="90" x2="100" y2="120"/>
+              <line x1="200" y1="90" x2="200" y2="120"/>
+            </g>
+          </svg>
+        </div>
+        <p class="decouple-cap">Claude Agent SDK 的默认形态：一个进程、一个 filesystem。安全边界 = 你自己搭沙箱集群。</p>
+      </div>
+
+      <div class="decouple-arrow">
+        <span class="gly">→</span>
+        <span class="lab">Decouple</span>
+      </div>
+
+      <div class="decouple-side decouple-new">
+        <div class="decouple-eyebrow"><span class="dot"></span>After · Split-plane</div>
+        <h4 class="decouple-title">Loop 云端 · Sandbox 用户侧</h4>
+        <div class="decouple-vis">
+          <svg viewBox="0 0 300 200" role="img" aria-label="Agent Loop 在 Anthropic 云端，Sandbox 在用户侧" xmlns="http://www.w3.org/2000/svg">
+            <!-- 左：Anthropic 云 -->
+            <rect x="10" y="20" width="120" height="160" rx="14" fill="none" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="70" y="14" text-anchor="middle" font-size="9" fill="var(--accent)" letter-spacing="2">ANTHROPIC CLOUD</text>
+            <g style="color: var(--accent)" stroke="currentColor" stroke-width="1.4" fill="none">
+              <rect x="30" y="50" width="80" height="34" rx="6"/>
+              <text x="70" y="72" text-anchor="middle" font-size="11" fill="currentColor">Agent Loop</text>
+
+              <rect x="30" y="94" width="80" height="34" rx="6"/>
+              <text x="70" y="116" text-anchor="middle" font-size="11" fill="currentColor">Session</text>
+
+              <rect x="30" y="138" width="80" height="30" rx="6"/>
+              <text x="70" y="157" text-anchor="middle" font-size="10" fill="currentColor">Prompt Cache</text>
+            </g>
+
+            <!-- 右：Your perimeter -->
+            <rect x="170" y="20" width="120" height="160" rx="14" fill="none" stroke="var(--pro)" stroke-width="1.6" stroke-dasharray="6 4"/>
+            <text x="230" y="14" text-anchor="middle" font-size="9" fill="var(--pro)" letter-spacing="2">YOUR PERIMETER</text>
+            <g style="color: var(--pro)" stroke="currentColor" stroke-width="1.4" fill="none">
+              <rect x="190" y="50" width="80" height="34" rx="6"/>
+              <text x="230" y="72" text-anchor="middle" font-size="11" fill="currentColor">Sandbox</text>
+
+              <rect x="190" y="94" width="80" height="34" rx="6"/>
+              <text x="230" y="116" text-anchor="middle" font-size="10" fill="currentColor">Tools · FS</text>
+
+              <rect x="190" y="138" width="80" height="30" rx="6"/>
+              <text x="230" y="157" text-anchor="middle" font-size="10" fill="currentColor">Private MCP</text>
+            </g>
+
+            <!-- 中间连接线 -->
+            <g fill="none" stroke-width="1.4">
+              <line x1="110" y1="67"  x2="190" y2="67" stroke="var(--accent)" class="dash-flow-slow"/>
+              <line x1="110" y1="111" x2="190" y2="111" stroke="var(--accent)" class="dash-flow-slow" style="animation-delay: -1.5s"/>
+              <line x1="110" y1="153" x2="190" y2="153" stroke="var(--accent)" class="dash-flow-slow" style="animation-delay: -3s"/>
+            </g>
+          </svg>
+        </div>
+        <p class="decouple-cap">Agent Loop 云托管，工具执行搬到你的基础设施（Cloudflare / Daytona / Modal / Vercel / 自建）；内网 MCP 通过反向 tunnel 出向连接，无入向端口。</p>
+      </div>
+    </div>
+
+    <p><b>MCP Tunnels</b> 是配套的关键机制：部署一个轻量出向 gateway，agent 就能调用你内网里的 MCP Server（数据库、内部 API、工单系统），全程无入向防火墙规则、端到端加密。</p>
+
+    <!-- ═════════ 四、深层判断 ═════════ -->
+    <h2 id="judgment"><span class="sec-num">四</span>三条深层判断<a href="#judgment" class="anchor">#</a></h2>
+    <p class="kicker">— What this means, not just what it does</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断 1 · Agent Loop 与 Sandbox 解耦，是 agent 架构的分水岭</div>
+      <p style="margin:.3em 0;">早期做法（Agent SDK 默认形态、早期 Deep Agents）是 Agent 跑在 Sandbox 里——同进程、同 fs。5 月起 Managed Agents 走的是 <b style="color:var(--accent)">Loop 云托管 + Sandbox 用户侧</b>。用户拿到「安全边界 + 内网可达 + 资源自定义」；Anthropic 拿到「harness 独立演进、跨模型代际优化」的自由度。<em>LangChain Deep Agents 官方对比也承认</em>：这是「production agent 架构的方向」。</p>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断 2 · Dreaming 是「自进化 Agent」的官方入场券</div>
+      <p style="margin:.3em 0;">Dreaming 从技术上没有革命性——Reflexion / MemGPT / Voyager 早有尝试。但 Anthropic 把它做成了<em>基础设施级别的定时任务 + 副本审查回滚</em>，等于对齐了一个共识：<b>agent 自改进的可信路径 = memory-based（可回滚），而不是 weight-based（不可回滚）</b>。这个结论也直接决定了未来两年学术界研究的走向。</p>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断 3 · Outcomes 是评估框架的产品化，也暴露了同源 grader 的偏差</div>
+      <p style="margin:.3em 0;">Outcomes 用<em>独立 context window</em> 的 grader 打分，是防止 self-grading bias 的关键设计。但 grader 依然是自家模型 → <b style="color:var(--warn)">evaluator-generator 同源</b>。这既是 Anthropic 竞品的原型，也留下了一个必须解决的 gap：跨模型 grader mixture 或 anti-collusion 设计——这是学术 novelty 的空间。</p>
+    </div>
+
+    <!-- ═════════ 五、竞品位次 ═════════ -->
+    <h2 id="compare"><span class="sec-num">五</span>竞品位次<a href="#compare" class="anchor">#</a></h2>
+    <p class="kicker">— Deep vertical, not multi-cloud neutral</p>
+
+    <div class="table-wrap">
+      <table class="cmp">
+        <thead>
+          <tr>
+            <th>产品</th>
+            <th>Agent 跑在哪</th>
+            <th>执行后端</th>
+            <th>模型</th>
+            <th>多租户</th>
+            <th>生态定位</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b style="color:var(--accent)">Claude Managed Agents</b></td>
+            <td>Anthropic 云</td>
+            <td>Anthropic 沙箱 / self-hosted (Cloudflare/Daytona/Modal/Vercel/自建)</td>
+            <td>仅 Claude</td>
+            <td class="cmp-mid">需自建</td>
+            <td>Anthropic 亲自托管，深度垂直</td>
+          </tr>
+          <tr>
+            <td>Claude Agent SDK</td>
+            <td>你的沙箱内</td>
+            <td>沙箱本地 fs</td>
+            <td>Claude（Anthropic / Bedrock / Vertex / Azure）</td>
+            <td class="cmp-mid">自建</td>
+            <td>同款 harness、你自托管</td>
+          </tr>
+          <tr>
+            <td>LangChain Deep Agents</td>
+            <td>沙箱内 / 沙箱外 as-tool</td>
+            <td>可插拔 backend</td>
+            <td>100+ 家</td>
+            <td class="cmp-yes">内建</td>
+            <td>多云中立 &amp; 多模型</td>
+          </tr>
+          <tr>
+            <td>OpenAI Agents SDK / AgentKit</td>
+            <td>你自己主机</td>
+            <td>用户侧</td>
+            <td>OpenAI</td>
+            <td class="cmp-mid">自建</td>
+            <td>更薄 harness</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>Anthropic 的策略很清晰：<b>不做多云中立，做垂直深度</b>。围绕 Claude 一家模型，把 harness / evaluator / memory / 多智能体 / self-hosted sandbox / MCP 全部封装成官方原语，跟 Claude Code 双向反哺。对于「押注 Claude 一家」的团队，这是几乎无缝的从原型到生产路径；对于「多模型多云」的团队，这是一堵护城河。</p>
+
+    <!-- ═════════ 六、风险 ═════════ -->
+    <h2 id="risk"><span class="sec-num">六</span>治理与地缘风险<a href="#risk" class="anchor">#</a></h2>
+    <p class="kicker">— The two ceilings above the runtime</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">合规缺口</div>
+      <p style="margin:.3em 0;">Managed Agents 有状态 → 不适用 ZDR / HIPAA BAA。金融、医疗、政务等严监管场景要上生产，只能走 self-hosted sandbox + MCP tunnel 组合把数据留在你自己边界内——这也是 5 月 19 日更新的核心动机。</p>
+    </div>
+
+    <div class="callout callout-con">
+      <div class="callout-tag">地缘封锁</div>
+      <p style="margin:.3em 0;">Anthropic 从 2025-09 起明确禁止「中国控股 &gt;50% 的企业」接入。2026-04 起 Claude Code 2.1.91+ 内嵌<em>基于时区/代理域名的隐蔽指纹标记</em>——通过 system prompt 里的日期文本做隐写术分类，无额外网络请求，被开发者社区逆向出来后官方承认为「实验性反滥用措施」。2026 年 6-7 月阿里内部反向禁用 Claude 全线产品（Sonnet / Opus / Fable / Claude Code），7-10 生效。</p>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">供应链攻击面</div>
+      <p style="margin:.3em 0;">2026-06《SkillJect》论文指出，agent 技能生态（skills / MCP servers）本身就是<em>新型供应链攻击面</em>。Managed Agents 允许挂 MCP 与 skills，这正是攻击者最感兴趣的入口——Outcome 里的 rubric、Dreaming 生成的 memory，都是可污染的对象。</p>
+    </div>
+
+    <p><b>含义</b>：中国团队想用 Managed Agents 的完整能力（dreaming / outcomes / multiagent）走生产，基本不现实。合规策略上，只能考虑三条路：<b>①</b> 通过 AWS Bedrock 走 Claude Platform on AWS 版本（能力有阉割）；<b>②</b> 用 Claude Agent SDK 自托管 + 用其他模型（生态断层）；<b>③</b> 观察 LangChain Deep Agents / OpenAI Agents / 阿里通义 Qoder 等替代 harness 的成熟度。</p>
+
+    <!-- ═════════ 七、启示 ═════════ -->
+    <h2 id="implication"><span class="sec-num">七</span>对研究方向的启示<a href="#implication" class="anchor">#</a></h2>
+    <p class="kicker">— How to build on top / how to compete</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">启示 1</div>
+        <h4 style="margin:.2em 0;">Dreaming as a Benchmark Target</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);">Dreaming 是一个可测量的自进化机制：输入（session transcripts + memory）→ 输出（new memory store）。整个过程可 SSE 追踪、有 <code>session_id</code>。天然适合做<em>反事实基准</em>——固定 transcripts、扰动 memory、观察下游任务成功率。可以直接成为你反事实基准论文的 workload。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示 2</div>
+        <h4 style="margin:.2em 0;">Outcomes 是竞品，也是标杆</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);">做通用 Agent 评估框架，Outcomes 是绕不开的对照组。建议先复刻它的 rubric-grader 语义，再在<em>「同源 grader 偏差」</em>上打差异化——这是他们的短板，也是学术 novelty 所在。跨模型 grader mixture / anti-collusion 是自然的攻角。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">启示 3</div>
+        <h4 style="margin:.2em 0;">解耦架构 = 评估的机会</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);">Managed Agents 把 harness 与 sandbox 分离后，「同一个 harness × 不同 sandbox」的可对比性变强了。可以设计一个基准：固定 Claude 模型 + 固定 harness，在 Cloudflare / Daytona / Modal / self-host 上跑同一 task set，测量<em>「基础设施对 agent 表现的干扰」</em>——这是学界几乎无人做的 sanity check。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">下一步行动（1–2 周）</div>
+      <ul style="margin:.3em 0;">
+        <li>把 Dreaming 的 <code>/v1/dreams</code> job 语义抽象成 reference workload，纳入反事实基准的 initial task set。</li>
+        <li>复刻 Outcomes 的 rubric-grader，做一版同模型自评 vs 跨模型互评的对照实验，量化 same-family bias。</li>
+        <li>关注 LangChain Deep Agents / Anthropic Managed Agents 的 harness 演进，作为反事实基准的执行后端候选。</li>
+      </ul>
+    </div>
+
+    <h2 id="open-questions"><span class="sec-num">八</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>Harvey 报告的「~6× 任务完成率」基线是什么？在受控实验下能否复现？</li>
+      <li>Dreaming 生成的 memory 副本能否被恶意 transcript 污染？攻击面在哪里？</li>
+      <li>Outcomes 的独立 grader 若换用他家模型（跨家族），改进量是否维持在 +10 pt？</li>
+      <li>Self-hosted sandbox 各家（Cloudflare/Daytona/Modal/Vercel）在同一任务下的 agent 表现差异有多大？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-03 初稿（综合 4 篇 Anthropic 官方公告 + 官方文档 + LangChain 竞品对比 + 中文技术社区拆解）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="../../readings/2026-06_loop-engineering-coding-agent.html">相关：循环工程 Loop Engineering</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="../../readings/2026-06_claude-code-artifacts.html">相关：Claude Code Artifacts</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

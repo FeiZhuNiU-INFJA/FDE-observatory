@@ -1,6 +1,20 @@
 {
-  "generated_at": "2026-07-03T09:58:29.579838+00:00",
+  "generated_at": "2026-07-03T13:08:32.323725+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
+      "title": "Anthropic Managed Agents · 第三条路",
+      "date": "2026-07-03",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Agent 基础设施",
+        "Dreaming",
+        "Self-Improving Agent"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
     {
       "path": "insights/cross/specflow_vericoding_product_direction_2026-05.html",
       "title": "SpecFlowAI代码时代的\"规范即产品\"",
