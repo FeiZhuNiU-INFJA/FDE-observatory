@@ -1011,10 +1011,10 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       tt.textContent = h.typeLabel; tt.style.color = h.color;
       df.tip.querySelector('.st-title').textContent = h.title;
       df.tip.querySelector('.st-date').textContent = h.date;
-      df.canvas.style.cursor = 'pointer';
+      df.survey.style.cursor = 'pointer';
     } else if (df.tip) {
       df.tip.classList.remove('on');
-      df.canvas.style.cursor = 'default';
+      df.survey.style.cursor = '';
     }
   }
 
@@ -1045,7 +1045,10 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       deepfield.mouse.inside = true;
     });
     survey.addEventListener('pointerleave', function () { deepfield.mouse.inside = false; });
-    deepfield.canvas.addEventListener('click', function () {
+    // 点击跳转：监听整块英雄区（canvas 在内容栅格之下，点不到），
+    // 真实链接/按钮优先，其余区域若悬停到某颗天体则跳转对应文档
+    survey.addEventListener('click', function (e) {
+      if (e.target.closest('a, button, input')) return;
       if (deepfield.hover && deepfield.hover.s.href) window.location.href = deepfield.hover.s.href;
     });
     window.addEventListener('resize', function () { if (deepfield.ready) resize(); }, { passive: true });
