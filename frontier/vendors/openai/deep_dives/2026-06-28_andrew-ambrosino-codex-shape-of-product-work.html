@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Andrew Ambrosino · Codex 与产品工作的新形态 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  /* 本页强调色（Codex 琥珀 amber）+ 暗色变体 */
+  :root {
+    --accent: #d97706;
+    --accent-deep: #b45309;
+    --accent-ink: #78350f;
+    --accent-soft: color-mix(in srgb, #d97706 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #fbbf24;
+    --accent-soft: color-mix(in srgb, #d97706 22%, #1a1a22);
+    --accent-ink: #fde68a;
+  }
+
+  /* ═════════ 视觉一：过程倒挂（Design Process Inversion） ═════════ */
+  .invert { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0; }
+  .invert-side { border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem; background: var(--surface); display: flex; flex-direction: column; gap: .7rem; transition: transform .2s, border-color .2s; }
+  .invert-side:hover { transform: translateY(-3px); }
+  .invert-old { border-color: var(--border-strong); }
+  .invert-new { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .invert-eyebrow { font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; }
+  .invert-old .invert-eyebrow { color: var(--text-muted); }
+  .invert-new .invert-eyebrow { color: var(--accent); }
+  .invert-side h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); }
+  .invert-vis { display: flex; justify-content: center; padding: .3rem 0; }
+  .invert-vis svg { width: 100%; max-width: 240px; height: auto; }
+  .invert-vis text { font-family: var(--mono); }
+  .invert-cap { font-size: .86rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .invert-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .35rem; color: var(--accent); padding: 0 .3rem; }
+  .invert-arrow .gly { font-family: var(--display); font-size: 2.2rem; line-height: 1; font-weight: 500; }
+  .invert-arrow .lab { font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 760px) { .invert { grid-template-columns: 1fr; } .invert-arrow { transform: rotate(90deg); } .invert-arrow .lab { writing-mode: horizontal-tb; } }
+
+  /* ═════════ 视觉二：Medium Ladder（媒介阶梯） ═════════ */
+  .medium { margin: 1.8em 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem 1.3rem 1.1rem; box-shadow: var(--shadow); }
+  .medium-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; margin-bottom: .8rem; }
+  .medium-head h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); }
+  .medium-sub { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .medium-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; }
+  .medium-cell { border: 1px solid var(--border); border-radius: 10px; padding: .85rem .8rem .9rem; background: var(--bg); position: relative; overflow: hidden; }
+  .medium-cell::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--rule); }
+  .medium-cell.hot::before { background: var(--accent); box-shadow: 0 0 12px var(--accent); }
+  .medium-cell .num { font-family: var(--display); font-weight: 700; font-size: 1.6rem; color: var(--accent); line-height: 1; margin-bottom: .3rem; }
+  .medium-cell h5 { margin: 0 0 .2rem; font-family: var(--display); font-weight: 700; font-size: .98rem; color: var(--text); }
+  .medium-cell .use { font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); margin-bottom: .4rem; }
+  .medium-cell .desc { font-size: .8rem; color: var(--text-soft); line-height: 1.5; margin: 0 0 .5rem; }
+  .medium-cell .warn { font-size: .74rem; color: var(--warn); border-top: 1px dashed var(--rule); padding-top: .35rem; line-height: 1.45; margin: 0; }
+  .medium-note { margin-top: 1rem; font-size: .86rem; color: var(--text-soft); border-top: 1px dashed var(--border-strong); padding-top: .8rem; line-height: 1.6; }
+  @media (max-width: 980px) { .medium-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .medium-grid { grid-template-columns: 1fr; } }
+
+  /* ═════════ 视觉三：Zone Defense（产品岗位区域防守） ═════════ */
+  .zone { margin: 1.8em 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem 1.3rem 1.2rem; box-shadow: var(--shadow); }
+  .zone-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; margin-bottom: .3rem; }
+  .zone-head h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); }
+  .zone-sub { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .zone-svg { display: flex; justify-content: center; margin: .5rem 0; }
+  .zone-svg svg { width: 100%; max-width: 560px; height: auto; }
+  .zone-svg text { font-family: var(--mono); }
+  .zone-legend { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem 1rem; font-size: .84rem; color: var(--text-soft); border-top: 1px dashed var(--border-strong); padding-top: .8rem; margin-top: .4rem; }
+  .zone-legend b { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--accent); display: block; margin-bottom: .1rem; text-transform: uppercase; }
+  @media (max-width: 720px) { .zone-legend { grid-template-columns: 1fr; } }
+
+  /* ═════════ 视觉四：Model Timing Cage（模型时机决定成败） ═════════ */
+  .cage { margin: 1.8em 0; }
+  .cage-track { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; position: relative; }
+  .cage-cell { border: 1px solid var(--border); border-radius: 12px; padding: 1rem .95rem .95rem; background: var(--surface); position: relative; transition: transform .2s, border-color .2s; }
+  .cage-cell:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .cage-cell.win { border-color: var(--pro); box-shadow: 0 0 0 3px color-mix(in srgb, var(--pro) 12%, transparent); }
+  .cage-cell.fail { border-color: var(--con); background: linear-gradient(180deg, color-mix(in srgb, var(--con) 4%, var(--surface)), var(--surface)); }
+  .cage-cell.wait { border-style: dashed; border-color: var(--warn); }
+  .cage-time { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .3rem; display: flex; justify-content: space-between; align-items: baseline; }
+  .cage-cell.win .cage-time span:last-child { color: var(--pro); }
+  .cage-cell.fail .cage-time span:last-child { color: var(--con); }
+  .cage-cell.wait .cage-time span:last-child { color: var(--warn); }
+  .cage-cell h5 { margin: 0 0 .3rem; font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); }
+  .cage-cell .form { font-family: var(--mono); font-size: .64rem; letter-spacing: .05em; text-transform: uppercase; color: var(--accent); margin-bottom: .4rem; }
+  .cage-cell .desc { font-size: .82rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+  .cage-cell .verdict { font-family: var(--display); font-size: .8rem; font-weight: 600; margin-top: .5rem; padding-top: .5rem; border-top: 1px dashed var(--rule); }
+  .cage-cell.win .verdict { color: var(--pro); }
+  .cage-cell.fail .verdict { color: var(--con); }
+  .cage-cell.wait .verdict { color: var(--warn); }
+  .cage-lesson { margin-top: 1rem; padding: 1rem 1.1rem; border: 1.5px dashed var(--accent); border-radius: 12px; background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 80%, transparent)); font-size: .9rem; color: var(--text); line-height: 1.55; }
+  .cage-lesson b { font-family: var(--mono); font-size: .68rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: .2rem; }
+  @media (max-width: 860px) { .cage-track { grid-template-columns: 1fr; } }
+
+  /* ═════════ 视觉五：Home Base 拓扑（Codex 作为「工作起点」） ═════════ */
+  .hub { margin: 1.8em 0; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1.4rem 1.3rem 1.2rem; box-shadow: var(--shadow); }
+  .hub-head { display: flex; align-items: baseline; gap: .7rem; flex-wrap: wrap; margin-bottom: .3rem; }
+  .hub-head h4 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); }
+  .hub-sub { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+  .hub-svg { display: flex; justify-content: center; margin: .3rem 0 .5rem; }
+  .hub-svg svg { width: 100%; max-width: 560px; height: auto; }
+  .hub-svg text { font-family: var(--mono); }
+  .hub-orbit { transform-origin: 50% 50%; animation: hub-spin 42s linear infinite; }
+  @keyframes hub-spin { to { transform: rotate(360deg); } }
+  .hub-flags { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin-top: .5rem; }
+  .hub-flag { border: 1px solid var(--border); border-radius: 10px; padding: .7rem .8rem; background: var(--bg); font-size: .82rem; color: var(--text-soft); line-height: 1.5; }
+  .hub-flag b { font-family: var(--mono); font-size: .62rem; letter-spacing: .08em; color: var(--accent); text-transform: uppercase; display: block; margin-bottom: .2rem; }
+  @media (max-width: 760px) { .hub-flags { grid-template-columns: 1fr; } }
+
+  /* reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .hub-orbit { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Andrew Ambrosino · Codex 与产品工作的新形态<span class="brand-sub">OpenAI · 跨市场 · 2026-06</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Codex 与产品工作的新形态<br /><span class="en">The New Shape of Product Work</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Lenny's Podcast · Andrew Ambrosino（Codex 桌面应用产品/工程负责人）· 约 70 分钟 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-06-28</span>
+        <span>跨市场</span>
+        <span>厂商深度</span>
+        <span>OpenAI</span>
+        <span>Codex</span>
+        <span>产品流程</span>
+        <span>可对外</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">90<small>%</small></div><div class="lab">OpenAI 全员周活<br />使用 Codex（非仅工程师）</div></div>
+        <div class="hero-stat"><div class="num">6×</div><div class="lab">2026 年初 至 6 月<br />Codex 使用量增长</div></div>
+        <div class="hero-stat"><div class="num">5M+</div><div class="lab">周活跃用户<br />（受访者预计还会更快过时）</div></div>
+        <div class="hero-stat"><div class="num">10→2000+</div><div class="lab">团队规模自定义<br />「core team」 vs 「贡献链」</div></div>
+      </div>
+
+      <p style="color: var(--text-soft); font-size: .95rem; margin-top: 1.2em;">
+        视频：<a href="https://www.youtube.com/watch?v=P3KDebPTUrw" target="_blank" rel="noopener">YouTube · Lenny's Podcast · P3KDebPTUrw</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Ambrosino 传递的不是新功能路线图，而是<strong>产品工作在实施成本坍塌后的四个结构性转向</strong>：① <strong>过程倒挂</strong>——实施不再昂贵，「品味」才是稀缺变量，团队不是选择「哪一个原型做下去」，而是在 90 个并行原型中做<strong>策展</strong>；② <strong>PRD 未死，媒介才是新技能</strong>——文档、原型、AB 上线都成了「设计过程」的可选表达介质，选错介质就会误导决策；③ <strong>角色收敛而非崩塌</strong>——「你的岗位是你实际时间加权的重心」，反对「取消 PM，人人都是 builder」的极端；④ <strong>模型时机决定产品命运</strong>——同一形状的产品在 2 月发和 11 月发结局天差地别，因此把「未准备好的功能」当作 <em>artifact</em> 保存下来、等模型追上，是新 playbook。对 FDE 的映射：客户面同样从「代码交付」转向「品味 + 编排」，把「实施免费」变成组织能力的关键在于策展流程与模型时机判断，而非削减角色。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>数据面</strong>：Codex 从 1 月至今使用量 6×、周活 500 万+、OpenAI 内部 90% 员工在用（不是 90% 工程师）</li>
+        <li><strong>过程倒挂</strong>：过去先文档、原型 derisk 昂贵实施；现在实施免费，反而<strong>要在 90 个并行原型中做策展</strong>，taste 是新瓶颈</li>
+        <li><strong>介质决定误读</strong>：一个「像上线」的原型会被误当成生产就绪；PRD 依然是模糊问题的正确介质，得学会挑</li>
+        <li><strong>角色不消失</strong>：Codex 团队角色重叠增多，但坚决反对「取消 PM，人人都是 builder」——学科最佳实践会跟着一起消失</li>
+        <li><strong>Zone Defense</strong>：产品经理如果两两靠得太近，就是覆盖信号错——他们要像后卫散开，覆盖公司「策展空缺」</li>
+        <li><strong>规划哲学</strong>：短期越具体越好；9 个月后「任何精度都是虚假精度」；把没准备好的功能存成 artifact，等模型追上再重发</li>
+        <li><strong>模型时机</strong>：Codex 若在 2025-11 释放会失败，2026-02 释放才成——形状没变，只差几个月的模型能力</li>
+        <li><strong>Home Base 战略</strong>：Codex 不再「装下所有工作」，而是<strong>你开始工作、结束工作、自动化工作</strong>的起点，其余交给 Excel/Premiere 等外部工具（含反向：SaaS 反被 Codex 打开）</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-context"><span class="sec-num">一</span>语境：为什么这次访谈值得读<a href="#sec-context" class="anchor">#</a></h2>
+    <p class="kicker">Why This One · 数据 + 视角双稀缺</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td>受访者</td><td>Andrew Ambrosino · OpenAI Codex 桌面应用<strong>产品与工程 lead</strong>（背景：设计师 → 工程师 → PM → 创业者）</td></tr>
+          <tr><td>频道</td><td>Lenny's Podcast · 产品向头部访谈</td></tr>
+          <tr><td>时间</td><td>2026-06-28 · 首次面对面录制</td></tr>
+          <tr><td>核心张力</td><td>Codex 已成 OpenAI 全员默认工具；他要回答「实施免费之后，产品团队还剩什么」</td></tr>
+          <tr><td>建议读法</td><td>不当路线图看，当「产品工作学科形态论」看</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>这场对话的稀缺性在两点：其一，Ambrosino 掌握着<strong>产品工作范式转变最激进的一线数据</strong>——他的团队是「dogfooding 到极致」的样本，「即使工具还不够好，也要用它做工作，好逼自己把工具做好」；其二，他<strong>同时穿过设计、工程、PM、founder 四种身份</strong>，因此他对「岗位崩塌 / 岗位收敛」的判断格外可信——不是「设计师被淘汰」这种抓眼球叙事，而是「学科不消失，边界模糊，重心随时间加权」的结构判断。</p>
+
+    <p>需要提醒：本文的经验来自<strong>OpenAI 这个特殊样本</strong>——员工全部自选进入前沿、上下文密度极高、tokens 无限量、tokens 使用者本身就是产品设计者。Ambrosino 自己反复承认：这里有效的东西不会自动适用于所有人。这是我们判断哪些结论可移植、哪些是「奢侈品」的前置。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-inversion"><span class="sec-num">二</span>过程倒挂：从 derisk 实施到策展 90 个原型<a href="#sec-inversion" class="anchor">#</a></h2>
+    <p class="kicker">Process Inversion · Taste Is the New Bottleneck</p>
+
+    <p>Ambrosino 用一句话总结当下产品团队最难的事：「<strong>过程被倒过来了</strong>」（<em>the inversion of the process</em>）。他不是在讲「AI 让工程师更快」，而是在讲一个更深的因果：</p>
+
+    <blockquote style="border-left: 3px solid var(--accent); padding-left: 1em; color: var(--text-soft);">
+      过去 20 年的产品流程本质上是<strong>「实施昂贵，所以要提前 derisk」</strong>——文档、研究、原型都是便宜的替代品，用来在真正开工前排除风险。这个基础假设在过去几个月<strong>彻底失效</strong>：给 OpenAI 的员工无限 tokens，他们全都是 agentic 的，都有想法，于是「大家在造所有东西」。
+    </blockquote>
+
+    <!-- ▼ 视觉一：过程倒挂 -->
+    <div class="invert reveal">
+      <div class="invert-side invert-old">
+        <div class="invert-eyebrow">旧范式 · Old Model</div>
+        <h4>先 derisk，再实施</h4>
+        <div class="invert-vis">
+          <svg viewBox="0 0 240 160" role="img" aria-label="旧范式：一条从研究、文档、原型到实施的漏斗，实施在最后且最昂贵">
+            <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M20 30 L220 30 L180 130 L60 130 Z"/>
+            </g>
+            <text x="120" y="50" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">研究 · 文档</text>
+            <text x="120" y="80" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">原型 · 评审</text>
+            <text x="120" y="110" text-anchor="middle" font-size="11" font-weight="600" style="fill:var(--text)" stroke="none">1 次昂贵实施</text>
+            <text x="120" y="150" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">收敛 · 分歧尽早消灭</text>
+          </svg>
+        </div>
+        <p class="invert-cap">前提：实施是最贵的，一切都要在开工前把风险打掉。</p>
+      </div>
+      <div class="invert-arrow"><span class="gly">→</span><span class="lab">Inversion</span></div>
+      <div class="invert-side invert-new">
+        <div class="invert-eyebrow">新范式 · New Model</div>
+        <h4>先并行 90 个，再策展</h4>
+        <div class="invert-vis">
+          <svg viewBox="0 0 240 160" role="img" aria-label="新范式：90 个并行原型如小方块散布，策展员从中挑选、组合、重新框定">
+            <g style="color:var(--accent)" fill="currentColor" stroke="none" opacity=".7">
+              <rect x="20" y="20" width="16" height="16" rx="2"/><rect x="46" y="24" width="16" height="16" rx="2"/><rect x="72" y="18" width="16" height="16" rx="2"/><rect x="98" y="22" width="16" height="16" rx="2"/><rect x="124" y="20" width="16" height="16" rx="2"/><rect x="150" y="24" width="16" height="16" rx="2"/><rect x="176" y="20" width="16" height="16" rx="2"/><rect x="202" y="26" width="16" height="16" rx="2"/>
+              <rect x="20" y="46" width="16" height="16" rx="2"/><rect x="46" y="50" width="16" height="16" rx="2"/><rect x="72" y="46" width="16" height="16" rx="2"/><rect x="98" y="48" width="16" height="16" rx="2"/><rect x="124" y="50" width="16" height="16" rx="2"/><rect x="150" y="46" width="16" height="16" rx="2"/><rect x="176" y="48" width="16" height="16" rx="2"/><rect x="202" y="50" width="16" height="16" rx="2"/>
+              <rect x="20" y="72" width="16" height="16" rx="2"/><rect x="46" y="76" width="16" height="16" rx="2"/><rect x="72" y="70" width="16" height="16" rx="2"/><rect x="98" y="74" width="16" height="16" rx="2"/><rect x="124" y="72" width="16" height="16" rx="2"/><rect x="150" y="76" width="16" height="16" rx="2"/><rect x="176" y="72" width="16" height="16" rx="2"/><rect x="202" y="74" width="16" height="16" rx="2"/>
+            </g>
+            <g style="color:var(--accent-ink)" fill="currentColor" stroke="none">
+              <rect x="46" y="24" width="16" height="16" rx="2"/><rect x="124" y="20" width="16" height="16" rx="2"/><rect x="176" y="72" width="16" height="16" rx="2"/>
+            </g>
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M60 100 Q100 130 160 105" stroke-dasharray="3 3"/>
+              <text x="120" y="128" text-anchor="middle" font-size="10" style="fill:var(--accent)" stroke="none">策展 · Curation</text>
+            </g>
+            <text x="120" y="150" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">发散不再收敛，taste 收敛</text>
+          </svg>
+        </div>
+        <p class="invert-cap">前提：实施免费；一个功能可能有 90 个未协调的团队各自在做——问题变成「哪些好、哪些应折叠、哪些应重构」。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">被误读的信号</div>
+      <p style="margin: .3em 0;">「PRDs are dead, prototypes are in」是典型的<strong>把介质错读成范式</strong>。Ambrosino 的判断更细：非工程师容易滥用原型、工程师容易滥用文档，两者都是<strong>没有为要传达的信息挑对介质</strong>。</p>
+    </div>
+
+    <p><strong>「Primal mark」隐喻</strong>：Lenny 引用了「原初笔迹」的比喻——画家在画布上的第一笔决定了后续所有反应。同理，如果第一笔是「过度精致的原型」，团队就在响应这个原型，而不是在响应更大的问题空间。<strong>介质 = 决策的锚点</strong>。</p>
+
+    <h3 id="sec-taste">2.1 「taste」不是审美，是<em>系统对齐</em></h3>
+    <p>受访者反复用「taste」作为整场访谈的核心变量，但他明确否认「taste = 视觉品味」。他给出的分层：</p>
+    <ul>
+      <li><strong>视觉/交互层</strong>——动画节奏是否与语义匹配、品牌一致性等（他自认「过度关注」的部分）</li>
+      <li><strong>系统层</strong>——「这个组件如何嵌入产品的其他部分？」；如果明天品牌重塑，是「一个个改 263 个组件」（浅）还是「知道两个视觉不同的东西共享同一个语义所以要一起改」（深）</li>
+      <li><strong>叙事层</strong>——这是什么主题的一部分、要往哪走、如何呈现</li>
+      <li><strong>选择层</strong>——如果什么都能做，<em>该做什么</em>？——他认为这才是「taste 的真问题」</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">FDE 映射</div>
+      <p style="margin: .3em 0;">对 To-B/FDE：客户抱怨「AI 生成的方案没有品味」，深层不是审美问题，而是<strong>系统层的抽象缺失</strong>——AI 不会主动把「两个看着不同、语义相同的东西」抽象到同一个概念上。这是 FDE 与客户共建 domain model 的价值锚点。</p>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="sec-medium"><span class="sec-num">三</span>介质选择：文档、原型、AB 都只是表达工具<a href="#sec-medium" class="anchor">#</a></h2>
+    <p class="kicker">Choose the Medium · Not the Dogma</p>
+
+    <p>过去，一个 UI 看起来「像上线」意味着<strong>「已经过 derisk、设计已确认、商业目标已对齐」</strong>——因为构建成本决定了它必须晚于所有决策才能出现。现在这条<strong>「介质→阶段」的隐性契约被切断</strong>：一个精致的原型可能只是某个非工程师午后 vibe-code 的产物，但组织本能仍然把它当成「产线级方案」。这就是团队认知损耗的主要来源。</p>
+
+    <!-- ▼ 视觉二：Medium Ladder -->
+    <div class="medium reveal">
+      <div class="medium-head">
+        <h4>介质选择阶梯：想说什么，选什么</h4>
+        <span class="medium-sub">Pick the medium · not the dogma</span>
+      </div>
+      <div class="medium-grid">
+        <div class="medium-cell">
+          <div class="num">01</div>
+          <h5>文档 / PRD</h5>
+          <div class="use">Fuzzy Problem</div>
+          <p class="desc">当「问题空间还模糊、需要产品清晰度」——文档才是正确介质。</p>
+          <p class="warn">滥用信号：工程师用文档「显得严谨」，但没人读。</p>
+        </div>
+        <div class="medium-cell hot">
+          <div class="num">02</div>
+          <h5>Prototype</h5>
+          <div class="use">Interaction Test</div>
+          <p class="desc">当「要放到手里试、验证一个交互模式」——原型是正确介质。</p>
+          <p class="warn">滥用信号：产品级精致度骗人以为是上线方案。</p>
+        </div>
+        <div class="medium-cell">
+          <div class="num">03</div>
+          <h5>Baby App</h5>
+          <div class="use">Whole-System Vibe</div>
+          <p class="desc">「Baby Codex / Baby Cursor」——极简版承载全部交互，可快速 vibe-code 覆盖。</p>
+          <p class="warn">要求团队接受「这不是最终产品」。</p>
+        </div>
+        <div class="medium-cell">
+          <div class="num">04</div>
+          <h5>AB · 生产环境</h5>
+          <div class="use">Live Signal</div>
+          <p class="desc">直接把探索放到线上做实验——把生产变成设计过程的最后一步。</p>
+          <p class="warn">与用户契约的边界必须显式。</p>
+        </div>
+      </div>
+      <p class="medium-note"><strong>关键：过程本身没死</strong>——设计过程的<em>阶段感</em>（我们现在在探索 vs 我们在收敛）比以前更重要，因为介质不再暗示阶段。「这是 baby 版」「这是探索」「这是待发布」——需要显式命名，否则团队集体误读。</p>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">可移植的操作</div>
+      <p style="margin: .3em 0;">在 FDE 项目里落地：每次 demo 前显式声明「本次呈现介质是 <em>x</em>，代表当前处于设计过程的 <em>y</em> 阶段」——并把「介质不代表阶段」作为团队 shared vocabulary。这一句话能省掉大量「客户以为要上线所以开始加需求」的返工。</p>
+    </div>
+
+    <!-- 四 -->
+    <h2 id="sec-roles"><span class="sec-num">四</span>角色收敛：不是崩塌，是<em>加权重心</em><a href="#sec-roles" class="anchor">#</a></h2>
+    <p class="kicker">Role Averaging · The Manager Isn't Dead</p>
+
+    <p>Ambrosino 的措辞极其克制，但立场明确：<strong>他强烈反对「取消 PM，所有人都是 builder」的极端结论</strong>。他认为这在把学科（discipline）连同岗位（role）一起扔掉——学科里有真实的最佳实践、真实的失败教训、真实的流程沉淀。「你写了点代码 ≠ 你能替代产品职能。」</p>
+
+    <p>他给出一个更精准的替代：「你的角色 = 你实际时间加权的重心」。设计师如果日均 40% 时间在写代码，他仍是设计师，因为其他 60% 的<em>重心</em>还在设计——但描述图里的<strong>点</strong>已经偏移，边界不再是围栏而是分布。</p>
+
+    <!-- ▼ 视觉三：Zone Defense -->
+    <div class="zone reveal">
+      <div class="zone-head">
+        <h4>Zone Defense：产品岗位应该像后卫一样散开</h4>
+        <span class="zone-sub">Force-Directed Coverage of Company Chaos</span>
+      </div>
+      <div class="zone-svg">
+        <svg viewBox="0 0 560 260" role="img" aria-label="产品岗位区域防守示意：Design、Engineering、Product 三个圈相互重叠成菱形，各自分布 IC 点，PM 之间保持距离形成公司覆盖">
+          <!-- 三个学科圈 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".8">
+            <circle cx="180" cy="130" r="88"/>
+            <circle cx="380" cy="130" r="88"/>
+            <circle cx="280" cy="70" r="82"/>
+          </g>
+          <text x="128" y="190" font-size="12" font-weight="600" style="fill:var(--text)" stroke="none">Design</text>
+          <text x="410" y="190" font-size="12" font-weight="600" style="fill:var(--text)" stroke="none">Engineering</text>
+          <text x="245" y="30" font-size="12" font-weight="600" style="fill:var(--text)" stroke="none">Product</text>
+
+          <!-- IC 分布点 (小色块) -->
+          <g fill="var(--accent)" stroke="none">
+            <circle cx="150" cy="130" r="4"/>
+            <circle cx="200" cy="150" r="4"/>
+            <circle cx="230" cy="105" r="4"/>
+            <circle cx="285" cy="140" r="4"/>
+            <circle cx="360" cy="140" r="4"/>
+            <circle cx="330" cy="90" r="4"/>
+            <circle cx="410" cy="120" r="4"/>
+            <circle cx="255" cy="60" r="4"/>
+            <circle cx="305" cy="80" r="4"/>
+          </g>
+
+          <!-- PM 之间的距离标注 -->
+          <g style="color:var(--warn)" stroke="currentColor" fill="none" stroke-width="1.2" stroke-dasharray="4 3">
+            <line x1="255" y1="60" x2="305" y2="80"/>
+            <line x1="150" y1="130" x2="410" y2="120"/>
+          </g>
+          <text x="380" y="255" text-anchor="end" font-size="10" style="fill:var(--warn)" stroke="none">✕ PM 靠得太近 → 覆盖信号错</text>
+          <text x="200" y="255" text-anchor="start" font-size="10" style="fill:var(--pro)" stroke="none">✓ PM 散开 → 全公司策展覆盖</text>
+        </svg>
+      </div>
+      <div class="zone-legend">
+        <div>
+          <b>Rule 1 · 重心而非围栏</b>
+          你的角色是这些点的加权平均，不是围栏内的位置。
+        </div>
+        <div>
+          <b>Rule 2 · Zone Defense</b>
+          两个 PM 靠太近 = 团队策展有空缺。像后卫一样力向散开。
+        </div>
+        <div>
+          <b>Rule 3 · 学科不废除</b>
+          学科（Discipline）的最佳实践仍是护城河；只是围栏被撤了。
+        </div>
+        <div>
+          <b>Rule 4 · Manager 仍在</b>
+          IC 也在管理 agent；Manager 只是不同 granularity 上做同样的事。
+        </div>
+      </div>
+    </div>
+
+    <p><strong>另一个反直觉观察</strong>：Codex 团队里角色重叠比公司其他部门明显更严重——因为这是「工程师造给工程师」的产品，设计师会说 engineer 语言，PM 有 CS 硕士，Alexander 有 CS 硕士（「我没有」）。所以他谨慎：<strong>Codex 团队的组织形态未必普适</strong>——用户的技术密度决定了岗位收敛的可行边界。</p>
+
+    <div class="callout callout-con">
+      <div class="callout-tag">要小心的偏见</div>
+      <p style="margin: .3em 0;">「工程师容易低估其他学科是学科」——他直接点名：「就像你能用 Excel，但你不能因此加入财务团队。」这是产品/设计学科在 AI 时代的真实生存战。取消岗位≠民主化能力，反而<strong>让学科知识以最快速度失传</strong>。</p>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="sec-timing"><span class="sec-num">五</span>模型时机：产品形状不变，命运不同<a href="#sec-timing" class="anchor">#</a></h2>
+    <p class="kicker">Model Timing · The Hidden Kingmaker</p>
+
+    <p>整场访谈里最反直觉、也是对<strong>规划哲学</strong>影响最深的一段：Ambrosino 断言，<strong>Codex 桌面应用如果在 2025-11 释放（形状完全一样）会失败</strong>——它成功唯一的原因是 2 月释放时模型能力刚好过了阈值。</p>
+
+    <!-- ▼ 视觉四：Model Timing Cage -->
+    <div class="cage reveal">
+      <div class="cage-track">
+        <div class="cage-cell fail">
+          <div class="cage-time"><span>2025-11</span><span>假想</span></div>
+          <h5>Codex（形状同 2 月版）</h5>
+          <div class="form">Same UX · Old Model</div>
+          <p class="desc">同样的 UI、同样的分派工作流。但当时的模型无法把任务做到「值得信任的完成度」——用户从早期挫败中撤离。</p>
+          <div class="verdict">✗ 失败</div>
+        </div>
+        <div class="cage-cell win">
+          <div class="cage-time"><span>2026-02</span><span>实际</span></div>
+          <h5>Codex（真实发布）</h5>
+          <div class="form">Same UX · New Model</div>
+          <p class="desc">形状一模一样。差别只在中间几个月的模型迭代——委派、异步、看代码但不能编辑的形态突然「刚好合适」。</p>
+          <div class="verdict">✓ 命中拐点</div>
+        </div>
+        <div class="cage-cell wait">
+          <div class="cage-time"><span>Codex Web · 早期</span><span>过早</span></div>
+          <h5>更早的 Codex Web</h5>
+          <div class="form">Too Agi-Pilled</div>
+          <p class="desc">「你给模型任务、它跑完给你结果」——本身概念不激进，但模型完成度不够；同期 Claude Code 更本地化、更少 agi-pill 反而更成功。</p>
+          <div class="verdict">△ 概念对，时机错</div>
+        </div>
+      </div>
+      <div class="cage-lesson">
+        <b>The Ambrosino Rule</b>
+        产品的形状可能完全不用改；<strong>把「没准备好」的功能存成 artifact，等下一次模型跳跃后再重新发布</strong>。发 6 次是新常态；「一次做对」的偏好来自旧世界，那个世界里 marketing 与 launch 决定命运，现在<strong>模型时机才是那个隐藏 kingmaker</strong>。
+      </div>
+    </div>
+
+    <p><strong>规划实操</strong>：Ambrosino 描述他上一家公司的做法——「列出未来 1-2 年所有想做的功能，为每一个做原型，判断哪些<em>现在就能行</em>，其余存起来；每次模型跳跃后把它们逐一换上新模型再试」。功能的成功从来不是「形状好」，是「<strong>模型是否够聪明去承担这个形状</strong>」。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">对 FDE / 产品负责人</div>
+      <p style="margin: .3em 0;">规划的第一性问题从「<em>做什么</em>」变成「<em>模型什么时候能承担什么</em>」。9 个月后的路线图不能有精度——「任何精度都是虚假精度」。真正应该维护的是<strong>「artifact 库」</strong>：等模型的功能储备架，而不是甘特图。</p>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-hub"><span class="sec-num">六</span>Home Base：Codex 不再想装下所有工作<a href="#sec-hub" class="anchor">#</a></h2>
+    <p class="kicker">Product Vision · Home, Not Container</p>
+
+    <p>2026 年初 OpenAI 尝试过一个战略路径——「把 Codex 的经验推广给非工程师，Codex 是开发者的工具，我们再做通用知识工作 app」。结果：<strong>没人愿意离开 Codex</strong>——所有职能（marketing/comms/finance/legal）都硬着头皮忍受这个「主动 hostile 的产品」（会问你要不要 run RG、给你看代码），因为它「就是能干活」。</p>
+
+    <p>这直接推翻了「开发者工具 vs 通用工具」的旧对立。Ambrosino 的新战略：<strong>Codex 是「工作起点」（home base），不是所有工作的容器</strong>。</p>
+
+    <!-- ▼ 视觉五：Home Base 拓扑 -->
+    <div class="hub reveal">
+      <div class="hub-head">
+        <h4>Home Base 拓扑：起点/自动化中心 + 卫星工具</h4>
+        <span class="hub-sub">Codex ⇄ Excel · Premiere · Chrome · Slack …</span>
+      </div>
+      <div class="hub-svg">
+        <svg viewBox="0 0 560 320" role="img" aria-label="Codex 作为工作起点，围绕它的卫星工具通过 connectors、computer use 或 extensions 双向沟通">
+          <!-- 中心 hub -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="280" cy="160" r="46"/>
+          </g>
+          <circle cx="280" cy="160" r="42" style="fill:var(--accent-soft)"/>
+          <text x="280" y="156" text-anchor="middle" font-size="15" font-weight="700" font-family="var(--display)" style="fill:var(--accent-ink)" stroke="none">Codex</text>
+          <text x="280" y="172" text-anchor="middle" font-size="9" style="fill:var(--accent-ink)" stroke="none">Home Base</text>
+
+          <!-- 轨道 -->
+          <g class="hub-orbit" style="color:var(--rule)" fill="none" stroke="currentColor" stroke-dasharray="2 4">
+            <circle cx="280" cy="160" r="118"/>
+          </g>
+
+          <!-- 卫星节点（六个） -->
+          <g style="color:var(--accent)" fill="var(--surface)" stroke="currentColor" stroke-width="1.5">
+            <circle cx="280" cy="42" r="22"/>
+            <circle cx="398" cy="90" r="22"/>
+            <circle cx="398" cy="230" r="22"/>
+            <circle cx="280" cy="278" r="22"/>
+            <circle cx="162" cy="230" r="22"/>
+            <circle cx="162" cy="90" r="22"/>
+          </g>
+          <g fill="var(--text)" stroke="none" font-size="9.5" font-weight="600" text-anchor="middle" font-family="var(--display)">
+            <text x="280" y="46">Excel</text>
+            <text x="398" y="94">Premiere</text>
+            <text x="398" y="234">Chrome</text>
+            <text x="280" y="282">Slack</text>
+            <text x="162" y="234">SaaS</text>
+            <text x="162" y="94">Files</text>
+          </g>
+
+          <!-- 连接线 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.3" opacity=".55">
+            <line x1="280" y1="114" x2="280" y2="64"/>
+            <line x1="316" y1="132" x2="378" y2="102"/>
+            <line x1="316" y1="188" x2="378" y2="218"/>
+            <line x1="280" y1="206" x2="280" y2="256"/>
+            <line x1="244" y1="188" x2="182" y2="218"/>
+            <line x1="244" y1="132" x2="182" y2="102"/>
+          </g>
+
+          <!-- 通道类型标签 -->
+          <text x="332" y="72" font-size="8.5" font-family="var(--mono)" style="fill:var(--text-muted)" stroke="none">connector</text>
+          <text x="418" y="170" font-size="8.5" font-family="var(--mono)" style="fill:var(--text-muted)" stroke="none">extension</text>
+          <text x="332" y="252" font-size="8.5" font-family="var(--mono)" style="fill:var(--text-muted)" stroke="none">computer use</text>
+          <text x="220" y="252" font-size="8.5" font-family="var(--mono)" style="fill:var(--text-muted)" stroke="none" text-anchor="end">in-app browser</text>
+        </svg>
+      </div>
+      <div class="hub-flags">
+        <div class="hub-flag">
+          <b>Case · Excel</b>
+          Codex 内置了简易 spreadsheet；但 OpenAI 财务团队做百亿融资建模用不了——所以 Codex 直接呼起本地 Excel 加载项对话，模型完成后关闭。
+        </div>
+        <div class="hub-flag">
+          <b>Case · Premiere Pro</b>
+          制片师 Brent 想剪片：Codex 不是视频编辑器，先直接改工程文件；不够时<strong>它自己给 Premiere 写了个扩展</strong>并对话。
+        </div>
+        <div class="hub-flag">
+          <b>Case · SaaS 反向</b>
+          Dan Shipper 猜测：以后我们不再打开 Chrome 用 Notion/Linear/Salesforce，而是<strong>在 Codex 里打开这些 SaaS，让 agent 陪着用</strong>。
+        </div>
+      </div>
+    </div>
+
+    <p><strong>决策边界</strong>：Ambrosino 承认 Codex 团队仍在「凭感觉」决定何时用 connector、何时用 in-app browser、何时用 computer use。这本身是新问题——SaaS 时代不需要选，只有 Chrome。<strong>用户如今需要一份心智模型来在这三种通道里选择</strong>，是产品团队要教育市场的下一步。</p>
+
+    <!-- 七 -->
+    <h2 id="sec-loops"><span class="sec-num">七</span>下一层前沿：loops 已经过时？<a href="#sec-loops" class="anchor">#</a></h2>
+    <p class="kicker">Beyond Loops · Autonomous Software Development</p>
+
+    <p>被问到「AI-forward 团队最新的构建方式是什么、是不是 loops」时，Ambrosino 半开玩笑：「<strong>loops are so last week</strong>」。他描述的下一波尝试：</p>
+
+    <ul>
+      <li><strong>Autonomously developed software</strong>——夜间「垃圾回收」代码库、自动清理复杂度</li>
+      <li><strong>Harness engineering</strong>——为模型搭建长任务的骨架</li>
+      <li><strong>请研究 lab 修 model 「删代码」的能力</strong>——所有模型当前的病：只会加代码不会删</li>
+      <li>但坦言<strong>「设置一个 loop『改进 app 并监听 Twitter/Slack/Email』」还没到位</strong>——不到「/goal make me a billion」的阶段</li>
+    </ul>
+
+    <p><strong>「AI 写了多少代码」是错误问题</strong>：以去年的门槛看是 100%——用「supervised vs unsupervised」（监督式 vs 无监督）作为新度量，因为「移动 goalpost 恰好证明产品在进步」。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">还没解决的硬问题</div>
+      <ul style="margin: .3em 0;">
+        <li>如何教模型「哪些功能请求要做、哪些应忽略、哪些应重构合并」</li>
+        <li>如何教模型「构建正确的抽象」而不是重复涂鸦</li>
+        <li>「删代码 &gt; 写代码」的元能力目前所有模型都欠缺</li>
+      </ul>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-fde"><span class="sec-num">八</span>对 FDE / 服务型 AI 团队的映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Notes · What FDE Teams Should Take Away</p>
+
+    <p>把 OpenAI 的一线经验翻译到「服务客户 + 陪同落地 + 面对企业组织惯性」的场景：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>OpenAI 经验</th><th>FDE 视角的翻译</th><th>可操作动作</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>过程倒挂：策展 90 个原型</td>
+            <td>客户方过去要「1 份 SOW + 1 份 PRD 再动手」；如今更常见的是<strong>已经有 5 个内部 vibe-code demo</strong> 求助 FDE 判断哪个能上生产</td>
+            <td>把「策展 workshop」加进 discovery 阶段；显式为客户建立「这些 demo 处于哪个阶段」的共同语言</td>
+          </tr>
+          <tr>
+            <td>介质选择</td>
+            <td>客户对着一个 demo 加需求 → 客户误以为已 derisk</td>
+            <td>demo 前显式声明「这是 baby 版、这是探索、这是 launch candidate」；写到会议纪要</td>
+          </tr>
+          <tr>
+            <td>Zone Defense</td>
+            <td>FDE 内部（PM/Designer/Engineer）的边界模糊，客户端（业务/IT/合规）的分工也在漂移</td>
+            <td>不做「我是 x 岗位所以只做 x 事」的绝对声明；用「时间加权重心」来汇报——但保留学科最佳实践库</td>
+          </tr>
+          <tr>
+            <td>模型时机</td>
+            <td>客户说「我们试过 GPT-4，做不了」——这是<strong>时机问题不是需求问题</strong></td>
+            <td>为客户维护「artifact 库」：把「6 个月前不成、下次模型跳跃后重发」的功能列表化，节奏评估作为季度动作</td>
+          </tr>
+          <tr>
+            <td>Home Base 拓扑</td>
+            <td>客户不必造「大而全的 AI 助手」；<strong>选一个「工作起点」，其余交给现有系统</strong></td>
+            <td>建议客户不追求「AI 平台化」；先定义「起点场景」（例如：所有战略议题从这里发起），SaaS 生态通过 connector/computer use 反向被打开</td>
+          </tr>
+          <tr>
+            <td>「删代码 &gt; 写代码」</td>
+            <td>现有 AI 项目最大的隐患：AI 写完的原型堆积成生产库存</td>
+            <td>把「clean-up 循环」显式写入交付：每次上线后一个 sprint 专门用 AI 做「garbage collection」；持续减少复杂度</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">最关键一句</div>
+      <p style="margin: .3em 0;">Ambrosino 结束前说的一句话，值得贴在每个 FDE 的墙上：「<strong>不要嫁给你现在的过程；嫁给你独一能交付的 outcome。然后不断改过程去试。</strong>」（Do not get married to your exact process. Get married to the outcomes that you are uniquely able to deliver, and then change your process to try things.）</p>
+    </div>
+
+    <!-- 九 -->
+    <h2 id="sec-questions"><span class="sec-num">九</span>待验证问题 & 预留判断<a href="#sec-questions" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · What We Don't Yet Know</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>问题</th><th>为什么值得追踪</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>Codex 与 ChatGPT 的融合形态</td>
+            <td>Ambrosino 抗拒「super app」标签但承认方向就是<strong>合并</strong>；关键是「起点感 + 卫星工具生态」如何在两个品牌里共存</td>
+          </tr>
+          <tr>
+            <td>Zone Defense 是否可迁移到非工程密集型团队</td>
+            <td>受访者本人明确 Codex 团队角色重叠严重是<strong>因为用户是工程师</strong>；未验证在客户密度更低、非技术型团队上是否成立</td>
+          </tr>
+          <tr>
+            <td>「baby version」策略的边际</td>
+            <td>Baby Codex/Baby Cursor 是否会走向「原型即产品」——若模型持续变强，baby 版可能<strong>直接 ship</strong>，主产品的定位会颠覆</td>
+          </tr>
+          <tr>
+            <td>「模型自研管线」到位时间</td>
+            <td>受访者暗示当前预训练/后训练/RL 管线不是最优——若 AI 主导管线重写落地（Altman CS153 的 50 万 A100 目标），产品团队能力假设也要重画</td>
+          </tr>
+          <tr>
+            <td>「删代码」能力何时进模型</td>
+            <td>目前所有前沿模型都只加不删——这直接决定 vibe-code 时代的技术债速率；这是很好的<strong>可观察指标</strong></td>
+          </tr>
+          <tr>
+            <td>非工程职能进 Codex 的临界点</td>
+            <td>OpenAI 内部已 90% 全员使用；但 Ambrosino 承认「大部分社会人群不会成为早期采纳者」——「Codex 民主化」何时越过临界，是判断整个「产品工作新形态」是否泛化的关键</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-03 初稿，基于 Lenny's Podcast 完整访谈字幕（英文）梳理，配 5 个 bespoke 视觉块。
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../../frontier/index.html">← Frontier 索引</a>
+      ·
+      <a href="./2026-06-15_sam-altman-stanford-cs153-scale-agi.html">相关：Altman CS153 · 规模、AGI 与「智能公用事业」</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

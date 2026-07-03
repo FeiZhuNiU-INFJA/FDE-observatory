@@ -1,20 +1,6 @@
 {
-  "generated_at": "2026-07-03T08:10:19.917249+00:00",
+  "generated_at": "2026-07-03T09:58:29.579838+00:00",
   "insights": [
-    {
-      "path": "insights/cross/活地图落地指南.html",
-      "title": "活地图落地指南",
-      "date": "2026-07",
-      "audience": "cross",
-      "status": null,
-      "tags": [
-        "2026",
-        "落地指南",
-        "基础设施"
-      ],
-      "category": "insight",
-      "extra": {}
-    },
     {
       "path": "insights/cross/specflow_vericoding_product_direction_2026-05.html",
       "title": "SpecFlowAI代码时代的\"规范即产品\"",
@@ -66,9 +52,39 @@
       ],
       "category": "insight",
       "extra": {}
+    },
+    {
+      "path": "insights/cross/活地图落地指南.html",
+      "title": "活地图落地指南",
+      "date": "2026-Q1",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "落地指南",
+        "基础设施"
+      ],
+      "category": "insight",
+      "extra": {}
     }
   ],
   "frontier_deep": [
+    {
+      "path": "frontier/vendors/openai/deep_dives/2026-06-28_andrew-ambrosino-codex-shape-of-product-work.html",
+      "title": "Codex 与产品工作的新形态The New Shape of Product Work",
+      "date": "2026-06-28",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "厂商深度",
+        "OpenAI",
+        "Codex",
+        "产品流程"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "openai"
+      }
+    },
     {
       "path": "frontier/vendors/openai/deep_dives/2026-06-15_sam-altman-stanford-cs153-scale-agi.html",
       "title": "Sam Altman 斯坦福 CS153规模、AGI 与「智能公用事业」",
