@@ -228,7 +228,7 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
   position: absolute; z-index: 5; text-align: center;
   transform: translate(-50%, calc(-100% - 18px)) scale(.99);
   transform-origin: 50% calc(100% + 18px);
-  padding: 0; max-width: 250px; min-width: 0; pointer-events: none; opacity: 0;
+  padding: 0; max-width: min(520px, 88vw); min-width: 0; white-space: nowrap; pointer-events: none; opacity: 0;
   filter: drop-shadow(0 1px 4px var(--steel)) drop-shadow(0 0 12px var(--steel)) drop-shadow(0 0 22px var(--steel));
   transition: opacity .95s ease, transform 1s cubic-bezier(.22,.61,.36,1), left 1.25s cubic-bezier(.34,.82,.28,1);
   will-change: left, transform, opacity;
@@ -250,9 +250,10 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
   .tip::after { transition: none; transform: translateX(-50%) scaleY(1); }
 }
 .tip .t-date { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; color: var(--faint); margin-bottom: .34rem; }
-.tip-row { display: flex; flex-direction: column; align-items: center; gap: .06rem; padding: .3rem 0 0; }
+/* 一篇 = 一行：类别小 tag 与标题在同一水平，之间 hairline 分隔；多篇时逐行堆叠 */
+.tip-row { display: flex; flex-direction: row; align-items: baseline; justify-content: center; gap: .5rem; padding: .22rem 0 0; }
 .tip-row:first-of-type { padding-top: 0; }
-.tip .t-cat { font-family: var(--mono); font-size: .52rem; letter-spacing: .16em; text-transform: uppercase; }
+.tip .t-cat { font-family: var(--mono); font-size: .5rem; letter-spacing: .16em; text-transform: uppercase; flex-shrink: 0; opacity: .85; }
 .tip .t-title { font-family: var(--disp); font-size: .92rem; line-height: 1.24; color: var(--chalk); text-shadow: 0 1px 8px var(--steel), 0 0 4px var(--steel); text-decoration: none; }
 /* hover 锁定态：标签可点，标题变可点链接；沿引线补一块隐形桥面，让指针能从光点走进标签 */
 .tip.tip--lock { pointer-events: auto; }
