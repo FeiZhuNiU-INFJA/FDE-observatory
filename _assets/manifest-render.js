@@ -99,6 +99,20 @@
     return "";
   }
 
+  // 判断台两枚印章：时机（估的发生窗口）+ 信心（有多确定）。值来自 extra，缺失则不渲染。
+  function stampsFor(entry) {
+    const ex = entry.extra || {};
+    if (!ex.timing && !ex.confidence) return "";
+    let out = "";
+    if (ex.timing) {
+      out += `<span class="stamp stamp--timing"><span class="stamp-k">时机</span><span class="stamp-v">${escapeHtml(ex.timing)}</span></span>`;
+    }
+    if (ex.confidence) {
+      out += `<span class="stamp stamp--conf"><span class="stamp-k">信心</span><span class="stamp-v">${escapeHtml(ex.confidence)}</span></span>`;
+    }
+    return `<span class="stamps">${out}</span>`;
+  }
+
   function renderRecent(entry, prefix) {
     return `<li data-audience="${escapeHtml(entry.audience || "all")}">
       <span class="recent-date">${escapeHtml(entry.date)}</span>
@@ -148,6 +162,7 @@
       <span class="feed-date">${escapeHtml(entry.date)}</span>
       <a class="feed-title" href="${escapeHtml(prefix + entry.path)}">${escapeHtml(entry.title)}</a>
       <span class="feed-tags">${audPill}${tagPills}</span>
+      ${stampsFor(entry)}
     </li>`;
   }
 
@@ -270,20 +285,27 @@
     }
     const prefix = container.dataset.hrefPrefix || "";
     const t = TYPE_META[entry.category] || { label: entry.category };
-    const audPill = entry.audience && AUDIENCE_PILL[entry.audience] ? AUDIENCE_PILL[entry.audience] : "";
-    const tags = (entry.tags || []).slice(0, 3).map((s) => `<span class="pill">${escapeHtml(s)}</span>`).join("");
+    const audLabel =
+      entry.audience === "tob" ? "ToB"
+      : entry.audience === "toc" ? "ToC"
+      : entry.audience === "cross" ? "跨市场"
+      : "";
+    // byline = 主题标签中点分隔（受众和日期已上到 plate 条，这里只留 tags）
+    const bylineTags = (entry.tags || []).slice(0, 4).map(escapeHtml).join(" · ");
+    const plateRight = [audLabel, escapeHtml(entry.date)].filter(Boolean).join(" · ");
     container.innerHTML = `
       <a class="featured-card" href="${escapeHtml(prefix + entry.path)}">
-        <div class="featured-eyebrow">
-          <span class="featured-badge">最新发布</span>
+        <div class="featured-plate">
           <span class="featured-type">${escapeHtml(t.label)}</span>
+          <span class="featured-rule" aria-hidden="true"></span>
+          <span class="featured-plate-right">${plateRight}</span>
         </div>
         <h3 class="featured-title">${escapeHtml(entry.title)}</h3>
-        <div class="featured-meta">
-          <span class="featured-date">${escapeHtml(entry.date)}</span>
-          ${audPill}${tags}
+        ${bylineTags ? `<p class="featured-byline">${bylineTags}</p>` : ""}
+        <div class="featured-signoff">
+          ${stampsFor(entry)}
+          <span class="featured-cta">阅读全文 <span class="featured-arrow">→</span></span>
         </div>
-        <div class="featured-cta">阅读全文 <span class="featured-arrow">→</span></div>
       </a>`;
   }
 

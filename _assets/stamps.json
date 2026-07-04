@@ -1,0 +1,39 @@
+{
+  "_doc": "判断台印章数据源。以文档 path 为键，每篇盖两枚章：timing（时机=你估的发生窗口）+ confidence（信心=你对这个判断有多确定）。build_manifest.py 会按 path 注入到 manifest 的 extra 里；index.html 据此渲染两枚印章。值可自由改；无条目的文档不盖章。",
+  "_timing_vocab": ["已发生", "进行中", "6–12 月", "1–2 年", "2 年+"],
+  "_confidence_vocab": ["高", "中", "观察中"],
+  "stamps": {
+    "insights/cross/2026-07-03_anthropic-managed-agents.html": { "timing": "进行中", "confidence": "高" },
+    "insights/cross/活地图落地指南.html": { "timing": "已发生", "confidence": "高" },
+    "insights/cross/specflow_vericoding_product_direction_2026-05.html": { "timing": "6–12 月", "confidence": "中" },
+    "insights/cross/person_mining_persona_distillation_2026-05.html": { "timing": "进行中", "confidence": "中" },
+    "insights/cross/agent_cognitive_power_2026-05.html": { "timing": "1–2 年", "confidence": "观察中" },
+    "insights/cross/2028-agent-five-forms_2026-05.html": { "timing": "2 年+", "confidence": "观察中" },
+
+    "frontier/vendors/openai/deep_dives/2026-06-28_andrew-ambrosino-codex-shape-of-product-work.html": { "timing": "进行中", "confidence": "高" },
+    "frontier/vendors/openai/deep_dives/2026-06-15_sam-altman-stanford-cs153-scale-agi.html": { "timing": "2 年+", "confidence": "观察中" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-28_claude-code-dynamic-workflows.html": { "timing": "进行中", "confidence": "高" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-28_alex-albert-research-pm-interview.html": { "timing": "进行中", "confidence": "中" },
+    "frontier/vendors/openai/deep_dives/2026-05-28_building-self-improving-tax-agents-with-codex.html": { "timing": "6–12 月", "confidence": "中" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-14_the-founders-playbook.html": { "timing": "进行中", "confidence": "中" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-14_claude-code-large-codebases.html": { "timing": "已发生", "confidence": "高" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-13_computer-browser-use-best-practices.html": { "timing": "进行中", "confidence": "高" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry.html": { "timing": "进行中", "confidence": "高" },
+    "frontier/vendors/anthropic/deep_dives/2026-05-12_claude-for-legal-industry_实现拆解.html": { "timing": "已发生", "confidence": "高" },
+
+    "frontier/vendors/anthropic/digests/2026-05-06_前沿AI公司动态.html": { "timing": "已发生", "confidence": "高" },
+    "frontier/vendors/anthropic/digests/2026-05-06_frontier-vendor-thinking.html": { "timing": "进行中", "confidence": "中" },
+
+    "opensource-analysis/shadowbroker_osint_platform_2026-05.html": { "timing": "已发生", "confidence": "高" },
+    "opensource-analysis/openhuman-memory-tree.html": { "timing": "已发生", "confidence": "高" },
+
+    "readings/2026-06_drop-hierarchy-self-organizing-agents.html": { "timing": "1–2 年", "confidence": "中" },
+    "readings/2026-06_claude-code-artifacts.html": { "timing": "进行中", "confidence": "高" },
+    "readings/2026-06_loop-engineering-coding-agent.html": { "timing": "进行中", "confidence": "高" },
+    "readings/2026-06_bcg-ai-at-work.html": { "timing": "进行中", "confidence": "中" },
+    "readings/2026-06_multi-agent-compute-scheduling.html": { "timing": "1–2 年", "confidence": "观察中" },
+    "readings/AI_Native_Organization_调研与机会_2026-05.html": { "timing": "1–2 年", "confidence": "中" },
+    "readings/AI_Native_Organization_理论解读_2026-05.html": { "timing": "1–2 年", "confidence": "中" },
+    "readings/AI_Native_Organization_融合与实现_2026-05.html": { "timing": "6–12 月", "confidence": "中" }
+  }
+}

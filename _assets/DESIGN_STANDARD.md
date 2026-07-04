@@ -161,6 +161,12 @@
 
 > 完整发布规范见 `.cursor/rules/site-publishing.mdc`，这里只列与视觉相关的硬约束。
 
+- **四大板块按「价值形态」分，不按「关于谁」分**（避免一篇文章两边都想放）：
+  - **前沿洞察** `insights/` = 这篇的核心价值是**我的原创论点 / 前瞻判断**（市场只是原料）。
+  - **厂商动态** `frontier/` = 价值是**如实还原 + 快评某公司的一手动作**（重点在准确记录它做了什么）。
+  - **阅读材料** `readings/` = 第三方公开内容（论文 / 播客 / 演讲 / 视频）的深度解读。
+  - **开源拆解** `opensource-analysis/` = GitHub 开源项目的代码级拆解。
+  - **判定看核心价值，不看提到了哪家公司。** 例：《Anthropic Managed Agents · 第三条路》落点是「第三条路」这个原创论点 → 归**洞察**，而「Anthropic」降级成主题标签（在厂商语境下靠 tag 照样筛得到）。公司名一律是横切标签，不是板块。
 - **位置**：`insights/{tob,toc,cross}/YYYY-MM_<slug>.html`；阅读材料 = `readings/YYYY-MM_<slug>.html`；opensource = `opensource-analysis/`。
 - **相对路径深度**（到 `_assets/`）：
   - `insights/<audience>/` → `../../_assets/`
@@ -171,6 +177,11 @@
   - 第 1 个 `<span>` = 日期（`YYYY-MM-DD` / `YYYY-MM` / `YYYY-QN`）
   - 含「ToB/B端/企业」→ tob；「ToC/C端/消费者」→ toc；「跨市场」→ cross
   - 其余 span = 主题标签；状态 = 草案 / 对内 / 可对外 / 已归档
+  - **两枚判断印章（全站每篇必填）**：写 `<span>时机：X</span>` `<span>信心：Y</span>`，会自动渲染成首页 feed / 精选卡上的两枚圆形钤印。这是「判断台」的通用批注层 —— 不管洞察 / 厂商 / 阅读 / 开源，读完都留一句判断。
+    - 时机（这个信号多久会影响我们 / 该多快行动）：`已发生` / `进行中` / `6–12 月` / `1–2 年` / `2 年+`
+    - 信心（我多确定这个判断成立 / 这个信号有多可信）：`高` / `中` / `观察中`
+    - 语义按板块自适应：洞察=我的预测应验窗口；厂商/阅读/开源=这个一手信号对我们的意义与可信度。
+    - 若文章没写，`_assets/stamps.json` 里按 path 的兜底值才会生效（文章内写的优先）。
 - **`_` 开头的目录/文件**（`_drafts/`、`_source/`、`_test.html`）不进 manifest。
 - **预览必须用** `python3 serve.py`（UTF-8 + `/_manifest.json` 动态端点）。
 - **新增/改 HTML 后**：`python3 _assets/build_manifest.py` 重建静态快照（`file://` 访问场景需要）。
@@ -184,7 +195,7 @@
 - [ ] 从 _assets/_template_insight.html 复制起步，放对目录、命名 YYYY-MM_<slug>.html
 - [ ] 相对路径深度算对（到 _assets/）
 - [ ] <style> 里设本页 accent（避开语义色）+ 暗色变体
-- [ ] doc-header：h1（中英混排）+ 副标题 + doc-meta（日期/受众/标签/状态）+ hero-stats + 信源链接
+- [ ] doc-header：h1（中英混排）+ 副标题 + doc-meta（日期/受众/标签/状态 + 两枚印章「时机：X」「信心：Y」）+ hero-stats + 信源链接
 - [ ] lede 核心论点 + callout-accent「一页要点」
 - [ ] ≥3 个 bespoke 视觉块（命名 class + 内联 SVG + reveal + 响应式）
 - [ ] SVG 有 role/aria-label；动画有 reduced-motion 兜底

@@ -29,6 +29,19 @@ ROOT = Path(__file__).resolve().parent.parent
 SKIP_DIRS = {"_drafts", "_source", "node_modules", ".git"}
 SKIP_FILES = {"index.html", "README.md", "README.zh-CN.md"}
 
+STAMPS_PATH = ROOT / "_assets" / "stamps.json"
+
+
+def load_stamps() -> dict:
+    """读取印章数据源（时机 / 信心），以文档 path 为键。缺失或损坏时返回空表。"""
+    if not STAMPS_PATH.exists():
+        return {}
+    try:
+        data = json.loads(STAMPS_PATH.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return data.get("stamps", {}) if isinstance(data, dict) else {}
+
 
 # ──────────────────────────────────────────────────────────────────────────
 # HTML 解析
@@ -166,8 +179,25 @@ def _extract_date(spans: list[str], filename: str, mtime: float) -> str:
     return datetime.fromtimestamp(mtime, tz=timezone.utc).strftime("%Y-%m")
 
 
+# 两枚判断印章：doc-meta 里写 <span>时机：进行中</span><span>信心：高</span>
+_STAMP_KEYS = {"时机": "timing", "信心": "confidence"}
+_STAMP_SPAN_RE = re.compile(r"^\s*(时机|信心)\s*[:：]\s*(.+?)\s*$")
+
+
+def _classify_stamps(spans: list[str]) -> dict:
+    """从 doc-meta 里识别「时机：X」「信心：Y」两枚判断印章，返回 {timing, confidence}。"""
+    out: dict = {}
+    for s in spans:
+        m = _STAMP_SPAN_RE.match(s)
+        if m:
+            val = m.group(2).strip()
+            if val:
+                out[_STAMP_KEYS[m.group(1)]] = val
+    return out
+
+
 def _classify_tags(spans: list[str], audience: Optional[str], status: Optional[str], date: str) -> list[str]:
-    """剩余 span（去掉日期/受众/状态后）作为主题标签。"""
+    """剩余 span（去掉日期/受众/状态/印章后）作为主题标签。"""
     result = []
     skip_set = {audience, status, date} if audience else {status, date}
     for s in spans:
@@ -176,6 +206,9 @@ def _classify_tags(spans: list[str], audience: Optional[str], status: Optional[s
             continue
         # 跳过含日期的
         if any(p.search(s_clean) for p in _DATE_PATTERNS):
+            continue
+        # 跳过印章 span（时机：… / 信心：…）
+        if _STAMP_SPAN_RE.match(s_clean):
             continue
         # 跳过受众词
         if any(key in s_clean for key in _AUDIENCE_MAP):
@@ -232,6 +265,10 @@ def parse_html_doc(path: Path, rel_path: str, category: str, extra: dict | None 
     status = _classify_status(spans)
     date = _extract_date(spans, path.name, path.stat().st_mtime)
     tags = _classify_tags(spans, audience, status, date)
+    stamps = _classify_stamps(spans)
+
+    merged_extra = dict(extra or {})
+    merged_extra.update(stamps)
 
     return DocEntry(
         path=rel_path,
@@ -241,7 +278,7 @@ def parse_html_doc(path: Path, rel_path: str, category: str, extra: dict | None 
         status=status,
         tags=tags,
         category=category,
-        extra=extra or {},
+        extra=merged_extra,
     )
 
 
@@ -368,6 +405,19 @@ def scan() -> dict:
 
     for lst in [insights, frontier_deep, frontier_digest, oss, legacy, readings]:
         lst.sort(key=lambda e: _date_sort_key(e.date), reverse=True)
+
+    # 印章兜底：文章 .doc-meta 里写的「时机/信心」优先；stamps.json 只补文章没写的。
+    stamps = load_stamps()
+    if stamps:
+        for lst in [insights, frontier_deep, frontier_digest, oss, legacy, readings]:
+            for e in lst:
+                s = stamps.get(e.path)
+                if not s:
+                    continue
+                if s.get("timing") and not e.extra.get("timing"):
+                    e.extra["timing"] = s["timing"]
+                if s.get("confidence") and not e.extra.get("confidence"):
+                    e.extra["confidence"] = s["confidence"]
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),

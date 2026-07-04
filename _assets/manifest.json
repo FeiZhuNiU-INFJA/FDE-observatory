@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T07:48:23.649311+00:00",
+  "generated_at": "2026-07-04T12:59:09.878723+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
@@ -8,12 +8,16 @@
       "audience": "cross",
       "status": "可对外",
       "tags": [
+        "Anthropic",
         "Agent 基础设施",
         "Dreaming",
         "Self-Improving Agent"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
     },
     {
       "path": "insights/cross/活地图落地指南.html",
@@ -26,7 +30,10 @@
         "基础设施"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "已发生",
+        "confidence": "高"
+      }
     },
     {
       "path": "insights/cross/specflow_vericoding_product_direction_2026-05.html",
@@ -39,7 +46,10 @@
         "Vericoding"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
     },
     {
       "path": "insights/cross/person_mining_persona_distillation_2026-05.html",
@@ -52,7 +62,10 @@
         "品类洞察"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
     },
     {
       "path": "insights/cross/agent_cognitive_power_2026-05.html",
@@ -65,7 +78,10 @@
         "前瞻洞察"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "观察中"
+      }
     },
     {
       "path": "insights/cross/2028-agent-five-forms_2026-05.html",
@@ -78,7 +94,10 @@
         "前瞻推演"
       ],
       "category": "insight",
-      "extra": {}
+      "extra": {
+        "timing": "2 年+",
+        "confidence": "观察中"
+      }
     }
   ],
   "frontier_deep": [
@@ -96,7 +115,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "openai"
+        "vendor": "openai",
+        "timing": "进行中",
+        "confidence": "高"
       }
     },
     {
@@ -113,7 +134,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "openai"
+        "vendor": "openai",
+        "timing": "2 年+",
+        "confidence": "观察中"
       }
     },
     {
@@ -129,7 +152,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "高"
       }
     },
     {
@@ -145,7 +170,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "中"
       }
     },
     {
@@ -160,7 +187,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "openai"
+        "vendor": "openai",
+        "timing": "6–12 月",
+        "confidence": "中"
       }
     },
     {
@@ -176,7 +205,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "中"
       }
     },
     {
@@ -193,7 +224,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "已发生",
+        "confidence": "高"
       }
     },
     {
@@ -210,7 +243,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "高"
       }
     },
     {
@@ -227,7 +262,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "高"
       }
     },
     {
@@ -243,7 +280,9 @@
       ],
       "category": "frontier-deep",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "已发生",
+        "confidence": "高"
       }
     }
   ],
@@ -261,7 +300,9 @@
       ],
       "category": "frontier-digest",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "已发生",
+        "confidence": "高"
       }
     },
     {
@@ -279,7 +320,9 @@
       ],
       "category": "frontier-digest",
       "extra": {
-        "vendor": "anthropic"
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "中"
       }
     }
   ],
@@ -295,7 +338,10 @@
         "开源情报"
       ],
       "category": "oss",
-      "extra": {}
+      "extra": {
+        "timing": "已发生",
+        "confidence": "高"
+      }
     },
     {
       "path": "opensource-analysis/openhuman-memory-tree.html",
@@ -307,7 +353,10 @@
         "架构拆解 · 个人 Agent · Memory"
       ],
       "category": "oss",
-      "extra": {}
+      "extra": {
+        "timing": "已发生",
+        "confidence": "高"
+      }
     }
   ],
   "legacy": [],
@@ -325,7 +374,10 @@
         "Agent 编排"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "中"
+      }
     },
     {
       "path": "readings/2026-06_claude-code-artifacts.html",
@@ -340,7 +392,10 @@
         "Agent 产出"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
     },
     {
       "path": "readings/2026-06_loop-engineering-coding-agent.html",
@@ -355,7 +410,10 @@
         "MCP"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
     },
     {
       "path": "readings/2026-06_bcg-ai-at-work.html",
@@ -371,7 +429,10 @@
         "Agent 采纳"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
     },
     {
       "path": "readings/2026-06_multi-agent-compute-scheduling.html",
@@ -384,7 +445,10 @@
         "独立调研"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "观察中"
+      }
     },
     {
       "path": "readings/AI_Native_Organization_调研与机会_2026-05.html",
@@ -397,7 +461,10 @@
         "系列入口"
       ],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "中"
+      }
     },
     {
       "path": "readings/AI_Native_Organization_理论解读_2026-05.html",
@@ -407,7 +474,10 @@
       "status": null,
       "tags": [],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "中"
+      }
     },
     {
       "path": "readings/AI_Native_Organization_融合与实现_2026-05.html",
@@ -417,7 +487,10 @@
       "status": null,
       "tags": [],
       "category": "readings",
-      "extra": {}
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
     }
   ]
 }

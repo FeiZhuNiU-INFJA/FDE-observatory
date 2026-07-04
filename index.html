@@ -166,36 +166,54 @@ body {
 }
 .dossier:hover { transform: rotate(.5deg) translateY(-4px); border-color: color-mix(in srgb, var(--vermil) 38%, var(--deskrule)); box-shadow: var(--card-shadow-hover); }
 .dossier::before {
-  content: "CASE FILE"; position: absolute; top: 0; left: 18px; z-index: 2;
+  content: "最新发布"; position: absolute; top: 0; left: 18px; z-index: 2;
   transform: translateY(-50%);
   font-family: var(--mono); font-size: .56rem; font-weight: 500; letter-spacing: .2em;
   color: var(--slate); background: var(--panel); padding: .15em .6em;
   border: 1px solid var(--deskrule); border-radius: 3px;
 }
 
-/* featured 注入结构：.featured-card > .featured-eyebrow(.featured-badge/.featured-type)
-   + h3.featured-title + .featured-meta(.featured-date + pills) + .featured-cta(.featured-arrow) */
-.featured-card { display: block; position: relative; padding: 1.5rem 1.5rem 1.4rem; text-decoration: none; color: var(--chalk); border: none; }
+/* featured 注入结构（卷宗封皮四段式）：
+   .featured-card
+     > .featured-plate     ← 档案标识条：[分类] ── 受众 · 日期
+     > h3.featured-title   ← 主题
+     > p.featured-byline   ← 署名行：mono 中点分隔的主题标签
+     > .featured-signoff   ← 签发块：两枚圆章 + 阅读全文入口（左右呼应）*/
+.featured-card { display: block; position: relative; padding: 1.55rem 1.55rem 1.4rem; text-decoration: none; color: var(--chalk); border: none; }
 .featured-card:hover { color: var(--chalk); }
-.featured-eyebrow { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .2rem; }
-.featured-type { font-family: var(--mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--brass); }
-.featured-badge {
-  font-family: var(--mono); font-weight: 600; font-size: .52rem; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--vermil); border: 1.5px solid var(--vermil); border-radius: 4px; padding: .3em .5em;
-  transform: rotate(6deg); line-height: 1.15; opacity: .9; background: none;
-  display: inline-flex; align-items: center;
-}
-.featured-title { font-family: var(--disp); font-weight: 600; font-size: 1.5rem; line-height: 1.24; letter-spacing: -.01em; margin: .7rem 0 1rem; color: var(--chalk); transition: color .2s; }
+
+/* 档案标识条：分类是左锚点、日期是右锚点，中间一条 1px 线把两端焊在一起 */
+.featured-plate { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.featured-type { font-family: var(--mono); font-size: .6rem; letter-spacing: .18em; text-transform: uppercase; color: var(--brass); white-space: nowrap; flex-shrink: 0; }
+.featured-rule { flex: 1 1 auto; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--brass) 40%, transparent), var(--deskrule) 55%, transparent); min-width: 1rem; }
+.featured-plate-right { font-family: var(--mono); font-size: .6rem; letter-spacing: .12em; color: var(--faint); white-space: nowrap; flex-shrink: 0; }
+
+.featured-title { font-family: var(--disp); font-weight: 600; font-size: 1.5rem; line-height: 1.24; letter-spacing: -.01em; margin: 0 0 .55rem; color: var(--chalk); transition: color .2s; }
 .featured-card:hover .featured-title { color: var(--vermil-soft); }
-.featured-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .5rem; margin: 0 0 1rem; font-size: .74rem; border-top: 1px dashed var(--deskrule); padding-top: .9rem; }
-.featured-date { font-family: var(--mono); font-size: .68rem; color: var(--dim); }
-.featured-meta .pill { font-family: var(--mono); font-size: .6rem; padding: .18em .55em; border-radius: 4px; background: rgba(160,180,195,.08); color: var(--slate); border: 1px solid var(--deskrule); }
-.featured-cta { font-family: var(--mono); font-size: .72rem; font-weight: 600; letter-spacing: .04em; color: var(--vermil); display: inline-flex; align-items: center; gap: .5em; }
+
+/* 署名行：情报简报式一句话，中点分隔（不是 pill） */
+.featured-byline { font-family: var(--mono); font-size: .68rem; line-height: 1.55; letter-spacing: .02em; color: var(--dim); margin: 0 0 1.3rem; }
+
+/* 签发块：两枚圆章（左）+ 阅读全文入口（右），同一水平呼应；上方一条虚线像官方分栏 */
+.featured-signoff {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  border-top: 1px dashed var(--deskrule); padding-top: 1rem; margin-top: .4rem;
+}
+.featured-cta { font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--vermil); display: inline-flex; align-items: center; gap: .5em; flex-shrink: 0; }
 .featured-arrow { transition: transform .2s ease; }
 .featured-card:hover .featured-arrow { transform: translateX(5px); }
 
+/* 卷宗上的两枚章：签名放大版，盖在签发行左侧，与 CTA 左右呼应 */
+.featured-card .stamps { display: flex; gap: .8rem; margin: 0; }
+.featured-card .stamp { width: 60px; height: 60px; box-shadow: inset 0 0 0 3px color-mix(in srgb, currentColor 10%, transparent); }
+.featured-card .stamp-k { font-size: .48rem; margin-bottom: .26em; }
+.featured-card .stamp-v { font-size: .76rem; }
+.featured-card:hover .stamp--timing { border-color: color-mix(in srgb, var(--brass) 78%, transparent); }
+.featured-card:hover .stamp--conf { border-color: color-mix(in srgb, var(--vermil) 80%, transparent); }
+
 /* ── 前沿信号时间轴（平直 + 雷达扫描；同日期归并为一个点）── */
-.trace-band { max-width: 1280px; margin: clamp(1.8rem, 4vw, 2.6rem) auto 0; padding: 0 clamp(1.2rem, 4vw, 3rem); }
+/* 上移留白：读出标签从光点向上升起，需在时间轴上方预留净空，避免动画盖住英雄区文案 */
+.trace-band { max-width: 1280px; margin: clamp(4.5rem, 8vw, 6.5rem) auto 0; padding: 0 clamp(1.2rem, 4vw, 3rem); }
 .trace-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .5rem; margin-bottom: .3rem; }
 .tf-label { font-family: var(--mono); font-size: .62rem; letter-spacing: .2em; text-transform: uppercase; color: var(--dim); display: inline-flex; align-items: center; gap: .55em; }
 .tf-label::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--vermil); box-shadow: 0 0 8px var(--vermil); animation: bl 1.6s ease-in-out infinite; }
@@ -212,7 +230,7 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
   transform-origin: 50% calc(100% + 18px);
   padding: 0; max-width: 250px; min-width: 0; pointer-events: none; opacity: 0;
   filter: drop-shadow(0 1px 4px var(--steel)) drop-shadow(0 0 12px var(--steel)) drop-shadow(0 0 22px var(--steel));
-  transition: opacity .55s ease, transform .62s cubic-bezier(.22,.61,.36,1), left .85s cubic-bezier(.34,.82,.28,1);
+  transition: opacity .95s ease, transform 1s cubic-bezier(.22,.61,.36,1), left 1.25s cubic-bezier(.34,.82,.28,1);
   will-change: left, transform, opacity;
 }
 .tip.on { opacity: 1; transform: translate(-50%, calc(-100% - 18px)) scale(1); }
@@ -221,11 +239,11 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
   content: ""; position: absolute; left: 50%; bottom: -18px;
   width: 1px; height: 18px; transform: translateX(-50%) scaleY(0); transform-origin: bottom;
   background: linear-gradient(to bottom, transparent, var(--tip-ink, var(--vermil)));
-  opacity: .7; transition: transform .55s cubic-bezier(.22,.61,.36,1) .08s;
+  opacity: .7; transition: transform .85s cubic-bezier(.22,.61,.36,1) .1s;
 }
 .tip.on::after { transform: translateX(-50%) scaleY(1); }
 /* 重新出现 / 扫描回卷：瞬移就位，不做横向长滑（避免甩尾） */
-.tip.tip--snap { transition: opacity .55s ease, transform .62s cubic-bezier(.22,.61,.36,1); }
+.tip.tip--snap { transition: opacity .95s ease, transform 1s cubic-bezier(.22,.61,.36,1); }
 @media (prefers-reduced-motion: reduce) {
   .tip { transition: opacity .12s ease; transform: translate(-50%, calc(-100% - 18px)); }
   .tip.on { transform: translate(-50%, calc(-100% - 18px)); }
@@ -235,7 +253,15 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .tip-row { display: flex; flex-direction: column; align-items: center; gap: .06rem; padding: .3rem 0 0; }
 .tip-row:first-of-type { padding-top: 0; }
 .tip .t-cat { font-family: var(--mono); font-size: .52rem; letter-spacing: .16em; text-transform: uppercase; }
-.tip .t-title { font-family: var(--disp); font-size: .92rem; line-height: 1.24; color: var(--chalk); text-shadow: 0 1px 8px var(--steel), 0 0 4px var(--steel); }
+.tip .t-title { font-family: var(--disp); font-size: .92rem; line-height: 1.24; color: var(--chalk); text-shadow: 0 1px 8px var(--steel), 0 0 4px var(--steel); text-decoration: none; }
+/* hover 锁定态：标签可点，标题变可点链接；沿引线补一块隐形桥面，让指针能从光点走进标签 */
+.tip.tip--lock { pointer-events: auto; }
+.tip.tip--lock::before {
+  content: ""; position: absolute; left: 50%; bottom: -24px;
+  width: 64px; height: 28px; transform: translateX(-50%);
+}
+a.t-title { transition: color .16s ease; }
+.tip.tip--lock a.t-title:hover { color: var(--vermil-soft); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 
 /* ════════════════════════════════════════════════════
    四条案卷通道 · catalogs（保留 data-count / data-count-key 钩子）
@@ -346,10 +372,10 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .search-meta { margin: -.2rem 0 1rem; font-family: var(--mono); font-size: .72rem; color: var(--faint); letter-spacing: .02em; }
 .search-meta b { color: var(--chalk); font-weight: 600; }
 
-/* feed 注入结构：li.feed-row > .feed-type(+dot class .feed-dot) + .feed-date + a.feed-title + .feed-tags(.pill) */
+/* feed 注入结构：li.feed-row > .feed-type(+dot class .feed-dot) + .feed-date + a.feed-title + .feed-tags(.pill) + .stamps(时机/信心) */
 .feed-list { list-style: none; padding: 0; margin: 0 0 4rem; }
 .feed-row {
-  display: grid; grid-template-columns: 132px 96px minmax(0, 1fr) auto; gap: 1rem; align-items: center;
+  display: grid; grid-template-columns: 118px 84px minmax(0, 1fr) auto auto; gap: 1rem; align-items: center;
   padding: .85rem .4rem; border-bottom: 1px solid var(--deskrule); font-size: .94rem;
   border-left: 2px solid transparent; transition: background .16s, border-color .16s, transform .16s; position: relative;
 }
@@ -372,6 +398,26 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .feed-tags .pill-warn { background: color-mix(in srgb, var(--brass) 20%, transparent); color: var(--brass); border-color: transparent; }
 .feed-tags .pill-info { background: color-mix(in srgb, var(--slate) 22%, transparent); color: var(--slate); border-color: transparent; }
 .feed-list .placeholder { color: var(--faint); font-style: italic; padding: 1em .4em; font-family: var(--disp); }
+
+/* ── 两枚印章：时机（黄铜刻度章）+ 信心（干玫瑰印泥章）──────────────
+   圆形钤印：墨色描边 + 一圈羽化内环像盖上去的橡皮章，键在上、判断值居中。
+   直立不旋转（圆形旋转无意义）。feed 行里克制，featured 卡里放大成签名。
+   类别语义色回避，只用 brass / vermil 两枚墨。 */
+.stamps { display: inline-flex; gap: .5rem; align-items: center; white-space: nowrap; }
+.stamp {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid; background: none;
+  box-shadow: inset 0 0 0 2.5px color-mix(in srgb, currentColor 9%, transparent);
+  font-family: var(--mono); line-height: 1.05; text-align: center;
+  transition: border-color .16s, box-shadow .16s;
+}
+.stamp-k { font-size: .44rem; letter-spacing: .1em; opacity: .7; margin-bottom: .22em; }
+.stamp-v { font-family: var(--disp); font-weight: 600; font-size: .6rem; letter-spacing: .01em; }
+.stamp--timing { color: var(--brass); border-color: color-mix(in srgb, var(--brass) 52%, transparent); }
+.stamp--conf   { color: var(--vermil); border-color: color-mix(in srgb, var(--vermil) 55%, transparent); }
+.feed-row:hover .stamp--timing { border-color: color-mix(in srgb, var(--brass) 80%, transparent); }
+.feed-row:hover .stamp--conf   { border-color: color-mix(in srgb, var(--vermil) 82%, transparent); }
 
 /* ── 前沿快报双层：默认 6 条「在班」，其余折叠进「整柜档案」抽屉 ── */
 /* 在班行更亮更重，作为视觉主角 */
@@ -422,9 +468,10 @@ body.filter-toc [data-audience]:not([data-audience~="toc"]):not([data-audience~=
 body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audience~="all"]) { display: none; }
 
 @media (max-width: 640px) {
-  .feed-row { grid-template-columns: auto 1fr; grid-template-areas: "type date" "title title" "tags tags"; gap: .3rem .7rem; padding: .9em .3rem; }
+  .feed-row { grid-template-columns: auto 1fr; grid-template-areas: "type date" "title title" "stamps stamps" "tags tags"; gap: .3rem .7rem; padding: .9em .3rem; }
   .feed-type { grid-area: type; } .feed-date { grid-area: date; text-align: right; }
   .feed-title { grid-area: title; white-space: normal; } .feed-tags { grid-area: tags; justify-content: flex-start; }
+  .stamps { grid-area: stamps; justify-content: flex-start; }
 }
 
 /* ════════════════════════════════════════════════════
@@ -725,7 +772,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
 </footer>
 
 <script src="_assets/insight.js?v=5"></script>
-<script src="_assets/manifest-render.js?v=7"></script>
+<script src="_assets/manifest-render.js?v=10"></script>
 <script>
 /* ════════════════════════════════════════════════════════════════
    首页专属交互（判断台）
@@ -903,7 +950,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       (manifest[g.key] || []).forEach(function (e) {
         var nd = normDate(e.date);
         if (!nd) return;
-        docs.push({ d: e.date, nd: nd, t: e.title || '', cat: e.category || g.cat });
+        docs.push({ d: e.date, nd: nd, t: e.title || '', cat: e.category || g.cat, path: e.path || '' });
       });
     });
     if (!docs.length) return;
@@ -940,7 +987,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     }
 
     // tooltip 读出：hover 与雷达扫过共用同一个 #tip；hover 优先，扫过为自动短暂读出
-    var hoverLock = false, sweepTipT = null;
+    var hoverLock = false, sweepTipT = null, hideT = null;
     function positionTip(p) {
       var r = svg.getBoundingClientRect();
       tip.style.left = (p.x / W * r.width) + 'px';
@@ -958,13 +1005,16 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         positionTip(p);
       }
     }
-    function fillTip(p) {
+    function fillTip(p, linked) {
       var multi = p.items.length > 1;
       tip.style.setProperty('--tip-ink', CAT_COLOR[p.items[0].cat] || '#b06a63');
       var h = '<div class="t-date">' + p.items[0].d + (multi ? ' · ' + p.items.length + ' 份' : '') + '</div>';
       p.items.forEach(function (o) {
         var oc = CAT_COLOR[o.cat] || '#b06a63';
-        h += '<div class="tip-row"><span class="t-cat" style="color:' + oc + '">' + (CAT_LABEL[o.cat] || '') + '</span><span class="t-title">' + o.t + '</span></div>';
+        var title = linked && o.path
+          ? '<a class="t-title" href="' + encodeURI(o.path) + '">' + o.t + '</a>'
+          : '<span class="t-title">' + o.t + '</span>';
+        h += '<div class="tip-row"><span class="t-cat" style="color:' + oc + '">' + (CAT_LABEL[o.cat] || '') + '</span>' + title + '</div>';
       });
       tip.innerHTML = h;
     }
@@ -994,11 +1044,31 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       function show() {
         hoverLock = true;
         if (sweepTipT) { clearTimeout(sweepTipT); sweepTipT = null; }
-        moveTip(p, true); fillTip(p); tip.classList.add('on');
+        if (hideT) { clearTimeout(hideT); hideT = null; }
+        moveTip(p, true); fillTip(p, true);
+        tip.classList.add('on', 'tip--lock');
+      }
+      function scheduleHide() {
+        if (hideT) clearTimeout(hideT);
+        hideT = setTimeout(function () {
+          hoverLock = false; tip.classList.remove('on', 'tip--lock'); hideT = null;
+        }, 260);
       }
       c.addEventListener('mouseenter', show);
-      c.addEventListener('mouseleave', function () { hoverLock = false; tip.classList.remove('on'); });
+      c.addEventListener('mouseleave', scheduleHide);
       dc.appendChild(c); p.core = c; entrants.push(c);
+    });
+
+    // 指针从光点走进标签本体时，取消隐藏计时并保持锁定，便于点击标题；离开标签再隐藏
+    tip.addEventListener('mouseenter', function () {
+      if (hideT) { clearTimeout(hideT); hideT = null; }
+      hoverLock = true;
+    });
+    tip.addEventListener('mouseleave', function () {
+      if (hideT) clearTimeout(hideT);
+      hideT = setTimeout(function () {
+        hoverLock = false; tip.classList.remove('on', 'tip--lock'); hideT = null;
+      }, 200);
     });
 
     if (reduce) { return; }
@@ -1009,7 +1079,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     }
 
     var sweep = document.getElementById('sweep'), glow = document.getElementById('sweepGlow');
-    var SWEEP_MS = 7200, GAP_MS = 3200, x0 = pad - 10, x1 = W - pad + 10;
+    var SWEEP_MS = 10800, GAP_MS = 4200, x0 = pad - 10, x1 = W - pad + 10;
     function ringPing(p) {
       var g = p.ping, st = performance.now();
       (function rp(t) {
@@ -1027,9 +1097,9 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         // 已经亮着 → 让 left 过渡把框拖到新点（锁定跟随）；刚熄灭 → 瞬移到位再淡入升起
         var visible = tip.classList.contains('on');
         moveTip(p, !visible);
-        fillTip(p); tip.classList.add('on');
+        fillTip(p); tip.classList.add('on'); tip.classList.remove('tip--lock');
         if (sweepTipT) clearTimeout(sweepTipT);
-        sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 1800);
+        sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 2600);
       }
     }
     function runSweep() {
