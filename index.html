@@ -203,8 +203,14 @@ body {
 .trace-wrap { position: relative; }
 svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .trace-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: .35rem; }
-.tip { position: absolute; transform: translate(-50%, -115%); background: color-mix(in srgb, var(--steel) 95%, transparent); border: 1px solid var(--deskrule); border-radius: 6px; padding: .55rem .7rem; pointer-events: none; opacity: 0; transition: opacity .15s; min-width: 170px; max-width: 280px; z-index: 5; box-shadow: 0 18px 40px -20px #000; }
-.tip.on { opacity: 1; }
+.tip { position: absolute; transform: translate(-50%, -108%) scale(.985); transform-origin: 50% 100%; background: color-mix(in srgb, var(--steel) 95%, transparent); border: 1px solid var(--deskrule); border-radius: 6px; padding: .55rem .7rem; pointer-events: none; opacity: 0; transition: opacity .32s ease, transform .42s cubic-bezier(.22,.61,.36,1), left .58s cubic-bezier(.33,.85,.3,1); min-width: 170px; max-width: 280px; z-index: 5; box-shadow: 0 18px 40px -20px #000; will-change: left, transform, opacity; }
+.tip.on { opacity: 1; transform: translate(-50%, -115%) scale(1); }
+/* 重新出现 / 扫描回到起点时不做横向滑动，仅淡入升起（避免长距离甩尾） */
+.tip.tip--snap { transition: opacity .32s ease, transform .42s cubic-bezier(.22,.61,.36,1); }
+@media (prefers-reduced-motion: reduce) {
+  .tip { transition: opacity .12s ease; transform: translate(-50%, -115%); }
+  .tip.on { transform: translate(-50%, -115%); }
+}
 .tip .t-date { font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; color: var(--faint); margin-bottom: .35rem; }
 .tip-row { display: flex; flex-direction: column; gap: .06rem; padding: .3rem 0; border-top: 1px solid var(--deskrule); }
 .tip-row:first-of-type { border-top: none; padding-top: 0; }
@@ -913,6 +919,35 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       tg.appendChild(tk);
     }
 
+    // tooltip 读出：hover 与雷达扫过共用同一个 #tip；hover 优先，扫过为自动短暂读出
+    var hoverLock = false, sweepTipT = null;
+    function positionTip(p) {
+      var r = svg.getBoundingClientRect();
+      tip.style.left = (p.x / W * r.width) + 'px';
+      tip.style.top = ((p.y / VH) * r.height) + 'px';
+    }
+    // snap=true：瞬移到位（不做横向滑动），用于重新出现 / hover / 扫描回卷；
+    // snap=false：让 CSS 的 left 过渡把读出框平滑拖到下一个点（扫描锁定的丝滑感）。
+    function moveTip(p, snap) {
+      if (snap) {
+        tip.classList.add('tip--snap');
+        positionTip(p);
+        void tip.offsetWidth;                 // 强制回流，让本次定位不带过渡
+        tip.classList.remove('tip--snap');
+      } else {
+        positionTip(p);
+      }
+    }
+    function fillTip(p) {
+      var multi = p.items.length > 1;
+      var h = '<div class="t-date">' + p.items[0].d + (multi ? ' · ' + p.items.length + ' 份' : '') + '</div>';
+      p.items.forEach(function (o) {
+        var oc = CAT_COLOR[o.cat] || '#b06a63';
+        h += '<div class="tip-row"><span class="t-cat" style="color:' + oc + '">' + (CAT_LABEL[o.cat] || '') + '</span><span class="t-title">' + o.t + '</span></div>';
+      });
+      tip.innerHTML = h;
+    }
+
     var entrants = [];
     pts.forEach(function (p) {
       var last = p.nd === maxD, multi = p.items.length > 1, col = CAT_COLOR[p.items[0].cat] || '#b06a63';
@@ -936,18 +971,12 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         dc.appendChild(ring); entrants.push(ring);
       }
       function show() {
-        var r = svg.getBoundingClientRect();
-        tip.style.left = (p.x / W * r.width) + 'px';
-        tip.style.top = ((p.y / VH) * r.height) + 'px';
-        var h = '<div class="t-date">' + p.items[0].d + (multi ? ' · ' + p.items.length + ' 份' : '') + '</div>';
-        p.items.forEach(function (o) {
-          var oc = CAT_COLOR[o.cat] || '#b06a63';
-          h += '<div class="tip-row"><span class="t-cat" style="color:' + oc + '">' + (CAT_LABEL[o.cat] || '') + '</span><span class="t-title">' + o.t + '</span></div>';
-        });
-        tip.innerHTML = h; tip.classList.add('on');
+        hoverLock = true;
+        if (sweepTipT) { clearTimeout(sweepTipT); sweepTipT = null; }
+        moveTip(p, true); fillTip(p); tip.classList.add('on');
       }
       c.addEventListener('mouseenter', show);
-      c.addEventListener('mouseleave', function () { tip.classList.remove('on'); });
+      c.addEventListener('mouseleave', function () { hoverLock = false; tip.classList.remove('on'); });
       dc.appendChild(c); p.core = c; entrants.push(c);
     });
 
@@ -972,6 +1001,15 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         [{ filter: 'drop-shadow(0 0 0 ' + p.col + ')' }, { filter: 'drop-shadow(0 0 5px ' + p.col + ')' }, { filter: 'drop-shadow(0 0 0 ' + p.col + ')' }],
         { duration: 620, easing: 'ease-out' }
       );
+      // 扫过读出：非 hover 时把当前点的标题短暂显示；下一点命中即平滑滑向它
+      if (!hoverLock) {
+        // 已经亮着 → 让 left 过渡把框拖到新点（锁定跟随）；刚熄灭 → 瞬移到位再淡入升起
+        var visible = tip.classList.contains('on');
+        moveTip(p, !visible);
+        fillTip(p); tip.classList.add('on');
+        if (sweepTipT) clearTimeout(sweepTipT);
+        sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 1100);
+      }
     }
     function runSweep() {
       var st = performance.now();
@@ -979,7 +1017,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       pts.forEach(function (p) { p._hit = false; });
       (function sw(t) {
         var k = (t - st) / SWEEP_MS;
-        if (k >= 1) { sweep.style.opacity = 0; glow.style.opacity = 0; setTimeout(runSweep, GAP_MS); return; }
+        if (k >= 1) { sweep.style.opacity = 0; glow.style.opacity = 0; if (!hoverLock && sweepTipT) { clearTimeout(sweepTipT); sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 700); } setTimeout(runSweep, GAP_MS); return; }
         var x = x0 + (x1 - x0) * k;
         sweep.setAttribute('x1', x); sweep.setAttribute('x2', x);
         glow.setAttribute('x', x - 90);
