@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T12:59:09.878723+00:00",
+  "generated_at": "2026-07-04T13:37:44.514339+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
@@ -451,6 +451,38 @@
       }
     },
     {
+      "path": "readings/AI_Native_Organization_理论解读_2026-05.html",
+      "title": "AI-Native Organization · 卷一",
+      "date": "2026-05-28",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "组织转型",
+        "理论解读"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "中"
+      }
+    },
+    {
+      "path": "readings/AI_Native_Organization_融合与实现_2026-05.html",
+      "title": "AI-Native Organization · 卷二",
+      "date": "2026-05-28",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "组织转型",
+        "实现路径"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
+    },
+    {
       "path": "readings/AI_Native_Organization_调研与机会_2026-05.html",
       "title": "AI-Native Organization · 系列索引",
       "date": "2026-05-28",
@@ -463,32 +495,6 @@
       "category": "readings",
       "extra": {
         "timing": "1–2 年",
-        "confidence": "中"
-      }
-    },
-    {
-      "path": "readings/AI_Native_Organization_理论解读_2026-05.html",
-      "title": "AI-Native Organization · 卷一",
-      "date": "2026-05",
-      "audience": null,
-      "status": null,
-      "tags": [],
-      "category": "readings",
-      "extra": {
-        "timing": "1–2 年",
-        "confidence": "中"
-      }
-    },
-    {
-      "path": "readings/AI_Native_Organization_融合与实现_2026-05.html",
-      "title": "AI-Native Organization · 卷二",
-      "date": "2026-05",
-      "audience": null,
-      "status": null,
-      "tags": [],
-      "category": "readings",
-      "extra": {
-        "timing": "6–12 月",
         "confidence": "中"
       }
     }
