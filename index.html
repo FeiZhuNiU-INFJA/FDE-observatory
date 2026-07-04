@@ -203,19 +203,39 @@ body {
 .trace-wrap { position: relative; }
 svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .trace-axis { display: flex; justify-content: space-between; font-family: var(--mono); font-size: .6rem; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); margin-top: .35rem; }
-.tip { position: absolute; transform: translate(-50%, -108%) scale(.985); transform-origin: 50% 100%; background: color-mix(in srgb, var(--steel) 95%, transparent); border: 1px solid var(--deskrule); border-radius: 6px; padding: .55rem .7rem; pointer-events: none; opacity: 0; transition: opacity .32s ease, transform .42s cubic-bezier(.22,.61,.36,1), left .58s cubic-bezier(.33,.85,.3,1); min-width: 170px; max-width: 280px; z-index: 5; box-shadow: 0 18px 40px -20px #000; will-change: left, transform, opacity; }
-.tip.on { opacity: 1; transform: translate(-50%, -115%) scale(1); }
-/* 重新出现 / 扫描回到起点时不做横向滑动，仅淡入升起（避免长距离甩尾） */
-.tip.tip--snap { transition: opacity .32s ease, transform .42s cubic-bezier(.22,.61,.36,1); }
-@media (prefers-reduced-motion: reduce) {
-  .tip { transition: opacity .12s ease; transform: translate(-50%, -115%); }
-  .tip.on { transform: translate(-50%, -115%); }
+/* 扫描读出 = 雷达数据标签：无框、无描边、无填充。只有一条从光点升起的引线
+   + 磷光文字，与刻度 / 时间轴共用同一套 hairline + mono 语言 —— 融进仪表盘，
+   而不是浮在它上面。可读性靠"与背景同色的羽化柔光"跟着字形走（没有硬边）。 */
+.tip {
+  position: absolute; z-index: 5; text-align: center;
+  transform: translate(-50%, calc(-100% - 18px)) scale(.99);
+  transform-origin: 50% calc(100% + 18px);
+  padding: 0; max-width: 250px; min-width: 0; pointer-events: none; opacity: 0;
+  filter: drop-shadow(0 1px 4px var(--steel)) drop-shadow(0 0 12px var(--steel)) drop-shadow(0 0 22px var(--steel));
+  transition: opacity .55s ease, transform .62s cubic-bezier(.22,.61,.36,1), left .85s cubic-bezier(.34,.82,.28,1);
+  will-change: left, transform, opacity;
 }
-.tip .t-date { font-family: var(--mono); font-size: .6rem; letter-spacing: .08em; color: var(--faint); margin-bottom: .35rem; }
-.tip-row { display: flex; flex-direction: column; gap: .06rem; padding: .3rem 0; border-top: 1px solid var(--deskrule); }
-.tip-row:first-of-type { border-top: none; padding-top: 0; }
-.tip .t-cat { font-family: var(--mono); font-size: .54rem; letter-spacing: .12em; text-transform: uppercase; }
-.tip .t-title { font-family: var(--disp); font-size: .9rem; line-height: 1.22; color: var(--chalk); }
+.tip.on { opacity: 1; transform: translate(-50%, calc(-100% - 18px)) scale(1); }
+/* 引线：从光点向上生长到文字，用该点的类别墨色 */
+.tip::after {
+  content: ""; position: absolute; left: 50%; bottom: -18px;
+  width: 1px; height: 18px; transform: translateX(-50%) scaleY(0); transform-origin: bottom;
+  background: linear-gradient(to bottom, transparent, var(--tip-ink, var(--vermil)));
+  opacity: .7; transition: transform .55s cubic-bezier(.22,.61,.36,1) .08s;
+}
+.tip.on::after { transform: translateX(-50%) scaleY(1); }
+/* 重新出现 / 扫描回卷：瞬移就位，不做横向长滑（避免甩尾） */
+.tip.tip--snap { transition: opacity .55s ease, transform .62s cubic-bezier(.22,.61,.36,1); }
+@media (prefers-reduced-motion: reduce) {
+  .tip { transition: opacity .12s ease; transform: translate(-50%, calc(-100% - 18px)); }
+  .tip.on { transform: translate(-50%, calc(-100% - 18px)); }
+  .tip::after { transition: none; transform: translateX(-50%) scaleY(1); }
+}
+.tip .t-date { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; color: var(--faint); margin-bottom: .34rem; }
+.tip-row { display: flex; flex-direction: column; align-items: center; gap: .06rem; padding: .3rem 0 0; }
+.tip-row:first-of-type { padding-top: 0; }
+.tip .t-cat { font-family: var(--mono); font-size: .52rem; letter-spacing: .16em; text-transform: uppercase; }
+.tip .t-title { font-family: var(--disp); font-size: .92rem; line-height: 1.24; color: var(--chalk); text-shadow: 0 1px 8px var(--steel), 0 0 4px var(--steel); }
 
 /* ════════════════════════════════════════════════════
    四条案卷通道 · catalogs（保留 data-count / data-count-key 钩子）
@@ -940,6 +960,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     }
     function fillTip(p) {
       var multi = p.items.length > 1;
+      tip.style.setProperty('--tip-ink', CAT_COLOR[p.items[0].cat] || '#b06a63');
       var h = '<div class="t-date">' + p.items[0].d + (multi ? ' · ' + p.items.length + ' 份' : '') + '</div>';
       p.items.forEach(function (o) {
         var oc = CAT_COLOR[o.cat] || '#b06a63';
@@ -988,7 +1009,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     }
 
     var sweep = document.getElementById('sweep'), glow = document.getElementById('sweepGlow');
-    var SWEEP_MS = 4200, GAP_MS = 2600, x0 = pad - 10, x1 = W - pad + 10;
+    var SWEEP_MS = 7200, GAP_MS = 3200, x0 = pad - 10, x1 = W - pad + 10;
     function ringPing(p) {
       var g = p.ping, st = performance.now();
       (function rp(t) {
@@ -1008,7 +1029,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         moveTip(p, !visible);
         fillTip(p); tip.classList.add('on');
         if (sweepTipT) clearTimeout(sweepTipT);
-        sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 1100);
+        sweepTipT = setTimeout(function () { if (!hoverLock) tip.classList.remove('on'); sweepTipT = null; }, 1800);
       }
     }
     function runSweep() {
