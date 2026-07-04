@@ -157,13 +157,39 @@ body {
 .cursor { display: inline-block; width: .08em; height: 1em; background: var(--brass); margin-left: .05em; vertical-align: -.12em; animation: cblink 1s steps(1) infinite; }
 @keyframes cblink { 50% { opacity: 0; } }
 
-.cta-row { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; margin-top: 1.8rem; }
-.cta { font-family: var(--sans); font-weight: 600; font-size: .95rem; color: #14090a; background: var(--vermil); border-radius: 3px; padding: .85em 1.5em; display: inline-flex; gap: .6em; align-items: center; box-shadow: 0 12px 30px -12px rgba(255,77,61,.55); transition: transform .16s; border: none; text-decoration: none; }
-.cta:hover { transform: translateY(-2px); color: #14090a; }
-.cta .arr { transition: transform .2s ease; }
+.cta-row { display: flex; gap: 1.4rem; align-items: center; flex-wrap: wrap; margin-top: 1.9rem; }
+/* 主 CTA —— 值班台「调度键」：深色仪表键帽 + 描边，呼应 CASE FILE 卷宗卡；
+   左侧朱红指示灯呼吸（与 LIVE / 信号轴同一语汇），右侧 mono 朱红箭头。
+   悬停整枚键「通电」——描边转朱红、指示灯变亮、键浮起；不再是营销糖果块。 */
+.cta {
+  position: relative;
+  font-family: var(--sans); font-weight: 600; font-size: .92rem; letter-spacing: .005em;
+  color: var(--chalk);
+  background: linear-gradient(180deg, color-mix(in srgb, #fff 5%, var(--panel)), var(--panel));
+  border: 1px solid var(--deskrule);
+  border-radius: 6px; padding: .82em 1.25em .82em 1.05em;
+  display: inline-flex; gap: .8em; align-items: center; text-decoration: none;
+  box-shadow: var(--card-shadow);
+  transition: transform .16s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease;
+}
+.cta .led {
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--vermil);
+  box-shadow: 0 0 8px var(--vermil); animation: cta-pulse 1.8s ease-in-out infinite;
+}
+@keyframes cta-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.cta .arr { font-family: var(--mono); font-weight: 600; color: var(--vermil); margin-left: .05em; transition: transform .2s ease; }
+.cta:hover {
+  color: var(--chalk); transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--vermil) 55%, var(--deskrule));
+  box-shadow: var(--card-shadow-hover), inset 0 0 0 1px color-mix(in srgb, var(--vermil) 20%, transparent);
+}
 .cta:hover .arr { transform: translateX(4px); }
+.cta:hover .led { box-shadow: 0 0 0 3px color-mix(in srgb, var(--vermil) 20%, transparent), 0 0 12px var(--vermil); }
+.cta:active { transform: translateY(0); box-shadow: inset 0 2px 6px rgba(0,0,0,.28); }
+.cta:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 .cta-ghost { font-family: var(--mono); font-size: .78rem; color: var(--dim); border-bottom: 1px solid var(--deskrule); padding-bottom: 2px; text-decoration: none; transition: color .15s, border-color .15s; }
 .cta-ghost:hover { color: var(--chalk); border-color: var(--brass); }
+@media (prefers-reduced-motion: reduce) { .cta .led { animation: none; } }
 
 /* 档案卡（签名元素）—— 复用 data-render="featured" 注入的 markup */
 .dossier {
@@ -451,7 +477,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         <span class="stmt-type" id="stmt"></span>
       </p>
       <div class="cta-row">
-        <a class="cta" href="#dispatches"><span>调阅最新卷宗</span><span class="arr">→</span></a>
+        <a class="cta" href="#dispatches"><span class="led" aria-hidden="true"></span><span>调阅最新卷宗</span><span class="arr">→</span></a>
         <a class="cta-ghost" href="insights/index.html">浏览全部判断</a>
       </div>
     </div>
