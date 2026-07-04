@@ -31,8 +31,8 @@ body::before { content: none; }            /* 关掉共享蓝图底纹 */
   --steel:   #101519;   /* 控制台底 */
   --steel-2: #151b21;
   --panel:   #1a222a;
-  --vermil:  #ff4d3d;   /* 电光朱红 —— accent / 印章 / 信心 */
-  --vermil-soft: #ff7a6f;
+  --vermil:  #b06a63;   /* 干玫瑰朱砂 —— accent / 印章 / 信心（低饱和印泥）*/
+  --vermil-soft: #c99089;
   --brass:   #c9a45c;   /* 黄铜 —— 时机刻度 */
   --slate:   #7d94a6;   /* 冷石 */
   --oss:     #5fb89a;   /* 开源绿 */
@@ -42,12 +42,12 @@ body::before { content: none; }            /* 关掉共享蓝图底纹 */
   --deskrule: rgba(160,180,195,.14);
   --grid:    rgba(160,180,195,.045);
 
-  /* 页面 accent（供 insight.css 组件取用）—— 朱红 */
-  --accent: #d93a2b;
-  --accent-soft: color-mix(in srgb, #d93a2b 14%, transparent);
+  /* 页面 accent（供 insight.css 组件取用）—— 干玫瑰 */
+  --accent: #b06a63;
+  --accent-soft: color-mix(in srgb, #b06a63 16%, transparent);
 
   /* 四大目录类别色 */
-  --cat-insight:  #ff4d3d;
+  --cat-insight:  #b06a63;
   --cat-frontier: #c9a45c;
   --cat-readings: #7d94a6;
   --cat-oss:      #5fb89a;
@@ -58,8 +58,8 @@ body::before { content: none; }            /* 关掉共享蓝图底纹 */
 }
 /* 暗色主题：判断台的原生形态（深钢底），insight.css 组件取暗色 accent */
 [data-theme="dark"] {
-  --accent: #ff6a5c;
-  --accent-soft: color-mix(in srgb, #ff6a5c 20%, transparent);
+  --accent: #c5847c;
+  --accent-soft: color-mix(in srgb, #c5847c 20%, transparent);
 }
 
 * { box-sizing: border-box; }
@@ -523,19 +523,19 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     <svg class="trace" id="trace" viewBox="0 0 1000 64" preserveAspectRatio="none" role="img" aria-label="前沿信号时间轴：全部卷宗按归档日期排在一条时间轴上，最新在右，雷达扫描逐个点亮">
       <defs>
         <linearGradient id="baselinegrad" gradientUnits="userSpaceOnUse" x1="40" y1="0" x2="960" y2="0">
-          <stop offset="0" stop-color="#ff4d3d" stop-opacity=".12"/>
-          <stop offset=".6" stop-color="#ff4d3d" stop-opacity=".5"/>
-          <stop offset="1" stop-color="#ff4d3d" stop-opacity="1"/>
+          <stop offset="0" stop-color="#b06a63" stop-opacity=".12"/>
+          <stop offset=".6" stop-color="#b06a63" stop-opacity=".5"/>
+          <stop offset="1" stop-color="#b06a63" stop-opacity="1"/>
         </linearGradient>
         <linearGradient id="sweepgrad" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stop-color="#ff4d3d" stop-opacity="0"/>
-          <stop offset="1" stop-color="#ff4d3d" stop-opacity=".2"/>
+          <stop offset="0" stop-color="#b06a63" stop-opacity="0"/>
+          <stop offset="1" stop-color="#b06a63" stop-opacity=".2"/>
         </linearGradient>
       </defs>
       <g id="ticks"></g>
       <line id="line" x1="40" y1="32" x2="960" y2="32" stroke="url(#baselinegrad)" stroke-width="1.4"/>
       <rect id="sweepGlow" x="-100" y="6" width="90" height="52" fill="url(#sweepgrad)" style="opacity:0"/>
-      <line id="sweep" x1="-100" y1="9" x2="-100" y2="55" stroke="#ff4d3d" stroke-width="1" style="opacity:0"/>
+      <line id="sweep" x1="-100" y1="9" x2="-100" y2="55" stroke="#b06a63" stroke-width="1" style="opacity:0"/>
       <g id="dots"></g>
     </svg>
     <div class="trace-axis"><span id="axStart">2026-Q1</span><span>五月</span><span>六月</span><span>此刻 →</span></div>
@@ -659,7 +659,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     </div>
     <div class="foot-badges">
       <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/stargazers" target="_blank" rel="noopener">
-        <img alt="GitHub stars" src="https://img.shields.io/github/stars/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=ff4d3d" />
+        <img alt="GitHub stars" src="https://img.shields.io/github/stars/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=b06a63" />
       </a>
       <a href="https://github.com/FeiZhuNiU-INFJA/FDE-observatory/network/members" target="_blank" rel="noopener">
         <img alt="GitHub forks" src="https://img.shields.io/github/forks/FeiZhuNiU-INFJA/FDE-observatory?style=for-the-badge&logo=github&color=c9a45c" />
@@ -728,7 +728,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
 
   /* ── 类别 → 颜色 / label（与 CSS token 对齐） ── */
   var CAT_COLOR = {
-    insight: '#ff4d3d', oss: '#5fb89a',
+    insight: '#b06a63', oss: '#5fb89a',
     'frontier-deep': '#c9a45c', 'frontier-digest': '#c9a45c',
     readings: '#7d94a6', legacy: '#5a6c78'
   };
@@ -908,14 +908,14 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       var tk = document.createElementNS(SVGNS, 'line');
       tk.setAttribute('x1', tx); tk.setAttribute('x2', tx);
       tk.setAttribute('y1', axisY - (major ? 5 : 2.5)); tk.setAttribute('y2', axisY + (major ? 5 : 2.5));
-      tk.setAttribute('stroke', '#ff4d3d'); tk.setAttribute('stroke-width', major ? .7 : .4);
+      tk.setAttribute('stroke', '#b06a63'); tk.setAttribute('stroke-width', major ? .7 : .4);
       tk.setAttribute('opacity', major ? .2 : .1);
       tg.appendChild(tk);
     }
 
     var entrants = [];
     pts.forEach(function (p) {
-      var last = p.nd === maxD, multi = p.items.length > 1, col = CAT_COLOR[p.items[0].cat] || '#ff4d3d';
+      var last = p.nd === maxD, multi = p.items.length > 1, col = CAT_COLOR[p.items[0].cat] || '#b06a63';
       p.col = col;
       var ping = document.createElementNS(SVGNS, 'circle');
       ping.setAttribute('cx', p.x); ping.setAttribute('cy', p.y); ping.setAttribute('r', 4);
@@ -941,7 +941,7 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         tip.style.top = ((p.y / VH) * r.height) + 'px';
         var h = '<div class="t-date">' + p.items[0].d + (multi ? ' · ' + p.items.length + ' 份' : '') + '</div>';
         p.items.forEach(function (o) {
-          var oc = CAT_COLOR[o.cat] || '#ff4d3d';
+          var oc = CAT_COLOR[o.cat] || '#b06a63';
           h += '<div class="tip-row"><span class="t-cat" style="color:' + oc + '">' + (CAT_LABEL[o.cat] || '') + '</span><span class="t-title">' + o.t + '</span></div>';
         });
         tip.innerHTML = h; tip.classList.add('on');
