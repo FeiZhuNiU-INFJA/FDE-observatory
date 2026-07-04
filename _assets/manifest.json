@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-03T13:08:32.323725+00:00",
+  "generated_at": "2026-07-04T06:14:34.714058+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
@@ -11,6 +11,19 @@
         "Agent 基础设施",
         "Dreaming",
         "Self-Improving Agent"
+      ],
+      "category": "insight",
+      "extra": {}
+    },
+    {
+      "path": "insights/cross/活地图落地指南.html",
+      "title": "活地图落地指南",
+      "date": "2026-06-15",
+      "audience": "cross",
+      "status": null,
+      "tags": [
+        "落地指南",
+        "基础设施"
       ],
       "category": "insight",
       "extra": {}
@@ -63,19 +76,6 @@
       "tags": [
         "Agent 形态",
         "前瞻推演"
-      ],
-      "category": "insight",
-      "extra": {}
-    },
-    {
-      "path": "insights/cross/活地图落地指南.html",
-      "title": "活地图落地指南",
-      "date": "2026-Q1",
-      "audience": "cross",
-      "status": null,
-      "tags": [
-        "落地指南",
-        "基础设施"
       ],
       "category": "insight",
       "extra": {}
