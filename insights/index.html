@@ -3,49 +3,123 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>前沿洞察 · FDE</title>
+<title>前沿洞察 · Insights · FDE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="../_assets/insight.css" />
 <style>
+  /* 单页 accent —— 与首页判断台的 --cat-insight 对齐（干玫瑰 vermil） */
+  :root { --accent: #b06a63; --accent-soft: color-mix(in srgb, #b06a63 14%, transparent); }
+  [data-theme="dark"] { --accent: #c5847c; --accent-soft: color-mix(in srgb, #c5847c 20%, transparent); }
+
   .index-page { max-width: 900px; margin: 0 auto; padding: 2.5rem 1.2rem 6rem; }
 
-  .filter-bar { display: flex; gap: .5rem; margin: 1.5rem 0; flex-wrap: wrap; }
-  .filter-btn {
-    padding: .3em .9em; border-radius: 999px;
-    border: 1px solid var(--border-strong); background: var(--surface);
-    color: var(--text-soft); font-size: .82rem; font-weight: 500;
-    cursor: pointer; transition: background .15s, color .15s, border-color .15s;
-    font-family: var(--sans);
-  }
-  .filter-btn:hover { background: var(--bg-soft); color: var(--text); }
-  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
+  /* 章节小标：mono · 大写 · 细分隔线（与 readings/index 对齐） */
   .section-label {
-    font-size: .7rem; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
-    color: var(--text-muted); padding-bottom: .5em; border-bottom: 1px solid var(--border);
+    display: flex; align-items: baseline; gap: .7rem;
+    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .16em;
+    color: var(--text-muted); padding-bottom: .6em;
+    border-bottom: 1px solid var(--border);
     margin: 2.5rem 0 1rem;
   }
+  .section-label .sl-count { font-family: var(--mono); font-size: .68rem; color: var(--text-muted); letter-spacing: .08em; }
+
+  /* 一篇 = 一条卷宗：日期 · 标题 · 印章 · 标签，右侧对齐印章像盖章一样 */
   .doc-list { list-style: none; padding: 0; margin: 0; }
   .doc-list li {
-    display: flex; align-items: baseline; gap: .7rem;
-    padding: .65em 0; border-bottom: 1px solid var(--border); font-size: .93rem;
+    display: grid;
+    grid-template-columns: 92px minmax(0, 1fr) auto auto;
+    gap: 1rem; align-items: center;
+    padding: .95em 0; border-bottom: 1px solid var(--border);
+    font-size: .95rem;
+    border-left: 2px solid transparent; padding-left: .3rem;
+    transition: background .16s, border-color .16s, transform .16s;
   }
   .doc-list li:last-child { border-bottom: none; }
-  .doc-date { color: var(--text-muted); font-size: .8rem; white-space: nowrap; flex-shrink: 0; }
-  .doc-title { flex: 1; min-width: 0; }
-  .doc-title a { color: var(--text); border-bottom: none; }
+  .doc-list li:hover { background: color-mix(in srgb, var(--accent) 5%, transparent); border-left-color: var(--accent); transform: translateX(3px); }
+  .doc-date { font-family: var(--mono); color: var(--text-muted); font-size: .78rem; white-space: nowrap; flex-shrink: 0; }
+  .doc-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .doc-title a { color: var(--text); border-bottom: none; font-family: var(--display); font-size: 1.02rem; line-height: 1.4; transition: color .15s; }
   .doc-title a:hover { color: var(--accent); }
-  .doc-sub { font-size: .82rem; color: var(--text-muted); margin-left: .4em; }
-  .doc-tags { display: flex; gap: .3rem; flex-shrink: 0; flex-wrap: wrap; }
-  .doc-draft { opacity: .55; }
+  .doc-title .doc-status { font-size: .72rem; color: var(--text-muted); margin-left: .5em; }
+  .doc-tags { display: flex; gap: .3rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .doc-tags .pill {
+    font-family: var(--mono); font-size: .68rem; padding: .18em .55em;
+    border-radius: 3px; background: transparent; color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .doc-tags .pill-accent { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .doc-tags .pill-info   { background: color-mix(in srgb, var(--info) 12%, transparent); color: var(--info); border-color: transparent; }
+  .doc-tags .pill-warn   { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); border-color: transparent; }
 
-  /* Audience filter */
-  [data-audience] { transition: opacity .2s; }
-  body.filter-tob [data-audience]:not([data-audience~="tob"]) { opacity: .15; pointer-events: none; }
-  body.filter-toc [data-audience]:not([data-audience~="toc"]) { opacity: .15; pointer-events: none; }
-  body.filter-cross [data-audience]:not([data-audience~="cross"]) { opacity: .15; pointer-events: none; }
+  /* 两枚印章：圆形钤印，与首页 feed 行的印章视觉一致（缩小到列表尺寸） */
+  .doc-list .stamps { display: inline-flex; gap: .4rem; align-items: center; white-space: nowrap; }
+  .doc-list .stamp {
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    border: 1.5px solid; background: none;
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, currentColor 9%, transparent);
+    font-family: var(--mono); line-height: 1.05; text-align: center;
+  }
+  .doc-list .stamp-k { font-size: .4rem; letter-spacing: .1em; opacity: .72; margin-bottom: .18em; }
+  .doc-list .stamp-v { font-family: var(--display); font-weight: 600; font-size: .58rem; }
+  .doc-list .stamp--timing { color: #b78838; border-color: color-mix(in srgb, #b78838 55%, transparent); }
+  .doc-list .stamp--conf   { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 58%, transparent); }
+  [data-theme="dark"] .doc-list .stamp--timing { color: #d9a758; border-color: color-mix(in srgb, #d9a758 55%, transparent); }
+
+  /* 受众筛选 —— 与首页判断台同款：方形短标签，rectilinear，非圆角 pill */
+  .filter-bar { display: flex; gap: .35rem; margin: 1.4rem 0 .2rem; flex-wrap: wrap; align-items: center; }
+  .filter-bar .fb-label {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--text-muted); margin-right: .3rem;
+  }
+  .filter-btn {
+    padding: .38em .95em; border-radius: 3px;
+    border: 1px solid var(--border-strong); background: transparent;
+    color: var(--text-soft); font-size: .78rem; font-weight: 500;
+    cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+    font-family: var(--sans);
+  }
+  .filter-btn:hover { color: var(--text); border-color: var(--accent); }
+  .filter-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* 空组低调隐藏（避免出现「ToB 0 篇」的空段） */
+  body.filter-tob   .doc-list li:not([data-audience~="tob"]),
+  body.filter-toc   .doc-list li:not([data-audience~="toc"]),
+  body.filter-cross .doc-list li:not([data-audience~="cross"]) { display: none; }
+
+  /* 页面卷首 hero —— 与 readings 对齐但用 insights 自己的 accent */
+  .site-hero { padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem; }
+  .site-hero .kicker {
+    display: inline-flex; align-items: center; gap: .5em;
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: .8em;
+  }
+  .site-hero .kicker::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 60%, transparent);
+  }
+  .site-hero h1 { font-family: var(--display); font-size: clamp(1.9rem, 3.6vw, 2.4rem); font-weight: 700; margin: 0 0 .3em; letter-spacing: -.01em; }
+  .site-hero h1 .en { font-family: var(--mono); font-size: .58em; color: var(--text-muted); font-weight: 500; letter-spacing: .06em; margin-left: .4em; }
+  .site-hero p { color: var(--text-muted); margin: 0; font-size: .95rem; line-height: 1.6; }
+
+  /* 空态占位 */
+  .empty-hint { color: var(--text-muted); font-style: italic; padding: .8em 0; font-size: .9rem; }
+
+  @media (max-width: 640px) {
+    .doc-list li {
+      grid-template-columns: 1fr;
+      grid-template-areas: "date" "title" "stamps" "tags";
+      gap: .35rem; padding: .9em .3rem;
+    }
+    .doc-date { grid-area: date; }
+    .doc-title { grid-area: title; }
+    .doc-list .stamps { grid-area: stamps; }
+    .doc-tags { grid-area: tags; justify-content: flex-start; }
+    .doc-list .stamp { width: 38px; height: 38px; }
+  }
 </style>
 </head>
 <body>
@@ -54,7 +128,7 @@
   <div class="topbar-inner">
     <div class="brand">
       <span class="brand-home"><a href="../index.html">← 首页</a></span>
-      前沿洞察
+      前沿洞察 Insights
     </div>
     <div class="actions">
       <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
@@ -64,34 +138,28 @@
 
 <div class="index-page">
 
-  <div class="site-hero" style="padding: 2rem 0 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.5rem;">
-    <h1 style="font-size:1.9rem;margin:0 0 .3em;">前沿洞察</h1>
-    <p style="color:var(--text-muted);margin:0;font-size:.95rem;">行业判断 · 技术分析 · 品类发现 · toB / toC / 跨市场</p>
+  <div class="site-hero">
+    <span class="kicker">Judgment Log · 判断日志</span>
+    <h1>前沿洞察 <span class="en">Insights</span></h1>
+    <p>自己的原创论点、前瞻判断与落地推演。每一篇都盖上两枚印章——时机与信心：这件事什么时候会发生，我们有多确定。</p>
   </div>
 
   <div class="filter-bar" id="filterBar">
+    <span class="fb-label">受众</span>
     <button class="filter-btn active" data-filter="all">全部</button>
     <button class="filter-btn" data-filter="tob">ToB</button>
     <button class="filter-btn" data-filter="toc">ToC</button>
     <button class="filter-btn" data-filter="cross">跨市场</button>
   </div>
 
-  <!-- ── ToB ─────────────────────────────────────── -->
-  <div class="section-label" data-audience="tob">ToB · 企业与行业</div>
-  <ul class="doc-list" data-render="insights" data-filter-audience="tob" data-href-prefix="../">
-    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
-  </ul>
-
-  <!-- ── ToC ─────────────────────────────────────── -->
-  <div class="section-label" data-audience="toc">ToC · 消费者与个人</div>
-  <ul class="doc-list" data-render="insights" data-filter-audience="toc" data-href-prefix="../">
-    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
-  </ul>
-
-  <!-- ── 跨市场 ─────────────────────────────────── -->
-  <div class="section-label" data-audience="cross">跨市场 · 底层洞察</div>
-  <ul class="doc-list" data-render="insights" data-filter-audience="cross" data-href-prefix="../">
-    <li class="placeholder" style="color:var(--text-muted);font-style:italic;padding:.6em 0;">加载中…</li>
+  <div class="section-label">
+    <span>全部洞察</span>
+    <span class="sl-count" id="insCount">—</span>
+    <span style="flex:1"></span>
+    <span class="sl-count">按日期倒序</span>
+  </div>
+  <ul class="doc-list" id="insightsList" data-render="insights" data-href-prefix="../">
+    <li class="placeholder empty-hint">加载中…</li>
   </ul>
 
   <div style="margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--border);font-size:.82rem;color:var(--text-muted);">
@@ -103,16 +171,64 @@
 <script src="../_assets/insight.js"></script>
 <script src="../_assets/manifest-render.js"></script>
 <script>
-  const filterBtns = document.querySelectorAll('.filter-btn');
-  filterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      filterBtns.forEach(b => b.classList.remove('active'));
+  /* 印章后处理：manifest-render 只为 feed 样式渲染 stamps；本页用 doc-list 样式，
+     所以在 manifest:ready 之后补一枚 stamps 到每行右侧。数据源同 manifest。*/
+  document.addEventListener('manifest:ready', function (e) {
+    var manifest = e.detail && e.detail.manifest;
+    if (!manifest) return;
+    var list = document.getElementById('insightsList');
+    if (!list) return;
+
+    var byPath = {};
+    (manifest.insights || []).forEach(function (it) { byPath[it.path] = it; });
+
+    function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    function stampsHTML(entry) {
+      var ex = entry && entry.extra || {};
+      if (!ex.timing && !ex.confidence) return '';
+      var out = '';
+      if (ex.timing)      out += '<span class="stamp stamp--timing"><span class="stamp-k">时机</span><span class="stamp-v">' + esc(ex.timing) + '</span></span>';
+      if (ex.confidence)  out += '<span class="stamp stamp--conf"><span class="stamp-k">信心</span><span class="stamp-v">' + esc(ex.confidence) + '</span></span>';
+      return '<span class="stamps">' + out + '</span>';
+    }
+
+    list.querySelectorAll('li').forEach(function (li) {
+      if (li.querySelector('.stamps')) return;
+      var a = li.querySelector('.doc-title a');
+      if (!a) return;
+      // manifest path 与链接尾段一致（去掉 href 前缀 '../'）
+      var href = a.getAttribute('href') || '';
+      var key = href.replace(/^(\.\.\/)+/, '');
+      var entry = byPath[key];
+      var html = stampsHTML(entry);
+      if (!html) return;
+      // 插入到 .doc-tags 之前（保证 grid 顺序：date · title · stamps · tags）
+      var tags = li.querySelector('.doc-tags');
+      var wrap = document.createElement('span');
+      wrap.innerHTML = html;
+      if (tags) li.insertBefore(wrap.firstChild, tags);
+      else li.appendChild(wrap.firstChild);
+    });
+
+    var n = (manifest.insights || []).length;
+    var counter = document.getElementById('insCount');
+    if (counter) counter.textContent = n + ' 份';
+  });
+
+  /* 受众筛选（CSS-only 隐藏非匹配行）*/
+  (function () {
+    var bar = document.getElementById('filterBar');
+    if (!bar) return;
+    bar.addEventListener('click', function (e) {
+      var btn = e.target.closest('.filter-btn');
+      if (!btn) return;
+      bar.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
-      const f = btn.dataset.filter;
+      var f = btn.dataset.filter;
       document.body.className = document.body.className.replace(/filter-\w+/g, '').trim();
       if (f !== 'all') document.body.classList.add('filter-' + f);
     });
-  });
+  })();
 </script>
 </body>
 </html>
