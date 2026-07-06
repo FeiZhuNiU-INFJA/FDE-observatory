@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>硬件-软件协同设计：AI 真正的 100x 从哪里来 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色：电路青蓝（PCB blue），与站点干玫瑰主色互补；避开 warn/con/pro/info 语义色。 */
+  :root {
+    --accent: #3b6c8f;
+    --accent-deep: #274d68;
+    --accent-ink: #1c3547;
+    --accent-soft: color-mix(in srgb, #3b6c8f 12%, white);
+    --accent-glow: color-mix(in srgb, #3b6c8f 22%, transparent);
+    --brass: #a17235;
+  }
+  [data-theme="dark"] {
+    --accent-soft: color-mix(in srgb, #3b6c8f 26%, #1a1a22);
+    --accent-ink: #7cb0d1;
+    --accent-glow: color-mix(in srgb, #3b6c8f 40%, transparent);
+    --brass: #c99a5b;
+  }
+
+  /* ── 片头徽章：视频来源 ── */
+  .src-badge {
+    display: flex; align-items: center; gap: 1rem; margin: 1.4em 0 2em;
+    padding: .95rem 1.1rem; border: 1px solid var(--border);
+    border-left: 3px solid var(--accent); border-radius: 10px;
+    background: linear-gradient(90deg, var(--accent-soft), transparent 70%);
+  }
+  .src-badge .src-icon { color: var(--accent); flex-shrink: 0; }
+  .src-badge .src-icon svg { width: 34px; height: 34px; }
+  .src-badge .src-body { flex: 1; min-width: 0; }
+  .src-badge .src-title { font-family: var(--display); font-weight: 700; font-size: 1.02rem; margin: 0 0 .25rem; }
+  .src-badge .src-meta { font-family: var(--mono); font-size: .78rem; color: var(--text-muted); }
+  .src-badge .src-meta a { color: var(--accent); text-decoration: none; border-bottom: 1px dashed var(--accent); }
+  .src-badge .src-meta a:hover { border-bottom-style: solid; }
+
+  /* ── 视觉一：三层协同放大器（The Real 100x） ── */
+  .amp { margin: 2em 0; }
+  .amp-frame {
+    border: 1px solid var(--border); border-radius: 16px; padding: 1.2rem 1.3rem 1rem;
+    background: var(--surface); position: relative;
+  }
+  .amp-frame::before {
+    content: "THE REAL 100×"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .24em;
+    color: var(--accent); background: var(--bg); padding: 0 .8em;
+  }
+  .amp-svg { width: 100%; height: auto; display: block; margin: .3rem auto .1rem; max-width: 780px; }
+  .amp-lgd { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: 1rem 0 .2rem; font-size: .82rem; }
+  @media (max-width: 640px) { .amp-lgd { grid-template-columns: 1fr; } }
+  .amp-lgd b { font-family: var(--mono); color: var(--accent); font-weight: 700; margin-right: .35em; }
+  .amp-note { font-size: .82rem; color: var(--text-muted); margin: .8rem 0 0; text-align: center; font-style: italic; }
+
+  /* SVG 内文字体 */
+  .amp-svg text, .moat-svg text, .fork-svg text, .pareto-svg text, .board-svg text { font-family: var(--mono); }
+  .amp-svg text.disp, .moat-svg text.disp, .fork-svg text.disp, .pareto-svg text.disp, .board-svg text.disp {
+    font-family: var(--display); font-weight: 700;
+  }
+
+  /* 脉冲传输动画 */
+  .pulse-dash { stroke-dasharray: 4 6; animation: dashflow 2.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -30; } }
+
+  /* ── 视觉二：CUDA 护城河解构 ── */
+  .moat { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0; }
+  @media (max-width: 780px) { .moat { grid-template-columns: 1fr; } .moat-arrow { transform: rotate(90deg); padding: .4rem 0; } }
+  .moat-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1rem;
+    background: var(--surface); display: flex; flex-direction: column;
+  }
+  .moat-wrong { border-color: var(--border-strong); background: color-mix(in srgb, var(--surface) 80%, var(--bg-soft)); }
+  .moat-right { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .moat-tag {
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; margin-bottom: .5rem;
+  }
+  .moat-wrong .moat-tag { color: var(--text-muted); }
+  .moat-right .moat-tag { color: var(--accent); }
+  .moat-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; margin: 0 0 .5rem; }
+  .moat-wrong .moat-title { color: var(--text-muted); text-decoration: line-through; text-decoration-color: var(--border-strong); text-decoration-thickness: 1.5px; }
+  .moat-desc { font-size: .9rem; line-height: 1.6; color: var(--text-soft); margin: 0 0 .8rem; }
+  .moat-svg { width: 100%; max-width: 260px; height: auto; margin: .4rem auto 0; }
+  .moat-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: var(--accent); font-family: var(--display); font-size: 1.9rem; line-height: 1;
+  }
+  .moat-arrow .lab {
+    writing-mode: vertical-rl; font-family: var(--mono); font-size: .62rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--text-muted); margin-top: .5rem;
+  }
+  @media (max-width: 780px) { .moat-arrow .lab { writing-mode: horizontal-tb; margin: .3rem 0 0; } }
+
+  /* ── 视觉三：模型稠密度分叉图（Sparse ↔ Dense） ── */
+  .fork {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.2rem 1.3rem 1rem; background: var(--surface); position: relative;
+  }
+  .fork::before {
+    content: "MODEL × HARDWARE CO-EVOLUTION"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .2em;
+    color: var(--accent); background: var(--bg); padding: 0 .8em;
+  }
+  .fork-svg { width: 100%; height: auto; max-width: 820px; display: block; margin: .5rem auto; }
+  .fork-lgd { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: .8rem 0 .2rem; }
+  @media (max-width: 780px) { .fork-lgd { grid-template-columns: 1fr; } }
+  .fork-card { border-left: 3px solid var(--accent); padding: .3rem .6rem; }
+  .fork-card h5 { font-family: var(--display); margin: 0 0 .2rem; font-size: .95rem; }
+  .fork-card p { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .fork-card.sparse { border-color: #b06a63; }
+  .fork-card.dense { border-color: var(--accent); }
+  .fork-card.tpu { border-color: var(--brass); }
+  .fork-card.sparse h5 { color: #b06a63; }
+  .fork-card.dense h5 { color: var(--accent); }
+  .fork-card.tpu h5 { color: var(--brass); }
+
+  /* ── 视觉四：Pareto 曲线（Throughput × Interactivity） ── */
+  .pareto {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.2rem 1.3rem 1rem; background: var(--surface); position: relative;
+  }
+  .pareto::before {
+    content: "THROUGHPUT × INTERACTIVITY —— THE MASTER CURVE"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .66rem; font-weight: 700; letter-spacing: .18em;
+    color: var(--accent); background: var(--bg); padding: 0 .7em;
+  }
+  .pareto-svg { width: 100%; height: auto; max-width: 780px; display: block; margin: .5rem auto; }
+  .pareto-note { font-size: .82rem; color: var(--text-soft); margin: .8rem 0 0; line-height: 1.6; }
+
+  /* ── 视觉五：Jensen 多极棋盘 ── */
+  .board {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    padding: 1.2rem 1.3rem 1rem; background: var(--surface); position: relative;
+  }
+  .board::before {
+    content: "JENSEN'S MULTIPOLAR PLAY"; position: absolute; top: -9px; left: 50%; transform: translateX(-50%);
+    font-family: var(--mono); font-size: .68rem; font-weight: 700; letter-spacing: .2em;
+    color: var(--accent); background: var(--bg); padding: 0 .8em;
+  }
+  .board-svg { width: 100%; height: auto; max-width: 780px; display: block; margin: .5rem auto; }
+  .board-legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; margin: .8rem 0 .2rem; font-size: .82rem; color: var(--text-soft); }
+  @media (max-width: 780px) { .board-legend { grid-template-columns: 1fr; } }
+  .board-legend b { color: var(--accent); font-family: var(--mono); font-weight: 700; }
+
+  /* ── 60× 曲线数据条 ── */
+  .decline {
+    display: flex; align-items: baseline; gap: .6rem;
+    padding: 1rem 1.2rem; border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface); margin: 1.4em 0;
+  }
+  .decline-num {
+    font-family: var(--display); font-weight: 700; font-size: 2.4rem;
+    color: var(--accent); line-height: 1; font-style: italic;
+  }
+  .decline-unit { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; color: var(--text-muted); text-transform: uppercase; }
+  .decline-desc { flex: 1; font-size: .92rem; color: var(--text-soft); line-height: 1.5; }
+
+  /* ── 引言块 ── */
+  blockquote.qq {
+    border-left: 3px solid var(--accent); padding: .8em 1.1em; margin: 1.4em 0;
+    color: var(--text-soft); font-style: italic; font-family: var(--display);
+    background: var(--accent-soft); border-radius: 0 8px 8px 0;
+  }
+  blockquote.qq .cite { display: block; margin-top: .4em; font-size: .82rem; color: var(--text-muted); font-style: normal; font-family: var(--mono); }
+
+  /* kicker */
+  .kicker {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    margin: -.5em 0 .8em;
+  }
+
+  /* 数字标签 */
+  .num-chip {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.6em; height: 1.6em; border-radius: 50%;
+    background: var(--accent); color: var(--bg);
+    font-family: var(--display); font-weight: 700; font-size: .9em;
+    margin-right: .4em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-dash { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      硬件-软件协同设计<span class="brand-sub">读一段视频 · Dylan Patel × Sequoia · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>协同设计的 100×：为什么<em>算力叙事</em>都在看错方向</h1>
+      <p style="font-size:1.05rem;color:var(--text-muted);margin-top:-.3em;">Dylan Patel（SemiAnalysis 创始人）× Sequoia · 70 分钟深谈 · FDE 结构化拆解</p>
+      <div class="doc-meta">
+        <span>2026-07-06</span>
+        <span>跨市场</span>
+        <span>硬件 / 推理 / 供应链 / 多极</span>
+        <span>可对外</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+    </header>
+
+    <!-- ═══ 视频来源徽章 ═══ -->
+    <div class="src-badge">
+      <div class="src-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="YouTube 视频">
+          <rect x="2.5" y="5" width="19" height="14" rx="3.2"/>
+          <path d="M10.2 8.7v6.6l5.6-3.3z" fill="currentColor" stroke="none"/>
+        </svg>
+      </div>
+      <div class="src-body">
+        <p class="src-title">Why Hardware-Software Co-Design Is AI's Real 100x: Dylan Patel of SemiAnalysis</p>
+        <p class="src-meta">
+          Sequoia Capital · Shaun Maguire &amp; Sonya Huang 主持 · 时长 1:10:15 ·
+          <a href="https://www.youtube.com/watch?v=f6D_aiy8qyU" target="_blank" rel="noopener">原视频 ↗</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="lede">
+      <strong>一句话结论：</strong>过去三年 AI 效率的<strong>真实增益不来自 GPU 换代</strong>——它来自把「硅片形状 × 内核形状 × 模型形状」三层一起优化。单独看每一层，都只有 2× 左右的进步；耦合起来，是 <b>相同质量下 60× / 年的 token 成本下降</b>。看不懂这一点，就会用「一块芯片 vs 一块芯片」的错误单位去分析一个已经进入<em>三体协同</em>的行业。
+    </div>
+
+    <!-- ═══════════════ 一、为什么现在读这段视频 ═══════════════ -->
+    <h2 id="why"><span class="sec-num">一</span>为什么现在读这段视频<a href="#why" class="anchor">#</a></h2>
+    <p class="kicker">Framing · 定位</p>
+
+    <p>Dylan Patel 不是普通评论员。他把 SemiAnalysis 做成了年营收破亿美元、90 人团队的独立研究机构：一半是横跨供应链的工程师，一半是对冲基金背景的分析员。这是行业里罕见的「同时懂化学、光刻机、内核和 P&amp;L」的建制。这场对谈的价值不在他讲了什么<em>新八卦</em>，而在他把过去两年<strong>算力叙事的失焦点</strong>系统化地纠正了一遍。</p>
+
+    <p>如果你在过去 12 个月听到过下面这些论断——</p>
+    <ul>
+      <li>「CUDA 是 NVIDIA 最深的护城河」</li>
+      <li>「AI 没有 ROI，会崩」</li>
+      <li>「大家会转向 TPU / Trainium / Cerebras」</li>
+      <li>「模型进步已经放缓」</li>
+      <li>「hyperscaler 会统吃云生意」</li>
+    </ul>
+    <p>——Dylan 的<strong>每一条</strong>回应都值得写进这份笔记。他不否认这些命题的<em>表面观察</em>，但他给了一个更基础的解释框架：<strong>协同设计（co-design）</strong>。</p>
+
+    <blockquote class="qq">
+      &ldquo;The real breakthrough is when you leapfrog a few layers, you co-optimize and co-design them, and now all of a sudden you've taken what could have been a 2× here, 2× here, 2× here, and instead of being multiplicative to 8×, it's actually 100× because you've optimized across all three layers.&rdquo;
+      <span class="cite">—— Dylan Patel · 22:15</span>
+    </blockquote>
+
+    <!-- ═══════════════ 二、核心论点：三层协同放大器 ═══════════════ -->
+    <h2 id="thesis"><span class="sec-num">二</span>核心论点：三层协同放大器<a href="#thesis" class="anchor">#</a></h2>
+    <p class="kicker">The Real 100× · 100 倍从哪里来</p>
+
+    <p>大多数分析把 AI 的效率进步拆成三个平行的赛道——硅片、内核、模型算法。每一层都能独立跑出 <strong>2 倍</strong>的年化增益。三个 2× 叠加起来，直觉上是 <strong>8 倍</strong>。这已经很不错了。</p>
+
+    <p>但真实数据是 <strong>60 倍 / 年</strong>——SemiAnalysis 的活基准（InferenceX）在同等 benchmark 分数下，跑出的成本下降就是这个量级。这个数字远远超出「三个 2× 相乘」能解释的范围。</p>
+
+    <!-- ▼ 视觉一：三层协同放大器 -->
+    <div class="amp">
+      <div class="amp-frame">
+        <svg class="amp-svg" viewBox="0 0 780 320" role="img" aria-label="三层协同：硅片 × 内核 × 模型 三条弱信号在协同层相乘后跃升为 100×">
+          <defs>
+            <linearGradient id="ampGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity="0"/>
+              <stop offset="50%" style="stop-color:var(--accent)" stop-opacity="1"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="ampBurst" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".35"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- 左侧：三条弱信号 -->
+          <g style="color:var(--text-muted)">
+            <text x="15" y="30" font-size="10" letter-spacing="1.6" fill="currentColor">INPUT · 3 LAYERS</text>
+          </g>
+
+          <!-- Silicon 层 -->
+          <g style="color:var(--accent)" font-size="11">
+            <rect x="20" y="55" width="180" height="42" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="30" y="72" fill="currentColor" font-weight="700">SILICON</text>
+            <text x="30" y="90" fill="var(--text-soft)" font-size="10">Hopper → Blackwell · +2×</text>
+            <line x1="200" y1="76" x2="290" y2="76" stroke="currentColor" stroke-width="1.4" class="pulse-dash"/>
+          </g>
+
+          <!-- Kernels 层 -->
+          <g style="color:var(--accent)" font-size="11">
+            <rect x="20" y="140" width="180" height="42" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="30" y="157" fill="currentColor" font-weight="700">KERNELS</text>
+            <text x="30" y="175" fill="var(--text-soft)" font-size="10">SGLang / VLM 每周 ×2 · +2×</text>
+            <line x1="200" y1="161" x2="290" y2="161" stroke="currentColor" stroke-width="1.4" class="pulse-dash"/>
+          </g>
+
+          <!-- Model 层 -->
+          <g style="color:var(--accent)" font-size="11">
+            <rect x="20" y="225" width="180" height="42" rx="4" fill="none" stroke="currentColor" stroke-width="1.3"/>
+            <text x="30" y="242" fill="currentColor" font-weight="700">MODEL</text>
+            <text x="30" y="260" fill="var(--text-soft)" font-size="10">Sparse MoE / attention · +2×</text>
+            <line x1="200" y1="246" x2="290" y2="246" stroke="currentColor" stroke-width="1.4" class="pulse-dash"/>
+          </g>
+
+          <!-- 中间：协同放大器 -->
+          <g>
+            <circle cx="390" cy="161" r="82" fill="url(#ampBurst)"/>
+            <circle cx="390" cy="161" r="68" fill="none" stroke="var(--accent)" stroke-width="1.8"/>
+            <circle cx="390" cy="161" r="52" fill="none" stroke="var(--accent)" stroke-width="1" stroke-dasharray="3 4" opacity=".7"/>
+            <text x="390" y="150" text-anchor="middle" fill="var(--accent-ink)" class="disp" font-size="18">协同层</text>
+            <text x="390" y="170" text-anchor="middle" fill="var(--text-muted)" font-size="9" letter-spacing="1.4">CO-DESIGN</text>
+            <text x="390" y="187" text-anchor="middle" fill="var(--text-muted)" font-size="8.5">shape × shape × shape</text>
+          </g>
+
+          <!-- 汇入线 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M290,76 Q345,76 370,120" class="pulse-dash"/>
+            <path d="M290,161 L370,161" class="pulse-dash"/>
+            <path d="M290,246 Q345,246 370,205" class="pulse-dash"/>
+          </g>
+
+          <!-- 右侧：100× 爆发 -->
+          <g style="color:var(--accent)">
+            <line x1="472" y1="161" x2="560" y2="161" stroke="currentColor" stroke-width="2.4" class="pulse-dash"/>
+            <text x="700" y="30" text-anchor="end" font-size="10" letter-spacing="1.6" fill="var(--text-muted)">OUTPUT · MEASURED</text>
+            <rect x="560" y="105" width="205" height="115" rx="10" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="662" y="150" text-anchor="middle" class="disp" font-size="46" fill="var(--accent)" font-style="italic">100×</text>
+            <text x="662" y="175" text-anchor="middle" font-size="10" fill="var(--text-soft)">multiplicative — not additive</text>
+            <text x="662" y="200" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">≈ 60× / year token cost drop</text>
+          </g>
+
+          <!-- 底部：错觉预期 -->
+          <g style="color:var(--text-muted)">
+            <line x1="20" y1="295" x2="760" y2="295" stroke="currentColor" stroke-width=".8" stroke-dasharray="3 4" opacity=".5"/>
+            <text x="20" y="311" font-size="9.5" fill="currentColor">直觉预期：2 × 2 × 2 = 8×（错）</text>
+            <text x="760" y="311" text-anchor="end" font-size="9.5" fill="currentColor">实际：跨层耦合放大 · 100×</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="amp-lgd">
+        <div><b>硅片</b>Hopper → Blackwell 内存/带宽/网络三年进步</div>
+        <div><b>内核</b>SGLang / VLM / PyTorch 每周迭代两次，speculative decoding、MTP</div>
+        <div><b>模型</b>Sparse MoE、attention 变体、expert shape 精雕</div>
+      </div>
+      <p class="amp-note">协同层不是把三个 2× 加起来——它把每一层的 shape 都刻进另外两层。</p>
+    </div>
+
+    <p>Dylan 拿 DeepSeek 举例，直白到几乎粗暴：<strong>DeepSeek V3 的所有专家形状都是为 Hopper 定制的，V4 为 Blackwell 和华为芯片定制</strong>。这不是「顺便适配」，是从矩阵乘法单元的物理尺寸开始，往上倒推 attention 机制、collective 通信模式、arithmetic intensity——最后才决定 expert 的宽度和深度。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">协同的真面目</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>Shapes（形状）</strong>——矩阵乘法单元尺寸决定 attention 结构决定 expert 结构</li>
+        <li><strong>Network IO patterns（网络拓扑）</strong>——NVLink 只连 72 卡有 switch，Google ICI 连 8000 卡无 switch，模型必须适应拓扑</li>
+        <li><strong>Arithmetic intensity（算术强度）</strong>——每次内存读取要做多少浮点，决定选 batch size 还是选 speculative decoding</li>
+        <li><strong>Collectives（集合通信）</strong>——all-reduce / all-to-all 的具体调度，直接反过来决定 expert 数量</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════════ 三、CUDA 护城河从来不是 CUDA ═══════════════ -->
+    <h2 id="cuda"><span class="sec-num">三</span>&ldquo;CUDA 护城河&rdquo; 从来不是 CUDA<a href="#cuda" class="anchor">#</a></h2>
+    <p class="kicker">Moat Reframing · 定义纠正</p>
+
+    <p>这是全片最反直觉、也最重要的一段。</p>
+
+    <p>过去三年，业界普遍相信 NVIDIA 的护城河是 CUDA API 的开发者生态锁定——「你要花几年时间才能写好 kernel，所以离不开 NVIDIA」。Sequoia 的主持人 Shaun 直接问 Dylan：现在 AI 会自己写 kernel 了，这个论点是不是要塌？</p>
+
+    <blockquote class="qq">
+      &ldquo;什么叫 CUDA moat 其实和 CUDA 无关。是因为 DeepSeek、Kimi、智谱、Alibaba、腾讯、小米——所有这些公司的模型都是为 GPU 协同设计的。你把这些模型放到 TPU 上跑，很多情况下就是不行。&rdquo;
+      <span class="cite">—— Dylan Patel · 33:20</span>
+    </blockquote>
+
+    <!-- ▼ 视觉二：CUDA 护城河解构 -->
+    <div class="moat">
+      <div class="moat-side moat-wrong">
+        <div class="moat-tag">✗ 常见误解</div>
+        <h4 class="moat-title">"CUDA API 的开发者锁定"</h4>
+        <p class="moat-desc">观点：写 CUDA kernel 门槛高，几万开发者被锁定；模型公司离不开 NVIDIA。<br>
+          <strong>问题</strong>：全世界真正需要写 kernel 的公司只有几十家 lab；AI 又特别擅长写代码，这层锁定<em>确实</em>在解体。</p>
+        <svg class="moat-svg" viewBox="0 0 240 130" role="img" aria-label="错误的 CUDA 锁定示意">
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.4">
+            <rect x="60" y="20" width="120" height="30" rx="4"/>
+            <text x="120" y="40" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">CUDA API</text>
+            <path d="M120 55 L120 75" stroke-dasharray="3 4"/>
+            <rect x="30" y="80" width="60" height="26" rx="4" stroke-dasharray="2 3"/>
+            <rect x="90" y="80" width="60" height="26" rx="4" stroke-dasharray="2 3"/>
+            <rect x="150" y="80" width="60" height="26" rx="4" stroke-dasharray="2 3"/>
+            <text x="120" y="122" text-anchor="middle" font-size="8.5" fill="var(--text-muted)" stroke="none">数以万计的应用开发者（幻觉）</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="moat-arrow">
+        &rarr;
+        <span class="lab">reframe</span>
+      </div>
+
+      <div class="moat-side moat-right">
+        <div class="moat-tag">✓ 真正的护城河</div>
+        <h4 class="moat-title" style="text-decoration:none;color:var(--text);">下游开源模型的 GPU-shape 锁定</h4>
+        <p class="moat-desc">中国实验室（DeepSeek/Kimi/Zhipu/阿里/腾讯/小米）把模型 shape 深度耦合到 GPU 的矩阵乘单元和网络拓扑上。<strong>整个开源模型生态都是 GPU-native 的</strong>。你想搬去 TPU？形状不对，性能崩。</p>
+        <svg class="moat-svg" viewBox="0 0 240 130" role="img" aria-label="正确的下游模型形状锁定">
+          <g fill="none" stroke="var(--accent)" stroke-width="1.4">
+            <rect x="70" y="18" width="100" height="26" rx="4"/>
+            <text x="120" y="35" text-anchor="middle" font-size="10" fill="var(--accent)" stroke="none">NVIDIA GPU shape</text>
+            <line x1="120" y1="46" x2="120" y2="60" class="pulse-dash"/>
+            <rect x="20" y="63" width="60" height="20" rx="3"/>
+            <rect x="90" y="63" width="60" height="20" rx="3"/>
+            <rect x="160" y="63" width="60" height="20" rx="3"/>
+            <text x="50" y="76" text-anchor="middle" font-size="8.5" fill="var(--accent)" stroke="none">DeepSeek</text>
+            <text x="120" y="76" text-anchor="middle" font-size="8.5" fill="var(--accent)" stroke="none">Kimi / Qwen</text>
+            <text x="190" y="76" text-anchor="middle" font-size="8.5" fill="var(--accent)" stroke="none">Xiaomi …</text>
+            <line x1="50" y1="83" x2="50" y2="98" stroke-dasharray="2 3"/>
+            <line x1="120" y1="83" x2="120" y2="98" stroke-dasharray="2 3"/>
+            <line x1="190" y1="83" x2="190" y2="98" stroke-dasharray="2 3"/>
+            <rect x="20" y="100" width="200" height="20" rx="3" style="fill:var(--accent-soft)"/>
+            <text x="120" y="114" text-anchor="middle" font-size="9" fill="var(--accent)" stroke="none">API / RL / 推理下游全部锁在 GPU</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <p>推论极其锋利：<strong>只要中国开源模型继续把最好的模型 co-design 在 GPU 上开源，NVIDIA 的护城河就自动持续</strong>——即使 Anthropic、OpenAI 内部改用 fork 版 PyTorch，即使 kernel 被 AI 写代码打穿，形状锁不动。Google 想反击？「唯一办法是自己开源真正好的 Gemma 模型，让下游反过来把 shape 锁到 TPU 上」——但 Gemma 显然还没做到。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对 FDE 的解读</div>
+      <p style="margin:.3em 0;">当我们跟踪 <strong>frontier</strong> 板块的 NVIDIA / Google / Anthropic 信号时，「CUDA vs TPU 谁赢」是错的问题。正确的问题是：<em>下游开源生态在往哪个 shape 收敛</em>？——过去 18 个月的答案不含糊：<b>GPU shape</b>。这决定了未来 3 年推理成本曲线的落点。</p>
+    </div>
+
+    <!-- ═══════════════ 四、模型分叉 → 硬件分叉 ═══════════════ -->
+    <h2 id="fork"><span class="sec-num">四</span>模型分叉正在把硬件也分叉<a href="#fork" class="anchor">#</a></h2>
+    <p class="kicker">Sparse ↔ Dense · 三条独立演化路径</p>
+
+    <p>Dylan 拆开三家头部 lab 的模型形状——第一次让我看清了 <em>为什么</em>他们看起来「都在做 LLM」，但硬件绑定完全不同。</p>
+
+    <!-- ▼ 视觉三：模型稠密度分叉 -->
+    <div class="fork">
+      <svg class="fork-svg" viewBox="0 0 820 300" role="img" aria-label="三家实验室的稀疏度分叉与硬件绑定">
+        <defs>
+          <linearGradient id="axis" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#b06a63" stop-opacity=".55"/>
+            <stop offset="50%" style="stop-color:var(--accent)" stop-opacity=".7"/>
+            <stop offset="100%" style="stop-color:var(--brass)" stop-opacity=".7"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 稠密度轴 -->
+        <g>
+          <line x1="60" y1="240" x2="760" y2="240" stroke="url(#axis)" stroke-width="3"/>
+          <text x="60" y="266" font-size="10" fill="var(--text-muted)">← 更稀疏 · Sparser MoE</text>
+          <text x="760" y="266" text-anchor="end" font-size="10" fill="var(--text-muted)">更稠密 · Denser →</text>
+          <line x1="60" y1="234" x2="60" y2="246" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="410" y1="234" x2="410" y2="246" stroke="var(--text-muted)" stroke-width="1"/>
+          <line x1="760" y1="234" x2="760" y2="246" stroke="var(--text-muted)" stroke-width="1"/>
+        </g>
+
+        <!-- OpenAI 卡片 -->
+        <g>
+          <circle cx="160" cy="240" r="10" fill="#b06a63"/>
+          <line x1="160" y1="230" x2="160" y2="150" stroke="#b06a63" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <rect x="80" y="55" width="160" height="95" rx="8" fill="var(--surface)" stroke="#b06a63" stroke-width="1.6"/>
+          <text x="160" y="78" text-anchor="middle" class="disp" font-size="15" fill="#b06a63">OpenAI</text>
+          <text x="160" y="98" text-anchor="middle" font-size="10" fill="var(--text-soft)">很稀疏的 MoE</text>
+          <text x="160" y="115" text-anchor="middle" font-size="9" fill="var(--text-muted)">shape → Hopper → Blackwell</text>
+          <text x="160" y="132" text-anchor="middle" font-size="9" fill="var(--text-muted)">TPU 上跑「会是灾难」</text>
+          <text x="160" y="146" text-anchor="middle" font-size="8.5" fill="#b06a63" font-weight="600">锁定：NVIDIA GPU</text>
+        </g>
+
+        <!-- Anthropic 卡片 -->
+        <g>
+          <circle cx="410" cy="240" r="10" fill="var(--accent)"/>
+          <line x1="410" y1="230" x2="410" y2="150" stroke="var(--accent)" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <rect x="330" y="55" width="160" height="95" rx="8" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/>
+          <text x="410" y="78" text-anchor="middle" class="disp" font-size="15" fill="var(--accent)">Anthropic</text>
+          <text x="410" y="98" text-anchor="middle" font-size="10" fill="var(--text-soft)">稠密度居中 · 三栖</text>
+          <text x="410" y="115" text-anchor="middle" font-size="9" fill="var(--text-muted)">TPU 训 · Trainium/GPU 推</text>
+          <text x="410" y="132" text-anchor="middle" font-size="9" fill="var(--text-muted)">Opus 48 token 毛利 &gt;80%</text>
+          <text x="410" y="146" text-anchor="middle" font-size="8.5" fill="var(--accent)" font-weight="600">锁定：三种硬件共存</text>
+        </g>
+
+        <!-- Google 卡片 -->
+        <g>
+          <circle cx="660" cy="240" r="10" fill="var(--brass)"/>
+          <line x1="660" y1="230" x2="660" y2="150" stroke="var(--brass)" stroke-width="1.2" stroke-dasharray="3 3"/>
+          <rect x="580" y="55" width="160" height="95" rx="8" fill="var(--surface)" stroke="var(--brass)" stroke-width="1.6"/>
+          <text x="660" y="78" text-anchor="middle" class="disp" font-size="15" fill="var(--brass)">Google</text>
+          <text x="660" y="98" text-anchor="middle" font-size="10" fill="var(--text-soft)">Gemini 3 → TPU v6e</text>
+          <text x="660" y="115" text-anchor="middle" font-size="9" fill="var(--text-muted)">Gemini 4 → TPU v7</text>
+          <text x="660" y="132" text-anchor="middle" font-size="9" fill="var(--text-muted)">三条独立 ASIC 线并行</text>
+          <text x="660" y="146" text-anchor="middle" font-size="8.5" fill="var(--brass)" font-weight="600">锁定：TPU 深度耦合</text>
+        </g>
+
+        <!-- 提示 -->
+        <text x="410" y="30" text-anchor="middle" font-size="11" fill="var(--text-muted)" letter-spacing="1.2">
+          模型的稠密度决定了它「最想住在哪个硬件里」
+        </text>
+      </svg>
+
+      <div class="fork-lgd">
+        <div class="fork-card sparse">
+          <h5>OpenAI · 更稀疏</h5>
+          <p>非常稀疏的 MoE 结构，天然贴合 Hopper 的矩阵单元和 NVLink 拓扑（72 卡域）。想让 GPT-4o 换到 TPU？&ldquo;terrible decision.&rdquo;</p>
+        </div>
+        <div class="fork-card dense">
+          <h5>Anthropic · 稠密度居中</h5>
+          <p>模型形状能同时被 TPU（训练）和 Trainium/GPU（推理）消化。这解释了他们能拿 SpaceX 的 GPU 深度折扣，同时 Q2 已经净利润为正。</p>
+        </div>
+        <div class="fork-card tpu">
+          <h5>Google · TPU-native</h5>
+          <p>不只是 Broadcom 一家 TPU，而是 Broadcom / MediaTek / 内部三条独立架构并行。Gemini 每代重构对齐下代 TPU——把 co-design 推到极致。</p>
+        </div>
+      </div>
+    </div>
+
+    <p>&ldquo;硬件是好硬件，就是跑不动这个模型&rdquo;——这句话在几年前听起来不合逻辑，现在是产业常识。<strong>TPU 客观上是极强的芯片，但它跑 DeepSeek 就是不行</strong>；反过来，某些模型在 NVIDIA 上就是浪费。硬件的绝对性能已经<em>不足以</em>作为选型依据，只有「你的模型和它的形状能不能对上」才算数。</p>
+
+    <p>这也回答了一个业界长期争论：<strong>「每个 lab / hyperscaler 是不是都会自研芯片？」</strong>Dylan 的答案是&ldquo;每个人都会试，然后大多数人会放弃&rdquo;——不是因为芯片不重要，而是<em>你不知道一年后的模型架构长什么样</em>。你花五年时间赌一个 ASIC 的最优形状，模型架构可能已经换了 attention 机制。所以未来的稳态是：<strong>hyperscaler 都会有自研 ASIC 承担已知负载，但依然要买大量 GPU 作为「不知道未来是什么」的通用备份</strong>。「Google 用 11 美元 / 小时向 xAI 租 GPU」就是这个逻辑的活证据。</p>
+
+    <!-- ═══════════════ 五、Pareto 曲线：一切推理决策的母图 ═══════════════ -->
+    <h2 id="pareto"><span class="sec-num">五</span>一切推理决策的母图<a href="#pareto" class="anchor">#</a></h2>
+    <p class="kicker">The Master Curve · Throughput × Interactivity</p>
+
+    <p>Dylan 花了大约五分钟解释一个他反复挂在嘴边的曲线——<strong>吞吐量 × 交互性（throughput × interactivity）</strong>。他说：「硬件、基础设施、模型、应用层的所有决策，都下游于这条曲线。」</p>
+
+    <!-- ▼ 视觉四：Pareto 曲线 -->
+    <div class="pareto">
+      <svg class="pareto-svg" viewBox="0 0 780 380" role="img" aria-label="吞吐量 × 交互性 Pareto 曲线与三种工作负载定位">
+        <defs>
+          <linearGradient id="paretoLine" x1="0%" y1="100%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".2"/>
+            <stop offset="60%" style="stop-color:var(--accent)" stop-opacity=".9"/>
+            <stop offset="100%" style="stop-color:var(--accent)" stop-opacity=".2"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 坐标轴 -->
+        <g style="color:var(--text-muted)" stroke="currentColor" fill="none" stroke-width="1">
+          <line x1="80" y1="320" x2="720" y2="320"/>
+          <line x1="80" y1="320" x2="80" y2="40"/>
+          <!-- 刻度 -->
+          <line x1="80" y1="316" x2="80" y2="324"/>
+          <line x1="400" y1="316" x2="400" y2="324"/>
+          <line x1="720" y1="316" x2="720" y2="324"/>
+        </g>
+        <g fill="var(--text-muted)" font-size="10">
+          <text x="80" y="342" text-anchor="middle">慢</text>
+          <text x="720" y="342" text-anchor="middle">快</text>
+          <text x="400" y="360" text-anchor="middle" font-size="11" fill="var(--text-soft)">交互性 Interactivity —— tokens / sec / user</text>
+          <text x="60" y="325" text-anchor="end">低</text>
+          <text x="60" y="45" text-anchor="end">高</text>
+          <text x="24" y="180" text-anchor="middle" font-size="11" fill="var(--text-soft)" transform="rotate(-90 24 180)">吞吐量 Throughput —— tokens / sec (system)</text>
+        </g>
+
+        <!-- Pareto 前沿曲线 -->
+        <path d="M100,80 Q220,110 340,175 T580,265 T710,310"
+              fill="none" stroke="url(#paretoLine)" stroke-width="3.5"/>
+        <!-- 曲线下的可行域 -->
+        <path d="M100,80 Q220,110 340,175 T580,265 T710,310 L710,320 L80,320 Z"
+              fill="var(--accent-soft)" opacity=".4"/>
+
+        <!-- 三个点位 -->
+        <g>
+          <!-- 批处理点 -->
+          <circle cx="130" cy="92" r="6" fill="var(--accent)"/>
+          <line x1="130" y1="92" x2="180" y2="60" stroke="var(--accent)" stroke-width="1"/>
+          <rect x="180" y="35" width="160" height="45" rx="5" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text x="260" y="53" text-anchor="middle" class="disp" font-size="12" fill="var(--accent)">Batch 批处理</text>
+          <text x="260" y="70" text-anchor="middle" font-size="9" fill="var(--text-soft)">1000 tok/s 总吞 · 10 tok/s/user</text>
+
+          <!-- 中间点 -->
+          <circle cx="380" cy="200" r="6" fill="var(--accent)"/>
+          <line x1="380" y1="200" x2="430" y2="180" stroke="var(--accent)" stroke-width="1"/>
+          <rect x="430" y="160" width="160" height="45" rx="5" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text x="510" y="178" text-anchor="middle" class="disp" font-size="12" fill="var(--accent)">Normal 常规</text>
+          <text x="510" y="195" text-anchor="middle" font-size="9" fill="var(--text-soft)">50–100 tok/s/user · 主流场景</text>
+
+          <!-- 快速点 -->
+          <circle cx="670" cy="290" r="6" fill="var(--accent)"/>
+          <line x1="670" y1="290" x2="620" y2="255" stroke="var(--accent)" stroke-width="1"/>
+          <rect x="440" y="235" width="180" height="45" rx="5" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.2"/>
+          <text x="530" y="253" text-anchor="middle" class="disp" font-size="12" fill="var(--accent)">Fast / Priority Q · 4× 溢价</text>
+          <text x="530" y="270" text-anchor="middle" font-size="9" fill="var(--text-soft)">250 tok/s/user · 单用户 · 高价值</text>
+        </g>
+
+        <!-- 顶部标题 -->
+        <text x="400" y="24" text-anchor="middle" font-size="11" fill="var(--text-muted)" letter-spacing="1.5">
+          一价制会破裂：不同工作负载停在曲线上不同点 · 定价随之分化
+        </text>
+      </svg>
+
+      <p class="pareto-note">
+        <strong>关键：</strong>同一块硬件、同一个模型，能停在这条曲线的<em>任何一点</em>。停在左上（Batch）——4× 便宜；停在右下（Fast Mode）——4× 贵。<strong>Anthropic 的 Fast Mode、OpenAI 的 Priority Queue 都是这条曲线的商业化产物</strong>；未来一定不是「一价制」，而是「曲线上选点」。产品经理如果不理解这条曲线，就无法为不同 workload 定不同的价。
+      </p>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">对 FDE 的解读</div>
+      <p style="margin:.3em 0;">我们做 Agent / 应用侧决策时，很容易默认「token 就一个价」。<strong>真相是：token 有三条以上不同的价</strong>——批处理级、常规级、极速级。做 <em>coding agent 后台批量修 bug</em> 应该走批处理最贵档；做 <em>real-time 交互体验</em>时才为 fast mode 付溢价。<strong>产品的一次 UX 决策，直接决定你在推理曲线上停哪一点，也直接决定单位成本差 4–10×</strong>。</p>
+    </div>
+
+    <!-- ═══════════════ 六、InferenceX 与 60× 下降 ═══════════════ -->
+    <h2 id="inferencex"><span class="sec-num">六</span>InferenceX：活基准与 60× / 年<a href="#inferencex" class="anchor">#</a></h2>
+    <p class="kicker">Living Benchmark · 死基准的告别</p>
+
+    <p>SemiAnalysis 花了大力气做了一件事：把「推理性能」从<em>时间点快照</em>变成<em>连续测量</em>。</p>
+
+    <div class="decline">
+      <div>
+        <div class="decline-num">60×</div>
+        <div class="decline-unit">annual · same quality</div>
+      </div>
+      <div class="decline-desc">
+        &ldquo;相同 benchmark 分数下&rdquo;的 token 成本，年化下降 60 倍——这不是硬件单独跑出来的，是三层协同的复合曲线。<br>
+        <strong>Intelligence per watt 同期下降约 40×</strong>（部分是非功耗改善）。
+      </div>
+    </div>
+
+    <p><strong>为什么需要「活」基准？</strong>因为软件每周更新两次：PyTorch、VLM、SGLang、驱动、编译器；模型每周有新的（Qwen、Moonshot、DeepSeek、GPT-OSS、Nemotron）。传统 benchmark 一发布就过期。</p>
+
+    <p><strong>怎么做到的？</strong>让所有主要 hyperscaler（CoreWeave、Crusoe、Nebius、Oracle、Microsoft、AWS、Google、OpenAI）捐赠合计 <strong>&gt; 5000 万美元</strong>的硬件（等 TPU / Trainium 上线后是 1 亿+），15+ 芯片型号，跑最新模型，扫全 Pareto 曲线，把最优配置的容器开源。</p>
+
+    <p>这件事的深意是：<strong>「行业公用的活坐标系」这个位置以前是空的，SemiAnalysis 站到了这个位置</strong>。任何芯片厂商想证明自己「不亚于 NVIDIA」，都得先在这个坐标系上站住。这本身是巨大的话语权杠杆。</p>
+
+    <!-- ═══════════════ 七、算力紧张会持续多久 ═══════════════ -->
+    <h2 id="crunch"><span class="sec-num">七</span>算力紧张为什么会持续<a href="#crunch" class="anchor">#</a></h2>
+    <p class="kicker">Compute Crunch · 供需失衡的真正原因</p>
+
+    <p>这是我最想让读者停下来想清楚的一段。表面上：算力短缺是因为「数据中心建太慢 + 硬件供货紧张」。Dylan 给了一个更底层的原因：</p>
+
+    <blockquote class="qq">
+      &ldquo;The compute crunch is not because deployment is slow. It's because <em>the value of useful work AI can do</em> is expanding faster than compute is growing.&rdquo;
+      <span class="cite">—— Dylan Patel · 46:30（意译）</span>
+    </blockquote>
+
+    <p>翻译成 FDE 惯用的判断语言：<strong>模型每一代把「AI 能干的有价值工作」的 TAM 都乘以一个大数</strong>。Opus 4.5 到 Fable 5 / Mythos 5，能干的任务数量和价值不是 2 倍，是数量级级别的跃升。而全球算力半年里可能只增长 30–50%。<strong>供需缺口不是暂时的施工延误</strong>，是「模型 TAM 增长速度 &gt; 算力增长速度」的结构性错配。</p>
+
+    <p>只要模型还在进步，crunch 就会持续。Anthropic Q2 已经净利润为正（不含股权激励），Opus 48 的单 token 毛利 &gt;80%——他们能<strong>以任何价格</strong>回收 GPU 成本，因为每一张 GPU 都能立刻转化为高毛利 token 卖出去。这个飞轮直到模型进步停滞才会停。</p>
+
+    <p>下一个问题：<strong>模型进步会停吗？</strong>Dylan 的观察：不但没停，反而在加速。因为「模型帮工程师写下一代模型的基建」——这是一个不严格意义上的 pseudo-recursive self-improvement 循环，Codex 5.5 出来之后特别明显。</p>
+
+    <!-- ═══════════════ 八、Jensen 的多极战略 ═══════════════ -->
+    <h2 id="jensen"><span class="sec-num">八</span>Jensen 的多极棋盘<a href="#jensen" class="anchor">#</a></h2>
+    <p class="kicker">Multipolar Play · 为什么 NVIDIA 疯狂投 Neocloud 和 Neolab</p>
+
+    <p>Jensen 最近做了三件让财务分析师看不懂的事：向 Neocloud（CoreWeave、Crusoe、Nebius）猛砸订单和股权、投一堆看起来 ROI 不清的 AI lab、公开为中国实验室的开源模型站台。</p>
+
+    <p>Dylan 一句话讲清楚：<strong>他要一个多极世界。因为在「hyperscaler 三巨头 + OpenAI/Anthropic/Google 三巨头」的两极世界里，NVIDIA 是死的</strong>。</p>
+
+    <!-- ▼ 视觉五：Jensen 多极棋盘 -->
+    <div class="board">
+      <svg class="board-svg" viewBox="0 0 780 340" role="img" aria-label="Jensen 多极战略：Neocloud + Neolab + 中国开源 三条支线">
+        <defs>
+          <radialGradient id="jsCore" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".9"/>
+            <stop offset="100%" style="stop-color:var(--accent)" stop-opacity=".1"/>
+          </radialGradient>
+        </defs>
+
+        <!-- 中心：NVIDIA -->
+        <g>
+          <circle cx="390" cy="170" r="52" fill="url(#jsCore)"/>
+          <circle cx="390" cy="170" r="42" fill="var(--bg)" stroke="var(--accent)" stroke-width="2"/>
+          <text x="390" y="167" text-anchor="middle" class="disp" font-size="15" fill="var(--accent)">NVIDIA</text>
+          <text x="390" y="185" text-anchor="middle" font-size="9" fill="var(--text-muted)">allocation gun</text>
+        </g>
+
+        <!-- 上方：Neocloud -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M390,128 L390,70" class="pulse-dash"/>
+          <rect x="240" y="20" width="300" height="50" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        </g>
+        <text x="390" y="42" text-anchor="middle" class="disp" font-size="13" fill="var(--accent)">Neocloud</text>
+        <text x="390" y="60" text-anchor="middle" font-size="9.5" fill="var(--text-soft)">CoreWeave · Crusoe · Nebius · Oracle</text>
+
+        <!-- 左下：Neolab -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M355,205 L200,275" class="pulse-dash"/>
+          <rect x="40" y="255" width="220" height="50" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        </g>
+        <text x="150" y="277" text-anchor="middle" class="disp" font-size="13" fill="var(--accent)">Neolab</text>
+        <text x="150" y="295" text-anchor="middle" font-size="9.5" fill="var(--text-soft)">Thinking Machines · Reflection · SSI · …</text>
+
+        <!-- 右下：中国开源 -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+          <path d="M425,205 L590,275" class="pulse-dash"/>
+          <rect x="510" y="255" width="240" height="50" rx="8" fill="var(--surface)" stroke="currentColor"/>
+        </g>
+        <text x="630" y="277" text-anchor="middle" class="disp" font-size="13" fill="var(--accent)">China Open Source</text>
+        <text x="630" y="295" text-anchor="middle" font-size="9.5" fill="var(--text-soft)">DeepSeek · Kimi · Qwen · Zhipu · Xiaomi</text>
+
+        <!-- 反 hyperscaler 阵营 -->
+        <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="4 4">
+          <ellipse cx="390" cy="170" rx="360" ry="150" opacity=".35"/>
+        </g>
+        <text x="720" y="330" text-anchor="end" font-size="9" fill="var(--text-muted)" letter-spacing="1.4">
+          Anti-Hyperscaler Coalition
+        </text>
+
+        <!-- 敌方阵营 -->
+        <g>
+          <text x="60" y="335" font-size="9" fill="var(--text-muted)">对面阵营 →</text>
+        </g>
+        <text x="60" y="30" font-size="9.5" fill="var(--text-muted)" letter-spacing="1.4">
+          若不做：AWS + GCP + Azure 定义硬件 · OpenAI/Anthropic/Google 定义模型
+        </text>
+      </svg>
+
+      <div class="board-legend">
+        <div><b>Neocloud</b>——绕过 hyperscaler 的算力分发；CoreWeave 已上市，Crusoe / Nebius 快速拉规模</div>
+        <div><b>Neolab</b>——绕过 OpenAI/Anthropic 的模型话语权；Thinking Machines 半年做到几亿 ARR</div>
+        <div><b>China Open</b>——把 GPU-shape 锁进全球开源生态，是最强杠杆</div>
+      </div>
+    </div>
+
+    <p>五年后，如果这三条支线都长起来了：Google TPU 弱一点、Amazon Trainium 弱一点、更多 inference 跑在非闭源模型上——NVIDIA 就赢了。**这不是慈善，是理性极致的地缘博弈**。「Jensen 爱中国实验室」的真正原因就在这里。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对 FDE 的解读</div>
+      <p style="margin:.3em 0;">我们跟踪 <strong>oss</strong> 板块（开源拆解）和 <strong>frontier</strong> 板块（厂商信号）时，要把「Jensen 的钱流向哪里」当作一级信号——那是他<em>希望多极世界长在哪</em>的坐标。Neocloud 的下一个赢家、Neolab 的下一个 Thinking Machines、中国开源模型的下一个 DeepSeek——大概率会先出现在 Jensen 的 portfolio 里。</p>
+    </div>
+
+    <!-- ═══════════════ 九、能源、太空与 10 年展望 ═══════════════ -->
+    <h2 id="future"><span class="sec-num">九</span>能源、太空与 10 年展望<a href="#future" class="anchor">#</a></h2>
+    <p class="kicker">Long-tail Bets · 长期赌注</p>
+
+    <h3 id="future-energy">9.1 能源瓶颈没你想的那么硬</h3>
+    <p>Dylan 举了一个特别工程师的例子：美国有制造数百万台<strong>柴油卡车发动机</strong>的产能，简单改装为天然气版本 + 反接电动马达发电，就能在数据中心旁快速部署 backup 甚至主力发电。「找个汽车修理工来维护就行」。这不是理论——是有人在做的方案。<strong>能源紧张的很大一部分，是 &ldquo;好的解法还没被工程化&rdquo;，不是物理墙。</strong></p>
+
+    <h3 id="future-density">9.2 硅片功率密度的物理墙正在被撬</h3>
+    <p>过去 20 年，数据中心/桌面芯片一直卡在<strong>1 瓦 / 平方毫米</strong>。Blackwell 到 Rubin Ultra 是把芯片做大到 1400W → 2000W → 4000W——不是密度提升，是面积扩张。真正的下一步：<em>让每平方毫米消耗超过 1 瓦</em>，代价是更复杂的热管理和电学干扰。这会带来硅片数量的净减少。</p>
+
+    <h3 id="future-hbm">9.3 HBM 直接堆到芯片上</h3>
+    <p>过去 5 年 HBM 进步靠<em>更多层堆叠 + 更快接口</em>，但根本 cell 结构还是 40 年前的 DRAM。<strong>接下来是把 HBM 直接堆到逻辑芯片上（不是旁边）</strong>——带宽爆炸。有几家 startup 在赌这条路。</p>
+
+    <h3 id="future-space">9.4 太空数据中心：2030 前 &lt; 1%，2040 后 &gt; 50%</h3>
+    <p>短期（3–5 年）：不重要。长期（20 年）：绝大多数增量算力会在太空——这是 Dylan 的判断。SpaceX 的星链网络经验 + 特斯拉的电池/热管理经验，让他们在这条路上有独一档的优势。</p>
+
+    <!-- ═══════════════ 十、给 FDE 的落地判断 ═══════════════ -->
+    <h2 id="fde"><span class="sec-num">十</span>给 FDE 的落地判断<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">Judgment Desk · 判断台清单</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">已经能行动的判断</div>
+      <ol style="margin:.3em 0;">
+        <li><span class="num-chip">1</span><strong>「一价制」将破裂</strong>——推理定价会分化成 Batch / Normal / Fast 三条曲线。做 Agent 后台任务时用批处理档，能省 4–10×；做实时体验时才为 Fast 付溢价。这是产品经理下一年<em>必须内化</em>的推理经济学。</li>
+        <li><span class="num-chip">2</span><strong>CUDA 护城河实质是「下游模型 shape」，不是 API</strong>——判断 GPU 生态强弱，看开源模型（DeepSeek/Qwen/Kimi）的 shape 在往哪个硬件收敛。目前答案不含糊：GPU。</li>
+        <li><span class="num-chip">3</span><strong>算力紧张会持续到「模型 TAM 增速 &lt; 算力增速」为止</strong>——这个交叉点不会在 2027 年之前出现。规划算力预算按「持续短缺」做，别按「一年缓解」做。</li>
+        <li><span class="num-chip">4</span><strong>Jensen 的 portfolio = 多极信号灯</strong>——Neocloud 的下一个赢家、Neolab 的下一个 Thinking Machines、中国开源的下一个 DeepSeek，会先出现在 NVIDIA 的投资列表里。这是最便宜的一级信号。</li>
+        <li><span class="num-chip">5</span><strong>「哪家 lab 用哪种硬件」不再是选型问题，而是<em>模型架构</em>的映射</strong>——OpenAI 的稀疏 → GPU；Anthropic 的中密度 → 三栖；Google 的 TPU-native → TPU。评估任何模型的成本曲线，先看它 co-design 在哪里。</li>
+      </ol>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">仍需观察</div>
+      <ol style="margin:.3em 0;">
+        <li>Cerebras / Groq 在「10T 参数 + 百万上下文」时代能否守住份额——SRAM 天花板是硬约束。</li>
+        <li>Anthropic Q3 是否<em>含</em>股权激励也转正——如果是，会成为整个训练/推理经济学的分水岭事件。</li>
+        <li>Google 什么时候开源真正好的 Gemma——那会是「GPU-shape 锁」被撬动的信号。</li>
+        <li>HBM 直接堆芯片的技术路线由谁跑出——带宽层的下一波 100× 就藏在这里。</li>
+      </ol>
+    </div>
+
+    <!-- ═══════════════ 十一、金句索引 ═══════════════ -->
+    <h2 id="quotes"><span class="sec-num">十一</span>金句索引<a href="#quotes" class="anchor">#</a></h2>
+    <p class="kicker">Highlights · 反复咀嚼的六句话</p>
+
+    <blockquote class="qq">
+      &ldquo;The real breakthrough is when you leapfrog a few layers and co-design them—so instead of 2× × 2× × 2× = 8×, it's actually 100×.&rdquo;
+      <span class="cite">协同设计的乘法效应 · 22:15</span>
+    </blockquote>
+
+    <blockquote class="qq">
+      &ldquo;What people call the CUDA moat has nothing to do with CUDA. It's that the downstream open-source models are all co-designed for GPUs.&rdquo;
+      <span class="cite">重新定义护城河 · 33:20</span>
+    </blockquote>
+
+    <blockquote class="qq">
+      &ldquo;TPUs are objectively an amazing chip—but they suck at running DeepSeek.&rdquo;
+      <span class="cite">硬件绝对性能已不足以选型 · 14:40</span>
+    </blockquote>
+
+    <blockquote class="qq">
+      &ldquo;A gigawatt given to Anthropic is objectively worth more revenue than a gigawatt given to OpenAI—and both would sell every gigawatt they have.&rdquo;
+      <span class="cite">GW 不再是同质单位 · 55:10</span>
+    </blockquote>
+
+    <blockquote class="qq">
+      &ldquo;Jensen absolutely hates a world where all the hyperscalers have all the power. He's bankrolling neoclouds because he wants a multipolar world.&rdquo;
+      <span class="cite">多极战略的动机 · 62:40</span>
+    </blockquote>
+
+    <blockquote class="qq">
+      &ldquo;Inference will be many percentage points of GDP—bigger than oil.&rdquo;
+      <span class="cite">推理市场的天花板 · 12:20</span>
+    </blockquote>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-06 初稿 · 基于 YouTube 官方字幕解析（1:10:15 完整版）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← FDE·OBS 首页</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

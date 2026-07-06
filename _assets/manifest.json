@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-04T13:37:44.514339+00:00",
+  "generated_at": "2026-07-06T06:27:18.499313+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
@@ -361,6 +361,21 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-07_hardware-software-co-design-100x.html",
+      "title": "协同设计的 100×：为什么算力叙事都在看错方向",
+      "date": "2026-07-06",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "硬件 / 推理 / 供应链 / 多极"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "readings/2026-06_drop-hierarchy-self-organizing-agents.html",
       "title": "放弃层级与角色 Drop the Hierarchy & Roles自组织 LLM Agent 如何胜过人为设计的结构",

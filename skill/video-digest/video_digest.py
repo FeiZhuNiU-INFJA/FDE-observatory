@@ -177,7 +177,12 @@ def _format_upload_date(raw: Optional[str]) -> str:
     return f"{raw[:4]}-{raw[4:6]}-{raw[6:8]}"
 
 
-def fetch_video(url: str, *, save_draft: bool = False) -> dict[str, Any]:
+def fetch_video(
+    url: str,
+    *,
+    save_draft: bool = False,
+    cookies: Optional[str] = None,
+) -> dict[str, Any]:
     yt_dlp = find_yt_dlp()
     work_dir = Path(tempfile.mkdtemp(prefix="video_digest_"))
 
@@ -198,8 +203,14 @@ def fetch_video(url: str, *, save_draft: bool = False) -> dict[str, Any]:
         "--no-write-playlist-metafiles",
         "--sub-langs", sub_langs,
         "-o", out_tpl,
-        url,
     ]
+    if cookies:
+        cookies_path = Path(cookies).expanduser().resolve()
+        if not cookies_path.exists():
+            shutil.rmtree(work_dir, ignore_errors=True)
+            _die(f"cookies 文件不存在: {cookies_path}")
+        cmd.extend(["--cookies", str(cookies_path)])
+    cmd.append(url)
 
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
@@ -210,7 +221,16 @@ def fetch_video(url: str, *, save_draft: bool = False) -> dict[str, Any]:
     if proc.returncode != 0:
         shutil.rmtree(work_dir, ignore_errors=True)
         err = (proc.stderr or proc.stdout or "").strip()
-        _die(f"yt-dlp 失败 (exit {proc.returncode}):\n{err[-2000:]}")
+        hint = ""
+        if "Sign in to confirm you're not a bot" in err or "confirm you" in err.lower():
+            hint = (
+                "\n\n提示：YouTube 触发了 bot 检查。请让用户按下面步骤导出 cookies 后重试：\n"
+                "  1) 在已登录 YouTube 的浏览器安装 cookies.txt 导出扩展（如 'Get cookies.txt LOCALLY'）\n"
+                "  2) 打开 youtube.com 导出 Netscape 格式 cookies.txt\n"
+                "  3) 重跑：video_digest.py fetch <URL> --cookies /path/to/cookies.txt\n"
+                "  4) 抓取成功后立即删除 cookies 文件（含登录态，勿提交到 git）"
+            )
+        _die(f"yt-dlp 失败 (exit {proc.returncode}):\n{err[-2000:]}{hint}")
 
     info_files = list(work_dir.glob("*.info.json"))
     if not info_files:
@@ -401,7 +421,7 @@ def render_html(spec: dict[str, Any], output: Path) -> None:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    result = fetch_video(args.url, save_draft=args.save)
+    result = fetch_video(args.url, save_draft=args.save, cookies=args.cookies)
     if args.json or not args.save:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
@@ -439,6 +459,11 @@ def main() -> int:
     p_fetch.add_argument("url", help="视频 URL（YouTube / Bilibili 等）")
     p_fetch.add_argument("--save", action="store_true", help="同时保存草稿到 insights/_drafts/")
     p_fetch.add_argument("--json", action="store_true", help="输出 JSON（默认 fetch 时输出）")
+    p_fetch.add_argument(
+        "--cookies",
+        metavar="PATH",
+        help="Netscape 格式 cookies.txt 路径（YouTube 触发 bot 检查时使用；抓完请立即删除）",
+    )
     p_fetch.set_defaults(func=cmd_fetch)
 
     p_render = sub.add_parser("render", help="根据 spec JSON 渲染 HTML")

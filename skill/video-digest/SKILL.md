@@ -43,6 +43,37 @@ python3 skill/video-digest/video_digest.py fetch "视频URL" --save
 - `has_transcript: false` → 告知用户可能无字幕或需 cookie（B 站高清/登录场景）
 - URL 不要转义反斜杠：`"https://youtube.com/watch?v=xxx"` ✓，`watch\?v\=` ✗
 
+#### YouTube 触发 bot 检查怎么办
+
+自 2024 下半年起 YouTube 对无 cookie 请求会返回 `Sign in to confirm you're not a bot`，此时 `fetch` 会直接失败并给出提示。**不要**盲目重试或换代理，按下面流程走：
+
+**依次尝试三条路（成本从低到高）**：
+
+1. `--cookies-from-browser` **在 macOS 上通常不可用** —— Chrome 走 Keychain 加密（`could not be decrypted`），Safari 找不到 cookie DB。别浪费时间。
+2. **让用户手动导出 cookies.txt**（推荐主路径）——
+   1. 在<u>已登录 YouTube 的浏览器</u>装扩展 `Get cookies.txt LOCALLY`（Chrome/Edge）或 `cookies.txt`（Firefox）——必须能导出 **Netscape 格式**，JSON 不吃。
+   2. 打开 `youtube.com`，点扩展 → Export → 保存文件（提示用户放到 draft 目录，如 `insights/_drafts/video_<id>/cookies.txt`）。
+   3. 重跑 `fetch --cookies <path>`。
+3. **抓完立即删** —— cookies.txt 含完整登录态，agent 抓成功后必须马上 `rm`，并<u>绝不 commit</u>（推荐把文件放在 gitignore 覆盖的 `_drafts/` 或 `/tmp/`）。
+
+```bash
+# 完整应急流程
+python3 skill/video-digest/video_digest.py fetch \
+  "https://www.youtube.com/watch?v=<id>" \
+  --cookies /Users/xxx/cookies.txt --save
+rm /Users/xxx/cookies.txt   # 立即删！
+```
+
+**给用户的话术模板**（agent 遇到 bot-check 时应直接抛出）：
+
+> YouTube 拦截了服务器端抓取（bot check）。请你在<u>已登录 YouTube 的浏览器</u>里用 `Get cookies.txt LOCALLY` 扩展导出 `cookies.txt`（Netscape 格式），保存到任意路径后告诉我路径。抓成功后我会立即删除该文件。
+
+**次要备选**（都试过、都不稳，仅记录）：
+
+- `--extractor-args "player_client=web,android,ios,mweb,tv"` 切换客户端指纹：对 bot check 无效，已属过时对策。
+- `youtubetranscript.com` / `youtubetotranscript.com` 等第三方 API：同样被 YouTube 限流拦截。
+- 借他人机器 / 换 IP：偶尔一次能过，不可复现，不推荐。
+
 ### Step 2 — 撰写解读
 
 阅读 `transcript`，写**深度解读**（非流水账摘要）。
@@ -95,6 +126,7 @@ python3 _assets/build_manifest.py   # 可选，serve.py 会动态扫描
 |------|------|
 | `fetch URL` | 拉字幕，JSON 输出 stdout |
 | `fetch URL --save` | 额外存草稿（meta.json + transcript.txt + GENERATE.md） |
+| `fetch URL --cookies PATH` | YouTube bot check 时携带手动导出的 cookies.txt；抓完立即删 |
 | `render -o PATH -s spec.json --body-file body.html` | 渲染站点 HTML |
 
 模板：`_assets/_template_video_digest.html`  
