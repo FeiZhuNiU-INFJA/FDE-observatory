@@ -86,7 +86,14 @@ rm /Users/xxx/cookies.txt   # 立即删！
 | 跨市场概念 | `insights/cross/2026-06_loop-engineering-coding-agent.html` |
 | Claude Code 专题 | `frontier/vendors/anthropic/deep_dives/2026-05-28_claude-code-dynamic-workflows.html` |
 
-必备结构：核心结论（lede）、一页要点、分节论证、FDE/ToB 映射（如适用）、待验证问题。
+必备结构：核心结论（lede）、一页要点、分节论证、FDE/ToB 映射（如适用），待验证问题。
+
+**外部图片（新，可选但推荐）**：阅读时如源材料含**关键图表 / 幻灯片 / 产品 UI 截图**，优先纳入正文——bespoke SVG 是主力表达，图片承担「保真」职责。
+
+- 视频截帧：先 `yt-dlp --list-formats` 拿到源，再 `ffmpeg -ss <hh:mm:ss> -i <file> -frames:v 1 -q:v 2 out.webp`；或用 `yt-dlp --write-thumbnail` 拿封面。
+- 论文 / 幻灯片图：用 `pdftoppm -png -r 180 in.pdf page` 生成，再挑关键页转 `.webp`。
+- 存放到 `readings/_media/<slug>/`（或 `frontier/vendors/<v>/_media/<slug>/`），文件名 snake_case，单张 ≤ 400 KB / ≤ 1600 px。
+- 在正文用 `<figure class="ext-fig">` 引用，`<img alt>` 必填，`<figcaption>` 写来源链接 + 抓取日期（视频加 `?t=` 定位）。**规则以 [`_assets/DESIGN_STANDARD.md`](../../_assets/DESIGN_STANDARD.md) §4.5 为准。**
 
 ### Step 3 — 选择落盘目录（Agent 自行判断）
 

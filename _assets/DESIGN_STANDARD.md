@@ -84,6 +84,7 @@
 | 表格 | `.table-wrap > table` | 任何表格都包一层 | 自带横向滚动 |
 | 提示框 | `.callout` + `-pro/-con/-warn/-info/-accent` | 风险/判断/行动框 | `.callout-tag` 标题 |
 | 卡片网格 | `.card-grid > .card` | 并列要点 | `.card-eyebrow` 小标题 |
+| 外部图（可选） | `.ext-fig > img + figcaption` | 论文图 / 演讲截帧 / 产品截图 | 用法见 §4.5；不抵扣 ≥3 SVG 名额 |
 | 入场动画 | `.reveal`（+ `.d1`–`.d4` 延迟） | 滚动触发淡入 | insight.js 自动加 `.in` |
 | 页脚 | `.doc-footer` + 修订记录 | 回索引 / 相关篇 / 修订日期 | |
 
@@ -94,7 +95,7 @@
 ### 4.1 硬性要求
 - 每篇长洞察 **≥3 个 bespoke 视觉块**（不是共享组件，是本页专属）。
 - 每个块 = 一组**本页命名**的 class（如 `.medium`/`.duo`/`.flow`/`.cage`/`.pats`/`.gate`），CSS 写在本页 `<style>`。
-- 视觉用**内联 SVG**（stroke 描边、`currentColor`、配色取自 token），**不用外部图片**（也契合 artifact 的 CSP 友好性）。
+- 视觉主力用**内联 SVG**（stroke 描边、`currentColor`、配色取自 token）——**bespoke SVG 是主力，外部图片是补充**，外部图片**不抵扣 ≥3 个 SVG 块的名额**。外部图片的用法见 §4.5。
 
 ### 4.2 一个 bespoke 块的标准 recipe
 1. **命名**：取一个语义化的顶层 class（如 `.cage`），子元素带前缀（`.cage-core` `.cage-bar` `.cage-verdict`）。
@@ -125,6 +126,49 @@
 | 约束 / 边界 | 中心物 + 放射栅栏 | `.cage` |
 | 模式清单 / 能力集 | 图标卡网格 + 横通栏 | `.mods` / `.pats` |
 | 启用条件（AND 逻辑） | 开关/LED 卡 + AND 注脚 | `.gate` |
+
+### 4.5 外部图片（`.ext-fig`）—— 何时用、怎么放
+
+> **默认仍是 bespoke SVG**。外部图片只在「保真」价值大于「统一」价值时用，且**不抵扣** §4.1 的 ≥3 个 SVG 块。
+
+**白名单（可以用）**
+- 论文 / 演讲 / 官方博客里的**关键图表**（用 SVG 复刻会失真、也侵占我们的原创视觉配额）。
+- 产品 UI **真实截图**、演示视频**截帧**、真实终端输出。
+- 无法/不必用 SVG 还原的**照片**（人物、实物、场景）。
+
+**黑名单（别用）**
+- 装饰性 stock photo、emoji-like 插画、AI 生图占位。
+- 可以用 SVG 讲清楚的概念图（这是我们的主力表达，图片会稀释风格）。
+- **外链**：所有图片必须落库到仓库内。外链有 CSP + 失效风险。
+
+**存放约定**
+- 就近存放：
+  - `readings/` 用 `readings/_media/<slug>/xxx.webp`
+  - `insights/<audience>/` 用 `_assets/media/<slug>/xxx.webp`
+  - `frontier/vendors/<v>/deep_dives/` 用 `frontier/vendors/<v>/_media/<slug>/xxx.webp`
+  - `opensource-analysis/` 用 `opensource-analysis/_media/<slug>/xxx.webp`
+- **格式**：优先 `.webp`（透明用 `.png`）；单张 ≤ 400 KB、宽度 ≤ 1600 px；`_media/` / `_assets/media/` 都以 `_` 开头，不进 manifest。
+- **文件名**：snake_case，描述内容（`training_loss_curve.webp`、`slide_15_moore_law_end.webp`）。
+
+**标记结构（用共享组件 `.ext-fig`，CSS 在 `_assets/insight.css`）**
+
+```html
+<figure class="ext-fig">
+  <img src="./_media/2026-07-dylan-patel/slide_18_cost_curve.webp"
+       alt="Dylan Patel 演讲第 18 页：训练成本随规模呈 log-log 上升"
+       loading="lazy" width="1600" height="900">
+  <figcaption>
+    Dylan Patel · <cite>Hardware/Software Co-design</cite> 演讲 18 页 ·
+    <a href="https://youtu.be/f6D_aiy8qyU?t=1240" rel="noopener">来源</a> · 抓取 2026-07-06
+  </figcaption>
+</figure>
+```
+
+**硬约束**
+- `alt` **必填**：一句话描述图中信息（不是「图 1」这种废话）；纯装饰用 `alt=""`。
+- 每张图配 `<figcaption>`：**来源链接 + 抓取日期**（视频加 `?t=` 秒数定位）；这是「判断台」的引用纪律。
+- 白底截图在暗色下会刺眼——依赖 `.ext-fig img` 在暗色主题下的兜底处理（见 `_assets/insight.css`）。
+- 尊重版权：只用「合理引用」范畴内的截图/图表；对完整幻灯片/长图，宁可裁到核心区域。
 
 ---
 

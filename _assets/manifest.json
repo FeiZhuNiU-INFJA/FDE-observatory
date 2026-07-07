@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-06T06:49:01.077635+00:00",
+  "generated_at": "2026-07-07T03:39:36.017488+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
@@ -101,6 +101,25 @@
     }
   ],
   "frontier_deep": [
+    {
+      "path": "frontier/vendors/anthropic/deep_dives/2026-07-06_global-workspace-j-space.html",
+      "title": "Claude 有一个「意识工作台」——Anthropic 的 J-space / 全局工作空间",
+      "date": "2026-07-06",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "Anthropic",
+        "Interpretability",
+        "Alignment"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "anthropic",
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "frontier/vendors/openai/deep_dives/2026-06-28_andrew-ambrosino-codex-shape-of-product-work.html",
       "title": "Codex 与产品工作的新形态The New Shape of Product Work",

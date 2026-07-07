@@ -9,7 +9,7 @@
 **任何 insight / opensource HTML（或 `_assets/insight.css`）的创建、改写、重构，先读 [`_assets/DESIGN_STANDARD.md`](_assets/DESIGN_STANDARD.md) 并遵循。** 那是视觉标准的单一可信源；本文件只放不变的几条铁律。
 
 不可违反：
-- **杂志级视觉，不是文字堆。** 每篇长洞察 ≥3 个 bespoke（专属）视觉块，用内联 SVG 把概念画出来。参考实现：`readings/2026-06_loop-engineering-coding-agent.html`、`readings/2026-06_claude-code-artifacts.html`。
+- **杂志级视觉，不是文字堆。** 每篇长洞察 ≥3 个 bespoke（专属）视觉块，用内联 SVG 把概念画出来。参考实现：`readings/2026-06_loop-engineering-coding-agent.html`、`readings/2026-06_claude-code-artifacts.html`。**外部图片**（论文图 / 演讲截帧 / 产品截图）在保真价值大于统一价值时可用，走 `.ext-fig` 组件、**不抵扣 ≥3 SVG 名额**，规则见 [`_assets/DESIGN_STANDARD.md`](_assets/DESIGN_STANDARD.md) §4.5。
 - **CSS 分层。** `_assets/insight.css` = 全站单一外观入口（只在换全站外观时改）；单页差异（强调色、专属组件）一律写在本页 `<head>` 的 `<style>` 里。**绝不为一篇页面去改 insight.css。**
 - **每页选一个与众不同的 accent**（写在本页 `:root`，含暗色变体），**避开语义色**（`--warn`/`--con`/`--pro`/`--info`）。
 - **`.doc-meta` 必填**（日期 / 受众 / 标签 / 状态 + **全站每篇**两枚判断印章 `时机：X` `信心：Y`），否则 manifest 不收录 / 首页不盖章。印章是「判断台」的通用批注层——洞察/厂商/阅读/开源读完都留一句判断（时机=多久影响我们、信心=多确定）。词表与语义见 [`_assets/DESIGN_STANDARD.md`](_assets/DESIGN_STANDARD.md) §7。

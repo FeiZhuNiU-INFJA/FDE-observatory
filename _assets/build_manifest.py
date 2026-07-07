@@ -26,7 +26,7 @@ from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
 
-SKIP_DIRS = {"_drafts", "_source", "node_modules", ".git"}
+SKIP_DIRS = {"_drafts", "_source", "_media", "node_modules", ".git"}
 SKIP_FILES = {"index.html", "README.md", "README.zh-CN.md"}
 
 STAMPS_PATH = ROOT / "_assets" / "stamps.json"

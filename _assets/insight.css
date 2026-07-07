@@ -298,6 +298,39 @@ article { min-width: 0; }
 .callout-accent { border-color: var(--accent); background: var(--accent-soft); }
 .callout-accent .callout-tag { color: var(--accent); }
 
+/* ── External figures ───────────────────────────── */
+/* .ext-fig：真实截图 / 论文图表 / 视频截帧的载体。bespoke SVG 是主力，本组件只承担「保真」场景。用法见 _assets/DESIGN_STANDARD.md §4.5。 */
+.ext-fig {
+  margin: 1.8em 0;
+  padding: .7em .7em .4em;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+.ext-fig img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  background: #fff; /* 兜底：透明 PNG 在暗色主题下也有可读底 */
+}
+.ext-fig figcaption {
+  margin-top: .55em;
+  padding: 0 .2em;
+  font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  letter-spacing: .01em;
+}
+.ext-fig figcaption cite { font-style: italic; color: var(--text-soft); }
+.ext-fig figcaption a { color: var(--accent); text-decoration: none; border-bottom: 1px dotted currentColor; }
+.ext-fig figcaption a:hover { color: var(--accent); border-bottom-style: solid; }
+/* 白底截图在暗色下略降亮，避免刺眼；对深色截图影响可忽略 */
+[data-theme="dark"] .ext-fig img { filter: brightness(.92) contrast(.98); }
+[data-theme="dark"] .ext-fig img:hover { filter: none; transition: filter .15s ease; }
+
 /* ── Tables ─────────────────────────────────────── */
 .table-wrap { overflow-x: auto; margin: 1.4em 0; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
