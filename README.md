@@ -7,6 +7,9 @@
 对未来行业形态、技术演进、真实落地路径——保持 **可验证的深刻判断**。
 一线探索只为沉淀可复用洞察，而非一次性交付。
 
+**双重定位**：既是**对外发布**的判断台，也是**给未来自己**的高浓度上下文库——
+洞察 / 判断 / 预测的质量取决于手边有多致密的一手信号，本站就是那份「随身语料」。
+
 [**🌐 打开观测站 →**](https://feizhuniu-infja.github.io/FDE-observatory/)
 
 <br />
@@ -26,9 +29,11 @@
 
 ## ⚡ 30 秒读懂
 
-这是一个**不发牢骚、不追热点**、只做深度判断的 AI 前沿知识站。
+这是一个**不发牢骚、不追热点**、只做深度判断的 AI 前沿知识站；
+同时也是**给未来自己**的高浓度上下文库——每一篇既发出去，也留给下一次判断当锚点。
 
 - **每一篇 = 一次可复用洞察**：不写"新闻"，写"我读完 / 拆完 / 想通了什么"
+- **每一篇 = 一份可检索信号**：日期 / 时机 / 信心 / 标签 齐备，为未来自己做判断时的语料库
 - **杂志级视觉**：每篇长洞察 ≥ 3 个专属 SVG 视觉块，不是 markdown 堆
 - **四条主线**：自己的判断、厂商的信号、别人的好东西、开源里的实现
 
@@ -48,6 +53,7 @@
 ## 🌟 为什么值得 Star？
 
 - **一次读完就能用的深度**：不是链接集，不是新闻聚合——每篇都有独立观点、可验证的判断、可迁移的方法论
+- **判断台，不是资讯流**：每篇盖两枚印章（**时机 X · 信心 Y**），把「多久会影响我们 / 我多确定」写在最显眼处；未来自己回看时也能校准命中率
 - **视觉认真到过分**：亮/暗双主题、mermaid 图表、bespoke SVG、移动端全适配。不糊弄读者
 - **完全静态、零依赖**：GitHub Pages 直挂，随时 fork 自己搭一个
 - **manifest 自动索引**：加新文档不改 HTML，首页永远最新
@@ -102,30 +108,35 @@ FDE-observatory/
 ├── frontier/vendors/{anthropic,openai}/  # 厂商深度 + 周期摘要
 ├── readings/                      # 论文 / 文章 / 视频解读
 ├── opensource-analysis/           # 开源架构拆解
-└── skill/video-digest/            # 视频解读工作流
+└── skill/
+    ├── insight-write/             # 任意源 → 深度文章的统一写作/落盘流程
+    └── video-digest/              # 视频字幕提取（写作前置工具）
 ```
 
 ## ✍️ 写一篇新洞察
 
-1. 复制 [`_assets/_template_insight.html`](_assets/_template_insight.html) 到目标目录（如 `insights/cross/YYYY-MM_<slug>.html`）
-2. 填好 `doc-meta` 区块：**日期 / 受众（toB / toC / 跨市场）/ 主题标签 / 状态**
-3. 遵循 [`_assets/DESIGN_STANDARD.md`](_assets/DESIGN_STANDARD.md) 视觉铁律（≥ 3 个 bespoke SVG 视觉块、page-level accent 色、CSS 分层）
-4. 跑 `python3 _assets/build_manifest.py` 重建索引
-5. `git push` —— GitHub Pages 自动上线
+任何源类型（厂商博客 / 论文 / 视频 / 原创 / 开源项目）都走同一条流程 —— 详见 [`skill/insight-write/SKILL.md`](skill/insight-write/SKILL.md)：
+
+1. 抓源材料 + 判断落盘板块 + 定 slug
+2. 提外部图片（可选，走 `.ext-fig` 组件，落 `_media/`）
+3. 选本页 accent（避开语义色 & 已用色）
+4. 从 [`_assets/_template_insight.html`](_assets/_template_insight.html) 起骨架，填 doc-header / 一页要点
+5. 从 [`DESIGN_STANDARD §4.4`](_assets/DESIGN_STANDARD.md) 选 ≥ 3 个 bespoke SVG 模式
+6. 盖两枚判断印章（**时机 X · 信心 Y**）+ 修订记录
+7. `python3 _assets/build_manifest.py` + `python3 serve.py` 亮/暗肉眼验收
+8. `git push` —— GitHub Pages 自动上线
 
 > **⚠️ 铁律**：不要为一篇文章去改 `_assets/insight.css`。单页差异全部写在自己的 `<head><style>` 里。这是保证全站视觉一致 + 单页可以有个性的唯一办法。
 
-## 📹 视频解读工作流
+## 📹 视频材料的额外一步
 
-看到值得深度拆解的 YouTube / Bilibili 视频？告诉 Agent「帮我总结这个视频」即可：
+视频（YouTube / Bilibili）只是众多源类型里的一种；**写作流程完全一致**，只是在 Step 1「拿源」这一步多一个字幕提取工具：
 
 ```bash
 python3 skill/video-digest/video_digest.py fetch "https://youtube.com/watch?v=..."
 ```
 
-流程会自动拉字幕 → LLM 阅读 → 生成 HTML → 收录进 `readings/`。需要本机装 [yt-dlp](https://github.com/yt-dlp/yt-dlp)。
-
-完整规范见 [`skill/video-digest/SKILL.md`](skill/video-digest/SKILL.md)。
+拿到 `transcript` 后回到上面的写作流程 Step 2 继续。需要本机装 [yt-dlp](https://github.com/yt-dlp/yt-dlp)。YouTube bot-check 应急流程见 [`skill/video-digest/SKILL.md`](skill/video-digest/SKILL.md)。
 
 ## 🤝 参与方式
 
