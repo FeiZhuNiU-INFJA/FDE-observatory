@@ -29,7 +29,8 @@
 | 我要… | 看 |
 |-------|-----|
 | 建页前查视觉标准 | [`_assets/DESIGN_STANDARD.md`](_assets/DESIGN_STANDARD.md) |
-| 视频解读工作流 | `skill/video-digest/SKILL.md` |
+| 写新文章（任何源类型） | `skill/insight-write/SKILL.md` |
+| 视频字幕提取（前置工具） | `skill/video-digest/SKILL.md` |
 | 设计系统源码 | `_assets/insight.css` · `_assets/insight.js` |
 | 建页模板 | `_assets/_template_insight.html` |
 
