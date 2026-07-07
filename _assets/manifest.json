@@ -1,6 +1,28 @@
 {
-  "generated_at": "2026-07-07T03:39:36.017488+00:00",
+  "generated_at": "2026-07-07T08:32:00.959564+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07_claude-x-one-platform-many-skins.html",
+      "title": "Claude X = 一个平台，五张皮 · One Platform, Many Skins",
+      "date": "2026-07-07",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Anthropic",
+        "Agent 架构",
+        "平台战略",
+        "Claude Code",
+        "Cowork",
+        "Managed Agents",
+        "Skills",
+        "MCP"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-07-03_anthropic-managed-agents.html",
       "title": "Anthropic Managed Agents · 第三条路",
