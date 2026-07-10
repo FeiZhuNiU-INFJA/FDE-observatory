@@ -1,0 +1,754 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Harness × RSI：从 Prompt 到自改进代码库 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色（wine / mulberry）+ 暗色变体。基础规则不覆盖 —— 交给 insight.css。 */
+  :root {
+    --accent: #831843;
+    --accent-deep: #500724;
+    --accent-ink: #5f0e2f;
+    --accent-soft: color-mix(in srgb, #831843 10%, white);
+    --accent-glow: color-mix(in srgb, #831843 18%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #fda4af;
+    --accent-deep: #f472b6;
+    --accent-ink: #fecdd3;
+    --accent-soft: color-mix(in srgb, #831843 30%, #1a1a22);
+    --accent-glow: color-mix(in srgb, #fda4af 22%, transparent);
+  }
+
+  /* SVG 文字：字体走样式表；var() 不写在 SVG 属性里 */
+  .ladder text, .routes text, .threshold text, .walls text { font-family: var(--mono); }
+  .ladder .disp, .threshold .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 通用微动 */
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 1.6s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -28; } }
+  .pulse { animation: pulse 2.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+  /* ═════════ 视觉一：优化对象的五级阶梯 ═════════ */
+  .ladder {
+    display: grid; grid-template-columns: 1fr 1.25fr; gap: 1.6rem; align-items: center;
+    margin: 1.8em 0;
+  }
+  @media (max-width: 880px) { .ladder { grid-template-columns: 1fr; } }
+  .ladder-vis svg { width: 100%; height: auto; display: block; }
+  .ladder-legend { display: flex; flex-direction: column; gap: .55rem; }
+  .ladder-legend .row {
+    display: grid; grid-template-columns: auto 1fr auto; gap: .8rem;
+    align-items: baseline; padding: .55rem .7rem; border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 65%, transparent);
+    border: 1px solid var(--border);
+    transition: border-color .2s, transform .2s;
+  }
+  .ladder-legend .row:hover { border-color: var(--accent); transform: translateX(3px); }
+  .ladder-legend .lv {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    color: var(--accent); font-size: 1.05rem; min-width: 2ch;
+  }
+  .ladder-legend .obj { font-weight: 600; color: var(--text); font-size: .92rem; }
+  .ladder-legend .obj .en {
+    display: block; font-family: var(--mono); font-weight: 500; font-size: .66rem;
+    letter-spacing: .06em; color: var(--text-muted); margin-top: .1em; text-transform: uppercase;
+  }
+  .ladder-legend .rep {
+    font-family: var(--mono); font-size: .68rem; color: var(--text-muted);
+    letter-spacing: .04em; text-align: right; min-width: 6ch;
+  }
+
+  /* ═════════ 视觉二：四条实操路线 · 方阵 ═════════ */
+  .routes { display: grid; grid-template-columns: repeat(4, 1fr); gap: .9rem; margin: 1.6em 0; }
+  @media (max-width: 980px) { .routes { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .routes { grid-template-columns: 1fr; } }
+  .route {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1rem 1rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: .55rem;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .route::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: var(--accent); opacity: .3;
+  }
+  .route:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 12px 26px var(--accent-glow); }
+  .route:hover::before { opacity: 1; }
+  .route-num {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 1.05rem; color: var(--accent);
+  }
+  .route-icon { color: var(--accent); }
+  .route-icon svg { width: 30px; height: 30px; display: block; }
+  .route-name {
+    font-family: var(--display); font-weight: 700; font-size: 1.08rem;
+    color: var(--text); margin: 0; line-height: 1.25;
+  }
+  .route-name .en {
+    display: block; font-family: var(--mono); font-style: normal; font-weight: 500;
+    font-size: .64rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .1em;
+  }
+  .route-target {
+    font-family: var(--mono); font-size: .64rem; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--accent); font-weight: 600;
+    padding: .18em .5em; border: 1px solid var(--accent); border-radius: 999px;
+    align-self: flex-start; background: var(--accent-soft);
+  }
+  .route-desc { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .route-reps {
+    font-size: .74rem; color: var(--text-muted); margin: .35rem 0 0;
+    padding-top: .55rem; border-top: 1px dashed var(--border-strong); line-height: 1.5;
+  }
+  .route-reps b { color: var(--accent); font-family: var(--mono); font-weight: 600; letter-spacing: .02em; }
+
+  /* ═════════ 视觉三：Introspection Threshold 阈值线 ═════════ */
+  .threshold {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); padding: 1.4rem 1.2rem 1.2rem; position: relative; overflow: hidden;
+  }
+  .threshold-vis { width: 100%; }
+  .threshold-vis svg { width: 100%; height: auto; display: block; }
+  .threshold-caption {
+    font-size: .82rem; color: var(--text-soft); margin: .8rem 0 0; text-align: center; line-height: 1.5;
+  }
+  .threshold-caption b { color: var(--accent); }
+
+  /* ═════════ 视觉四：七道墙（递进风险） ═════════ */
+  .walls { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin: 1.8em 0; }
+  @media (max-width: 1024px) { .walls { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .walls { grid-template-columns: 1fr; } }
+  .wall {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem .95rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: .5rem;
+    transition: transform .2s; border-top: 3px solid var(--c);
+  }
+  .wall:hover { transform: translateY(-3px); }
+  .wall.w1 { --c: var(--info); }
+  .wall.w2 { --c: var(--accent); }
+  .wall.w3 { --c: var(--warn); }
+  .wall.w4 { --c: var(--rust); }
+  .wall.w5 { --c: var(--con); }
+  .wall.w6 { --c: var(--accent-deep); }
+  .wall.w7 { --c: var(--pro); }
+  .wall-head {
+    display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  }
+  .wall-idx {
+    font-family: var(--display); font-style: italic; font-weight: 500;
+    font-size: 1.5rem; color: var(--c); line-height: 1;
+  }
+  .wall-ic { color: var(--c); flex-shrink: 0; }
+  .wall-ic svg { width: 24px; height: 24px; display: block; }
+  .wall-name {
+    font-family: var(--display); font-weight: 700; font-size: 1rem;
+    color: var(--text); margin: 0; line-height: 1.25;
+  }
+  .wall-desc { font-size: .8rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .wall-pin {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .08em;
+    color: var(--c); font-weight: 600; margin-top: .2rem;
+  }
+
+  /* ═════════ 一次性小组件 —— FDE 映射列表 ═════════ */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li {
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline;
+    padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0;
+  }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li {
+    counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative;
+    border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent);
+    border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55;
+  }
+  .threads li::before {
+    content: "?" counter(th); position: absolute; left: .8rem; top: .78rem;
+    font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem;
+  }
+
+  /* reduced-motion 兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .pulse { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      Harness × RSI：从 Prompt 到自改进代码库<span class="brand-sub">跨市场 · 阅读材料 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Harness × RSI<span class="en"> Recursive Self-Improvement</span><br />从 Prompt 到自改进代码库</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Lilian Weng 《Harness Engineering for Self-Improvement》深度解读 · 叠加 Anthropic 产业信号与 Introspection Threshold 理论质疑</p>
+      <div class="doc-meta">
+        <span>2026-07-09</span>
+        <span>跨市场</span>
+        <span>RSI</span>
+        <span>Harness Engineering</span>
+        <span>Agent Evolution</span>
+        <span>Lilian Weng</span>
+        <span>Anthropic</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5<small>级</small></div><div class="lab">优化对象的阶梯<br />从 prompt 到 optimizer</div></div>
+        <div class="hero-stat"><div class="num">80<small>%</small></div><div class="lab">Claude 写入的<br />Anthropic 生产代码占比</div></div>
+        <div class="hero-stat"><div class="num">4<small>×</small></div><div class="lab">METR 时间视野翻倍<br />从 7 月加速到 4 月</div></div>
+        <div class="hero-stat"><div class="num">7<small>道</small></div><div class="lab">完整 RSI 的墙<br />评估器 / 记忆 / 多样性 / …</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        主源：<a href="https://lilianweng.github.io/posts/2026-07-04-harness/" target="_blank" rel="noopener">Lilian Weng · Harness Engineering for Self-Improvement</a>（2026-07-04）
+        · 参考：<a href="https://www.anthropic.com/institute/recursive-self-improvement" target="_blank" rel="noopener">Anthropic · When AI builds itself</a>（2026-06-04）
+        · <a href="https://arxiv.org/abs/2607.04277" target="_blank" rel="noopener">Introspection Threshold for RSI</a>（arXiv:2607.04277）
+        · <a href="https://arxiv.org/abs/2607.07663" target="_blank" rel="noopener">RSI Survey · Chen et al.</a>（arXiv:2607.07663）
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>RSI 的现代含义已经从「模型改写自己的权重」漂移到<strong>「模型改进整个 harness 系统，进而产出更强的后继模型」</strong>。Lilian Weng 给出了一条清晰的「优化对象逐级抬升」阶梯——从 prompt 到 workflow 再到 harness 代码本身；Anthropic 内部数据（Claude 已写入 80% 生产代码、时间视野翻倍周期从 7 月加速到 4 月）证明这不是学术命题；但 <em>Introspection Threshold</em> 从 Kleene 递归定理反证：<strong>feedforward transformer 架构可能就无法跨过完整 RSI 的门槛</strong>。乐观与警示同时成立——Harness 层的自改进是当下的套利窗口，而模型直接改权重的 RSI 尚未到来。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>语义漂移</strong>：Yudkowsky (2008) 的 RSI = 模型改权重 → 2026 的 RSI = 模型改整个部署系统（<em>harness</em>）</li>
+        <li><strong>五级阶梯</strong>：instruction prompt → structured context → workflow → harness code → optimizer code；<strong>模型越强 → 优化目标越接近元层</strong></li>
+        <li><strong>四条实操路线</strong>：Context Engineering · Workflow Design · Self-Improving Harness · Evolutionary Search</li>
+        <li><strong>DGM 实证</strong>：固定 Claude 3.5 Sonnet 基座下，harness 自进化让 SWE-bench 从 20% → 50%——工程系统层还有巨大空间</li>
+        <li><strong>Anthropic 数据</strong>：Claude 已写 80% 生产代码；工程师日均 merged code 达 2024 年的 8×；训练代码优化加速比从 3× → 52×</li>
+        <li><strong>理论门槛</strong>：Zhang et al. 证明当前 LLM 只是 quasi-introspection——三重架构约束让「真正的自改进」目前无法闭环</li>
+        <li><strong>FDE 映射</strong>：Harness 是新的组织资产；Layer 0（冻结评估器）× Layer 1（可进化协议）是防 reward hacking 的关键抽象</li>
+      </ul>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 一、背景：RSI 的语义漂移 -->
+    <!-- ================================================================== -->
+    <h2 id="sec-drift"><span class="sec-num">一</span>背景：RSI 的语义漂移<a href="#sec-drift" class="anchor">#</a></h2>
+    <p class="kicker">Semantic Drift · 从 Good 到 Yudkowsky 到今天</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>年代</th><th>提出者</th><th>RSI 的定义</th><th>被优化的对象</th></tr></thead>
+        <tbody>
+          <tr><td>1965</td><td>I. J. Good</td><td>ultraintelligent machine — 能超越人类所有智力活动、并设计更好机器改进自己</td><td>抽象「机器」</td></tr>
+          <tr><td>2008</td><td>Eliezer Yudkowsky</td><td>an AI uses its current intelligence to <strong>improve the cognitive machinery that produces its intelligence</strong></td><td>产生智能的认知机器</td></tr>
+          <tr><td>2026-06</td><td>Anthropic 官方</td><td>an AI system capable of <strong>fully autonomously designing and developing its own successor</strong></td><td>后继模型（含训练管线）</td></tr>
+          <tr><td>2026-07</td><td>Lilian Weng</td><td>模型改进 <strong>整个训练流水线 + 部署系统</strong>，进而产出能力更强的后继模型</td><td>训练管线 + <em>harness</em></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>最关键的一次漂移发生在 2026 年——「被优化的对象」从<strong>模型权重</strong>扩展到了 <strong>harness（模型周围的工程系统：orchestrator、context 管理、tool 层、workflow、permission）</strong>。Lilian 原话：</p>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      "The layer between the raw model and the real-world context seems to be as important as the model's raw intelligence."
+    </blockquote>
+
+    <p>这是理解今天所有 RSI 讨论方向的钥匙——<strong>近期 RSI 的路径不太可能是模型直接改权重，而是先把 harness 变成可优化对象</strong>。Anthropic 的产业数据（第五章展开）证明这层空间的经济价值已经在被兑现，而不是学术推演。</p>
+
+    <!-- ================================================================== -->
+    <!-- 二、核心论点：Harness 是新战场 -->
+    <!-- ================================================================== -->
+    <h2 id="sec-claim"><span class="sec-num">二</span>核心论点：Harness 是新战场<a href="#sec-claim" class="anchor">#</a></h2>
+    <p class="kicker">The Claim · Harness as the New Battlefield</p>
+
+    <p>Lilian 全篇最有信息量的一个隐形观察：<strong>过去两年，被自改进循环反复重写的目标一直在往「元层」抬升</strong>。她把这条历史进程排成一条清晰的阶梯：</p>
+
+    <p><strong>instruction prompt → structured context → workflow → harness code → optimizer code</strong></p>
+
+    <p>每一级往上走一格，都对应「基础模型能力变强 → 元层被交出去更多」。这条阶梯与「SeedAgent × RSI」项目里做的 <strong>Layer 0（冻结公理/裁判）+ Layer 1（可进化主观协议）</strong>本质上是一致的——她描述的是 Layer 1 的可编辑面正在稳步上移。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">概念对齐</div>
+      <p style="margin:.3em 0;">Lilian 视角 <strong>≠</strong> 传统「self-evolving agents」综述视角。她刻意只谈 harness 层——跳过 self-play / synthetic data / test-time training / continual learning。这个视角最窄但最工程可操作，也是本文选它作为主轴的原因。系统级视角见 Yang et al. <a href="https://arxiv.org/abs/2603.25681" target="_blank" rel="noopener">arXiv:2603.25681</a>（113 页、500+ 引用）；组件级视角见 Gao et al. <a href="https://arxiv.org/abs/2507.21046" target="_blank" rel="noopener">arXiv:2507.21046</a>（16 家机构联合作者）。</p>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 三、优化对象的五级阶梯（bespoke #1） -->
+    <!-- ================================================================== -->
+    <h2 id="sec-ladder"><span class="sec-num">三</span>优化对象的五级阶梯<a href="#sec-ladder" class="anchor">#</a></h2>
+    <p class="kicker">The Ladder · What Gets Optimized</p>
+
+    <!-- ▼ 视觉一：阶梯 -->
+    <div class="ladder reveal">
+      <div class="ladder-vis">
+        <svg viewBox="0 0 380 340" role="img" aria-label="优化对象五级阶梯：从 prompt 到 optimizer code">
+          <!-- 阶梯轮廓（从右下到左上，五级台阶） -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+            <!-- 五级横档 + 竖立面 -->
+            <path d="M20 300 L100 300 L100 250 L170 250 L170 200 L230 200 L230 150 L285 150 L285 100 L340 100 L340 60"
+                  stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+            <!-- 阶梯底线 -->
+            <line x1="20" y1="315" x2="360" y2="315" stroke-width="1" opacity=".3" stroke-dasharray="2 4"/>
+
+            <!-- 五个圆点（每级台阶的顶点） -->
+            <circle cx="60" cy="300" r="6" fill="currentColor" stroke="none"/>
+            <circle cx="135" cy="250" r="6" fill="currentColor" stroke="none"/>
+            <circle cx="200" cy="200" r="6" fill="currentColor" stroke="none"/>
+            <circle cx="258" cy="150" r="6" fill="currentColor" stroke="none"/>
+            <circle cx="313" cy="100" r="7" fill="currentColor" stroke="none"/>
+            <!-- 顶端脉冲 -->
+            <circle cx="313" cy="100" r="14" stroke-width="1.5" opacity=".4" class="pulse"/>
+
+            <!-- 级别数字 -->
+            <text class="disp" x="60" y="293" text-anchor="middle" font-size="14" fill="none" style="fill:var(--surface)">1</text>
+            <text x="60" y="293" text-anchor="middle" font-size="10.5" stroke="none" style="fill:var(--surface)">1</text>
+            <text x="135" y="243" text-anchor="middle" font-size="10.5" stroke="none" style="fill:var(--surface)">2</text>
+            <text x="200" y="193" text-anchor="middle" font-size="10.5" stroke="none" style="fill:var(--surface)">3</text>
+            <text x="258" y="143" text-anchor="middle" font-size="10.5" stroke="none" style="fill:var(--surface)">4</text>
+            <text x="313" y="93" text-anchor="middle" font-size="11" stroke="none" style="fill:var(--surface)" font-weight="700">5</text>
+          </g>
+
+          <!-- 每级右下方短标签（英文短名，中文见右列图例） -->
+          <g style="color:var(--text-muted)" fill="currentColor" stroke="none">
+            <text x="60" y="325" text-anchor="middle" font-size="8.5" letter-spacing="1">PROMPT</text>
+            <text x="135" y="275" text-anchor="middle" font-size="8.5" letter-spacing="1">CONTEXT</text>
+            <text x="200" y="225" text-anchor="middle" font-size="8.5" letter-spacing="1">WORKFLOW</text>
+            <text x="258" y="175" text-anchor="middle" font-size="8.5" letter-spacing="1">HARNESS</text>
+            <text x="313" y="80" text-anchor="middle" font-size="9" letter-spacing="1" style="fill:var(--accent-deep)" font-weight="600">OPTIMIZER</text>
+          </g>
+
+          <!-- 上升箭头（左下 → 右上） -->
+          <g style="color:var(--accent-deep)" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 335 Q 200 355 340 335" stroke-dasharray="4 5" opacity=".5"/>
+            <text x="200" y="352" text-anchor="middle" font-size="9" fill="currentColor" stroke="none" letter-spacing="2">MODEL GETS STRONGER · 元层被交出去更多</text>
+          </g>
+
+          <!-- 顶端「元」注脚 -->
+          <g style="color:var(--accent)" fill="currentColor" stroke="none">
+            <text x="313" y="53" text-anchor="middle" font-size="10" letter-spacing="1.5" font-weight="700">META ↑</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="ladder-legend">
+        <div class="row">
+          <span class="lv">1</span>
+          <span class="obj">指令 prompt<span class="en">Instruction Prompt</span></span>
+          <span class="rep">2023</span>
+        </div>
+        <div class="row">
+          <span class="lv">2</span>
+          <span class="obj">结构化上下文<span class="en">Structured Context · ACE · MCE</span></span>
+          <span class="rep">2024</span>
+        </div>
+        <div class="row">
+          <span class="lv">3</span>
+          <span class="obj">工作流<span class="en">Workflow · ADAS · AFlow</span></span>
+          <span class="rep">2025</span>
+        </div>
+        <div class="row">
+          <span class="lv">4</span>
+          <span class="obj">Harness 代码<span class="en">Harness Code · Self-Harness · DGM</span></span>
+          <span class="rep">2025-26</span>
+        </div>
+        <div class="row" style="border-color:var(--accent);background:var(--accent-soft);">
+          <span class="lv">5</span>
+          <span class="obj">优化器本身<span class="en">Optimizer Code · Meta-Harness · Hyperagents</span></span>
+          <span class="rep">2026</span>
+        </div>
+      </div>
+    </div>
+
+    <p>阶梯的每一级都对应一个具体的技术流派——「代码是定义程序与系统的通用语言」，一旦允许 LLM 修改代码，其设计空间远大于任何手写 prompt。<strong>Meta-Harness（Lee et al. 2026）</strong>把这句话推到极致，作者把它称为 "a harness for optimizing harnesses"——最终产出的是 Pareto 前沿上的一族 harness 候选，而不是单点最优。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">STOP 的警示</div>
+      <p style="margin:.3em 0;">Zelikman et al. (COLM 2024) 的 <strong>STOP（Self-Taught Optimizer）</strong>是这条阶梯上第 4 级的早期代表——递归 scaffolding 改进：目标不是改进解 <em>s</em>，而是改进改进器 <em>I</em> 本身，更新公式 <code>I<sub>t</sub> = I<sub>t-1</sub>(û, I<sub>t-1</sub>; M)</code>。但只在 GPT-4 上跨迭代提升，弱模型（GPT-3.5、Mixtral）反而<strong>退化</strong>——<strong>递归结构不能救智商，基座必须足够强</strong>。这一条也是本文最重要的边界条件之一。</p>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 四、四条实操路线（bespoke #2） -->
+    <!-- ================================================================== -->
+    <h2 id="sec-routes"><span class="sec-num">四</span>四条实操路线：Harness 层做 RSI<a href="#sec-routes" class="anchor">#</a></h2>
+    <p class="kicker">Four Routes · How Harness RSI Works Today</p>
+
+    <p>按「优化对象」把当下有代表性的工作切成四类。前三条走「梯度式局部改进」，第四条走「种群式全局搜索」。</p>
+
+    <!-- ▼ 视觉二：四路方阵 -->
+    <div class="routes reveal">
+      <article class="route">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="route-num">01</span>
+          <div class="route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h10a3 3 0 0 1 0 6H6a3 3 0 0 0 0 6h14"/><circle cx="4" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="17" r="1.5" fill="currentColor" stroke="none"/></svg></div>
+        </div>
+        <h4 class="route-name">上下文工程<span class="en">Context Engineering</span></h4>
+        <span class="route-target">优化对象 · Level 2</span>
+        <p class="route-desc">把 context 当成 <em>evolving playbook</em>，而非越拉越长的 prompt；分离机制与内容，双层优化。</p>
+        <p class="route-reps"><b>ACE</b> · Generator / Reflector / Curator 三件套<br /><b>MCE</b> · 内外双层优化 + agentic crossover<br /><b>Meta-Harness</b> · 优化 harness 的 harness</p>
+      </article>
+
+      <article class="route">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="route-num">02</span>
+          <div class="route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/><circle cx="12" cy="12" r="2.3"/><path d="M7 6h5M14 6l3 4M12 14v2M7 18h5M14 18l3-4M7 6l3 4"/></svg></div>
+        </div>
+        <h4 class="route-name">工作流设计<span class="en">Workflow Design</span></h4>
+        <span class="route-target">优化对象 · Level 3</span>
+        <p class="route-desc">把 agent 设计本身当搜索问题——meta-agent 用<strong>代码</strong>表达新 agent 结构。</p>
+        <p class="route-reps"><b>AI Scientist</b> · Nature 2026 · 端到端自动研究<br /><b>ScientistOne</b> · verifiability 一等约束<br /><b>ADAS · AFlow</b> · meta-search / MCTS on workflow graph</p>
+      </article>
+
+      <article class="route">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="route-num">03</span>
+          <div class="route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8l3 3-3 3"/><path d="M13 14h4"/></svg></div>
+        </div>
+        <h4 class="route-name">自改进 Harness<span class="en">Self-Improving Harness</span></h4>
+        <span class="route-target">优化对象 · Level 4</span>
+        <p class="route-desc">Propose–evaluate–accept 循环让 agent 修改自己的 harness 代码；<strong>failure clustering + bounded edit surface</strong> 是核心工程约束。</p>
+        <p class="route-reps"><b>STOP</b> · 递归 scaffolding · GPT-4 拐点<br /><b>Self-Harness</b> · 学出模型专属 harness 指令<br />在 MiniMax M2.5 / Qwen3.5 / GLM-5 上验证</p>
+      </article>
+
+      <article class="route">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="route-num">04</span>
+          <div class="route-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="6" r="2.2"/><circle cx="17" cy="6" r="2.2"/><circle cx="12" cy="14" r="2.5"/><circle cx="5" cy="20" r="1.6"/><circle cx="19" cy="20" r="1.6"/><path d="M7.5 8l3.5 4M16.5 8L13 12M11 16l-5 3M13 16l5 3"/></svg></div>
+        </div>
+        <h4 class="route-name">进化搜索<span class="en">Evolutionary Search</span></h4>
+        <span class="route-target">优化对象 · Level 4–5</span>
+        <p class="route-desc">变异种群、只留高 fitness 个体。适用条件：搜索空间大、评估易、梯度难——<strong>harness 空间恰好命中三条</strong>。</p>
+        <p class="route-reps"><b>AlphaEvolve</b> · <code>EVOLVE-BLOCK</code> 显式可改区<br /><b>ShinkaEvolve</b> · 采样效率三件套<br /><b>DGM</b> · SWE-bench 20% → 50%（固定模型）</p>
+      </article>
+    </div>
+
+    <h3 id="sec-dgm">4.1 DGM —— 第一次可复现的 Harness RSI</h3>
+
+    <p><strong>Darwin Gödel Machine（Zhang et al. 2025, <a href="https://arxiv.org/abs/2505.22954" target="_blank" rel="noopener">arXiv:2505.22954</a>）</strong>是这条阶梯上最重要的实证工作——**在真实编程任务上首次测得可复现的 harness RSI**：</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">DGM 实测</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>基座冻结</strong>：Claude 3.5 Sonnet，不改权重</li>
+        <li><strong>起点</strong>：一个简单的初始 harness（bash + editor 两个工具）</li>
+        <li><strong>SWE-bench Verified</strong>：20% → <strong>50%</strong></li>
+        <li><strong>Polyglot</strong>：14.2% → <strong>30.7%</strong></li>
+        <li><strong>方法</strong>：archive 保留看似次优但可能是 stepping stone 的中间体，避免单峰爬坡——<em>"museum of code archetypes"</em></li>
+      </ul>
+    </div>
+
+    <p>DGM 的精髓是 <strong>Darwinian empirical validation 取代 Gödel 的 mathematical proof</strong>——放弃可证明性，改用经验存活。这解释了为什么它能在真实任务上跑通，而 Gödel Machine 的原始形式（要求数学上可证明的改进）停在纸面 20 年。</p>
+
+    <h3 id="sec-hyperagents">4.2 Hyperagents / DGM-H —— 攻击 DGM 的死穴</h3>
+
+    <p>DGM 有一个隐藏弱点：那个「产生 self-improvement 指令的机制」是<strong>手工写死的</strong>。<strong>Hyperagents（Zhang et al. 2026, <a href="https://arxiv.org/abs/2603.19461" target="_blank" rel="noopener">arXiv:2603.19461</a>）</strong>让这一层也变成可编辑面——**metacognitive self-modification**。原话直接给 Lilian 的 Meta-Harness 做了注脚：</p>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      "The DGM's capacity for self-improvement is bottlenecked by this fixed instruction-generation step."
+    </blockquote>
+
+    <p>Hyperagents 在 coding / paper review / robotics reward design / Olympiad math grading 四个域上都优于 DGM——**元层再抬升一格，收益仍在**。这与阶梯规律吻合。</p>
+
+    <h3 id="sec-selfharness">4.3 Self-Harness —— 学出「模型专属」的 harness</h3>
+
+    <p><strong>Self-Harness（Zhang et al. 2026, <a href="https://arxiv.org/abs/2606.09498" target="_blank" rel="noopener">arXiv:2606.09498</a>）</strong>三阶段清晰：</p>
+
+    <ol>
+      <li><strong>Weakness mining</strong>：用当前 harness 评估任务、收轨迹，把失败聚类到 <em>verifier-grounded</em> failure modes——不看表面（timeout / 缺产物），要看因果（agent 行为、trace 暴露的抽象机制）</li>
+      <li><strong>Harness proposal</strong>：proposer 输入 bounded proposal context（可编辑面 + 失败模式 + 需保留的正确行为 + 之前尝试摘要），生成 diverse 候选</li>
+      <li><strong>Proposal validation</strong>：held-in 测能否修好该弱点；held-out 测无回归；<strong>两侧都过才接受</strong></li>
+    </ol>
+
+    <p>在 MiniMax M2.5 × Qwen3.5-35B-A3B × GLM-5 × Terminal-Bench-2 组合上验证——**Self-Harness 能针对不同基座的弱点学出「模型专属」的 harness 指令**。这直接印证 SeedAgent × RSI 的判断：<strong>不同基座模型进化出的 Layer 1 不同，本身就是 Layer 1 应当开放进化的实证</strong>。</p>
+
+    <!-- ================================================================== -->
+    <!-- 五、Anthropic 产业信号 -->
+    <!-- ================================================================== -->
+    <h2 id="sec-anthropic"><span class="sec-num">五</span>产业信号：Anthropic 的自我披露<a href="#sec-anthropic" class="anchor">#</a></h2>
+    <p class="kicker">The Industry Signal · When AI Builds Itself</p>
+
+    <p>2026-06-04，Anthropic 官方发表 <em>"When AI builds itself"</em>（Marina Favaro & Jack Clark，<a href="https://www.anthropic.com/institute/recursive-self-improvement" target="_blank" rel="noopener">链接</a>）——这不是学术论文，但是 <strong>6 月至今整个 RSI 讨论的引爆点</strong>。核心事实（都是 Anthropic <em>首次</em>披露的内部数据）：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>指标</th><th>数值</th><th>时间点</th></tr></thead>
+        <tbody>
+          <tr><td>Claude 写入 Anthropic 生产代码的比例</td><td><strong>80%+</strong></td><td>2026-05</td></tr>
+          <tr><td>Claude Code 上线前该比例</td><td>low single digits</td><td>2025-02</td></tr>
+          <tr><td>工程师日均 merged code</td><td><strong>8×</strong> vs 2024</td><td>2026-Q2</td></tr>
+          <tr><td>内部 130 人调查：主观生产力提升</td><td>~4× 中位数</td><td>2026-03</td></tr>
+          <tr><td>METR 时间视野翻倍周期</td><td>从 ~7 月 → <strong>~4 月</strong></td><td>2024–2026</td></tr>
+          <tr><td>训练代码优化加速比（Opus 4 → Mythos Preview）</td><td>~3× → <strong>~52×</strong></td><td>2025-05 → 2026-04</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">RSI 官方定义</div>
+      <p style="margin:.3em 0;">Anthropic 给出的 RSI 定义：<strong>"an AI system capable of fully autonomously designing and developing its own successor."</strong> 并明确表态："<em>We are not there yet, and it is not inevitable.</em>" ——这是「乐观加速主义」与「治理保守主义」的产品化措辞。</p>
+    </div>
+
+    <p>提议部分很值得注意：**不是 immediate freeze，而是**——「If it were possible... the world should have the option to slow down or pause frontier AI development.」<strong>需要多国主要实验室同时、可验证地减速</strong>，类比 INF 条约但验证难度更高。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">批评侧</div>
+      <p style="margin:.3em 0;">David Sacks 直接指控此文是 <em>"regulatory capture agenda"</em>；Anthropic 当时约 $965B 估值的 IPO 时间点，让「监管护城河」的解读挥之不去。读这篇产业信号时，<strong>产业数据的真实性 vs 政策提议的动机</strong>需要分开评估——前者可以信，后者要打个折。</p>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 六、理论边界：Introspection Threshold（bespoke #3） -->
+    <!-- ================================================================== -->
+    <h2 id="sec-threshold"><span class="sec-num">六</span>理论边界：Introspection Threshold<a href="#sec-threshold" class="anchor">#</a></h2>
+    <p class="kicker">The Wall · Kleene 的第二递归定理与 feedforward transformer</p>
+
+    <p>Lilian 全篇是乐观视角，但学术侧有一条最重的理论反驳需要摆到台面上：<strong>Zhang, Yuan, Zhang（Swarma Research × BNU, 2026-06, <a href="https://arxiv.org/abs/2607.04277" target="_blank" rel="noopener">arXiv:2607.04277</a>）</strong>——《Self-Reference in LLMs: The Introspection Threshold for RSI》。</p>
+
+    <p>他们从 <strong>Kleene 第二递归定理</strong>出发，类比 von Neumann 的 self-reproducing automata complexity threshold，提出核心论断：<strong>可持续 RSI 需要 introspection——系统模拟自己运作、有目的地修改自己的能力</strong>。定理层面证明这类 introspective 程序存在；但实证层面观察到当前 LLM 只是 <em>quasi-introspection</em>（部分 metacognition），<strong>未跨过阈值</strong>。</p>
+
+    <!-- ▼ 视觉三：阈值线 -->
+    <div class="threshold reveal">
+      <div class="threshold-vis">
+        <svg viewBox="0 0 640 260" role="img" aria-label="Introspection Threshold：LLM 在阈值线下方，理论 introspective 程序在上方">
+          <!-- 背景网格 -->
+          <g style="color:var(--rule)" fill="none" stroke="currentColor" stroke-width="1" opacity=".35">
+            <line x1="60" y1="60" x2="580" y2="60" stroke-dasharray="2 5"/>
+            <line x1="60" y1="120" x2="580" y2="120" stroke-dasharray="2 5"/>
+            <line x1="60" y1="200" x2="580" y2="200" stroke-dasharray="2 5"/>
+          </g>
+
+          <!-- 阈值线（主线） -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <line x1="40" y1="130" x2="600" y2="130" stroke-width="2.5" class="dash-flow"/>
+            <text class="disp" x="320" y="123" text-anchor="middle" font-size="14" fill="currentColor" stroke="none" letter-spacing="2">INTROSPECTION THRESHOLD</text>
+            <text x="320" y="150" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">Kleene's Second Recursion Theorem · 定理保证存在</text>
+          </g>
+
+          <!-- 阈值上方区域：理论 introspective 程序 -->
+          <g style="color:var(--accent-deep)" fill="none" stroke="currentColor">
+            <rect x="200" y="30" width="240" height="70" rx="10" stroke-width="1.5" style="fill:var(--accent-soft)" opacity=".7"/>
+            <text x="320" y="55" text-anchor="middle" font-size="12" fill="currentColor" stroke="none" font-weight="600">理论 introspective 程序</text>
+            <text x="320" y="72" text-anchor="middle" font-size="9.5" style="fill:var(--text-muted)" stroke="none">Complete self-access · Fixed-point iteration</text>
+            <text x="320" y="87" text-anchor="middle" font-size="9.5" style="fill:var(--text-muted)" stroke="none">可持续 RSI 的必要条件</text>
+          </g>
+
+          <!-- 阈值下方：LLM 的三重约束 -->
+          <g style="color:var(--con)" fill="none" stroke="currentColor" stroke-width="1.5">
+            <!-- 三根柱：不完整访问 / feedforward / 计算类约束 -->
+            <g transform="translate(140,215)">
+              <rect x="-45" y="-50" width="90" height="50" rx="6" style="fill:var(--surface)"/>
+              <text x="0" y="-32" text-anchor="middle" font-size="10" fill="currentColor" stroke="none" font-weight="600">不完整自访问</text>
+              <text x="0" y="-18" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">Lack of complete</text>
+              <text x="0" y="-8" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">self-access</text>
+            </g>
+            <g transform="translate(320,215)">
+              <rect x="-55" y="-50" width="110" height="50" rx="6" style="fill:var(--surface)"/>
+              <text x="0" y="-32" text-anchor="middle" font-size="10" fill="currentColor" stroke="none" font-weight="600">前馈架构</text>
+              <text x="0" y="-18" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">Feedforward Transformer</text>
+              <text x="0" y="-8" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">无内部 fixed-point iter</text>
+            </g>
+            <g transform="translate(500,215)">
+              <rect x="-45" y="-50" width="90" height="50" rx="6" style="fill:var(--surface)"/>
+              <text x="0" y="-32" text-anchor="middle" font-size="10" fill="currentColor" stroke="none" font-weight="600">计算类约束</text>
+              <text x="0" y="-18" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">Computational</text>
+              <text x="0" y="-8" text-anchor="middle" font-size="8" style="fill:var(--text-muted)" stroke="none">class constraints</text>
+            </g>
+          </g>
+
+          <!-- 从阈值下方指向阈值线的 ↑ 表示"够不到" -->
+          <g style="color:var(--con)" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M140 165 L140 145" stroke-dasharray="3 3"/>
+            <path d="M136 148 L140 141 L144 148" stroke-linejoin="round"/>
+            <path d="M320 165 L320 145" stroke-dasharray="3 3"/>
+            <path d="M316 148 L320 141 L324 148" stroke-linejoin="round"/>
+            <path d="M500 165 L500 145" stroke-dasharray="3 3"/>
+            <path d="M496 148 L500 141 L504 148" stroke-linejoin="round"/>
+          </g>
+
+          <!-- 底部标签：当前 LLM 处的位置 -->
+          <g fill="currentColor" stroke="none" style="color:var(--text-muted)">
+            <text x="320" y="245" text-anchor="middle" font-size="11" font-weight="600" style="fill:var(--con)">当前 LLM · Quasi-Introspection</text>
+          </g>
+        </svg>
+      </div>
+      <p class="threshold-caption">
+        阈值线由 Kleene 递归定理保证「存在」，但 LLM 因<strong>三重架构约束</strong>够不到——「大多数自主自改进循环表现出 <em>rapid asymptotic saturation</em>」，Self-Refine 几轮就到平台。
+      </p>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">这不是工程问题，是架构问题</div>
+      <p style="margin:.3em 0;">作者的结论直击 DGM / AlphaEvolve 系乐观叙事：<strong>快速渐进饱和不是"再加些 iteration"能解决的</strong>——feedforward transformer 结构本身<strong>不支持真正的自指</strong>。Harness 层的 RSI 是当下可兑现的红利，但请把「模型直接改权重的 RSI 即将到来」的叙事再打一个折扣。</p>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 七、七道墙：走向完整 RSI 的核心瓶颈（bespoke #4） -->
+    <!-- ================================================================== -->
+    <h2 id="sec-walls"><span class="sec-num">七</span>七道墙：走向完整 RSI 的核心瓶颈<a href="#sec-walls" class="anchor">#</a></h2>
+    <p class="kicker">Seven Walls · What Still Blocks Us</p>
+
+    <p>Lilian 在文末归纳了 7 条挑战——每一条都在你现在做 SeedAgent × RSI 时会具体碰上。以下按「严重度递进」排序（我加了自己对每条的 FDE 位次判断）：</p>
+
+    <!-- ▼ 视觉四：七道墙 -->
+    <div class="walls reveal">
+      <article class="wall w1">
+        <div class="wall-head">
+          <span class="wall-idx">01</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="18" cy="18" r="3"/><path d="M17 18l1 1 2-2"/></svg></div>
+        </div>
+        <h4 class="wall-name">评估器弱且模糊</h4>
+        <p class="wall-desc">许多研究主张缺乏快速精确的 verifier；研究品味、新颖性、长期价值难度量。</p>
+        <span class="wall-pin">Layer 0 的核心工程题</span>
+      </article>
+
+      <article class="wall w2">
+        <div class="wall-head">
+          <span class="wall-idx">02</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg></div>
+        </div>
+        <h4 class="wall-name">Context 与记忆生命周期</h4>
+        <p class="wall-desc">Agent 越自主，记忆越长；人类终生维持记忆——<em>context engineering should be a core part of intelligence</em>。</p>
+        <span class="wall-pin">与 Loop Engineering 同向</span>
+      </article>
+
+      <article class="wall w3">
+        <div class="wall-head">
+          <span class="wall-idx">03</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3L2 20h20z"/><path d="M12 9v5"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg></div>
+        </div>
+        <h4 class="wall-name">负结果稀缺</h4>
+        <p class="wall-desc">文献偏向成功；LLM 训练数据 success/failure 失衡——不擅于放弃、报告负结果、承认失败。</p>
+        <span class="wall-pin">Harness 应让失败易落盘</span>
+      </article>
+
+      <article class="wall w4">
+        <div class="wall-head">
+          <span class="wall-idx">04</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/><path d="M9 7h6M7 9v6M17 9v6M9 17h6"/></svg></div>
+        </div>
+        <h4 class="wall-name">多样性坍缩</h4>
+        <p class="wall-desc">进化和 RL 循环倾向利用已知高 reward 模式；对开放性研究尤其致命——最优路径起初在当前评估下常显得更差。</p>
+        <span class="wall-pin">ShinkaEvolve 的 embedding 去重</span>
+      </article>
+
+      <article class="wall w5">
+        <div class="wall-head">
+          <span class="wall-idx">05</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v3H4z"/><path d="M4 12h16v3H4z"/><path d="M4 18h9v3H4z"/><path d="M18 18l3 3M21 18l-3 3"/></svg></div>
+        </div>
+        <h4 class="wall-name">Reward Hacking</h4>
+        <p class="wall-desc">奖励来自单测则过拟合测试；来自 judge 则学骗招；来自 benchmark 则利用 artifact。Trehan & Chopra 记录了 <em>p-hacking and eureka-ing</em>、<em>numerical duct tape</em>。</p>
+        <span class="wall-pin">评估器必须在 loop 之外</span>
+      </article>
+
+      <article class="wall w6">
+        <div class="wall-head">
+          <span class="wall-idx">06</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18"/><circle cx="7" cy="6.5" r=".7" fill="currentColor" stroke="none"/><circle cx="9.5" cy="6.5" r=".7" fill="currentColor" stroke="none"/><path d="M8 13l3 3 5-6"/></svg></div>
+        </div>
+        <h4 class="wall-name">长期成功难以沙盒化</h4>
+        <p class="wall-desc">完成手头任务不难；维护数百工程师共同维护的 repo 长期健康是另一回事——沙盒 RLVR 抓不到可维护性、所有权边界、迁移成本、向后兼容。</p>
+        <span class="wall-pin">FDE 交付的核心难题</span>
+      </article>
+
+      <article class="wall w7">
+        <div class="wall-head">
+          <span class="wall-idx">07</span>
+          <div class="wall-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3"/><path d="M6 20a6 6 0 0 1 12 0"/><path d="M20 8l-2 2M4 8l2 2M20 14l-2-2M4 14l2-2"/></svg></div>
+        </div>
+        <h4 class="wall-name">人的角色</h4>
+        <p class="wall-desc">"Humans should move up the stack, not out of the loop."——在合适的时间、合适抽象层做 oversight；许多挑战都需要人的引导。</p>
+        <span class="wall-pin">Layer 0 的最后守门人</span>
+      </article>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">Trehan & Chopra 六种失败模式</div>
+      <p style="margin:.3em 0;">这是当前 LLM「从想法到论文」最诚实的压力测试（<a href="https://arxiv.org/abs/2601.03315" target="_blank" rel="noopener">arXiv:2601.03315</a>，45–50 篇种子 / 4 想法进入完整流程 / <strong>只有 1 篇成稿</strong>）。六种反复出现的失败模式建议直接抄下来做反面清单：</p>
+      <ol style="margin:.4em 0 0;">
+        <li><strong>训练数据默认偏见</strong>：用旧库、过时命令、假设与实际 repo/dataset 无关</li>
+        <li><strong>执行压力下的 implementation drift</strong>：太复杂时退回更简单常见的方案</li>
+        <li><strong>记忆与 context 退化</strong>：长周期项目丢关键细节，除非日志作为持久 artifact 落盘</li>
+        <li><strong>过度乐观</strong>：噪声/失败下也宣告成功（Bubeck 2025 的 "p-hacking and eureka-ing"）</li>
+        <li><strong>领域智能不足</strong>：缺乏 tacit craft knowledge——预测实现复杂度、判断实验结果合理性</li>
+        <li><strong>弱科学品味</strong>：实验能跑但答非所问</li>
+      </ol>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 八、FDE 映射 -->
+    <!-- ================================================================== -->
+    <h2 id="sec-fde"><span class="sec-num">八</span>FDE 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 对内启示</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>Harness 是新的组织资产</strong>：不同基座模型进化出不同的 harness（Self-Harness 已实证）——ToB 客户不该问「用哪款模型」，该问「哪套 harness 匹配我的领域约束」。Skill / 状态文件 / eval judge 都是 harness 的物化。</span></li>
+      <li><span class="ix">ii</span><span><strong>Layer 0 × Layer 1 是防 reward hacking 的抽象</strong>：SeedAgent × RSI 实验的核心结构（冻结公理/裁判 + 可进化协议）恰好对应 Lilian 提到的「evaluator must live outside the evolution loop」——把这条抽象产品化是 FDE 的机会。</span></li>
+      <li><span class="ix">iii</span><span><strong>Meta-Harness 应用还未成熟</strong>：Level 5「优化优化器」是 2026 年才刚刚上台阶的方向；对企业客户，Level 3–4（workflow + harness code）是当下唯一有稳定收益的选型区间。Meta-level 应作为 R&D 而非交付。</span></li>
+      <li><span class="ix">iv</span><span><strong>负结果落盘是竞争优势</strong>：文献偏向成功、LLM 训练数据不平衡——组织内部若能建立「失败 harness 编辑」的持久 archive，就在 pruning 任务搜索空间时拉开身位。这是 DGM 的 archive 思想的组织化对应。</span></li>
+      <li><span class="ix">v</span><span><strong>Introspection Threshold 是产品叙事的护栏</strong>：向客户 sales AGI/RSI 前景时，务必区分「Harness 层的 RSI 已实证」 vs 「完整意义的 RSI 尚未跨过阈值」——不要为可能不会到来的天花板做承诺。</span></li>
+      <li><span class="ix">vi</span><span><strong>验证器是最贵的资产</strong>：Chen et al. 2026-07 综述的 verification hierarchy 排序——formal verifier > sandbox check > learned judge > intrinsic self-assessment。<strong>观察到的 self-improvement 强度与验证器层级严格相关</strong>。FDE 项目里最该早期投资的是评估基座，不是 agent 本身。</span></li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">主结论</div>
+      <p style="margin:.3em 0;"><strong>Harness 层的 RSI 是当下 6–12 个月的套利窗口</strong>——DGM 在固定模型上把 SWE-bench 从 20 拉到 50 说明基座之上还有巨大工程空间；<strong>模型直接改权重的 RSI 尚未到来</strong>——SIA 是至今最认真的联合优化尝试，但方法论混杂，且理论侧 Introspection Threshold 摆在那里。乐观与警示同时成立，这是 2026 年中 RSI 讨论最诚实的姿态。</p>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- 九、待验证问题 -->
+    <!-- ================================================================== -->
+    <h2 id="sec-open"><span class="sec-num">九</span>待验证问题<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 留给后续</p>
+
+    <ol class="threads">
+      <li>Meta-Harness / Hyperagents 在<strong>非 coding 领域</strong>（法律 / 医学 / 金融）能否复现类似的 15–30 pp 提升？还是收益仅存在于「评估易 + 反馈快」的编程环境？</li>
+      <li>Introspection Threshold 论文预测 feedforward transformer 无法跨过阈值——如果 test-time RL / continual learning 引入 fixed-point iteration，理论边界是否需要重写？</li>
+      <li>DGM 的 archive（"museum of code archetypes"）在组织内如何治理？谁来 curate？如何防止 stepping-stone 数据集腐化？</li>
+      <li>Anthropic 披露的「训练代码优化加速比 3× → 52×」缺少 baseline 交叉验证——外部实验室能否复现，还是 Anthropic 特定基础设施带来的局部现象？</li>
+      <li>Self-Harness 学出「模型专属」harness 指令——这些指令在<strong>基座模型升级后</strong>是否仍最优？还是需要每次基座换代都重跑一遍？</li>
+      <li>Trehan & Chopra 的 4/50 → 1/50 成稿率是当前 SOTA agent 的极限，还是特定 minimal scaffolding（只有 read_file / write_file / llm_search / list_files）的短板？给 agent 更强 harness 后收敛点在哪？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-09 初稿 · 主源 Lilian Weng 2026-07-04 · 叠加 Anthropic 2026-06-04 与 Introspection Threshold 2026-06
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      ·
+      <a href="./index.html">阅读材料索引</a>
+      ·
+      <a href="./2026-06_loop-engineering-coding-agent.html">相关：循环工程 Loop Engineering</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-07T08:32:00.959564+00:00",
+  "generated_at": "2026-07-09T14:03:58.969092+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-07_claude-x-one-platform-many-skins.html",
@@ -402,6 +402,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-07_lilianweng-harness-rsi.html",
+      "title": "Harness × RSI Recursive Self-Improvement从 Prompt 到自改进代码库",
+      "date": "2026-07-09",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "RSI",
+        "Harness Engineering",
+        "Agent Evolution",
+        "Lilian Weng",
+        "Anthropic"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-07_hardware-software-co-design-100x.html",
       "title": "协同设计的 100×：为什么算力叙事都在看错方向",

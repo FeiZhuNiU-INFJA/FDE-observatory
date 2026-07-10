@@ -182,6 +182,7 @@
 | teal | `#0d9488` | Loop Engineering |
 | blue | `#2563eb` | Dynamic Workflows（注：与 `--info` 同值，老页，新页避免） |
 | violet | `#7c3aed` | Artifacts |
+| wine/mulberry | `#831843` / dark `#fda4af` | Harness × RSI（Lilian Weng 深度解读） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`
