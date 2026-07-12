@@ -1,0 +1,550 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI-Native Engineering 五阶段：别把工具采购误认成组织进化 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #475569;
+    --accent-deep: #1f2937;
+    --accent-ink: #263244;
+    --accent-soft: color-mix(in srgb, #475569 11%, white);
+    --accent-glow: color-mix(in srgb, #475569 18%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #94a3b8;
+    --accent-deep: #cbd5e1;
+    --accent-ink: #e2e8f0;
+    --accent-soft: color-mix(in srgb, #475569 36%, #1a1a22);
+    --accent-glow: color-mix(in srgb, #94a3b8 18%, transparent);
+  }
+
+  .stage-map text,
+  .gap-panel text,
+  .review-gate text,
+  .control-plane text { font-family: var(--mono); }
+  .stage-map .disp,
+  .gap-panel .disp,
+  .review-gate .disp,
+  .control-plane .disp { font-family: var(--display); font-weight: 700; }
+  .dash-run { stroke-dasharray: 7 9; animation: dashrun 1.7s linear infinite; }
+  @keyframes dashrun { to { stroke-dashoffset: -32; } }
+  .soft-pulse { animation: softpulse 2.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes softpulse { 0%, 100% { opacity: 1; } 50% { opacity: .42; } }
+
+  .stage-map {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 18px;
+    background: var(--surface); box-shadow: var(--shadow); padding: 1.2rem;
+  }
+  .stage-map svg { width: 100%; height: auto; display: block; }
+  .stage-caption {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: .55rem; margin-top: .9rem;
+  }
+  .stage-pill {
+    border: 1px solid var(--border); border-radius: 10px; padding: .65rem .6rem;
+    background: color-mix(in srgb, var(--surface) 70%, var(--bg-soft));
+    transition: transform .2s, border-color .2s;
+  }
+  .stage-pill:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .stage-pill b { display: block; font-family: var(--display); color: var(--accent); font-size: 1rem; }
+  .stage-pill span { display: block; color: var(--text-soft); font-size: .78rem; line-height: 1.45; }
+  @media (max-width: 900px) { .stage-caption { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .stage-caption { grid-template-columns: 1fr; } }
+
+  .gap-panel {
+    display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; margin: 1.8em 0;
+  }
+  .gap-card {
+    border: 1px solid var(--border); border-radius: 16px; background: var(--surface);
+    padding: 1.1rem; transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .gap-card:hover { transform: translateY(-4px); border-color: var(--accent); box-shadow: 0 14px 30px var(--accent-glow); }
+  .gap-card svg { width: 100%; height: auto; display: block; margin-bottom: .8rem; }
+  .gap-label {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: .35rem;
+  }
+  .gap-card p { margin: 0; color: var(--text-soft); font-size: .88rem; line-height: 1.55; }
+  .gap-arrow {
+    display: flex; flex-direction: column; justify-content: center; align-items: center; color: var(--accent);
+    font-family: var(--display); font-size: 2.1rem; min-width: 2.2rem;
+  }
+  .gap-arrow span {
+    font-family: var(--mono); font-size: .58rem; letter-spacing: .14em; color: var(--text-muted);
+    writing-mode: vertical-rl; text-transform: uppercase;
+  }
+  @media (max-width: 780px) {
+    .gap-panel { grid-template-columns: 1fr; }
+    .gap-arrow { transform: rotate(90deg); min-height: 2.2rem; }
+    .gap-arrow span { writing-mode: horizontal-tb; transform: rotate(-90deg); }
+  }
+
+  .review-gate {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 18px;
+    background: linear-gradient(135deg, var(--surface), color-mix(in srgb, var(--accent) 6%, var(--surface)));
+    padding: 1.2rem; overflow: hidden;
+  }
+  .review-gate svg { width: 100%; height: auto; display: block; }
+  .gate-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: .9rem; }
+  .gate-note {
+    border: 1px solid var(--border); border-radius: 12px; padding: .85rem .85rem .8rem; background: var(--surface);
+  }
+  .gate-note b { display: block; color: var(--text); font-family: var(--display); margin-bottom: .2rem; }
+  .gate-note span { display: block; color: var(--text-soft); font-size: .82rem; line-height: 1.45; }
+  @media (max-width: 760px) { .gate-notes { grid-template-columns: 1fr; } }
+
+  .control-plane {
+    display: grid; grid-template-columns: minmax(260px, 390px) 1fr; gap: 1.4rem; align-items: center; margin: 1.8em 0;
+  }
+  .control-vis {
+    border: 1px solid var(--border); border-radius: 18px; padding: 1rem;
+    background: radial-gradient(circle at 50% 45%, var(--accent-soft), var(--surface) 58%);
+    box-shadow: var(--shadow);
+  }
+  .control-vis svg { width: 100%; height: auto; display: block; }
+  .control-stack { display: flex; flex-direction: column; gap: .65rem; }
+  .control-item {
+    border: 1px solid var(--border); border-radius: 12px; padding: .85rem 1rem;
+    background: var(--surface); display: grid; grid-template-columns: auto 1fr; gap: .8rem;
+    align-items: baseline; transition: transform .2s, border-color .2s;
+  }
+  .control-item:hover { transform: translateX(4px); border-color: var(--accent); }
+  .control-item .ix { font-family: var(--display); color: var(--accent); font-style: italic; }
+  .control-item b { color: var(--text); }
+  .control-item span { color: var(--text-soft); font-size: .86rem; line-height: 1.48; }
+  @media (max-width: 880px) { .control-plane { grid-template-columns: 1fr; } .control-vis { max-width: 430px; margin: 0 auto; } }
+
+  .diagnostic {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; margin: 1.6em 0;
+  }
+  .diag-card {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1rem; background: var(--surface);
+    border-top: 3px solid var(--accent); transition: transform .2s;
+  }
+  .diag-card:hover { transform: translateY(-3px); }
+  .diag-card b { display: block; color: var(--text); font-family: var(--display); font-size: 1.04rem; margin-bottom: .35rem; }
+  .diag-card span { display: block; color: var(--text-soft); font-size: .82rem; line-height: 1.48; }
+  @media (max-width: 980px) { .diagnostic { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .diagnostic { grid-template-columns: 1fr; } }
+
+  .truth-table { margin: 1.6em 0; }
+  .truth-row {
+    display: grid; grid-template-columns: 1.1fr 1.2fr 1.4fr; gap: .75rem; align-items: stretch;
+    margin-bottom: .55rem;
+  }
+  .truth-row > div {
+    border: 1px solid var(--border); border-radius: 10px; padding: .75rem .85rem; background: var(--surface);
+    color: var(--text-soft); font-size: .86rem; line-height: 1.5;
+  }
+  .truth-row.head > div {
+    font-family: var(--mono); text-transform: uppercase; letter-spacing: .1em; font-size: .64rem;
+    color: var(--accent); font-weight: 600; background: var(--accent-soft);
+  }
+  .truth-row b { color: var(--text); }
+  @media (max-width: 760px) { .truth-row { grid-template-columns: 1fr; } .truth-row.head { display: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-run, .soft-pulse { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      AI-Native Engineering 五阶段：别把工具采购误认成组织进化<span class="brand-sub">跨市场 · 阅读材料 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>AI-Native Engineering 五阶段<br />别把工具采购误认成组织进化</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Mark Ajzenstadt X Article 深度解读 · 从 Copilot 许可证到工程组织操作系统 · 约 12 分钟</p>
+      <div class="doc-meta">
+        <span>2026-07-12</span>
+        <span>跨市场</span>
+        <span>AI-Native Engineering</span>
+        <span>Engineering OS</span>
+        <span>Software Factory</span>
+        <span>Developer Productivity</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">5<small>级</small></div><div class="lab">从 Stage 0 到治理级工厂</div></div>
+        <div class="hero-stat"><div class="num">4<small>问</small></div><div class="lab">是否有资格谈 factory</div></div>
+        <div class="hero-stat"><div class="num">90<small>天</small></div><div class="lab">从 0 到 2 的 enablement 窗口</div></div>
+        <div class="hero-stat"><div class="num">1<small>轴</small></div><div class="lab">核心指标：impact per token</div></div>
+      </div>
+      <p style="color:var(--text-soft);font-size:.95rem;">
+        源：Mark Ajzenstadt ·
+        <a href="https://x.com/mardehaym/article/2070557674966573570" target="_blank" rel="noopener">The Five Stages of AI-Native Engineering</a>
+        · 抓取 2026-07-12
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>这篇文章真正值得读的地方，不是“五阶段”这个成熟度模型，而是它把 AI 编程的竞争焦点从“模型能力 / 工具覆盖”拉回到“组织吞吐 / 评审制度 / 度量基线 / 治理平面”。AI-native engineering 不是一组工具，而是一套新的工程组织操作系统。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul>
+        <li>“AI-native” 的分水岭不是有没有 Copilot，而是 AI 是否进入了团队的工作流、质量门禁、评审节奏和指标体系。</li>
+        <li>Stage 0 最大的问题是不可见：团队不知道 AI 在哪里产生价值，也不知道在哪里制造技术债。</li>
+        <li>Stage 1 到 Stage 2 的跃迁，本质是从“个人效率增强”变成“组织流程重写”。这一步通常不是技术问题，而是责任人和制度问题。</li>
+        <li>“Software Factory” 至少是 Stage 3 之后的词。没有评审吞吐、机器可读架构记录和治理平面，factory 只会放大混乱。</li>
+        <li>最锋利的指标是 impact-per-token：它把 AI 成本、交付质量和业务影响压到同一张账上。</li>
+        <li>对 FDE 来说，这篇文章可以转译成一套客户诊断框架：先测基线，再改工作流，最后才谈 factory 和控制平面。</li>
+      </ul>
+    </div>
+
+    <h2 id="why-it-matters"><span class="sec-num">一</span>它不是成熟度模型，而是组织操作系统诊断<a href="#why-it-matters" class="anchor">#</a></h2>
+    <p class="kicker">— FROM TOOL ADOPTION TO OPERATING MODEL</p>
+    <p>原文表面上在讲 AI-native engineering 的五个阶段：Stage 0 看不清现状，Stage 1 个人 enablement，Stage 2 组织级 enablement，Stage 3 产品级 AI factory，Stage 4 治理级 AI factory。但如果只把它当成“成熟度阶梯”，就会低估它的价值。</p>
+    <p>更准确的读法是：它在给 CTO 一个反幻觉仪表盘。你以为团队已经在 Stage 2，因为工程师都在用 AI；但实际上，你可能仍在 Stage 0，因为没有 baseline、没有 adoption map、没有质量账本，也没有人对转型负责。</p>
+
+    <div class="stage-map reveal">
+      <svg viewBox="0 0 980 360" role="img" aria-label="AI-Native Engineering 五阶段从可见性、个人增强、组织流程、产品能力到治理平面逐级上升">
+        <defs>
+          <linearGradient id="stageRail" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0" style="stop-color:var(--border-strong)" />
+            <stop offset=".45" style="stop-color:var(--accent)" />
+            <stop offset="1" style="stop-color:var(--accent-deep)" />
+          </linearGradient>
+        </defs>
+        <rect x="24" y="28" width="932" height="304" rx="28" style="fill:var(--bg-soft);stroke:var(--border)" />
+        <path d="M100 242 C250 205, 350 206, 476 172 S720 95, 880 78" fill="none" stroke="url(#stageRail)" stroke-width="7" stroke-linecap="round" />
+        <path class="dash-run" d="M100 242 C250 205, 350 206, 476 172 S720 95, 880 78" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--accent)" opacity=".72" />
+
+        <g style="color:var(--accent)" stroke="currentColor" fill="var(--surface)">
+          <circle cx="100" cy="242" r="27" stroke-width="2" />
+          <circle cx="294" cy="208" r="27" stroke-width="2" />
+          <circle cx="488" cy="170" r="27" stroke-width="2" />
+          <circle cx="682" cy="112" r="27" stroke-width="2" />
+          <circle cx="880" cy="78" r="27" stroke-width="2" />
+        </g>
+        <g class="disp" text-anchor="middle" dominant-baseline="middle" style="fill:var(--accent-ink)">
+          <text x="100" y="242" font-size="24">0</text>
+          <text x="294" y="208" font-size="24">1</text>
+          <text x="488" y="170" font-size="24">2</text>
+          <text x="682" y="112" font-size="24">3</text>
+          <text x="880" y="78" font-size="24">4</text>
+        </g>
+
+        <g style="fill:var(--text);font-size:14;font-weight:600">
+          <text x="100" y="292" text-anchor="middle">不可见</text>
+          <text x="294" y="258" text-anchor="middle">个人增强</text>
+          <text x="488" y="220" text-anchor="middle">组织流程</text>
+          <text x="682" y="162" text-anchor="middle">产品工厂</text>
+          <text x="880" y="128" text-anchor="middle">治理平面</text>
+        </g>
+        <g style="fill:var(--text-muted);font-size:11;letter-spacing:.06em" text-anchor="middle">
+          <text x="100" y="313">NO BASELINE</text>
+          <text x="294" y="279">COACHING</text>
+          <text x="488" y="241">TICKET → PR</text>
+          <text x="682" y="183">AI FEATURES</text>
+          <text x="880" y="149">CONTROL PLANE</text>
+        </g>
+
+        <g style="color:var(--warn)" stroke="currentColor" fill="none" stroke-width="2">
+          <path d="M358 286 L420 286" />
+          <path d="M389 256 L389 316" />
+        </g>
+        <text x="389" y="334" text-anchor="middle" style="fill:var(--warn);font-size:12;font-weight:600">多数团队卡在 0 → 1</text>
+      </svg>
+      <div class="stage-caption">
+        <div class="stage-pill"><b>Stage 0</b><span>AI 使用不可见，价值和债务都没有账。</span></div>
+        <div class="stage-pill"><b>Stage 1</b><span>个人会用 AI，但仍靠旧流程兜底。</span></div>
+        <div class="stage-pill"><b>Stage 2</b><span>ticket-to-PR 工作流被 agentic 化。</span></div>
+        <div class="stage-pill"><b>Stage 3</b><span>AI 进入产品，成为可售能力。</span></div>
+        <div class="stage-pill"><b>Stage 4</b><span>模型、策略、审计、影响分析统一治理。</span></div>
+      </div>
+    </div>
+
+    <p>这里最关键的断点是 Stage 0 到 Stage 1。很多公司以为自己缺的是更强的 agent，其实缺的是“谁来管理 AI 进入工程系统”。没有 AI productivity lead，没有 rollout plan，没有 measurement cadence，工具就只能漂浮在个人习惯层。</p>
+
+    <h2 id="stage-zero"><span class="sec-num">二</span>Stage 0 的真问题：不是没用 AI，而是没有账本<a href="#stage-zero" class="anchor">#</a></h2>
+    <p class="kicker">— THE INVISIBLE ADOPTION TRAP</p>
+    <p>原文里最有价值的一句话是：Most companies are here while claiming Stage 2。这个判断很狠，因为它把“AI adoption”的伪进展拆掉了。买了工具、开了权限、工程师偶尔用 autocomplete，并不等于组织获得了 AI 生产力。</p>
+
+    <div class="gap-panel reveal">
+      <div class="gap-card">
+        <svg viewBox="0 0 340 180" role="img" aria-label="旧状态中 AI 工具漂浮在个人层，组织看不到价值流">
+          <rect x="24" y="24" width="292" height="132" rx="18" style="fill:var(--bg-soft);stroke:var(--border)" />
+          <g style="color:var(--text-muted)" stroke="currentColor" fill="none" stroke-width="2">
+            <path d="M72 118 h196" />
+            <path d="M94 88 h62" />
+            <path d="M184 88 h62" />
+            <circle cx="94" cy="88" r="17" />
+            <circle cx="184" cy="88" r="17" />
+            <circle cx="246" cy="88" r="17" />
+          </g>
+          <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2">
+            <path class="soft-pulse" d="M82 48 c18 -17 42 -17 60 0" />
+            <path class="soft-pulse" d="M202 50 c16 -15 38 -15 54 0" />
+          </g>
+          <text x="170" y="145" text-anchor="middle" style="fill:var(--text-muted);font-size:11">licenses exist · system cannot see</text>
+        </svg>
+        <div class="gap-label">Tool Layer</div>
+        <p>AI 工具作为个人插件存在。组织只看到“大家好像在用”，看不到 adoption rate、代码质量变化、review 压力和技术债沉积。</p>
+      </div>
+
+      <div class="gap-arrow">→<span>instrument</span></div>
+
+      <div class="gap-card">
+        <svg viewBox="0 0 340 180" role="img" aria-label="新状态中 AI 使用进入度量仪表盘，和速度、质量、债务绑定">
+          <rect x="24" y="24" width="292" height="132" rx="18" style="fill:var(--bg-soft);stroke:var(--border)" />
+          <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2">
+            <path d="M70 122 L118 92 L162 108 L218 64 L270 82" />
+            <circle cx="118" cy="92" r="5" fill="currentColor" />
+            <circle cx="218" cy="64" r="5" fill="currentColor" />
+          </g>
+          <g style="fill:var(--text-muted);font-size:10">
+            <text x="70" y="146">DORA</text>
+            <text x="139" y="146">AI%</text>
+            <text x="204" y="146">debt</text>
+            <text x="260" y="146">review</text>
+          </g>
+          <g style="color:var(--border-strong)" stroke="currentColor" fill="none" stroke-width="1">
+            <path d="M58 44 v88 h230" />
+            <path d="M58 102 h230" opacity=".45" />
+            <path d="M58 72 h230" opacity=".45" />
+          </g>
+        </svg>
+        <div class="gap-label">Measurement Layer</div>
+        <p>AI 使用进入账本：速度、质量、返工、review 队列、缺陷逃逸、token 成本、业务影响被放到同一套仪表里。</p>
+      </div>
+    </div>
+
+    <p>所以 Stage 0 的修复动作不是“再买一个工具”，而是部署 developer intelligence：先抓 DORA 风格基线，再映射代码库，再看 AI 使用与交付结果之间的关系。没有这一步，后面的 enablement 很容易变成一场无证据的信仰运动。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">关键风险</div>
+      <p>AI 生产力最危险的误读，是把“局部速度提升”当成“系统吞吐提升”。如果 review、测试、架构决策和发布没有同步改造，AI 生成越快，堆积在下游的不可见成本越高。</p>
+    </div>
+
+    <h2 id="enablement"><span class="sec-num">三</span>Stage 1 到 Stage 2：从个人技巧变成组织协议<a href="#enablement" class="anchor">#</a></h2>
+    <p class="kicker">— INDIVIDUAL SKILL IS NOT ORGANIZATIONAL CAPACITY</p>
+    <p>Stage 1 的主语是工程师：每个工程师学会把 AI 当作协作者，agent 有真实代码库上下文，资深工程师承担 review gatekeeper。Stage 2 的主语则变成团队：ticket-to-PR 这个核心工作流被改写，AI 可以规划、实现、跑测试、开 PR，但最终进入人类 review。</p>
+    <p>这一步的本质不是“自动化更多步骤”，而是给 AI 输出建立组织协议：什么类型任务可以交给 agent？计划谁审批？测试到什么程度才可进入 PR？review 失败如何回流？哪些 repo 禁止自动修改？这些问题不回答，AI 就只是更会写代码的外包线程。</p>
+
+    <div class="review-gate reveal">
+      <svg viewBox="0 0 960 300" role="img" aria-label="AI 输出速度与人类评审吞吐之间的瓶颈关系">
+        <rect x="28" y="34" width="904" height="232" rx="24" style="fill:var(--surface);stroke:var(--border)" />
+        <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2.5">
+          <path class="dash-run" d="M84 150 H350" />
+          <path d="M350 90 H540 V210 H350 Z" />
+          <path class="dash-run" d="M540 150 H818" />
+          <path d="M818 150 l-18 -12 m18 12 l-18 12" />
+        </g>
+        <g style="fill:var(--text);font-weight:600;font-size:15" text-anchor="middle">
+          <text x="170" y="122">AI produces</text>
+          <text x="445" y="122">human review gate</text>
+          <text x="678" y="122">merged impact</text>
+        </g>
+        <g style="fill:var(--text-muted);font-size:11;letter-spacing:.06em" text-anchor="middle">
+          <text x="170" y="180">plan · code · tests · PR</text>
+          <text x="445" y="180">architecture · quality · risk</text>
+          <text x="678" y="180">not LOC, but useful change</text>
+        </g>
+        <g style="color:var(--warn)" stroke="currentColor" fill="none" stroke-width="2">
+          <path d="M390 70 L500 230" />
+          <path d="M500 70 L390 230" />
+        </g>
+        <text x="445" y="254" text-anchor="middle" style="fill:var(--warn);font-size:12;font-weight:600">瓶颈不在生成，而在吸收</text>
+        <g style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="2">
+          <circle cx="112" cy="150" r="18" />
+          <circle cx="158" cy="150" r="18" />
+          <circle cx="204" cy="150" r="18" />
+          <circle cx="250" cy="150" r="18" />
+        </g>
+        <g style="fill:var(--surface);stroke:var(--accent)" stroke-width="2">
+          <circle cx="614" cy="150" r="18" />
+          <circle cx="668" cy="150" r="18" />
+          <circle cx="722" cy="150" r="18" />
+        </g>
+        <g class="disp" text-anchor="middle" dominant-baseline="middle" style="fill:var(--accent-ink);font-size:16">
+          <text x="112" y="150">P</text>
+          <text x="158" y="150">C</text>
+          <text x="204" y="150">T</text>
+          <text x="250" y="150">PR</text>
+          <text x="614" y="150">Q</text>
+          <text x="668" y="150">S</text>
+          <text x="722" y="150">Δ</text>
+        </g>
+      </svg>
+      <div class="gate-notes">
+        <div class="gate-note"><b>评审吞吐</b><span>AI 生成速度必须低于团队吸收速度，否则只是在制造排队。</span></div>
+        <div class="gate-note"><b>资深兜底</b><span>越自动化，越需要 senior engineers 定义边界和异常处理。</span></div>
+        <div class="gate-note"><b>回流协议</b><span>PR 被拒后，反馈要回到 agent 计划与上下文，而不是只靠人类重写。</span></div>
+      </div>
+    </div>
+
+    <p>这也是为什么原文强调“多数团队不是技术原因卡住”。卡住的地方往往是组织没有给这件事设 owner。没有 owner，AI adoption 会变成一种分散的个人爱好；有 owner，它才可能变成工程体系的一部分。</p>
+
+    <h2 id="factory-misuse"><span class="sec-num">四</span>别太早谈 Factory：工厂不是生成机器，而是控制系统<a href="#factory-misuse" class="anchor">#</a></h2>
+    <p class="kicker">— FACTORY MEANS CONTROL, NOT VOLUME</p>
+    <p>原文对“software factory”热潮的提醒很重要：现在很多人一上来就谈 factory，但真正的 factory 至少在 Stage 3 或 Stage 4。Stage 3 是 AI 进入产品，变成可售能力；Stage 4 才是完整治理平面：model gateway、per-repo policy、tracing、impact analysis、compliance、audit trail。</p>
+    <p>换句话说，工厂的定义不是“能批量生成代码”，而是“能稳定、可审计、可度量地把输入转成高质量输出”。没有控制系统的批量生成，只是把手工作坊的混乱加了涡轮。</p>
+
+    <div class="control-plane reveal">
+      <div class="control-vis">
+        <svg viewBox="0 0 420 420" role="img" aria-label="AI 工程治理平面包含模型网关、仓库策略、追踪、影响分析、合规审计">
+          <circle cx="210" cy="210" r="142" style="fill:var(--surface);stroke:var(--border)" />
+          <circle cx="210" cy="210" r="70" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" />
+          <text x="210" y="202" text-anchor="middle" class="disp" style="fill:var(--accent-ink);font-size:28">AI</text>
+          <text x="210" y="228" text-anchor="middle" style="fill:var(--text-muted);font-size:11;letter-spacing:.12em">CONTROL PLANE</text>
+          <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2">
+            <path class="dash-run" d="M210 68 V138" />
+            <path class="dash-run" d="M210 282 V352" />
+            <path class="dash-run" d="M68 210 H138" />
+            <path class="dash-run" d="M282 210 H352" />
+            <path class="dash-run" d="M110 110 L160 160" />
+            <path class="dash-run" d="M310 110 L260 160" />
+            <path class="dash-run" d="M110 310 L160 260" />
+            <path class="dash-run" d="M310 310 L260 260" />
+          </g>
+          <g style="fill:var(--surface);stroke:var(--accent);stroke-width:2">
+            <rect x="158" y="34" width="104" height="44" rx="12" />
+            <rect x="154" y="342" width="112" height="44" rx="12" />
+            <rect x="24" y="188" width="98" height="44" rx="12" />
+            <rect x="298" y="188" width="98" height="44" rx="12" />
+            <rect x="42" y="70" width="118" height="44" rx="12" />
+            <rect x="260" y="70" width="118" height="44" rx="12" />
+            <rect x="42" y="306" width="118" height="44" rx="12" />
+            <rect x="260" y="306" width="118" height="44" rx="12" />
+          </g>
+          <g text-anchor="middle" style="fill:var(--text);font-size:11;font-weight:600">
+            <text x="210" y="61">Gateway</text>
+            <text x="210" y="369">Audit Trail</text>
+            <text x="73" y="215">Repo Policy</text>
+            <text x="347" y="215">Tracing</text>
+            <text x="101" y="97">Sandbox</text>
+            <text x="319" y="97">Compliance</text>
+            <text x="101" y="333">Impact</text>
+            <text x="319" y="333">Cost</text>
+          </g>
+        </svg>
+      </div>
+      <div class="control-stack">
+        <div class="control-item"><div class="ix">01</div><div><b>Model gateway</b><br /><span>不是让每个团队自由接模型，而是把模型选择、额度、成本和安全策略集中管理。</span></div></div>
+        <div class="control-item"><div class="ix">02</div><div><b>Per-repo policies</b><br /><span>不同代码库的风险不同：可自动修改、需审批修改、禁止修改的边界必须机器可读。</span></div></div>
+        <div class="control-item"><div class="ix">03</div><div><b>Tracing + impact analysis</b><br /><span>追踪每次 AI 参与的上下文、决策和结果，才能算清楚它到底创造了什么影响。</span></div></div>
+        <div class="control-item"><div class="ix">04</div><div><b>Audit trail</b><br /><span>当 AI 进入核心工程链路，审计不再是合规附属品，而是系统可信度的一部分。</span></div></div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">深读判断</div>
+      <p>“Impact-per-token” 是这篇文章里最值得保留的指标语言。它迫使组织停止炫耀生成量，转而追问：每一单位 AI 成本换来了多少可验证的业务影响、质量提升或交付吞吐。</p>
+    </div>
+
+    <h2 id="four-questions"><span class="sec-num">五</span>四个问题，决定你是在 enablement 还是 factory<a href="#four-questions" class="anchor">#</a></h2>
+    <p class="kicker">— THE FACTORY READINESS TEST</p>
+    <p>原文最后的四个问题，是整篇文章最可操作的部分。它们不是哲学问题，而是组织能力测试。答不上来，就不该急着做 factory；正确动作是先做 enablement。</p>
+
+    <div class="diagnostic reveal">
+      <div class="diag-card"><b>评审速度</b><span>团队能否比 AI 生成更快地评审 AI 输出？如果不能，瓶颈会被转移到 reviewer。</span></div>
+      <div class="diag-card"><b>资深密度</b><span>有没有足够 senior engineers 捕捉 AI 在架构、边界条件和安全上的错误？</span></div>
+      <div class="diag-card"><b>架构记录</b><span>ADR、模块边界、依赖规则是否机器可读？不能读，就无法稳定约束 agent。</span></div>
+      <div class="diag-card"><b>负收益清单</b><span>是否知道哪些工作 AI 目前是 tax 而不是 multiplier？不是所有任务都值得自动化。</span></div>
+    </div>
+
+    <p>这四问可以直接变成客户访谈脚本，也可以变成内部转型的 gate。如果四题少于四题能答清，就不要进入“建 factory”的叙事，先把 Stage 0 到 Stage 2 的基础设施补齐。</p>
+
+    <h2 id="fde-reading"><span class="sec-num">六</span>对 FDE 的启发：把它产品化成一套 AI 工程体检<a href="#fde-reading" class="anchor">#</a></h2>
+    <p class="kicker">— TURN THE ARTICLE INTO A DIAGNOSTIC OFFERING</p>
+    <p>这篇文章对我们最直接的启发，是把“AI-native engineering”从概念词转成可交付的方法论。不要卖“我们帮你上 AI 工具”，而是卖“我们帮你建立 AI 工程操作系统”。</p>
+
+    <div class="truth-table">
+      <div class="truth-row head">
+        <div>客户说法</div><div>真实诊断</div><div>FDE 可交付</div>
+      </div>
+      <div class="truth-row">
+        <div><b>“我们已经全员用了 Copilot。”</b></div>
+        <div>大概率仍在 Stage 0 或 Stage 1，缺少基线和价值归因。</div>
+        <div>做 2-4 周 AI engineering baseline：DORA、AI 使用率、review 负载、缺陷与返工。</div>
+      </div>
+      <div class="truth-row">
+        <div><b>“我们想建 software factory。”</b></div>
+        <div>先看四问是否过关。多数团队不是缺 factory，而是缺 enablement。</div>
+        <div>建立 ticket-to-PR agentic workflow，定义 sandbox、policy、review gate 和回流协议。</div>
+      </div>
+      <div class="truth-row">
+        <div><b>“AI 代码很多，但质量不好控。”</b></div>
+        <div>这是评审吞吐和架构上下文问题，不是单纯模型问题。</div>
+        <div>把架构记录机器可读化，建立 repo policy 和 senior review playbook。</div>
+      </div>
+      <div class="truth-row">
+        <div><b>“我们要衡量 ROI。”</b></div>
+        <div>不要只看生成量，要把 token 成本和业务影响绑定。</div>
+        <div>定义 impact-per-token 仪表：交付周期、缺陷率、复用率、收入/留存影响。</div>
+      </div>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动建议</div>
+      <ul>
+        <li>把“五阶段”做成一页客户诊断卡：每阶段列证据、缺口、下一步。</li>
+        <li>先做 Stage 0 体检包：代码库映射、AI 使用画像、review 队列、质量基线。</li>
+        <li>为 Stage 2 设计标准工作流：ticket 分解、agent 计划、sandbox 执行、测试门禁、PR 模板、人类 review、反馈回流。</li>
+        <li>把“机器可读架构记录”作为 AI-native 工程改造的先决条件，而不是文档洁癖。</li>
+        <li>在对外话术里少用“提效百分比”，多用“从不可见到可治理”的叙事。</li>
+      </ul>
+    </div>
+
+    <h2 id="limits"><span class="sec-num">七</span>这篇文章的局限：它说清了路径，但低估了政治成本<a href="#limits" class="anchor">#</a></h2>
+    <p class="kicker">— WHAT THE FRAMEWORK UNDERSTATES</p>
+    <p>我认同原文的大方向，但它仍有三个没完全展开的难点。</p>
+    <p>第一，AI productivity lead 是一个新权力角色。这个人既要懂工程，又要能改流程，还要能挑战团队原有的绩效叙事。很多组织不是不知道该做，而是没有人愿意把这件事变成自己的 KPI。</p>
+    <p>第二，review gatekeeper 会成为新的稀缺资源。AI 把 junior 产能放大后，senior 的判断力更稀缺。如果组织没有重新设计 senior 的时间分配，AI adoption 会把最贵的人拖进更重的 review 泥潭。</p>
+    <p>第三，impact-per-token 很对，但很难。它要求把工程指标和业务指标连起来，而这通常跨越研发、产品、财务和客户成功。真正难的不是仪表盘，而是组织愿不愿意共用同一套事实。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">反直觉结论</div>
+      <p>AI-native engineering 的第一性瓶颈，可能不是 agent 能力，而是组织是否愿意把“工程如何工作”本身变成一个产品来管理。谁负责这个产品，谁就握住了下一阶段工程效率的杠杆。</p>
+    </div>
+
+    <h2 id="closing"><span class="sec-num">八</span>结论：真正的分野，是有没有把 AI 放进制度<a href="#closing" class="anchor">#</a></h2>
+    <p class="kicker">— THE INSTITUTIONALIZATION OF AI WORK</p>
+    <p>这篇文章最好的地方，是它没有把 AI-native engineering 神秘化。它给出的判断很朴素：工具有效，但组织模型没跟上。只要组织仍然沿用三年前的工作流，AI 只会成为一层加速的表皮。</p>
+    <p>真正的 AI-native 团队，会把 AI 放进制度：放进计划、上下文、测试、review、发布、审计和指标。它不是“工程师会不会用 AI”，而是“组织是否能稳定吸收 AI 输出，并把它转成可信的业务影响”。</p>
+    <p>所以我会把这篇文章的标题改写成一句更锋利的话：未来两年工程组织的差距，不会由谁买了更多 AI 工具决定，而会由谁先把 AI 变成组织操作系统决定。</p>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-12 初稿
+    </p>
+
+    <div class="doc-footer">
+      <a href="./index.html">← 阅读材料总索引</a>
+      <a href="../insights/index.html">前沿洞察索引 →</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>
