@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-13T07:28:48.093307+00:00",
+  "generated_at": "2026-07-13T09:09:16.576319+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_org-chart-trap-single-agent-identity.html",
@@ -420,6 +420,24 @@
   "legacy": [],
   "readings": [
     {
+      "path": "readings/2026-07_field-guide-to-fable-unknowns.html",
+      "title": "地图不是领土 Field Guide to Fable · Finding Your Unknowns",
+      "date": "2026-07-13",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Coding Agent",
+        "Prompt Engineering",
+        "Anthropic",
+        "Fable 5"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
       "path": "readings/2026-07_ai-native-engineering-five-stages.html",
       "title": "AI-Native Engineering 五阶段别把工具采购误认成组织进化",
       "date": "2026-07-12",
@@ -464,6 +482,26 @@
       "status": "可对外",
       "tags": [
         "硬件 / 推理 / 供应链 / 多极"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
+      "path": "readings/2026-06_building-effective-human-agent-teams.html",
+      "title": "人-Agent 协同团队 Building Effective Human-Agent Teams从单人玩法到多人玩法 · Anthropic 的四条心法",
+      "date": "2026-06-24",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Multiplayer Agent",
+        "协同工作",
+        "Anthropic",
+        "Claude Tag",
+        "Doer-Verifier",
+        "North Star"
       ],
       "category": "readings",
       "extra": {
