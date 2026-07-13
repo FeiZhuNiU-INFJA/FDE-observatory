@@ -16,9 +16,12 @@ description: >-
 
 ## 前置条件
 
-- 本机已安装 `yt-dlp`（`brew install yt-dlp` 或 `pip install yt-dlp`）
+- 本机已安装 `yt-dlp`（`brew install yt-dlp` 或 `pip install yt-dlp`；若装成 pip user site 而 `which yt-dlp` 找不到，把 `~/Library/Python/3.x/bin` 加到 `PATH`）
+- Plan B 备用：`brew install ffmpeg`（remux 音频） + `pip install -U openai-whisper` 或 `pip install faster-whisper`（本地转写）
 
-## 一步走完提取
+## Plan A —— 官方字幕 + 妙记 ASR（默认走这条）
+
+**优先级铁律**：能拿到原文字幕就一定用原文；没有原文字幕但拿得到音频，先送 **飞书妙记 ASR**（走 [`lark-minutes`](../../.trae-cn/skills/lark-minutes/SKILL.md)：`drive +upload → minutes +upload → minutes +detail --transcript`）。妙记质量、术语校准、说话人识别都比本地 whisper 稳。
 
 ```bash
 python3 skill/video-digest/video_digest.py fetch "视频URL"
@@ -34,9 +37,10 @@ python3 skill/video-digest/video_digest.py fetch "视频URL" --save
 
 **常见问题**：
 
-- `has_transcript: false` → 该视频无字幕轨；告知用户或考虑放弃。
+- `has_transcript: false` → 视频无官方字幕轨。**先走 Plan A 的音频→妙记路径**，不要立刻跳 Plan B。
 - URL 不要转义反斜杠：`"https://youtube.com/watch?v=xxx"` ✓，`watch\?v\=` ✗。
 - **YouTube 触发 bot check** → 见下一节。
+- **B 站 412 Precondition Failed** → yt-dlp 走 `/x/player/wbi/v2` 拿视频格式会被风控拦；脚本内已回退到直接调 `/x/player/playurl` 拿 DASH 音频链接，遇到旧版脚本手动执行也行（见「B 站 412 应急」节）。
 
 ### YouTube 触发 bot 检查怎么办
 
@@ -69,6 +73,66 @@ rm /Users/xxx/cookies.txt   # 立即删！
 - `youtubetranscript.com` / `youtubetotranscript.com` 等第三方 API：同样被 YouTube 限流拦截。
 - 借他人机器 / 换 IP：偶尔一次能过，不可复现，不推荐。
 
+### B 站 412 应急
+
+B 站的 `/x/player/wbi/v2` 视频格式接口有时会返回 412（无登录+风控）。**不要直接放弃**，改从 `/x/player/playurl` 直取 DASH 音频链接：
+
+```bash
+BVID=BV1i6Nu6vEoy
+CID=$(curl -s -H "User-Agent: Mozilla/5.0" -H "Referer: https://www.bilibili.com/" \
+  "https://api.bilibili.com/x/web-interface/view?bvid=$BVID" \
+  | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['cid'])")
+
+AUDIO_URL=$(curl -s -H "User-Agent: Mozilla/5.0" -H "Referer: https://www.bilibili.com/video/$BVID/" \
+  "https://api.bilibili.com/x/player/playurl?bvid=$BVID&cid=$CID&qn=16&fnval=16&fourk=1" \
+  | python3 -c "import sys,json; a=json.load(sys.stdin)['data']['dash']['audio']; a.sort(key=lambda x:x.get('bandwidth',0)); print(a[0]['baseUrl'])")
+
+curl -sSL -H "User-Agent: Mozilla/5.0" -H "Referer: https://www.bilibili.com/video/$BVID/" \
+  "$AUDIO_URL" -o /tmp/$BVID.m4s
+ffmpeg -y -i /tmp/$BVID.m4s -c copy /tmp/$BVID.m4a
+```
+
+拿到 m4a 后：Plan A 送妙记（`drive +upload`），Plan B 送本地 whisper。
+
+## Plan B —— yt-dlp 下音频 + 本地 Whisper 转写（**仅当 Plan A 不可行时**）
+
+**什么时候才允许走 Plan B**（任一命中即可）：
+
+- 用户明确指定「不要发到飞书 / 内容敏感不能上传第三方」
+- 飞书妙记额度耗尽 / 服务不可用 / 用户身份未登录且无法当场授权
+- 内容极短（< 60s）且用户接受质量折扣，不值得走妙记转一圈
+
+否则**默认必须走 Plan A**。Plan B 常见坑：中文口音/术语误识别、说话人不分、噪声段吐幻觉字符——都是要靠事后校对纠正的。
+
+**执行流程**：
+
+```bash
+# 1) 只拉音频（yt-dlp 优先 m4a）——若 B 站 412，走上一节应急路径手抓 m4s
+python3 skill/video-digest/video_digest.py fetch "<URL>" --save --audio-only
+
+# 2) 本地转写（脚本自动选可用后端：mlx-whisper > faster-whisper > openai-whisper）
+python3 skill/video-digest/video_digest.py transcribe insights/_drafts/video_<id>/<id>.m4a \
+  --model medium --language zh
+```
+
+`transcribe` 会把 `transcript.txt` 写到 draft 目录，并把 `meta.json` 里的 `has_transcript` / `transcript_source` 更新为 `whisper:<model>`；下游 [`insight-write`](../insight-write/SKILL.md) 无需感知差异。
+
+**模型选择**（Apple Silicon 建议）：
+
+| 场景 | 模型 | 备注 |
+|------|------|------|
+| 中文口播（清晰） | `medium` | 平衡质量/速度，M2/M3 上 5 分钟音频约 1–2 分钟 |
+| 中文口播（口音/术语多） | `large-v3` | 慢，但显著减少术语误识 |
+| 英文快速试听 | `small` | 极快，仅用于内部预览 |
+
+**Plan B 结束前必做**：产出的逐字稿在 `insights/_drafts/video_<id>/transcript.txt`，**必须人工/AI 通读一遍**做术语校对，尤其：
+
+- 人名 / 公司名 / 产品名（whisper 常写错，如「Sierra」误听成「西拉」「Sarah」）
+- 中英夹杂词（如「agent」被写成「艾真特」）
+- 数字 / 版本号（模型幻觉高发区）
+
+Plan A（妙记）的产出也建议校对，但优先级低于 Plan B。
+
 ## 拿到 transcript 之后
 
 **回到 [`skill/insight-write`](../insight-write/SKILL.md) 的 Step 2 开始走**：
@@ -89,8 +153,10 @@ rm /Users/xxx/cookies.txt   # 立即删！
 
 | 命令 | 作用 |
 |------|------|
-| `fetch URL` | 拉字幕，JSON 输出 stdout |
+| `fetch URL` | Plan A：拉字幕 + 元数据，JSON 输出 stdout |
 | `fetch URL --save` | 额外存草稿（meta.json + transcript.txt + GENERATE.md） |
+| `fetch URL --save --audio-only` | Plan B 第 1 步：跳过字幕，只下最低码率 m4a 存到 draft 目录 |
 | `fetch URL --cookies PATH` | YouTube bot check 时携带手动导出的 cookies.txt；抓完立即删 |
+| `transcribe <audio_path>` | Plan B 第 2 步：本地 whisper 转写；`--model medium/large-v3`、`--language zh` |
 
 工具源码：[`video_digest.py`](./video_digest.py)（内含 `render` 子命令，历史遗留；新流程一律走 `insight-write`，不要再用 `render`）。

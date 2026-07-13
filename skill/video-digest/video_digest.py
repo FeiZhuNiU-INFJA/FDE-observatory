@@ -45,13 +45,28 @@ def _die(msg: str, code: int = 1) -> None:
 
 def find_yt_dlp() -> str:
     path = shutil.which("yt-dlp")
-    if not path:
-        _die("未找到 yt-dlp。请先安装：brew install yt-dlp  或  pip install yt-dlp")
-    return path
+    if path:
+        return path
+    # 兼容：pip user install 装到 ~/Library/Python/3.x/bin/yt-dlp 但未加 PATH
+    for cand in Path.home().glob("Library/Python/3.*/bin/yt-dlp"):
+        if cand.exists():
+            return str(cand)
+    _die("未找到 yt-dlp。请先安装：brew install yt-dlp  或  pip install yt-dlp")
+    return ""  # unreachable
 
 
-def _yt_dlp_js_runtime_args() -> list[str]:
-    """YouTube 提取需要 JS runtime；优先 node，其次 deno。"""
+def _yt_dlp_supports_flag(yt_dlp: str, flag: str) -> bool:
+    try:
+        proc = subprocess.run([yt_dlp, "--help"], capture_output=True, text=True, check=False)
+    except OSError:
+        return False
+    return flag in (proc.stdout or "")
+
+
+def _yt_dlp_js_runtime_args(yt_dlp: str) -> list[str]:
+    """YouTube 提取需要 JS runtime；优先 node，其次 deno。仅当 yt-dlp 支持 --js-runtimes 时下发。"""
+    if not _yt_dlp_supports_flag(yt_dlp, "--js-runtimes"):
+        return []
     for runtime in ("node", "deno"):
         if shutil.which(runtime):
             return ["--js-runtimes", runtime]
@@ -182,28 +197,49 @@ def fetch_video(
     *,
     save_draft: bool = False,
     cookies: Optional[str] = None,
+    audio_only: bool = False,
 ) -> dict[str, Any]:
     yt_dlp = find_yt_dlp()
     work_dir = Path(tempfile.mkdtemp(prefix="video_digest_"))
 
     sub_langs = "zh-Hans,zh-Hant,zh,en,en-orig"
-    out_tpl = str(work_dir / "%(id)s")
+    out_tpl = str(work_dir / "%(id)s.%(ext)s") if audio_only else str(work_dir / "%(id)s")
 
-    # 不用 -J：它与 --write-subs 同用时可能不落盘字幕文件
-    cmd = [
-        yt_dlp,
-        *_yt_dlp_js_runtime_args(),
-        "-t", "sleep",
-        "--sleep-interval", "3",
-        "--max-sleep-interval", "8",
-        "--skip-download",
-        "--write-subs",
-        "--write-auto-subs",
-        "--write-info-json",
-        "--no-write-playlist-metafiles",
-        "--sub-langs", sub_langs,
-        "-o", out_tpl,
-    ]
+    if audio_only:
+        # Plan B 第 1 步：只拉音频，不写字幕
+        cmd = [
+            yt_dlp,
+            *_yt_dlp_js_runtime_args(yt_dlp),
+            "-f", "bestaudio[ext=m4a]/bestaudio/best",
+            "--extract-audio", "--audio-format", "m4a",
+            "--write-info-json",
+            "--no-write-playlist-metafiles",
+            "-o", out_tpl,
+        ]
+    else:
+        # Plan A：拉字幕 + 元数据（不下音视频）
+        cmd = [
+            yt_dlp,
+            *_yt_dlp_js_runtime_args(yt_dlp),
+            "-t", "sleep",
+            "--sleep-interval", "3",
+            "--max-sleep-interval", "8",
+            "--skip-download",
+            "--write-subs",
+            "--write-auto-subs",
+            "--write-info-json",
+            "--no-write-playlist-metafiles",
+            "--sub-langs", sub_langs,
+            "-o", out_tpl,
+        ]
+    # B 站风控/YouTube 保底 headers
+    cmd.extend([
+        "--user-agent",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36",
+        "--add-header", "Accept-Language:zh-CN,zh;q=0.9",
+    ])
+    if "bilibili" in url.lower():
+        cmd.extend(["--referer", "https://www.bilibili.com/"])
     if cookies:
         cookies_path = Path(cookies).expanduser().resolve()
         if not cookies_path.exists():
@@ -230,6 +266,13 @@ def fetch_video(
                 "  3) 重跑：video_digest.py fetch <URL> --cookies /path/to/cookies.txt\n"
                 "  4) 抓取成功后立即删除 cookies 文件（含登录态，勿提交到 git）"
             )
+        elif "412" in err and "bilibili" in url.lower():
+            hint = (
+                "\n\n提示：B 站 /x/player/wbi/v2 被风控拦（412）。请参考 skill/video-digest/SKILL.md 的「B 站 412 应急」节，\n"
+                "  用 curl 直接调 /x/player/playurl 拿 DASH 音频 URL 下载 m4s，再 ffmpeg 转 m4a。\n"
+                "  拿到 m4a 后：Plan A 走飞书妙记 ASR（drive +upload → minutes +upload → minutes +detail --transcript）；\n"
+                "  Plan A 不可行才走 Plan B：python3 skill/video-digest/video_digest.py transcribe <path.m4a> --language zh"
+            )
         _die(f"yt-dlp 失败 (exit {proc.returncode}):\n{err[-2000:]}{hint}")
 
     info_files = list(work_dir.glob("*.info.json"))
@@ -244,7 +287,7 @@ def fetch_video(
         _die(f"解析 info.json 失败: {exc}")
 
     video_id = info.get("id") or "unknown"
-    picked = _pick_subtitle_file(work_dir, video_id)
+    picked = None if audio_only else _pick_subtitle_file(work_dir, video_id)
 
     transcript = ""
     sub_lang = None
@@ -283,11 +326,24 @@ def fetch_video(
         "transcript": transcript,
         "transcript_chars": len(transcript),
         "has_transcript": bool(transcript.strip()),
+        "transcript_source": ("subtitle:" + sub_lang) if picked else None,
     }
+
+    audio_path: Optional[Path] = None
+    if audio_only:
+        cand = list(work_dir.glob(f"{video_id}.m4a")) or list(work_dir.glob(f"{video_id}.*"))
+        # 过滤掉 info.json
+        cand = [p for p in cand if p.suffix.lower() not in {".json"}]
+        if cand:
+            audio_path = cand[0]
 
     if save_draft:
         draft_dir = DRAFTS_DIR / f"video_{video_id}"
         draft_dir.mkdir(parents=True, exist_ok=True)
+        if audio_path:
+            dest = draft_dir / audio_path.name
+            shutil.move(str(audio_path), str(dest))
+            result["audio_file"] = str(dest.relative_to(ROOT))
         (draft_dir / "meta.json").write_text(
             json.dumps({k: v for k, v in result.items() if k != "transcript"},
                        ensure_ascii=False, indent=2),
@@ -296,6 +352,13 @@ def fetch_video(
         (draft_dir / "transcript.txt").write_text(transcript, encoding="utf-8")
         (draft_dir / "GENERATE.md").write_text(_generate_prompt(result), encoding="utf-8")
         result["draft_dir"] = str(draft_dir.relative_to(ROOT))
+    elif audio_path:
+        # 不 save_draft 时也把音频挪到临时可发现位置，避免连同 work_dir 一起被删
+        keep = DRAFTS_DIR / f"video_{video_id}"
+        keep.mkdir(parents=True, exist_ok=True)
+        dest = keep / audio_path.name
+        shutil.move(str(audio_path), str(dest))
+        result["audio_file"] = str(dest.relative_to(ROOT))
 
     shutil.rmtree(work_dir, ignore_errors=True)
     return result
@@ -421,14 +484,112 @@ def render_html(spec: dict[str, Any], output: Path) -> None:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    result = fetch_video(args.url, save_draft=args.save, cookies=args.cookies)
+    result = fetch_video(
+        args.url,
+        save_draft=args.save,
+        cookies=args.cookies,
+        audio_only=args.audio_only,
+    )
     if args.json or not args.save:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     else:
         print(f"✓ Draft saved to {result.get('draft_dir')}")
         print(f"  transcript: {result['transcript_chars']} chars")
-    if not result["has_transcript"]:
-        print("warning: 未获取到字幕，可能需要登录 cookie 或视频无字幕", file=sys.stderr)
+        if result.get("audio_file"):
+            print(f"  audio: {result['audio_file']}")
+    if not args.audio_only and not result["has_transcript"]:
+        print("warning: 未获取到字幕。建议路径：Plan A → 音频送妙记 ASR；不可行时再走 --audio-only + transcribe（Plan B）", file=sys.stderr)
+    return 0
+
+
+def _find_whisper_backend() -> tuple[str, Any]:
+    """按优先级挑选可用后端：mlx-whisper > faster-whisper > openai-whisper。返回 (backend_name, module)。"""
+    try:
+        import mlx_whisper  # type: ignore
+        return "mlx-whisper", mlx_whisper
+    except Exception:
+        pass
+    try:
+        from faster_whisper import WhisperModel  # type: ignore
+        return "faster-whisper", WhisperModel
+    except Exception:
+        pass
+    try:
+        import whisper  # type: ignore
+        return "openai-whisper", whisper
+    except Exception:
+        pass
+    return "", None
+
+
+def _transcribe_with_backend(
+    backend: str, mod: Any, audio_path: Path, *, model: str, language: Optional[str]
+) -> str:
+    if backend == "mlx-whisper":
+        result = mod.transcribe(
+            str(audio_path),
+            path_or_hf_repo=f"mlx-community/whisper-{model}-mlx",
+            language=language,
+        )
+        return (result.get("text") or "").strip()
+    if backend == "faster-whisper":
+        WhisperModel = mod  # 类
+        m = WhisperModel(model, device="auto", compute_type="int8")
+        segments, _ = m.transcribe(str(audio_path), language=language, vad_filter=True)
+        return "\n".join(seg.text.strip() for seg in segments if seg.text.strip())
+    if backend == "openai-whisper":
+        m = mod.load_model(model)
+        result = m.transcribe(str(audio_path), language=language, fp16=False)
+        return (result.get("text") or "").strip()
+    _die(f"未知 whisper 后端: {backend}")
+    return ""
+
+
+def cmd_transcribe(args: argparse.Namespace) -> int:
+    audio_path = Path(args.audio_path)
+    if not audio_path.is_absolute():
+        audio_path = ROOT / audio_path
+    if not audio_path.exists():
+        _die(f"音频文件不存在: {audio_path}")
+
+    backend, mod = _find_whisper_backend()
+    if not backend:
+        _die(
+            "本机没有 whisper 后端。任选其一安装：\n"
+            "  - Apple Silicon 首选：pip install mlx-whisper\n"
+            "  - 通用较快：       pip install faster-whisper\n"
+            "  - 官方：           pip install -U openai-whisper"
+        )
+
+    print(f"[transcribe] backend={backend} model={args.model} language={args.language or 'auto'}", file=sys.stderr)
+    print(f"[transcribe] audio={audio_path}", file=sys.stderr)
+    text = _transcribe_with_backend(backend, mod, audio_path, model=args.model, language=args.language)
+    if not text:
+        _die("whisper 返回空文本，可能是音频无声或后端异常")
+
+    # 若 audio 位于 insights/_drafts/video_<id>/ 里，同步更新 transcript.txt + meta.json
+    draft_dir = audio_path.parent
+    is_draft = draft_dir.parent.name == "_drafts" and draft_dir.name.startswith("video_")
+    if is_draft:
+        transcript_path = draft_dir / "transcript.txt"
+        transcript_path.write_text(text, encoding="utf-8")
+        meta_path = draft_dir / "meta.json"
+        if meta_path.exists():
+            try:
+                meta = json.loads(meta_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                meta = {}
+            meta["has_transcript"] = True
+            meta["transcript_chars"] = len(text)
+            meta["transcript_source"] = f"whisper:{backend}:{args.model}"
+            meta_path.write_text(
+                json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+            )
+        print(f"✓ transcript → {transcript_path.relative_to(ROOT)} ({len(text)} chars)")
+        print(f"  meta updated: transcript_source=whisper:{backend}:{args.model}")
+    else:
+        # 独立音频文件：结果打印到 stdout
+        print(text)
     return 0
 
 
@@ -455,7 +616,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="视频字幕拉取 + HTML 落盘（供 Agent 调用）")
     sub = ap.add_subparsers(dest="command", required=True)
 
-    p_fetch = sub.add_parser("fetch", help="拉取视频元数据与字幕")
+    p_fetch = sub.add_parser("fetch", help="拉取视频元数据与字幕（Plan A）")
     p_fetch.add_argument("url", help="视频 URL（YouTube / Bilibili 等）")
     p_fetch.add_argument("--save", action="store_true", help="同时保存草稿到 insights/_drafts/")
     p_fetch.add_argument("--json", action="store_true", help="输出 JSON（默认 fetch 时输出）")
@@ -464,7 +625,27 @@ def main() -> int:
         metavar="PATH",
         help="Netscape 格式 cookies.txt 路径（YouTube 触发 bot 检查时使用；抓完请立即删除）",
     )
+    p_fetch.add_argument(
+        "--audio-only",
+        action="store_true",
+        help="Plan B 第 1 步：跳过字幕、只下最低码率 m4a 到 insights/_drafts/video_<id>/",
+    )
     p_fetch.set_defaults(func=cmd_fetch)
+
+    p_tx = sub.add_parser(
+        "transcribe",
+        help="Plan B 第 2 步：本地 whisper 转写音频（仅在 Plan A 不可行时使用）",
+    )
+    p_tx.add_argument("audio_path", help="音频文件路径（相对站点根或绝对）")
+    p_tx.add_argument(
+        "--model", default="medium",
+        help="whisper 模型：tiny/base/small/medium/large-v3（默认 medium）",
+    )
+    p_tx.add_argument(
+        "--language", default=None,
+        help="强制指定语言（zh/en/ja/...），默认自动检测；中文口播建议显式传 zh",
+    )
+    p_tx.set_defaults(func=cmd_transcribe)
 
     p_render = sub.add_parser("render", help="根据 spec JSON 渲染 HTML")
     p_render.add_argument("--output", "-o", required=True, help="输出 HTML 路径（相对站点根）")

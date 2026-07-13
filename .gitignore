@@ -15,3 +15,7 @@ temp/
 .env.*
 media/
 docs/
+*.m4a
+*.m4s
+_drafts/
+minutes/

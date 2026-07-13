@@ -1,0 +1,886 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Org-Chart 陷阱 · 企业 Agent 不该是团队，而该是身份 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：深赤陶 (Terracotta) —— 「陷阱 / 需要反思」 ═════════ */
+  :root {
+    --accent: #7c2d12;
+    --accent-deep: #5c1e0b;
+    --accent-ink: #431407;
+    --accent-soft: color-mix(in srgb, #7c2d12 10%, white);
+    --accent-glow: color-mix(in srgb, #7c2d12 22%, transparent);
+    --accent-mist: #fef2ee;
+  }
+  [data-theme="dark"] {
+    --accent: #f97316;
+    --accent-deep: #fb923c;
+    --accent-ink: #fed7aa;
+    --accent-soft: color-mix(in srgb, #f97316 20%, #14100c);
+    --accent-glow: color-mix(in srgb, #f97316 26%, transparent);
+    --accent-mist: #431407;
+  }
+
+  /* SVG 内文字统一走 CSS */
+  .orgshift text, .relay text, .identity text, .patterns text { font-family: var(--mono); }
+  .orgshift .disp, .relay .disp, .identity .disp, .patterns .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 共享动画 */
+  .pulse-dot { animation: pulse-dot 3.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse-dot { 0%,100%{opacity:.35;} 50%{opacity:1;} }
+  .dash-flow { stroke-dasharray: 5 8; animation: dashflow 3.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -52; } }
+  .orbit-slow { animation: orbit-slow 22s linear infinite; transform-origin: 50% 50%; }
+  @keyframes orbit-slow { to { transform: rotate(360deg); } }
+
+  /* ═════════════════════════════════════════════════════
+     视觉一：Org-Chart 陷阱 vs 单身份（Before / After）
+     ═════════════════════════════════════════════════════ */
+  .orgshift {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 1rem; margin: 1.8em 0 2em;
+    align-items: stretch;
+  }
+  .orgshift-side {
+    padding: 1.2rem 1rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+  }
+  .orgshift-side.bad {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--con) 5%, var(--surface)) 0%,
+      var(--surface) 100%);
+  }
+  .orgshift-side.good {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 8%, var(--surface)) 0%,
+      var(--surface) 100%);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+  .orgshift-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; margin-bottom: .5rem;
+    display: flex; align-items: center; gap: .5em;
+  }
+  .orgshift-side.bad .orgshift-eyebrow { color: var(--con); }
+  .orgshift-side.good .orgshift-eyebrow { color: var(--accent); }
+  .orgshift-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 15%, transparent);
+  }
+  .orgshift-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.05rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .orgshift-sub {
+    font-size: .78rem; color: var(--text-muted);
+    line-height: 1.5; margin-bottom: .8rem;
+  }
+  .orgshift svg {
+    display: block; width: 100%; max-width: 320px;
+    height: auto; margin: .3rem auto .5rem;
+  }
+  .orgshift-verdict {
+    margin-top: auto;
+    padding: .55rem .7rem;
+    font-family: var(--mono); font-size: .74rem;
+    border-radius: 8px;
+    border: 1px dashed var(--border);
+    line-height: 1.55;
+    color: var(--text-strong);
+  }
+  .orgshift-side.bad .orgshift-verdict { border-color: color-mix(in srgb, var(--con) 40%, var(--border)); }
+  .orgshift-side.good .orgshift-verdict { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-soft); }
+  .orgshift-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 1.6rem;
+    font-family: var(--display); font-weight: 700;
+  }
+  @media (max-width: 860px) {
+    .orgshift { grid-template-columns: 1fr; }
+    .orgshift-arrow { transform: rotate(90deg); padding: .3rem 0; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉二：传话链衰减（Relay Decay）
+     ═════════════════════════════════════════════════════ */
+  .relay {
+    margin: 1.8em 0 1.6em;
+    padding: 1.4rem 1rem 1.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--con) 4%, var(--surface)) 0%,
+      var(--surface) 60%);
+  }
+  .relay-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--con);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .4rem;
+  }
+  .relay-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--con);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--con) 15%, transparent);
+  }
+  .relay-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.1rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .relay-sub {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.55; margin-bottom: 1rem;
+    max-width: 640px;
+  }
+  .relay svg {
+    display: block; width: 100%; height: auto;
+    max-width: 940px; margin: 0 auto;
+  }
+  .relay-caption {
+    font-size: .78rem; color: var(--text-muted);
+    text-align: center; margin-top: .4rem;
+    font-family: var(--mono); letter-spacing: .05em;
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉三：身份台 —— 前台一个入口，后台整套能力
+     ═════════════════════════════════════════════════════ */
+  .identity {
+    margin: 2em 0 1.6em;
+    padding: 1.6rem 1rem 1.2rem;
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-radius: 16px;
+    background:
+      radial-gradient(ellipse at center top,
+        color-mix(in srgb, var(--accent) 8%, transparent) 0%,
+        transparent 60%),
+      var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .identity-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .4rem;
+  }
+  .identity-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .identity-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.15rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .identity-sub {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.55; margin-bottom: .8rem;
+    max-width: 680px;
+  }
+  .identity svg {
+    display: block; width: 100%; height: auto;
+    max-width: 720px; margin: 0 auto;
+  }
+  .identity-legend {
+    display: flex; flex-wrap: wrap; gap: 1.2rem;
+    justify-content: center; margin-top: .5rem;
+    font-family: var(--mono); font-size: .74rem;
+    color: var(--text-muted);
+  }
+  .identity-legend span::before {
+    content: ""; display: inline-block;
+    width: 10px; height: 10px; border-radius: 2px;
+    margin-right: .35em; vertical-align: middle;
+    background: currentColor;
+  }
+  .identity-legend .frontstage { color: var(--accent); }
+  .identity-legend .backstage { color: var(--text-muted); }
+
+  /* ═════════════════════════════════════════════════════
+     视觉四：三家公司对照矩阵（Pattern Table）
+     ═════════════════════════════════════════════════════ */
+  .patterns {
+    margin: 1.8em 0 1.6em;
+  }
+  .patterns-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .patterns-card {
+    padding: 1rem 1rem .9rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .patterns-card:hover {
+    transform: translateY(-3px);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+  .patterns-eyebrow {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  .patterns-name {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.05rem; margin-bottom: .1rem;
+    color: var(--text-strong);
+  }
+  .patterns-tag {
+    font-family: var(--mono); font-size: .7rem;
+    color: var(--text-muted); margin-bottom: .6rem;
+  }
+  .patterns-card ul {
+    margin: 0; padding-left: 1.1rem;
+    font-size: .84rem; line-height: 1.6;
+  }
+  .patterns-card li { margin-bottom: .15rem; }
+  .patterns-metric {
+    margin-top: .7rem;
+    padding: .4rem .55rem;
+    font-family: var(--mono); font-size: .72rem;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: .02em;
+  }
+  @media (max-width: 860px) {
+    .patterns-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉五：设计问题清单（Design Prompts）
+     ═════════════════════════════════════════════════════ */
+  .prompts {
+    margin: 1.8em 0 1.5em;
+    padding: 1.4rem 1.2rem 1.2rem;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    border-radius: 0 12px 12px 0;
+  }
+  .prompts-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .5rem;
+  }
+  .prompts-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.05rem; margin-bottom: .8rem;
+    color: var(--text-strong);
+  }
+  .prompts-list {
+    counter-reset: prompt;
+    list-style: none; padding: 0; margin: 0;
+  }
+  .prompts-list li {
+    counter-increment: prompt;
+    padding: .45rem 0 .45rem 2.3rem;
+    position: relative;
+    font-size: .92rem; line-height: 1.65;
+    border-bottom: 1px dashed color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .prompts-list li:last-child { border-bottom: none; }
+  .prompts-list li::before {
+    content: "Q" counter(prompt);
+    position: absolute; left: 0; top: .5rem;
+    font-family: var(--mono); font-size: .72rem;
+    font-weight: 700; color: var(--accent);
+    background: var(--surface);
+    padding: .1rem .35rem; border-radius: 4px;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+  }
+
+  /* reduced motion 兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .pulse-dot, .dash-flow, .orbit-slow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      Org-Chart 陷阱<span class="brand-sub">ToB · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Org-Chart 陷阱 · 企业 Agent 不该是团队，而该是<span style="color:var(--accent);">身份</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        Sierra / Anthropic / Shopify 都在把「多个 agent」合成「一个入口」——这是给 AI-Native 公司做架构的第一条反直觉。
+      </p>
+      <div class="doc-meta">
+        <span>2026-07-13</span>
+        <span>ToB</span>
+        <span>AI-Native Architecture</span>
+        <span>Agent OS</span>
+        <span>Managed Agents</span>
+        <span>草案</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">3<small>家硅谷</small></div>
+          <div class="lab">Sierra / Anthropic / Shopify 收敛同一方向</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">4→1</div>
+          <div class="lab">Sierra 从 4 个角色 agent 合成一个 Agent 身份</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">1/8</div>
+          <div class="lab">Shopify 已有 1/8 合并 PR 由 River 共同完成</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">N→1</div>
+          <div class="lab">对人一个入口，对后台整个能力矩阵</div>
+        </div>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem; margin-top: .6rem;">
+        触发信号：<a href="https://www.bilibili.com/video/BV1i6Nu6vEoy/" target="_blank" rel="noopener">慢学AI · 别再给企业 agent 分角色了（B 站，5:02）</a>
+        · 我在他的观察之上做了三层追加判断：<strong>为什么合并是正确的、什么时候不该合并、这对雇主界面意味着什么</strong>。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>把人类的部门结构照搬成一支 agent 团队（客服 agent / 数据 agent / 研发 agent…）是 AI-Native 公司的第一个默认陷阱。真正的设计对象不是<em>岗位</em>，而是<em>身份</em>——「前台一个持续存在的 agent，后台整套可被编排的能力」。这一转变的成本不在模型，而在<strong>雇主界面（Employer UI）</strong>：如何让人类只面对一个入口，同时保留对后台能力的可见与可控。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>反直觉：</strong>越像人类组织的 agent 系统，越会继承人类组织的低效——部门墙、信息转交损耗、责任模糊。</li>
+        <li><strong>信号收敛：</strong>Sierra 把 4 个角色合成一个 Pinecone；Anthropic 让全公司 @Claude；Shopify 用 River 统一入口——三家不同业务，同一判断。</li>
+        <li><strong>技术前提已成立：</strong>Managed Agents / Agent-as-a-Service 把「后台复杂能力调度」封装成服务，orchestration 不再是每个团队都要自研的东西。</li>
+        <li><strong>但不是所有场景都该合并：</strong>需要独立责任边界、独立学习闭环、或强物理约束（如硬件机器人）的场景，多身份仍是对的。</li>
+        <li><strong>对雇主 UI 的启示：</strong>面板从「多个数字员工卡片」转向「一个身份 + 后台能力矩阵」；员工管理系统的第一视图不再是花名册。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、观察到的信号 ========== -->
+    <h2 id="signal"><span class="sec-num">一</span>三家公司，同一个判断<a href="#signal" class="anchor">#</a></h2>
+    <p class="kicker">— Convergent evidence from Sierra, Anthropic, Shopify</p>
+
+    <p>过去 12 个月，把 agent 按人类岗位切分（客服 agent、销售 agent、研发 agent……）几乎是所有企业 AI 项目的默认起点。<strong>三家做得最深的公司，走了完全相反的方向。</strong></p>
+
+    <div class="patterns">
+      <div class="patterns-grid">
+        <div class="patterns-card reveal">
+          <div class="patterns-eyebrow">Sierra</div>
+          <div class="patterns-name">4 → 1 合并</div>
+          <div class="patterns-tag">客服 agent 平台</div>
+          <ul>
+            <li>初期：<strong>Pi</strong>（客服）· <strong>Piwood</strong>（数据）· <strong>Picon</strong>（工程）· <strong>Reggie Junior</strong>（销售）四个独立 agent</li>
+            <li>问题：员工先要判断「这个问题该 @ 谁」，再自己在 4 个 agent 之间转发上下文</li>
+            <li>合并后：单一 Slack 账号 + 单入口 + 单线程；由 Agent 自己判断该查哪个系统</li>
+          </ul>
+          <div class="patterns-metric">合并动机：员工的心智负担 &gt; 分工带来的清晰</div>
+        </div>
+
+        <div class="patterns-card reveal d1">
+          <div class="patterns-eyebrow">Anthropic</div>
+          <div class="patterns-name">全公司 @Claude</div>
+          <div class="patterns-tag">内部协作入口</div>
+          <ul>
+            <li>没有为每个部门做独立 Claude；<strong>Claude 以自己的身份进入 Slack 频道</strong></li>
+            <li>产品 / 研发 / 销售 / 客服 / 数据团队都在原来的讨论里直接 @Claude</li>
+            <li>Claude 读频道上下文 → 拆任务 → 调工具 → 结果返回原线程；已成为内部完成工作的重要入口</li>
+          </ul>
+          <div class="patterns-metric">合并动机：共享上下文 &gt; 独立部署</div>
+        </div>
+
+        <div class="patterns-card reveal d2">
+          <div class="patterns-eyebrow">Shopify</div>
+          <div class="patterns-name">River 更彻底</div>
+          <div class="patterns-tag">工程协作 + PR 共写</div>
+          <ul>
+            <li>生活在<strong>公共 Slack</strong>（不是私聊）：读代码 / 跑测试 / 查数仓 / 看生产日志 / 提 PR</li>
+            <li>多人可加入同一线程，补充约束、纠正方向、接续追问</li>
+            <li>River 会吸收新信息沿原任务继续，而不是换人重来</li>
+          </ul>
+          <div class="patterns-metric">已产出：1/8 合并 PR 由 River 共同完成</div>
+        </div>
+      </div>
+    </div>
+
+    <p>三家业务差异极大——客服 SaaS / 模型公司 / 电商基础设施——但都在 2025-2026 这个窗口内做出同一个选择：<strong>对人只暴露一个持续存在的 agent 身份，把复杂性推回后台。</strong></p>
+
+    <!-- ========== 二、为什么"分角色"是陷阱 ========== -->
+    <h2 id="trap"><span class="sec-num">二</span>为什么"复制组织架构"是陷阱<a href="#trap" class="anchor">#</a></h2>
+    <p class="kicker">— The org-chart is a coping mechanism, not a design pattern</p>
+
+    <p>人类为什么需要部门？<strong>因为一个人掌握不了所有知识，也无法同时完成销售、分析、开发、法务和运营。</strong>所以公司必须先把人分工，再依靠会议、文档和管理流程，把分散的信息重新拼起来。<em>组织架构是能力有限的补丁，不是好的设计范式。</em></p>
+
+    <p>但 AI 天生可以连接多个系统、调用多种工具、并在不同专业能力之间切换。如果我们依然先把它切成产品 agent、数据 agent 和研发 agent，再让它们互相"开会"——<strong>我们就把人类为了弥补能力限制而创造的组织结构，变成了 AI 必须继承的限制。</strong></p>
+
+    <div class="orgshift" role="group" aria-label="Org-chart 陷阱 vs 单身份 对照">
+      <div class="orgshift-side bad reveal">
+        <div class="orgshift-eyebrow">默认做法</div>
+        <div class="orgshift-title">复制 org chart</div>
+        <div class="orgshift-sub">员工先判断"该找谁"，再自己在 agent 之间搬运上下文。</div>
+        <svg viewBox="0 0 320 210" role="img" aria-label="员工面对 5 个 agent 需要自己路由"
+             xmlns="http://www.w3.org/2000/svg">
+          <!-- 员工 -->
+          <g style="color:var(--text-strong)" stroke="currentColor" fill="none" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="30" cy="105" r="12"/>
+            <path d="M18 130 Q30 118 42 130 L42 145 L18 145 Z"/>
+          </g>
+          <text x="30" y="170" text-anchor="middle" font-size="9" fill="currentColor" style="color:var(--text-muted)">员工</text>
+          <!-- 5 个 agent -->
+          <g style="color:var(--con)">
+            <g transform="translate(120,30)">
+              <rect x="0" y="0" width="70" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="35" y="16" text-anchor="middle" font-size="9" fill="currentColor">产品 agent</text>
+            </g>
+            <g transform="translate(210,30)">
+              <rect x="0" y="0" width="70" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="35" y="16" text-anchor="middle" font-size="9" fill="currentColor">数据 agent</text>
+            </g>
+            <g transform="translate(120,90)">
+              <rect x="0" y="0" width="70" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="35" y="16" text-anchor="middle" font-size="9" fill="currentColor">研发 agent</text>
+            </g>
+            <g transform="translate(210,90)">
+              <rect x="0" y="0" width="70" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="35" y="16" text-anchor="middle" font-size="9" fill="currentColor">客服 agent</text>
+            </g>
+            <g transform="translate(165,150)">
+              <rect x="0" y="0" width="70" height="26" rx="6" fill="none" stroke="currentColor" stroke-width="1.4"/>
+              <text x="35" y="16" text-anchor="middle" font-size="9" fill="currentColor">测试 agent</text>
+            </g>
+          </g>
+          <!-- 多向乱线：员工 → 每个 agent；agent 互连 -->
+          <g stroke="currentColor" style="color:var(--con)" fill="none" stroke-width="1" opacity=".55" stroke-dasharray="3 3">
+            <path d="M45 100 Q90 60 120 43"/>
+            <path d="M45 105 Q120 60 210 43"/>
+            <path d="M45 108 Q90 105 120 103"/>
+            <path d="M45 110 Q120 108 210 103"/>
+            <path d="M45 115 Q100 145 165 163"/>
+            <path d="M190 55 Q210 75 245 90"/>
+            <path d="M155 55 Q170 75 200 103"/>
+            <path d="M155 116 Q185 135 200 150"/>
+          </g>
+        </svg>
+        <div class="orgshift-verdict">员工不仅要选 agent，还要负责在 agent 之间转发问题、补充背景、同步进度。<br/><strong>看起来分工明确，实际是一条更快的传话链。</strong></div>
+      </div>
+
+      <div class="orgshift-arrow" aria-hidden="true">→</div>
+
+      <div class="orgshift-side good reveal d2">
+        <div class="orgshift-eyebrow">收敛方向</div>
+        <div class="orgshift-title">一个身份，一段上下文</div>
+        <div class="orgshift-sub">对人一个入口；对后台是复杂的能力矩阵。</div>
+        <svg viewBox="0 0 320 210" role="img" aria-label="员工只面对一个 agent 身份"
+             xmlns="http://www.w3.org/2000/svg">
+          <!-- 员工 -->
+          <g style="color:var(--text-strong)" stroke="currentColor" fill="none" stroke-width="1.7"
+             stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="30" cy="105" r="12"/>
+            <path d="M18 130 Q30 118 42 130 L42 145 L18 145 Z"/>
+          </g>
+          <text x="30" y="170" text-anchor="middle" font-size="9" fill="currentColor" style="color:var(--text-muted)">员工</text>
+
+          <!-- 单一 agent 身份 -->
+          <g transform="translate(130,80)">
+            <rect x="0" y="0" width="70" height="50" rx="12" fill="none" stroke="currentColor" stroke-width="2"
+                  style="color:var(--accent)"/>
+            <text x="35" y="22" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor"
+                  style="color:var(--accent)">@Agent</text>
+            <text x="35" y="38" text-anchor="middle" font-size="8" fill="currentColor" style="color:var(--text-muted)">单一身份</text>
+          </g>
+          <!-- 员工 → agent 一条粗线 -->
+          <path d="M45 105 L128 105" stroke="currentColor" style="color:var(--accent)" stroke-width="2.5"
+                fill="none" stroke-linecap="round"/>
+          <polygon points="128,105 122,101 122,109" fill="currentColor" style="color:var(--accent)"/>
+
+          <!-- 后台能力点阵（灰） -->
+          <g style="color:var(--text-muted)" stroke="currentColor" fill="none" stroke-width="1"
+             opacity=".75">
+            <circle cx="230" cy="60" r="4"/>
+            <circle cx="255" cy="80" r="4"/>
+            <circle cx="272" cy="105" r="4"/>
+            <circle cx="255" cy="130" r="4"/>
+            <circle cx="230" cy="150" r="4"/>
+            <path d="M203 90 L226 60" stroke-dasharray="3 3"/>
+            <path d="M203 100 L251 80" stroke-dasharray="3 3"/>
+            <path d="M203 105 L268 105" stroke-dasharray="3 3"/>
+            <path d="M203 115 L251 130" stroke-dasharray="3 3"/>
+            <path d="M203 125 L226 150" stroke-dasharray="3 3"/>
+          </g>
+          <text x="272" y="60" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">数据</text>
+          <text x="290" y="82" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">代码</text>
+          <text x="290" y="108" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">客服</text>
+          <text x="290" y="132" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">文档</text>
+          <text x="272" y="163" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">测试</text>
+
+          <!-- 后台边框 -->
+          <rect x="215" y="45" width="65" height="120" rx="8" fill="none"
+                stroke="currentColor" style="color:var(--text-muted)" stroke-width="1"
+                stroke-dasharray="2 3" opacity=".6"/>
+          <text x="247" y="182" text-anchor="middle" font-size="7.5" fill="currentColor"
+                style="color:var(--text-muted)">后台能力矩阵</text>
+        </svg>
+        <div class="orgshift-verdict"><strong>员工不换人，agent 内部换能力。</strong>同一身份、同一上下文、同一任务线程，从提出问题到完成任务一线到底。</div>
+      </div>
+    </div>
+
+    <h3 id="relay-decay">2.1 传话链衰减：多 agent 的隐性成本</h3>
+
+    <p>假设你告诉公司的 agent："新版本上线以后，退款率突然上涨了，帮我查清楚原因并解决。"</p>
+
+    <p>在传统的多 agent 方案里，系统首先要决定把任务交给谁。产品 agent 先整理问题，数据 agent 再查询退款指标，客服 agent 提取用户反馈，研发 agent 检查相关代码，测试 agent 最后验证修复结果。看起来每个 agent 都各司其职，<strong>但问题也从这里开始</strong>——每一次转手，上下文都被压缩一次。</p>
+
+    <div class="relay">
+      <div class="relay-eyebrow">Relay Decay</div>
+      <div class="relay-title">同一个问题，在 5 个 agent 之间被反复路由、压缩、重新解释</div>
+      <div class="relay-sub">数据 agent 不知道产品 agent 为什么怀疑这个版本；研发 agent 只拿到一段被压缩过的数据结论；客服 agent 发现了新的用户反馈，又要把信息重新同步给前面的 agent。信息熵在每一跳都损失一部分。</div>
+      <svg viewBox="0 0 940 190" role="img" aria-label="信息在 5 个 agent 之间传递时的衰减" xmlns="http://www.w3.org/2000/svg">
+        <!-- 每个节点 -->
+        <g style="color:var(--con)" stroke="currentColor" fill="none">
+          <!-- 5 个 agent 节点 -->
+          <g transform="translate(30,60)">
+            <circle cx="35" cy="35" r="34" stroke-width="1.8"/>
+            <text x="35" y="32" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">产品</text>
+            <text x="35" y="45" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">agent</text>
+            <text x="35" y="93" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" class="disp">100%</text>
+          </g>
+          <g transform="translate(210,60)">
+            <circle cx="35" cy="35" r="34" stroke-width="1.6" opacity=".8"/>
+            <text x="35" y="32" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">数据</text>
+            <text x="35" y="45" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">agent</text>
+            <text x="35" y="93" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" class="disp">78%</text>
+          </g>
+          <g transform="translate(390,60)">
+            <circle cx="35" cy="35" r="34" stroke-width="1.4" opacity=".65"/>
+            <text x="35" y="32" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">客服</text>
+            <text x="35" y="45" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">agent</text>
+            <text x="35" y="93" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" class="disp">55%</text>
+          </g>
+          <g transform="translate(570,60)">
+            <circle cx="35" cy="35" r="34" stroke-width="1.2" opacity=".5"/>
+            <text x="35" y="32" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">研发</text>
+            <text x="35" y="45" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">agent</text>
+            <text x="35" y="93" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" class="disp">36%</text>
+          </g>
+          <g transform="translate(750,60)">
+            <circle cx="35" cy="35" r="34" stroke-width="1" opacity=".35"/>
+            <text x="35" y="32" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">测试</text>
+            <text x="35" y="45" text-anchor="middle" font-size="8" fill="currentColor" opacity=".55">agent</text>
+            <text x="35" y="93" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor" class="disp">22%</text>
+          </g>
+        </g>
+        <!-- 连线（渐衰） -->
+        <g fill="none" style="color:var(--con)">
+          <path d="M100 95 L210 95" stroke="currentColor" stroke-width="3" stroke-linecap="round" opacity=".85" class="dash-flow"/>
+          <path d="M280 95 L390 95" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".7" class="dash-flow"/>
+          <path d="M460 95 L570 95" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55" class="dash-flow"/>
+          <path d="M640 95 L750 95" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".4" class="dash-flow"/>
+        </g>
+        <!-- 标签 -->
+        <g style="color:var(--text-muted)" fill="currentColor" font-size="9">
+          <text x="155" y="150" text-anchor="middle">压缩·重述</text>
+          <text x="335" y="150" text-anchor="middle">压缩·重述</text>
+          <text x="515" y="150" text-anchor="middle">压缩·重述</text>
+          <text x="695" y="150" text-anchor="middle">压缩·重述</text>
+        </g>
+        <!-- 上方标题 -->
+        <text x="470" y="35" text-anchor="middle" font-size="11" font-weight="700"
+              fill="currentColor" style="color:var(--text-strong)" class="disp">
+          信息熵：一次任务 5 次转手，每次损失 22–30%
+        </text>
+      </svg>
+      <div class="relay-caption">当任务出现偏差时，你甚至不知道应该继续找哪个角色</div>
+    </div>
+
+    <p>结论：<strong>你以为自己建立了一支 AI 团队，实际上你可能只是建立了一条运行速度更快的传话链。</strong> 而单身份 agent 的价值不在"更聪明"，而在"上下文不被切碎"。</p>
+
+    <!-- ========== 三、身份台：前台一个入口，后台整套能力 ========== -->
+    <h2 id="identity"><span class="sec-num">三</span>「身份台」：真正应该设计的对象<a href="#identity" class="anchor">#</a></h2>
+    <p class="kicker">— Design the identity, not the org chart</p>
+
+    <p>把上一节的结论反过来：<strong>企业 agent 真正应该设计的不是岗位，而是身份。</strong>不是"公司有几个部门就创建几个 agent"，而是先回答：</p>
+
+    <div class="identity">
+      <div class="identity-eyebrow">Identity Bay</div>
+      <div class="identity-title">前台一个 agent，后台整个公司的能力</div>
+      <div class="identity-sub">
+        用户面对的是一个持续存在的身份章；身份章的背后，是数据 / 代码 / 客服 / 文档 / 测试 / 流程等能力节点的动态编排。
+      </div>
+      <svg viewBox="0 0 720 400" role="img" aria-label="身份台：前台单入口 + 后台能力矩阵" xmlns="http://www.w3.org/2000/svg">
+        <!-- 前台身份章：中心 -->
+        <defs>
+          <radialGradient id="stampGrad" cx="50%" cy="45%" r="55%">
+            <stop offset="0%" stop-color="currentColor" stop-opacity=".25"/>
+            <stop offset="70%" stop-color="currentColor" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g style="color:var(--accent)">
+          <circle cx="360" cy="200" r="90" fill="url(#stampGrad)"/>
+          <circle cx="360" cy="200" r="60" fill="var(--surface)" stroke="currentColor" stroke-width="2.5"/>
+          <circle cx="360" cy="200" r="52" fill="none" stroke="currentColor" stroke-width="1" opacity=".4"/>
+          <text x="360" y="196" text-anchor="middle" font-size="20" font-weight="700" fill="currentColor" class="disp">@Agent</text>
+          <text x="360" y="215" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75">单一持续身份</text>
+        </g>
+        <!-- 员工入口 -->
+        <g style="color:var(--text-strong)" stroke="currentColor" fill="none" stroke-width="1.7"
+           stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="70" cy="200" r="14"/>
+          <path d="M56 226 Q70 214 84 226 L84 244 L56 244 Z"/>
+        </g>
+        <text x="70" y="266" text-anchor="middle" font-size="10" fill="currentColor" style="color:var(--text-muted)">员工</text>
+        <text x="70" y="180" text-anchor="middle" font-size="9" fill="currentColor" style="color:var(--text-muted)" class="disp">一个入口</text>
+
+        <!-- 员工 → agent 粗管道 -->
+        <g style="color:var(--accent)">
+          <path d="M90 200 L295 200" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <polygon points="298,200 288,193 288,207" fill="currentColor"/>
+        </g>
+        <text x="192" y="188" text-anchor="middle" font-size="9" fill="currentColor" style="color:var(--accent)" class="disp">任务 / 上下文</text>
+
+        <!-- 后台能力放射 -->
+        <g style="color:var(--text-muted)" stroke="currentColor" fill="none">
+          <!-- 8 个能力节点 -->
+          <g transform="translate(510,55)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">数据仓库</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">SQL · BI</text>
+          </g>
+          <g transform="translate(610,110)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">代码环境</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">repo · CI</text>
+          </g>
+          <g transform="translate(636,180)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">客服工单</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">Zendesk</text>
+          </g>
+          <g transform="translate(610,255)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">生产日志</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">observ.</text>
+          </g>
+          <g transform="translate(510,315)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">文档库</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">wiki · SOP</text>
+          </g>
+          <g transform="translate(400,338)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">审批链</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">workflow</text>
+          </g>
+          <g transform="translate(400,20)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">专业模型</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">sub-agent</text>
+          </g>
+          <g transform="translate(280,20)">
+            <rect x="0" y="0" width="72" height="42" rx="6" stroke-width="1.4"/>
+            <text x="36" y="18" text-anchor="middle" font-size="9.5" fill="currentColor" font-weight="600">工具沙箱</text>
+            <text x="36" y="32" text-anchor="middle" font-size="7.5" fill="currentColor" opacity=".65">exec · shell</text>
+          </g>
+        </g>
+
+        <!-- 中心到后台的辐射连线 -->
+        <g stroke="currentColor" style="color:var(--accent)" fill="none" stroke-width="1.2"
+           stroke-dasharray="4 4" opacity=".55">
+          <path d="M420 195 L510 76"/>
+          <path d="M420 200 L610 131"/>
+          <path d="M420 205 L636 201"/>
+          <path d="M420 208 L610 276"/>
+          <path d="M415 220 L510 336"/>
+          <path d="M400 250 L400 338"/>
+          <path d="M400 150 L400 62"/>
+          <path d="M330 155 L316 62"/>
+        </g>
+
+        <!-- 后台边框 -->
+        <rect x="260" y="12" width="450" height="380" rx="12" fill="none"
+              stroke="currentColor" style="color:var(--text-muted)" stroke-width="1"
+              stroke-dasharray="3 5" opacity=".4"/>
+        <text x="700" y="30" text-anchor="end" font-size="8" fill="currentColor"
+              style="color:var(--text-muted)" class="disp">BACKSTAGE · orchestration</text>
+
+        <text x="70" y="90" text-anchor="middle" font-size="8" fill="currentColor"
+              style="color:var(--text-muted)" class="disp">FRONTSTAGE · one door</text>
+      </svg>
+      <div class="identity-legend">
+        <span class="frontstage">前台：人只看到一个持续身份</span>
+        <span class="backstage">后台：能力节点被 agent 按需编排</span>
+      </div>
+    </div>
+
+    <p>这个转换看起来只是把架构图翻了一面，实际意味着<strong>整套设计问题都要重问</strong>：</p>
+
+    <div class="prompts">
+      <div class="prompts-eyebrow">Design Prompts</div>
+      <div class="prompts-title">为公司做 agent 架构时该问的 6 个问题</div>
+      <ol class="prompts-list">
+        <li>整个组织需要<strong>一个怎样的公共入口</strong>？它出现在哪里（IM 频道 / 内网首页 / 工位屏 / 移动端）？</li>
+        <li>这个身份能<strong>访问哪些系统</strong>？数据 / 代码 / 客服 / 财务 / HR 的授权边界怎么切？</li>
+        <li>它如何<strong>继承上下文和权限</strong>？跨天、跨人、跨渠道时，任务线程怎么不断？</li>
+        <li>它如何<strong>把一个任务持续推进到最终完成</strong>——包括失败重试、卡点上报、人工接管？</li>
+        <li>后台的能力节点如何<strong>被观测、被授权、被替换</strong>？（模型 / 工具 / 子 agent 的可插拔性）</li>
+        <li>员工<strong>怎么信任这个身份</strong>？它做的事对不对、有没有越权、能不能追溯？</li>
+      </ol>
+    </div>
+
+    <!-- ========== 四、什么时候不该合并 ========== -->
+    <h2 id="dont-merge"><span class="sec-num">四</span>什么时候<em>不</em>该合并<a href="#dont-merge" class="anchor">#</a></h2>
+    <p class="kicker">— The pattern isn't universal</p>
+
+    <p>视频里没讲的一层：<strong>并不是所有 agent 都该合并成一个身份。</strong>三家公司的场景有共性——都是<u>知识型工作 + 共享数字空间（Slack）</u>——但我们的业务里有些场景恰恰相反。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>场景特征</th>
+            <th>该合并成单身份</th>
+            <th>该保留多身份</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>责任边界</td>
+            <td>共同责任、无独立 SLA</td>
+            <td>各自有独立 SLA / 合规 / 审计口径（如售前 vs 售后）</td>
+          </tr>
+          <tr>
+            <td>学习闭环</td>
+            <td>共享上下文有助于学习</td>
+            <td>各自需要独立的强化学习信号，混合会稀释</td>
+          </tr>
+          <tr>
+            <td>物理约束</td>
+            <td>纯数字空间，能力可远程编排</td>
+            <td>存在物理实体（如家用机器人、单臂机械），一台机就是一个 agent</td>
+          </tr>
+          <tr>
+            <td>用户认知</td>
+            <td>希望和一个"人"打交道</td>
+            <td>需要多角色对话（如陪伴场景需要家人 / 助手 / 玩伴多身份）</td>
+          </tr>
+          <tr>
+            <td>数据敏感度</td>
+            <td>信息可全域流通</td>
+            <td>严格数据隔离（HR / 财务 / 未上市信息）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对照到我们的业务</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>科沃斯家用机器人</strong>：每台机器人是一个物理身份，天生就是"多身份"——不能合并到云端一个 agent。但机器人的<u>能力后台</u>可以合并（一个 orchestration 服务同时驱动多台设备）。</li>
+        <li><strong>电商客服 Agent</strong>：售前 / 售后有独立 KPI 和责任口径，合适保持双身份；但两者共享<u>同一用户上下文池</u>，避免用户重述订单。</li>
+        <li><strong>添可社媒工作流</strong>：Brief 提取 / 视频质检 / 反向脚本 / 投放诊断——完全符合三家的模式，<u>应该合并成一个"社媒共事 agent"</u>，让运营只面对一个入口。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 五、对雇主 UI 的启示 ========== -->
+    <h2 id="employer-ui"><span class="sec-num">五</span>对雇主 UI 的启示<a href="#employer-ui" class="anchor">#</a></h2>
+    <p class="kicker">— From roster to backstage panel</p>
+
+    <p>这层判断对我这半年一直在做的<strong>雇主界面 / 数字员工管理系统</strong>影响最直接。默认的员工管理面板长这样：</p>
+
+    <ul>
+      <li>首页 = 花名册：一格一格的数字员工卡片（客服小张 / 分析小李 / 研发小王）</li>
+      <li>点进去 = 单个员工的档案页：技能 / KPI / 排班 / 日志</li>
+    </ul>
+
+    <p>如果上面的判断成立，这个界面结构<strong>就是把 org-chart 陷阱做进了 UI</strong>——它让企业主继续用"雇了多少人"的心智去管理 agent，而不是用"我有一个能进整个组织的身份"的心智去管理。</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">雇主 UI 的下一版</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>首页不是花名册，是身份台</strong>：中心一个 @Agent 印章，周边是后台能力节点的健康状况（可观测、可授权、可替换）</li>
+        <li><strong>"员工档案"退到二级</strong>：只有确实需要多身份的场景（客服/机器人）才有员工卡片；否则全部聚合到身份视图</li>
+        <li><strong>"部门"从一级导航消失</strong>：换成"能力域"（数据 / 代码 / 客服 / 文档），能力域是横切的，不是垂直的部门墙</li>
+        <li><strong>任务视图串到底</strong>：一个任务从提出到完成的完整线程，中间可以看到 agent 调用了哪些能力、被哪些人 review 过</li>
+        <li><strong>信任层显式化</strong>：可见"这个 agent 在最近 24h 内做了什么、越权了几次、被人工纠正了几次"</li>
+      </ul>
+    </div>
+
+    <!-- ========== 六、下一步行动 ========== -->
+    <h2 id="actions"><span class="sec-num">六</span>下一步行动（1–2 周）<a href="#actions" class="anchor">#</a></h2>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">行动清单</div>
+      <ul style="margin: .3em 0;">
+        <li>把添可社媒工作流的四件套（Brief / 质检 / 反向 / 诊断）合并为<strong>一个单身份 agent</strong> POC，走一次真实运营任务全流程，量员工端心智负担的下降</li>
+        <li>雇主 UI 面板做一个新版原型：<u>身份台 + 能力矩阵</u>视图 vs 现有花名册视图，A/B 对比企业主的第一动作</li>
+        <li>在方舟 Managed Agents 的测评中，把"后台能力编排是否可插拔"作为独立评估维度写进 report</li>
+        <li>给电商客服团队画一份「什么合并 / 什么不合并」的判断图，防止他们把售前售后强行合成一个 agent</li>
+      </ul>
+    </div>
+
+    <!-- ========== 七、待验证问题 ========== -->
+    <h2 id="open-questions"><span class="sec-num">七</span>待验证的问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>三家公司都是「知识型 + Slack 原生」的场景，跨行业是否泛化？（制造 / 医疗 / 教育没有 Slack，"公共入口"长什么样？）</li>
+      <li>合并后的单身份 agent 在中长任务上是否会退化？（Sierra / Anthropic / Shopify 都还没公开长周期效果数据）</li>
+      <li>企业主是否愿意信任"一个能进整个组织"的身份？在合规和权限颗粒度上会遇到什么阻力？</li>
+      <li>后台能力矩阵的<u>可观测性/可替换性</u>如果做不到位，合并会不会变成"更黑的黑箱"？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-13 初稿 · 触发信号来自
+      <a href="https://www.bilibili.com/video/BV1i6Nu6vEoy/" target="_blank" rel="noopener">慢学AI</a> B 站 5 分钟观察，配合三家公司公开产品动作与我方业务上下文交叉推导。
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      ·
+      <a href="../cross/2026-07-03_anthropic-managed-agents.html">相关：Anthropic Managed Agents · 第三条路</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

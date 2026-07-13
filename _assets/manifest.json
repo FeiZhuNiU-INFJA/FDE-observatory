@@ -1,6 +1,23 @@
 {
-  "generated_at": "2026-07-13T06:42:52.955682+00:00",
+  "generated_at": "2026-07-13T07:28:48.093307+00:00",
   "insights": [
+    {
+      "path": "insights/tob/2026-07_org-chart-trap-single-agent-identity.html",
+      "title": "Org-Chart 陷阱 · 企业 Agent 不该是团队，而该是身份",
+      "date": "2026-07-13",
+      "audience": "tob",
+      "status": "草案",
+      "tags": [
+        "AI-Native Architecture",
+        "Agent OS",
+        "Managed Agents"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-07_claude-x-one-platform-many-skins.html",
       "title": "Claude X = 一个平台，五张皮 · One Platform, Many Skins",
