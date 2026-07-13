@@ -40,6 +40,23 @@
 
   .type-digest { border-left: 3px solid var(--info); }
   .type-deep { border-left: 3px solid var(--accent); }
+
+  @media (max-width: 640px) {
+    .index-page { padding: 1.6rem 1rem 4rem; }
+    .vendor-header { padding: .8em .8em; }
+    .vendor-name { font-size: 1rem; }
+    .doc-list li {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: .35rem;
+      padding: .7em .8em;
+    }
+    .doc-title { flex: unset; width: 100%; }
+    .doc-tags { flex-wrap: wrap; }
+    /* vendor 卡片内部的 section 分隔条（周期摘要/深度拆解 label）padding 收窄 */
+    .vendor-section > div[style*="padding:.6em 1em"],
+    .vendor-section > div[style*="padding: .6em 1em"] { padding: .5em .8em !important; }
+  }
 </style>
 </head>
 <body>
