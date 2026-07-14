@@ -240,6 +240,7 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
   width: 1px; height: 18px; transform: translateX(-50%) scaleY(0); transform-origin: bottom;
   background: linear-gradient(to bottom, transparent, var(--tip-ink, var(--vermil)));
   opacity: .7; transition: transform .85s cubic-bezier(.22,.61,.36,1) .1s;
+  pointer-events: none;
 }
 .tip.on::after { transform: translateX(-50%) scaleY(1); }
 /* 重新出现 / 扫描回卷：瞬移就位，不做横向长滑（避免甩尾） */
@@ -255,11 +256,15 @@ svg.trace { width: 100%; height: auto; display: block; overflow: visible; }
 .tip-row:first-of-type { padding-top: 0; }
 .tip .t-cat { font-family: var(--mono); font-size: .5rem; letter-spacing: .16em; text-transform: uppercase; flex-shrink: 0; opacity: .85; }
 .tip .t-title { font-family: var(--disp); font-size: .92rem; line-height: 1.24; color: var(--chalk); text-shadow: 0 1px 8px var(--steel), 0 0 4px var(--steel); text-decoration: none; }
-/* hover 锁定态：标签可点，标题变可点链接；沿引线补一块隐形桥面，让指针能从光点走进标签 */
+/* hover 锁定态：标签可点，标题变可点链接；沿引线补一块隐形桥面（视觉连接，
+   不拦截指针），让指针从光点走进标签的过程视觉上连续；实际的连续 hover 由
+   svg 级 mousemove nearest-x 处理，桥面必须 pointer-events:none，否则会
+   吃掉相邻点之间的 mousemove（导致靠近的圆圈"没反应"）*/
 .tip.tip--lock { pointer-events: auto; }
 .tip.tip--lock::before {
   content: ""; position: absolute; left: 50%; bottom: -24px;
   width: 64px; height: 28px; transform: translateX(-50%);
+  pointer-events: none;
 }
 a.t-title { transition: color .16s ease; }
 .tip.tip--lock a.t-title:hover { color: var(--vermil-soft); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
@@ -607,9 +612,9 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
         </linearGradient>
       </defs>
       <g id="ticks"></g>
-      <line id="line" x1="40" y1="32" x2="960" y2="32" stroke="url(#baselinegrad)" stroke-width="1.4"/>
-      <rect id="sweepGlow" x="-100" y="6" width="90" height="52" fill="url(#sweepgrad)" style="opacity:0"/>
-      <line id="sweep" x1="-100" y1="9" x2="-100" y2="55" stroke="#b06a63" stroke-width="1" style="opacity:0"/>
+      <line id="line" x1="40" y1="32" x2="960" y2="32" stroke="url(#baselinegrad)" stroke-width="1.4" pointer-events="none"/>
+      <rect id="sweepGlow" x="-100" y="6" width="90" height="52" fill="url(#sweepgrad)" style="opacity:0" pointer-events="none"/>
+      <line id="sweep" x1="-100" y1="9" x2="-100" y2="55" stroke="#b06a63" stroke-width="1" style="opacity:0" pointer-events="none"/>
       <g id="dots"></g>
     </svg>
     <div class="trace-axis"><span id="axStart">2026-Q1</span><span>五月</span><span>六月</span><span>此刻 →</span></div>
@@ -987,6 +992,15 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       tg.appendChild(tk);
     }
 
+    // 透明捕获层：SVG 里未绘制的空白区默认不接收 mousemove；这层贴在轴线上下，
+    // 提供一条粗判定带（覆盖轴 ±20），让鼠标一进入时间轴带就能被 nearest-x 追踪到
+    var hitLayer = document.createElementNS(SVGNS, 'rect');
+    hitLayer.setAttribute('x', 0); hitLayer.setAttribute('y', 6);
+    hitLayer.setAttribute('width', W); hitLayer.setAttribute('height', 52);
+    hitLayer.setAttribute('fill', 'transparent');
+    hitLayer.style.cursor = 'pointer';
+    svg.insertBefore(hitLayer, dc);
+
     // tooltip 读出：hover 与雷达扫过共用同一个 #tip；hover 优先，扫过为自动短暂读出
     var hoverLock = false, sweepTipT = null, hideT = null;
     function positionTip(p) {
@@ -1035,32 +1049,56 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
       c.setAttribute('r', last ? 5.5 : (multi ? 4.2 : 3));
       c.setAttribute('fill', last ? col : '#151b21'); c.setAttribute('stroke', col); c.setAttribute('stroke-width', last ? 2 : (multi ? 2 : 1.4));
       if (last) { c.setAttribute('class', 'pulse'); }
-      c.style.cursor = 'pointer';
+      c.style.pointerEvents = 'none';
       if (multi && !last) {
         var ring = document.createElementNS(SVGNS, 'circle');
         ring.setAttribute('cx', p.x); ring.setAttribute('cy', p.y); ring.setAttribute('r', 7);
         ring.setAttribute('fill', 'none'); ring.setAttribute('stroke', col); ring.setAttribute('stroke-width', .8); ring.setAttribute('opacity', .5);
+        ring.style.pointerEvents = 'none';
         dc.appendChild(ring); entrants.push(ring);
       }
-      function show() {
-        hoverLock = true;
-        if (sweepTipT) { clearTimeout(sweepTipT); sweepTipT = null; }
-        if (hideT) { clearTimeout(hideT); hideT = null; }
-        moveTip(p, true); fillTip(p, true);
-        tip.classList.add('on', 'tip--lock');
-      }
-      function scheduleHide() {
-        if (hideT) clearTimeout(hideT);
-        hideT = setTimeout(function () {
-          hoverLock = false; tip.classList.remove('on', 'tip--lock'); hideT = null;
-        }, 260);
-      }
-      c.addEventListener('mouseenter', show);
-      c.addEventListener('mouseleave', scheduleHide);
       dc.appendChild(c); p.core = c; entrants.push(c);
     });
 
-    // 指针从光点走进标签本体时，取消隐藏计时并保持锁定，便于点击标题；离开标签再隐藏
+    // hover 走 SVG 级 nearest-x 匹配：鼠标在时间轴上任何位置，都锁定最近点亮起
+    // 相邻点之间不再有 dead-zone，读出会沿 CSS left 过渡平滑滑动到下一点
+    var currentHoverP = null;
+    function showPointHover(p) {
+      if (currentHoverP === p) return;
+      var switching = currentHoverP !== null && tip.classList.contains('on');
+      currentHoverP = p;
+      hoverLock = true;
+      if (sweepTipT) { clearTimeout(sweepTipT); sweepTipT = null; }
+      if (hideT) { clearTimeout(hideT); hideT = null; }
+      // 已经亮着（在相邻点之间切换）→ 平滑 left 滑动；从无到有 → 瞬移到位再淡入
+      moveTip(p, !switching);
+      fillTip(p, true);
+      tip.classList.add('on', 'tip--lock');
+    }
+    function scheduleHoverHide() {
+      if (hideT) clearTimeout(hideT);
+      hideT = setTimeout(function () {
+        hoverLock = false; currentHoverP = null;
+        tip.classList.remove('on', 'tip--lock'); hideT = null;
+      }, 260);
+    }
+    svg.addEventListener('mousemove', function (e) {
+      var r = svg.getBoundingClientRect();
+      if (!r.width) return;
+      var xSvg = (e.clientX - r.left) / r.width * W;
+      var best = null, bestD = Infinity;
+      for (var i = 0; i < pts.length; i++) {
+        var d = Math.abs(pts[i].x - xSvg);
+        if (d < bestD) { bestD = d; best = pts[i]; }
+      }
+      if (best) showPointHover(best);
+    });
+    svg.addEventListener('mouseleave', function () {
+      scheduleHoverHide();
+    });
+    svg.style.cursor = 'pointer';
+
+    // 指针从时间轴走进标签本体时，取消隐藏计时并保持锁定，便于点击标题；离开标签再隐藏
     tip.addEventListener('mouseenter', function () {
       if (hideT) { clearTimeout(hideT); hideT = null; }
       hoverLock = true;
@@ -1068,7 +1106,8 @@ body.filter-cross [data-audience]:not([data-audience~="cross"]):not([data-audien
     tip.addEventListener('mouseleave', function () {
       if (hideT) clearTimeout(hideT);
       hideT = setTimeout(function () {
-        hoverLock = false; tip.classList.remove('on', 'tip--lock'); hideT = null;
+        hoverLock = false; currentHoverP = null;
+        tip.classList.remove('on', 'tip--lock'); hideT = null;
       }, 200);
     });
 
