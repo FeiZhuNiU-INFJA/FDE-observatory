@@ -1,6 +1,24 @@
 {
-  "generated_at": "2026-07-15T07:31:46.587970+00:00",
+  "generated_at": "2026-07-15T08:14:00.330416+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07_greenfield-bypass-phase-ii.html",
+      "title": "Greenfield 战术 · Bypass Phase II",
+      "date": "2026-07-15",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Greenfield",
+        "OPC · 一人公司",
+        "组织重构",
+        "Know-How 迁移"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-07_ai-adoption-not-application.html",
       "title": "AI 采纳 · 不是 AI 应用 · Adoption, not Application",

@@ -224,6 +224,42 @@
     margin-top: .6em; letter-spacing: .04em;
   }
 
+  /* ═════════════════════════════════════════════════
+     视觉补：阶段 Ⅱ J 曲线的谷底（迷你）
+     ═════════════════════════════════════════════════ */
+  .jvalley {
+    margin: 1.4em 0 1.6em;
+    padding: 1.1rem 1rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 4%, var(--surface)) 0%,
+      var(--surface) 100%);
+    display: grid;
+    grid-template-columns: 1.05fr 1fr;
+    gap: 1.2rem;
+    align-items: center;
+  }
+  @media (max-width: 720px) { .jvalley { grid-template-columns: 1fr; } }
+  .jvalley-eyebrow {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .3rem;
+  }
+  .jvalley-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .jvalley svg { display: block; width: 100%; height: auto; max-width: 380px; margin: 0 auto; }
+  .jvalley text { font-family: var(--mono); font-size: 10px; }
+  .jvalley-note {
+    font-size: .84rem; line-height: 1.6; color: var(--text-soft);
+  }
+  .jvalley-note strong { color: var(--accent-ink); }
+  [data-theme="dark"] .jvalley-note strong { color: var(--accent-deep); }
+
   @media (prefers-reduced-motion: reduce) {
     .dash-flow, .spark { animation: none !important; }
   }
@@ -419,6 +455,103 @@
       <p style="margin:.3em 0;">Daron Acemoglu 与 Pascual Restrepo 2026 年 5 月发表在 <cite>Quarterly Journal of Economics</cite> 的《Automation and Rent Dissipation》做了一件事：把「大公司做自动化」这件事从"当然赚钱"拆到"要看组织架构会不会重构"。他们的核心结论 —— <strong>如果自动化不伴随组织架构的实质重构，AI 带来的生产率红利会被 60-90% 的"寻租摩擦"（rent dissipation）耗散在内部权力、部门壁垒和现有工作流的路径依赖里</strong>。</p>
       <p style="margin:.3em 0;">这与视频里的三阶段模型互相对齐 —— 也解释了为什么我拒绝把某个现有巨头贴上"阶段 Ⅲ 福特"标签：<em>组织越大、rent 越多、AI 收益被耗散得越彻底</em>。视频里被点名的那家现有大公司，恰恰是 rent dissipation 效应最强的候选者，而不是最弱的。</p>
       <p class="quote-src">Acemoglu · Restrepo · <cite>Automation and Rent Dissipation</cite> · QJE 141(2), 2026-05</p>
+    </div>
+
+    <h3 id="phase-ii-valley">为什么阶段 Ⅱ 决胜「谁愿意做 ROI 不划算的先驱」<a href="#phase-ii-valley" class="anchor">#</a></h3>
+
+    <p>图 1 里阶段 Ⅱ 那一列写着 <em>「先驱者摘桃 · ROI 不划算」</em>，图注末尾又出现 <em>「阶段 Ⅱ 决胜 · 谁愿意做 ROI 不划算的先驱」</em>。这两句话压缩了三段学术论证，展开看才能明白为什么它是整个三阶段模型的关键关卡。</p>
+
+    <div class="jvalley reveal" role="img" aria-label="生产率 J 曲线示意：阶段 Ⅰ 装电机时曲线走平，阶段 Ⅱ 拆车间时短期 ROI 掉入负值区（先驱者谷底），阶段 Ⅲ 组织重构完成后指数反弹，福特/摘桃者接住全部红利。">
+      <div>
+        <div class="jvalley-eyebrow">Brynjolfsson-Rock-Syverson · Productivity J-Curve</div>
+        <svg viewBox="0 0 340 200">
+          <!-- 底轴 -->
+          <line x1="30" y1="160" x2="320" y2="160" stroke="var(--border-strong)" stroke-width="1"/>
+          <!-- 左轴 -->
+          <line x1="30" y1="20" x2="30" y2="160" stroke="var(--border-strong)" stroke-width="1"/>
+          <!-- 零线（ROI 分界） -->
+          <line x1="30" y1="110" x2="320" y2="110" stroke="var(--text-muted)" stroke-width=".8" stroke-dasharray="2 3"/>
+          <text x="34" y="107" style="fill:var(--text-muted)" font-size="8">ROI = 0</text>
+
+          <!-- 阶段背景色带 -->
+          <rect x="30"  y="20" width="90"  height="140" fill="var(--bg-soft)" opacity=".5"/>
+          <rect x="120" y="20" width="90"  height="140" fill="var(--accent-soft)" opacity=".75"/>
+          <rect x="210" y="20" width="110" height="140" fill="var(--bg-soft)" opacity=".5"/>
+
+          <!-- 阶段标签 -->
+          <text x="75"  y="34" text-anchor="middle" style="fill:var(--text-muted)" font-size="9">Ⅰ 装电机</text>
+          <text x="165" y="34" text-anchor="middle" style="fill:var(--accent)" font-weight="700" font-size="9">Ⅱ 拆车间</text>
+          <text x="265" y="34" text-anchor="middle" style="fill:var(--text-muted)" font-size="9">Ⅲ 摘桃</text>
+
+          <!-- J 曲线本体 -->
+          <path d="M 30 108 L 90 105 L 120 106 Q 145 108 165 140 Q 185 152 210 108 Q 235 65 320 30"
+                fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linecap="round"/>
+
+          <!-- 谷底标记 -->
+          <circle cx="177" cy="149" r="4" fill="var(--con)"/>
+          <text x="177" y="167" text-anchor="middle" style="fill:var(--con)" font-size="9" font-weight="700">先驱者谷底</text>
+
+          <!-- 反弹终点 -->
+          <circle cx="320" cy="30" r="4" fill="var(--pro)"/>
+          <text x="316" y="22" text-anchor="end" style="fill:var(--pro)" font-size="9" font-weight="700">Ⅲ 阶段反弹</text>
+
+          <!-- 底轴刻度 -->
+          <text x="75"  y="176" text-anchor="middle" style="fill:var(--text-muted)" font-size="8">1882–1899</text>
+          <text x="165" y="176" text-anchor="middle" style="fill:var(--text-muted)" font-size="8">1899–1915</text>
+          <text x="265" y="176" text-anchor="middle" style="fill:var(--text-muted)" font-size="8">1915–1929</text>
+
+          <!-- 左轴标签 -->
+          <text x="12" y="90" transform="rotate(-90 12 90)" text-anchor="middle" style="fill:var(--text-muted)" font-size="8">工厂生产率</text>
+        </svg>
+      </div>
+      <div class="jvalley-note">
+        <strong>Ⅰ 装电机</strong>：把 group drive 主轴换成集中电机，账面 ROI 干净 —— GE / 西屋卖设备赚一台是一台。<br>
+        <strong>Ⅱ 拆车间</strong>：停产改动线、重写作业流程、辞退老师傅、招电气工。<em>这笔账在当期利润表上一定是负数</em>，先驱者被拖进谷底。<br>
+        <strong>Ⅲ 摘桃</strong>：15 年后福特接住全部红利 —— 但福特不是无中生有，是 Ⅱ 阶段那批"ROI 不划算的先驱者"里最后活下来的一个。
+      </div>
+    </div>
+
+    <p>这条曲线由 Brynjolfsson-Rock-Syverson 2018 用宏观数据拟合成"生产率 J 曲线"—— 但机理更早由 Paul David 1990 讲清：<strong>电气化真正的跃升不来自 1882 年装电机，而来自 1899–1920 那次车间重构</strong>。中间 20 年就是 Ⅱ 阶段的谷底。</p>
+
+    <p>Ⅱ 阶段要做的事叫 <strong>「重构车间」</strong> —— 拆掉旧主轴、给每台机器装独立电机、重新布线、改动线、重写作业流程、辞退老师傅、招电气工人、全员再培训。<em>这笔账在当期利润表上一定是负数</em>：车间停产 + 重训 + 试错都算今年成本；效率反弹要等 5–15 年才被 P&amp;L 看到。绝大部分公司算完账就退了，只有极少数敢跳进谷底的公司，才有资格接住 Ⅲ 阶段的指数反弹。</p>
+
+    <p>历史上做这件事的是 <strong>GE 自己</strong> —— 它用自己造的电机改造自家工厂，别人不敢干、它敢，因为电机是它卖的、试错成本内部消化。视频里把 <em>「Anthropic ≈ GE 的角色」</em>放在阶段 Ⅱ 主位，正是这个逻辑：手握前沿模型的公司天然是最有资格做"ROI 不划算的先驱"的那家，因为模型是它造的，先在自家工作流里跑通、代价内部消化。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">Acemoglu-Restrepo 2026 QJE 的制度经济学解释</div>
+      <p style="margin:.3em 0;">为什么绝大部分公司会卡在 Ⅱ 阶段的入口？Rent Dissipation 给了答案：<strong>如果自动化不伴随组织架构的实质重构，AI 带来的生产率红利会被 60–90% 耗散在寻租摩擦里</strong>。翻译成大白话：拆车间要动既得利益、要跟财务解释未来 5 年 ROI 为什么难看、要说服 CEO 忍受股价下跌 —— 大部分公司会选<em>「装电机不拆车间」</em>：买 Copilot 席位、发 ChatGPT Enterprise、在 CRM 里加个 AI 侧栏。这些动作 ROI 可算清、董事会容易过审，但收益会被内部 rent 吃光，永远走不到 Ⅲ 阶段。</p>
+    </div>
+
+    <p>映射到 AI 现场：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th style="width:20%">动作</th><th style="width:40%">阶段 Ⅰ「装电机」</th><th style="width:40%">阶段 Ⅱ「拆车间」</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>典型做法</strong></td>
+            <td>买 Copilot 席位 · 给员工发 ChatGPT Enterprise · 在 CRM 里加 AI 侧栏</td>
+            <td>让 Agent 主导工作流 · 砍掉一整个部门 · 重写 SOP · 工程师从「写代码」变成「审 PR + 编排 Agent」</td>
+          </tr>
+          <tr>
+            <td><strong>当期 ROI</strong></td>
+            <td>正 · 可算清 · 董事会易过审</td>
+            <td><em>负</em> · Agent 训练成本 + 老流程效率暂时下降 + KPI 无法立刻兑现 + 组织阵痛</td>
+          </tr>
+          <tr>
+            <td><strong>今天在做的少数派</strong></td>
+            <td>几乎所有公司</td>
+            <td>Anthropic 内部大量用自己模型做研发（视频观点）· Palantir FDE 派工到甲方现场重构工作流（我的判断）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>这就是那句压缩的完整解码：<strong>Ⅲ 阶段目前是权力真空，不是因为技术没到，而是因为 Ⅱ 阶段的先驱者门槛已经把绝大部分玩家筛出去了</strong>。愿意跳进 J 曲线谷底的公司少 —— 但只有它们能捞到 Ⅲ 阶段的红利。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">但视频没讨论第三条路 · 续集补上</div>
+      <p style="margin:.3em 0;">上面的论证默认了"车间已经存在"这个前提 —— 所以只有两条路：装电机不拆 或 拆车间做先驱。但历史上真正走通到阶段 Ⅲ 的那家公司（福特 1913）用的是<strong>第三条</strong>：<em>没车间要拆，在空地上从零建 greenfield</em>。这条路径的现代版就是 OPC / 一人公司。这个问题以及它对 know-how 迁移、行业分层、FDE 定位的暗示，我单开了一篇续集 →</p>
+      <p style="margin:.3em 0;"><a href="./2026-07_greenfield-bypass-phase-ii.html"><strong>Greenfield 战术 · 绕过阶段 Ⅱ 谷底的第三条路</strong></a></p>
     </div>
 
     <!-- ═════════ 二、类比在哪里破裂 ═════════ -->
@@ -739,6 +872,18 @@
       <li><strong>「Dumb 越可靠 vs Smart 越不透明」这条破裂点会不会自愈？</strong>如果对齐 / 可解释性研究突破，Agent 达到「电插座级可靠」，六维对撞会塌成五维 —— 类比反而更成立。</li>
       <li><strong>「福特」位到底属于新势力还是旧巨头？</strong>可观察指标：AI-native 新创从「工具」升级为「运营中枢」的时刻 · 现有科技巨头 AI 项目从「侧栏」变为「主干」的时刻 · 传统大企业内部 unit-drive 改造第一次跑通 ROI 的时刻。本文写在 2026-07-15，我们打个卡在 <em>2027-01</em> 回来复盘。</li>
     </ol>
+
+    <h2 id="further-reading">延伸阅读 · 续集</h2>
+    <div class="callout callout-accent">
+      <div class="callout-tag">Greenfield 战术 · 绕过阶段 Ⅱ 谷底的第三条路</div>
+      <p style="margin:.3em 0;">本文把阶段 Ⅱ 描述成一个二选一：装电机不拆 或 拆车间做先驱。<strong>但历史上真正走通到阶段 Ⅲ 的那家公司（福特 1913）用的是第三条 —— 没车间要拆，在空地上从零建 greenfield。</strong>这条路径的现代版就是 OPC / 一人公司。续集回答三个问题：</p>
+      <ol style="margin:.3em 0;">
+        <li>Greenfield 是不是真的绕过了阶段 Ⅱ 的谷底？</li>
+        <li>如果从 OPC 起步、行业 know-how 全没了，会不会出大问题？（用 Polanyi 显性/暗知识二分回答）</li>
+        <li>哪些行业能这么玩、哪些不能？（用 tacit 密度作为分层判据）</li>
+      </ol>
+      <p style="margin:.3em 0;">→ <a href="./2026-07_greenfield-bypass-phase-ii.html"><strong>Greenfield 战术 · 绕过阶段 Ⅱ 谷底的第三条路</strong></a></p>
+    </div>
 
     <hr>
     <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
