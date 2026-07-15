@@ -95,7 +95,7 @@ h1 { font-size: 2.2rem; margin: 0 0 .4em; }
 h2 {
   font-size: clamp(1.5rem, 3.2vw, 1.95rem);
   display: flex; align-items: baseline; gap: .35em; flex-wrap: wrap;
-  margin: 3.2em 0 .8em; padding-top: .4em; border-top: 1px solid var(--border);
+  margin: 2.6em 0 .7em; padding-top: .5em; border-top: 1px solid var(--border);
 }
 h2:first-of-type { border-top: none; padding-top: 0; }
 h3 { font-size: 1.2rem; margin: 2em 0 .6em; color: var(--text); }
@@ -579,4 +579,91 @@ blockquote p { margin: .3em 0; }
 .reveal.d3 { transition-delay: .24s; } .reveal.d4 { transition-delay: .32s; }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   移动端 / 中屏纪律（Mobile & tablet discipline）
+   —— 全站统一收敛：顶栏挤压、章节节奏、hero-stats、lede、卡片
+   ══════════════════════════════════════════════════════════════ */
+
+/* 平板（1024 以下）：容器上下 padding 收敛，为 hero 让路 */
+@media (max-width: 1024px) {
+  .container { padding: 1.2rem 1.1rem 3.2rem; }
+  .container-single { padding: 1.6rem 1.1rem 3.2rem; }
+  .doc-header { margin-bottom: 1.8rem; padding-bottom: 1.1rem; }
+  .doc-header h1 { font-size: clamp(1.65rem, 5.6vw, 2.4rem); line-height: 1.15; }
+  h2 { margin: 2.2em 0 .6em; padding-top: .4em; }
+  h3 { margin: 1.6em 0 .5em; }
+}
+
+/* 手机（760 以下）：顶栏、章节序号、hero-stats、lede、callout 全面收敛 */
+@media (max-width: 760px) {
+  /* Topbar：紧凑到手机；brand-home 缩短、brand-sub 保留但字更小 */
+  .topbar-inner { padding: .55rem .9rem; gap: .5rem; }
+  .brand { font-size: .92rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+  .brand-home { margin-right: .55em; font-size: .74rem; }
+  .brand-sub { font-size: .72em; margin-left: .45em; }
+  .icon-btn { width: 32px; height: 32px; }
+  .actions { flex-shrink: 0; }
+
+  /* 文档头：字号 / 间距 / meta 全部收敛 */
+  .doc-meta { gap: .45rem .7rem; font-size: .78rem; margin: .7em 0 1rem; }
+  .doc-header h1 .en { display: inline-block; margin-top: .1em; }
+
+  /* Lede：紧凑、字号回到近正文 */
+  .lede { font-size: 1.02rem; line-height: 1.7; padding: .8em 1em; margin: 1.2em 0; }
+
+  /* 章节序号：汉字数字在窄屏别太抢戏 */
+  .sec-num { font-size: 1.25em; margin-right: 0; }
+  .kicker { margin: -.6em 0 1.2em; font-size: .68rem; letter-spacing: .16em; }
+
+  /* Hero stats：4 列已在 640 变 2 列；此处再收 padding / 字号 */
+  .hero-stats { gap: .5rem; margin: 1.2em 0 .3em; }
+  .hero-stat { padding: .7rem .75rem; }
+  .hero-stat .num { font-size: 1.4rem; }
+  .hero-stat .lab { font-size: .72rem; margin-top: .3em; }
+
+  /* Callout / blockquote：收内边距 */
+  .callout { padding: .85em 1em .85em 1.15em; margin: 1.2em 0; }
+  blockquote { padding: .7em 1em; margin: 1.2em 0; }
+
+  /* 卡片网格：单列并收紧 */
+  .card-grid { grid-template-columns: 1fr; gap: .8rem; margin: 1.2em 0; }
+  .card { padding: 1em 1.05em; }
+
+  /* Panel：外框内边距收敛 */
+  .panel { padding: 1.1rem 1rem; margin: 1.3em 0; }
+
+  /* Table：字体收小一档，与移动阅读匹配 */
+  table { font-size: .86rem; }
+  th, td { padding: .55em .7em; }
+
+  /* Body：留出更舒服的行距 */
+  body { font-size: 15.5px; line-height: 1.72; }
+  p { margin: .75em 0; }
+
+  /* Doc footer：减少上方留白 */
+  .doc-footer { margin-top: 2.6em; }
+}
+
+/* 小屏（480 以下）：进一步收敛，避免顶栏两行 */
+@media (max-width: 480px) {
+  .topbar-inner { padding: .5rem .75rem; }
+  .brand-home { display: none; }
+  .brand-sub { display: none; }
+  .container { padding: 1rem .95rem 3rem; }
+  .container-single { padding: 1.2rem .95rem 3rem; }
+  .doc-header h1 { font-size: clamp(1.5rem, 6.8vw, 2rem); }
+  .hero-stat .num { font-size: 1.25rem; }
+  .lede { font-size: .98rem; padding: .7em .9em; }
+  h2 { margin: 1.8em 0 .55em; }
+  .sec-num { font-size: 1.15em; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   桌面 / 大屏微调：让宽屏也更透气
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 1400px) {
+  .container { max-width: 1240px; gap: 4rem; }
+  .toc-aside { top: 92px; }
 }
