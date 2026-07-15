@@ -1,6 +1,26 @@
 {
-  "generated_at": "2026-07-14T07:15:35.116514+00:00",
+  "generated_at": "2026-07-15T02:09:31.842707+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07_ai-adoption-not-application.html",
+      "title": "AI 采纳 · 不是 AI 应用 · Adoption, not Application",
+      "date": "2026-07-15",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "AI 采纳",
+        "组织重构",
+        "电力革命",
+        "Palantir",
+        "Anthropic",
+        "Meta"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "1-2 年",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/tob/2026-07_org-chart-trap-single-agent-identity.html",
       "title": "Org-Chart 陷阱 · 企业 Agent 不该是团队，而该是身份",

@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 采纳 · 不是 AI 应用 —— 电力革命 40 年给我们的三阶段与六个破裂点 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：紫铜金 (Copper-Brass) —— 对应电线铜的氧化色 ═════════ */
+  :root {
+    --accent: #8a5a1a;
+    --accent-deep: #6b4413;
+    --accent-ink: #4a2f0b;
+    --accent-soft: color-mix(in srgb, #8a5a1a 12%, white);
+    --accent-glow: color-mix(in srgb, #8a5a1a 22%, transparent);
+    --accent-mist: #f5ecd8;
+  }
+  [data-theme="dark"] {
+    --accent: #d4a75a;
+    --accent-deep: #e8c47e;
+    --accent-ink: #f5ddb0;
+    --accent-soft: color-mix(in srgb, #d4a75a 22%, #1a1610);
+    --accent-glow: color-mix(in srgb, #d4a75a 26%, transparent);
+    --accent-mist: #2a1f10;
+  }
+
+  /* SVG 文字统一走 CSS（var() 仅在 CSS 上下文解析） */
+  .era text, .clash text, .drive text, .lens text { font-family: var(--mono); font-size: 10px; }
+  .era .disp, .clash .disp, .drive .disp, .lens .disp { font-family: var(--display); font-weight: 700; font-size: 20px; }
+
+  /* 共享动画兜底 */
+  .dash-flow { stroke-dasharray: 4 6; animation: dashflow 4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -80; } }
+  .spark { animation: spark-fade 2.4s ease-in-out infinite; transform-origin: center; }
+  @keyframes spark-fade { 0%,100% { opacity: .3; } 50% { opacity: 1; } }
+
+  /* ═════════════════════════════════════════════════
+     视觉一：三阶段时间线（Era Timeline）
+     ═════════════════════════════════════════════════ */
+  .era {
+    margin: 1.8em 0 1.6em;
+    padding: 1.4rem 1rem 1.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 5%, var(--surface)) 0%,
+      var(--surface) 100%);
+  }
+  .era-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .6rem;
+  }
+  .era-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .era svg { display: block; width: 100%; height: auto; max-width: 1040px; margin: 0 auto; }
+  .era-legend {
+    display: flex; flex-wrap: wrap; gap: .8rem 1.6rem;
+    margin: 1rem 0 .2rem; padding: .8rem 1rem;
+    background: var(--bg-soft);
+    border-radius: 10px;
+    font-size: .82rem;
+  }
+  .era-legend > div { display: flex; align-items: baseline; gap: .5em; }
+  .era-legend .k { font-family: var(--mono); font-size: .72rem; color: var(--accent); letter-spacing: .1em; text-transform: uppercase; }
+
+  /* ═════════════════════════════════════════════════
+     视觉二：六维对撞（Clash 6D）
+     ═════════════════════════════════════════════════ */
+  .clash {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: .9rem; margin: 1.8em 0 1.2em;
+  }
+  @media (max-width: 900px) { .clash { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .clash { grid-template-columns: 1fr; } }
+  .clash-cell {
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 1rem .9rem .8rem;
+    background: var(--surface);
+    display: flex; flex-direction: column; gap: .5rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .clash-cell:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .clash-cell .num {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .16em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .clash-cell .title {
+    font-family: var(--display); font-weight: 700; font-size: 1.02rem;
+    line-height: 1.3;
+  }
+  .clash-cell svg { display: block; width: 100%; height: 68px; margin: .2rem 0; }
+  .clash-cell .pair {
+    font-family: var(--mono); font-size: .72rem;
+    color: var(--text-muted);
+    padding: .4rem .5rem;
+    background: var(--bg-soft);
+    border-radius: 6px;
+    letter-spacing: .04em;
+  }
+  .clash-cell .verdict {
+    font-size: .84rem; line-height: 1.5;
+    color: var(--text-body);
+  }
+
+  /* ═════════════════════════════════════════════════
+     视觉三：Group Drive vs Unit Drive 车间重构
+     ═════════════════════════════════════════════════ */
+  .drive {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 1rem; margin: 1.8em 0;
+  }
+  @media (max-width: 900px) {
+    .drive { grid-template-columns: 1fr; }
+    .drive-arrow { transform: rotate(90deg); justify-self: center; }
+  }
+  .drive-side {
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.1rem 1rem 1rem;
+    background: var(--surface);
+    display: flex; flex-direction: column;
+  }
+  .drive-side.old { border-color: var(--border-strong); }
+  .drive-side.new { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .drive-eyebrow {
+    display: flex; align-items: center; gap: .55em;
+    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    letter-spacing: .14em; text-transform: uppercase;
+    margin-bottom: .4rem;
+  }
+  .drive-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .drive.old .drive-eyebrow { color: var(--text-muted); }
+  .old .drive-eyebrow .dot { background: var(--text-muted); }
+  .new .drive-eyebrow { color: var(--accent); }
+  .new .drive-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .drive-title {
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem;
+    margin-bottom: .3rem; line-height: 1.3;
+  }
+  .drive-sub {
+    font-size: .78rem; color: var(--text-muted); margin-bottom: .6rem;
+    font-family: var(--mono); letter-spacing: .05em;
+  }
+  .drive-side svg { display: block; width: 100%; height: auto; max-width: 260px; margin: .2rem auto .5rem; }
+  .drive-cap {
+    font-size: .84rem; line-height: 1.55;
+    color: var(--text-body);
+  }
+  .drive-cap strong { color: var(--accent); }
+  .drive-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .2rem; color: var(--accent);
+  }
+  .drive-arrow .gly { font-size: 1.6rem; font-family: var(--display); font-weight: 700; }
+  .drive-arrow .lab {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+
+  /* ═════════════════════════════════════════════════
+     视觉四：投资 vs FDE 双镜头（Two Lenses）
+     ═════════════════════════════════════════════════ */
+  .lens {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 1rem; margin: 1.6em 0;
+  }
+  @media (max-width: 820px) { .lens { grid-template-columns: 1fr; } }
+  .lens-card {
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.1rem 1rem .9rem;
+    background: var(--surface);
+    display: flex; flex-direction: column; gap: .6rem;
+    position: relative;
+  }
+  .lens-card::before {
+    content: ""; position: absolute; top: 0; left: 1rem;
+    width: 40px; height: 3px; border-radius: 0 0 6px 6px;
+    background: var(--accent);
+  }
+  .lens-eyebrow {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .14em;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .lens-title {
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem; line-height: 1.3;
+  }
+  .lens-card ul { margin: .2rem 0; padding-left: 1.1rem; font-size: .9rem; }
+  .lens-card li { margin: .35rem 0; line-height: 1.55; }
+  .lens-card .who {
+    font-family: var(--mono); font-size: .74rem;
+    color: var(--text-muted);
+    padding: .5rem .6rem;
+    background: var(--bg-soft);
+    border-radius: 6px;
+    margin-top: .3rem;
+  }
+
+  /* 章节引用小样式 */
+  .quote-src {
+    display: inline-block;
+    font-family: var(--mono); font-size: .72rem;
+    letter-spacing: .05em; color: var(--text-muted);
+    margin-top: .3em;
+  }
+  blockquote.pull {
+    border-left: 3px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+    margin: 1.2em 0; padding: 1rem 1.1rem .8rem;
+    border-radius: 0 8px 8px 0;
+    font-family: var(--display); font-size: 1.05rem;
+    line-height: 1.55;
+  }
+  blockquote.pull cite {
+    display: block;
+    font-family: var(--mono); font-size: .74rem;
+    font-style: normal; color: var(--text-muted);
+    margin-top: .6em; letter-spacing: .04em;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .spark { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      AI 采纳 · 不是 AI 应用<span class="brand-sub">跨市场 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>AI 采纳 · 不是 AI 应用<span class="en"> · Adoption, not Application</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">「电力革命 40 年」类比的三阶段模型、六个破裂点、以及一条留给 FDE 的红利窗口</p>
+      <div class="doc-meta">
+        <span>2026-07-15</span>
+        <span>跨市场</span>
+        <span>AI 采纳</span>
+        <span>组织重构</span>
+        <span>电力革命</span>
+        <span>Palantir</span>
+        <span>Anthropic</span>
+        <span>Meta</span>
+        <span>状态：可对外</span>
+        <span>时机：1-2 年</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">40<small>年</small></div><div class="lab">爱迪生 1882 → 咆哮 20 年代<br>电气化生产率爆发的历史时长</div></div>
+        <div class="hero-stat"><div class="num">5%<small>→25%</small></div><div class="lab">1899 → 1909 十年<br>美国工厂电机采纳率</div></div>
+        <div class="hero-stat"><div class="num">3<small>阶段</small></div><div class="lab">技术成熟 · 组织创新 · 组织重构<br>「美投君 2026-07」原创划分</div></div>
+        <div class="hero-stat"><div class="num">6<small>处破裂</small></div><div class="lab">同质↔指数 / 肌肉↔认知 / 公用↔私有<br>类比失效的关键位置</div></div>
+      </div>
+      <p style="font-size:.85rem;color:var(--text-muted);margin-top:1em;">
+        信源 ·
+        <a href="https://www.youtube.com/watch?v=0kvj3lbJqoY">「美投讲美股」<cite>AI 竟与 100 年前电力革命如此相似？</cite>（2026-07-12 · 28:14）</a> ·
+        <a href="http://www.dklevine.com/archive/refs4115.pdf">Paul David · <cite>The Dynamo and the Computer</cite>（AER 1990）</a> ·
+        <a href="https://economics.mit.edu/sites/default/files/2024-05/The%20Simple%20Macroeconomics%20of%20AI.pdf">Acemoglu · <cite>The Simple Macroeconomics of AI</cite>（2024）</a> ·
+        <a href="https://www.nber.org/system/files/working_papers/w25148/revisions/w25148.rev0.pdf">Brynjolfsson-Rock-Syverson · <cite>Productivity J-Curve</cite>（NBER 2018）</a> ·
+        <a href="https://www.gsb.stanford.edu/insights/andrew-ng-why-ai-new-electricity">Andrew Ng · <cite>AI is the new electricity</cite>（GSB 2017）</a> ·
+        <a href="../../frontier/vendors/openai/deep_dives/2026-06-15_sam-altman-stanford-cs153-scale-agi.html">Sam Altman · <cite>Don't Sell Electricity, Sell Nighttime Illumination</cite>（Stanford CS153, 2026-06）</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>「AI is the new electricity」不是一个类比，是<strong>三个类比</strong>穿着同一件外套 —— 布道版（Ng）让传统行业相信 AI 普及；估值版（Altman / Huang）把私营 AI 公司重估成公用事业；<strong>制度版</strong>（Paul David / Brynjolfsson）才是唯一对 FDE 有用的一版 —— 它告诉我们：电气化真正的生产率跃升不来自装电机、而来自 <em>1899-1920 那次车间重构</em>。所以 <strong>下一个爆发窗口不在 AI 应用（装电机），而在 AI 采纳（重构车间）</strong>。这是「美投君 2026-07 视频」提出的洞察，我在这里给出它的学术底料、六个破裂点、以及一条留给 FDE 的具体机会。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>类比是有效的三段模型</strong>：技术成熟期（GE / 大模型）→ 组织创新期（GE 自己摘桃 / Anthropic）→ 组织重构期（福特流水线 / Meta 自我革命）。美投君 2026-07 提出的这个三阶段划分是最简洁、可操作的一版。</li>
+        <li><strong>类比在六个位置破裂</strong>：同质商品 vs 指数跃升 · 边际近零 vs 边际可观 · 替代肌肉 vs 替代认知 · 公用事业 vs 私营寡头 · Dumb 越可靠 vs Smart 越不透明 · 40 年延迟 vs 3 年爆发压力。</li>
+        <li><strong>真正的价值不在装电机</strong>：Paul David 1990 论证「40 年延迟」的关键是从 group drive（一台大电机带整厂）到 unit drive（每机一电机+按流程摆车间）的组织重构。今天把 Copilot 塞进旧流程 = group drive。</li>
+        <li><strong>Acemoglu 泼冷水</strong>：《The Simple Macroeconomics of AI》测算十年 TFP 只 0.53–0.71%。类比乐观派与经济学悲观派的分歧未消，这是本文「信心：中」的原因。</li>
+        <li><strong>视频给 FDE 直接点名</strong>：Palantir 通过 Forward Deployed Engineers（FDE）帮企业做定制化的 AI 采纳 = 这个类比里的「电气化巡回工程师」。这为整个 <a href="../../index.html">工作站</a> 的定位做了公开背书。</li>
+        <li><strong>下一步不写「装 AI」，写「重造工厂」</strong>：所有面向企业的 AI 项目，问一句「这是 group drive 还是 unit drive？」—— 前者做 3-10% 提效，后者做数量级重构。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 一、类比的锚点：三阶段模型 ═════════ -->
+    <h2 id="three-eras"><span class="sec-num">一</span>类比的锚点 · 三阶段模型<a href="#three-eras" class="anchor">#</a></h2>
+    <p class="kicker">Technology · Organization · Reorganization</p>
+
+    <p>1882 年，通用电气的前身「爱迪生公司」在曼哈顿珍珠街建起第一座商用发电站；1920 年代，美国生产率史无前例大爆发（史称「咆哮的 20 年代」）。中间隔了 <strong>40 年</strong>。这是 Paul David 1990 年论文 <cite>The Dynamo and the Computer</cite> 的原始观察，也是所有严肃的「AI = 电力」类比的学术底料。</p>
+
+    <p>但 40 年不是一条直线。「美投君 2026-07」视频里我最欣赏的一个原创贡献，是把这 40 年切成了 <strong>三段</strong>，每段都有一个代表公司。这个划分比 Perez 的「安装-拐点-部署」三段更贴合我们做 AI 采纳的直觉，值得直接搬过来。</p>
+
+    <blockquote class="pull">
+      「电力革命真正的爆发点不在于电机的发明，也不在于蒸汽机的替代，而在于工厂组织架构基于电力的彻底重构。技术创新只是前提，而组织架构的重构才是爆发的关键。」
+      <cite>—— 美投君，<cite>AI 竟与 100 年前电力革命如此相似？</cite>（10:45）</cite>
+    </blockquote>
+
+    <!-- ▼ 视觉一：三阶段时间线 -->
+    <div class="era reveal">
+      <div class="era-eyebrow">Three-Era Timeline · 电气化 40 年 ↔ AI 采纳</div>
+      <svg viewBox="0 0 1000 340" role="img" aria-label="电力革命三阶段时间线：技术成熟期（1882-1899）、组织创新期（1900-1915）、组织重构期（1915-1929）；对位当今 AI 的技术成熟、组织创新、组织重构。">
+        <defs>
+          <linearGradient id="eraGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--accent)" stop-opacity=".15"/>
+            <stop offset="55%" stop-color="var(--accent)" stop-opacity=".4"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity=".8"/>
+          </linearGradient>
+        </defs>
+        <g style="color:var(--accent)">
+          <!-- 主轴 -->
+          <line x1="60" y1="170" x2="940" y2="170" stroke="currentColor" stroke-width="2" stroke-opacity=".4"/>
+          <!-- 铜线波形（装饰） -->
+          <path d="M60 170 Q 200 100 340 170 T 620 170 T 940 170" fill="none" stroke="url(#eraGrad)" stroke-width="1.5" class="dash-flow"/>
+          <!-- 三阶段区块 -->
+          <g>
+            <!-- Phase 1 -->
+            <rect x="70" y="90" width="270" height="160" rx="10" fill="var(--surface)" stroke="currentColor" stroke-opacity=".35" stroke-width="1.2"/>
+            <text x="205" y="112" text-anchor="middle" class="disp" style="fill:var(--accent-ink)">Ⅰ · 技术成熟期</text>
+            <text x="205" y="130" text-anchor="middle" style="fill:var(--text-muted)">Technology · 1882–1899</text>
+            <text x="205" y="160" text-anchor="middle" style="fill:var(--text-body)">电机作为「单点降本工具」</text>
+            <text x="205" y="180" text-anchor="middle" style="fill:var(--text-muted)">采纳率：5% · 效果乏善可陈</text>
+            <line x1="90" y1="200" x2="320" y2="200" stroke="currentColor" stroke-opacity=".25"/>
+            <text x="205" y="222" text-anchor="middle" style="fill:var(--accent)">当年 · GE / 西屋 · 铜 · 煤</text>
+            <text x="205" y="240" text-anchor="middle" style="fill:var(--accent)" font-weight="700">今日 · 大模型 · 半导体</text>
+          </g>
+          <g>
+            <!-- Phase 2 -->
+            <rect x="365" y="90" width="270" height="160" rx="10" fill="var(--surface)" stroke="currentColor" stroke-opacity=".55" stroke-width="1.3"/>
+            <text x="500" y="112" text-anchor="middle" class="disp" style="fill:var(--accent-ink)">Ⅱ · 组织创新期</text>
+            <text x="500" y="130" text-anchor="middle" style="fill:var(--text-muted)">Organization · 1900–1915</text>
+            <text x="500" y="160" text-anchor="middle" style="fill:var(--text-body)">分组驱动电机 · 局部重构</text>
+            <text x="500" y="180" text-anchor="middle" style="fill:var(--text-muted)">先驱者摘桃 · ROI 不划算</text>
+            <line x1="385" y1="200" x2="615" y2="200" stroke="currentColor" stroke-opacity=".25"/>
+            <text x="500" y="222" text-anchor="middle" style="fill:var(--accent)">当年 · GE 自己给自己改造</text>
+            <text x="500" y="240" text-anchor="middle" style="fill:var(--accent)" font-weight="700">今日 · Anthropic（视频押注）</text>
+          </g>
+          <g>
+            <!-- Phase 3 -->
+            <rect x="660" y="90" width="270" height="160" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="795" y="112" text-anchor="middle" class="disp" style="fill:var(--accent-ink)">Ⅲ · 组织重构期</text>
+            <text x="795" y="130" text-anchor="middle" style="fill:var(--text-muted)">Reorganization · 1915–1929</text>
+            <text x="795" y="160" text-anchor="middle" style="fill:var(--text-body)">流水线 · 车间彻底重造</text>
+            <text x="795" y="180" text-anchor="middle" style="fill:var(--text-muted)">生产率爆发 · 咆哮 20 年代</text>
+            <line x1="680" y1="200" x2="910" y2="200" stroke="currentColor" stroke-opacity=".25"/>
+            <text x="795" y="222" text-anchor="middle" style="fill:var(--accent)">当年 · 福特汽车</text>
+            <text x="795" y="240" text-anchor="middle" style="fill:var(--accent)" font-weight="700">今日 · Meta（视频押注）</text>
+          </g>
+          <!-- 火花装饰 -->
+          <circle class="spark" cx="205" cy="70" r="4" fill="currentColor" fill-opacity=".5"/>
+          <circle class="spark" cx="500" cy="70" r="5" fill="currentColor" fill-opacity=".7" style="animation-delay:.6s"/>
+          <circle class="spark" cx="795" cy="70" r="6" fill="currentColor" style="animation-delay:1.2s"/>
+          <!-- 底部年份轴 -->
+          <text x="70" y="290" style="fill:var(--text-muted)">1882 珍珠街发电站</text>
+          <text x="365" y="290" style="fill:var(--text-muted)">1900 分组驱动</text>
+          <text x="660" y="290" style="fill:var(--text-muted)">1915 福特流水线</text>
+          <text x="900" y="290" style="fill:var(--text-muted)" text-anchor="end">1929 咆哮 20 年代</text>
+          <!-- 「我们在这里」标记 -->
+          <g transform="translate(430 310)">
+            <rect x="-45" y="-14" width="90" height="26" rx="13" fill="var(--accent)" stroke="none"/>
+            <text x="0" y="4" text-anchor="middle" style="fill:white" font-weight="700">我们在这里</text>
+          </g>
+          <path d="M430 310 L 430 260" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 3"/>
+        </g>
+      </svg>
+      <div class="era-legend">
+        <div><span class="k">当前定位</span><span>技术成熟期尾段 · 局部进入组织创新期</span></div>
+        <div><span class="k">压缩比</span><span>电力 40 年 · AI 预期 5–8 年（未验证）</span></div>
+        <div><span class="k">阶段 Ⅱ 决胜</span><span>谁愿意做「ROI 不划算的先驱」</span></div>
+      </div>
+    </div>
+
+    <p>三阶段的关键特征：<strong>阶段 Ⅰ 的赢家不一定是阶段 Ⅲ 的赢家</strong>。GE / 西屋卖设备的黄金期在 1890s，但真正把生产率拉爆的是 1915 后的福特。今天大模型公司拿走的是阶段 Ⅰ 的钱；但真正能证明「AI 值这个估值」的价值，藏在阶段 Ⅲ 那次组织重构里。</p>
+
+    <p>视频里还给出一条常被忽略的历史细节，值得单独拎出来 —— 煤炭。</p>
+
+    <blockquote class="pull">
+      「煤炭公司在当年算是典型的基础层企业，但后来反而成为了 20 年代大牛市里最萧条的行业。……那些护城河低、容易被替代的基础层公司，就很容易被技术革命以及竞争者的不断出现所冲击。」
+      <cite>—— 美投君，同一视频（16:00）</cite>
+    </blockquote>
+
+    <p>放到 AI 时代，这个警示是：<strong>今天最风光的「AI 基础层」（不管是模型层还是 GPU 层），并不天然享有 Ⅲ 阶段的红利</strong>。真正决定谁走到最后的，是「护城河 + 是否愿意自我革命」这两个变量。</p>
+
+    <!-- ═════════ 二、类比在哪里破裂 ═════════ -->
+    <h2 id="clash"><span class="sec-num">二</span>类比在哪里破裂 · 六维对撞<a href="#clash" class="anchor">#</a></h2>
+    <p class="kicker">Where the analogy breaks · 六个视频没触及、但你写代码时必须记住的位置</p>
+
+    <p>类比之所以危险，是因为它一旦被人反复引用，破裂点就消失在修辞里。下面这六个位置是我从 <a href="https://haimagazine.com/en/science-and-development/karpathy-ai-is-not-electricity-its-a-new-operating-system/">Karpathy 「AI is not electricity, it's a new operating system」</a>、<a href="https://economics.mit.edu/sites/default/files/2024-05/The%20Simple%20Macroeconomics%20of%20AI.pdf">Acemoglu 的宏观测算</a>、以及 <a href="https://www.iea.org/reports/key-questions-on-energy-and-ai/executive-summary">IEA 2026 能源报告</a> 里整理出来的、类比失效的关键处。</p>
+
+    <!-- ▼ 视觉二：六维对撞 -->
+    <div class="clash reveal">
+
+      <div class="clash-cell">
+        <div class="num">01 · 商品性</div>
+        <div class="title">同质 vs 指数</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电力一度就是一度，AI 每代模型能力指数跃升">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <line x1="14" y1="52" x2="90" y2="52"/>
+            <line x1="14" y1="14" x2="14" y2="52"/>
+            <line x1="14" y1="32" x2="90" y2="32" stroke-dasharray="2 3"/>
+            <text x="52" y="12" text-anchor="middle" style="fill:var(--text-muted)" stroke="none">1 kWh 恒定</text>
+            <line x1="120" y1="52" x2="196" y2="52"/>
+            <line x1="120" y1="14" x2="120" y2="52"/>
+            <path d="M120 52 Q 150 50 160 40 T 194 14" stroke-width="2"/>
+            <text x="158" y="12" text-anchor="middle" style="fill:var(--accent)" stroke="none" font-weight="700">1 token 跃升</text>
+          </g>
+        </svg>
+        <div class="pair">1 kWh 百年如一 · 1 token 每 6-12 月抬顶</div>
+        <div class="verdict">电力从未有过代际跃升。GPT-4o 与 Sonnet 4.5 的一 token 承载力天差地别 —— 用「一度电」思维定价，会持续低估模型代际带来的替代压力。</div>
+      </div>
+
+      <div class="clash-cell">
+        <div class="num">02 · 边际成本</div>
+        <div class="title">近零 vs 可观</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电力边际成本近零，AI 推理边际成本受 GPU、水冷、HBM 约束">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M14 52 L 90 52" stroke-width="2"/>
+            <text x="52" y="26" text-anchor="middle" style="fill:var(--text-muted)" stroke="none">≈ 0</text>
+            <path d="M120 52 L 130 40 L 145 30 L 165 26 L 194 24" stroke-width="2"/>
+            <circle cx="194" cy="24" r="3" fill="currentColor" stroke="none"/>
+            <text x="158" y="14" text-anchor="middle" style="fill:var(--accent)" stroke="none" font-weight="700">GPU · HBM · 冷却</text>
+          </g>
+        </svg>
+        <div class="pair">电 · 增量近零 · AI · 每次推理都要钱</div>
+        <div class="verdict">Altman 借「too cheap to meter」讲叙事，但 OpenAI 2025 营收 $13B 亏损 $14B —— 这不是电力经济学。「too cheap to meter」是核能承诺过、又没兑现的历史教训。</div>
+      </div>
+
+      <div class="clash-cell">
+        <div class="num">03 · 替代对象</div>
+        <div class="title">肌肉 vs 认知</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电革命替代肌肉，AI 革命替代认知/白领">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <circle cx="30" cy="24" r="10"/>
+            <path d="M20 40 v 14 M40 40 v 14 M15 32 h 30"/>
+            <text x="52" y="66" style="fill:var(--text-muted)" stroke="none">肌肉</text>
+            <circle cx="160" cy="24" r="10"/>
+            <path d="M150 20 c 0 -8 20 -8 20 0 M150 24 h 20 M155 30 h 10" stroke-width="1.4"/>
+            <text x="182" y="66" style="fill:var(--accent)" stroke="none" font-weight="700">认知</text>
+          </g>
+        </svg>
+        <div class="pair">Rural 电气化 vs 白领生产力</div>
+        <div class="verdict">失业结构、税基、监管路径全变。Acemoglu 2024 算出十年 TFP 增益仅 0.53–0.71% —— 远低于 Goldman Sachs 的 7% —— 因为「认知任务」中真正能自动化的比例被高估了。</div>
+      </div>
+
+      <div class="clash-cell">
+        <div class="num">04 · 组织形态</div>
+        <div class="title">公用 vs 私营</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电力早期就被拆分成公用事业，AI 至今是几家私营公司持有的产品">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <path d="M20 52 h 70 M20 40 h 70 M20 28 h 70 M20 16 h 70"/>
+            <text x="52" y="66" style="fill:var(--text-muted)" stroke="none">非专有</text>
+            <rect x="130" y="14" width="60" height="42" rx="4"/>
+            <text x="160" y="40" text-anchor="middle" style="fill:var(--accent)" stroke="none" font-weight="700">寡头</text>
+            <text x="160" y="66" style="fill:var(--accent)" stroke="none" font-weight="700">3 家</text>
+          </g>
+        </svg>
+        <div class="pair">爱迪生系统 40 年内被拆监管 · AI 三家私营</div>
+        <div class="verdict">爱尔兰记者 Elaine Burke：<em>AI is not electricity or the internet, both were non-proprietary infrastructure.</em> Tim Wu《Master Switch》的「开→闭」周期正在 AI 上加速重演。</div>
+      </div>
+
+      <div class="clash-cell">
+        <div class="num">05 · 可信性</div>
+        <div class="title">Dumb 越可靠 <br>vs Smart 越不透明</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电力是 dumb utility，AI 是 agentic utility——越聪明越不透明">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <rect x="14" y="22" width="60" height="30" rx="4"/>
+            <path d="M30 22 v -8 M58 22 v -8"/>
+            <text x="44" y="66" style="fill:var(--text-muted)" stroke="none">插座</text>
+            <path d="M140 20 c -10 0 -18 8 -18 18 c 0 6 4 12 10 15 h 30 c 6 -3 10 -9 10 -15 c 0 -10 -10 -18 -18 -18 z"/>
+            <path d="M138 40 h 4 M154 40 h 4" stroke-width="2"/>
+            <text x="150" y="66" style="fill:var(--accent)" stroke="none" font-weight="700">黑箱</text>
+          </g>
+        </svg>
+        <div class="pair">电从不撒谎 · Agent 会</div>
+        <div class="verdict">对齐、幻觉、agentic safety、prompt injection 是电力时代从未面对的整个新范畴。<strong>你不能把一个会做判断的东西当自来水卖</strong>。</div>
+      </div>
+
+      <div class="clash-cell">
+        <div class="num">06 · 爆发速率</div>
+        <div class="title">40 年 vs 3 年</div>
+        <svg viewBox="0 0 200 68" role="img" aria-label="电气化用了 40 年才拉出 J 曲线，AI 被期望 3 年就出宏观数据">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <line x1="14" y1="52" x2="90" y2="52"/>
+            <path d="M14 50 Q 40 50 55 46 Q 75 42 90 20"/>
+            <text x="52" y="66" style="fill:var(--text-muted)" stroke="none">40 年</text>
+            <line x1="120" y1="52" x2="196" y2="52"/>
+            <path d="M120 50 L 140 48 L 160 20 L 196 14" stroke-width="2"/>
+            <text x="158" y="66" style="fill:var(--accent)" stroke="none" font-weight="700">3 年</text>
+          </g>
+        </svg>
+        <div class="pair">Solow 1987「computers everywhere except in productivity」</div>
+        <div class="verdict">Brynjolfsson-Rock-Syverson 的 J 曲线：前期是<strong>无形资本累积</strong>（prompt 库、评估集、编排层）—— 账上是费用不是投资。急着找宏观生产率证据 = 犯 Solow 1987 那句同款错误。</div>
+      </div>
+
+    </div>
+
+    <p>把这六处摞起来看，你会得到一个清晰的画面：<strong>类比的 U 型有效区间是「生产率的因果链路」，两侧都不成立</strong>。上游（模型能力）AI 是指数跃升不是同质商品；下游（商业模式）AI 是私营寡头不是公用事业。中间那段「装电机 40 年才等到重造车间」的机制，才是我们真正能借用的。</p>
+
+    <!-- ═════════ 三、Group Drive vs Unit Drive ═════════ -->
+    <h2 id="drive-shift"><span class="sec-num">三</span>组织重构的机理 · Group Drive vs Unit Drive<a href="#drive-shift" class="anchor">#</a></h2>
+    <p class="kicker">1920 那次车间重造 · 今天该怎么翻译</p>
+
+    <p>Paul David 1990 论文的核心机制细节，视频里讲得漂亮，但没画。这一节我补上一张图，说清楚 <strong>「装了新动力却没换旧架构」</strong> 是怎么样的一件事。</p>
+
+    <p>1899 年的美国工厂电机采纳率是 <strong>5%</strong>；1909 年是 <strong>25%</strong>。但吊诡之处在于：<em>即便就是那些采纳了发电机的工厂，效率提升也是乏善可陈</em>。为什么？因为工程师们把电机当蒸汽机的替身用了 —— 拆掉车间中央那台巨大蒸汽机，换上一台巨大发电机，继续通过「天轴传动」（一根横贯厂房、几千英尺长的转动轴，皮带一根根挂下来带机器）把动力送到每台机床。这叫 <strong>group drive</strong>。</p>
+
+    <!-- ▼ 视觉三：Group Drive vs Unit Drive -->
+    <div class="drive reveal">
+      <div class="drive-side old">
+        <div class="drive-eyebrow"><span class="dot"></span>Group Drive · 1882–1899</div>
+        <div class="drive-title">中央大电机 + 天轴传动</div>
+        <div class="drive-sub">Copilot 塞进旧流程 · 提效 3-10%</div>
+        <svg viewBox="0 0 240 200" role="img" aria-label="Group drive 车间：一台中央大电机带动一根横贯厂房的传动轴，皮带下垂到每台机床。所有机器排列受传动轴走向约束。">
+          <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <!-- 厂房外框 -->
+            <rect x="14" y="18" width="212" height="164" rx="4" stroke-opacity=".5"/>
+            <!-- 中央大电机 -->
+            <rect x="98" y="30" width="44" height="26" rx="3" fill="var(--bg-soft)"/>
+            <circle cx="120" cy="43" r="6" stroke-width="1.4"/>
+            <text x="120" y="18" text-anchor="middle" style="fill:var(--text-muted)" stroke="none">中央电机</text>
+            <!-- 天轴传动 -->
+            <line x1="30" y1="70" x2="210" y2="70" stroke-width="2.4"/>
+            <text x="216" y="66" text-anchor="end" style="fill:var(--text-muted)" stroke="none" font-size="8">天轴</text>
+            <!-- 皮带 -->
+            <path d="M50 70 v 40" stroke-dasharray="2 3"/>
+            <path d="M90 70 v 60" stroke-dasharray="2 3"/>
+            <path d="M130 70 v 40" stroke-dasharray="2 3"/>
+            <path d="M170 70 v 60" stroke-dasharray="2 3"/>
+            <path d="M200 70 v 40" stroke-dasharray="2 3"/>
+            <!-- 机器 -->
+            <rect x="42" y="110" width="16" height="14" rx="2"/>
+            <rect x="82" y="130" width="16" height="14" rx="2"/>
+            <rect x="122" y="110" width="16" height="14" rx="2"/>
+            <rect x="162" y="130" width="16" height="14" rx="2"/>
+            <rect x="192" y="110" width="16" height="14" rx="2"/>
+            <!-- 死机注解 -->
+            <text x="120" y="170" text-anchor="middle" style="fill:var(--con)" stroke="none">"全有或全无"</text>
+            <text x="120" y="182" text-anchor="middle" style="fill:var(--text-muted)" stroke="none" font-size="8">任一处坏 → 整厂停产</text>
+          </g>
+        </svg>
+        <div class="drive-cap">
+          蒸汽机拆掉了，天轴还在。<strong>机器摆放跟着传动轴走，不跟着流程走。</strong>省 5% 煤炭成本，但生产率没变。
+          <br><br>
+          <em>对位今天</em>：Copilot 侧栏、Chat-in-a-box、把 LLM 塞进老工单系统。每人省了 20 分钟/天，但组织总产出没变化。
+        </div>
+      </div>
+
+      <div class="drive-arrow">
+        <span class="gly">→</span>
+        <span class="lab">Reorganize</span>
+        <span class="gly" style="font-size:.9rem;color:var(--text-muted)">十余年</span>
+      </div>
+
+      <div class="drive-side new">
+        <div class="drive-eyebrow"><span class="dot"></span>Unit Drive · 1900–1920+</div>
+        <div class="drive-title">每机一电机 · 按流程摆车间</div>
+        <div class="drive-sub">流水线诞生 · 生产率数量级提升</div>
+        <svg viewBox="0 0 240 200" role="img" aria-label="Unit drive 车间：每台机器配一个独立电机，机器按生产流程从原料到成品线性排列。可局部检修、可周末只开一小撮机器。">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round">
+            <rect x="14" y="18" width="212" height="164" rx="4" stroke-opacity=".55"/>
+            <!-- 独立电机组：五个小马达 -->
+            <g>
+              <rect x="24" y="60" width="26" height="20" rx="3"/>
+              <circle cx="37" cy="70" r="4"/>
+              <path d="M37 80 v 12"/>
+              <rect x="24" y="94" width="26" height="14" rx="2" fill="var(--accent-soft)"/>
+            </g>
+            <g>
+              <rect x="66" y="60" width="26" height="20" rx="3"/>
+              <circle cx="79" cy="70" r="4"/>
+              <path d="M79 80 v 12"/>
+              <rect x="66" y="94" width="26" height="14" rx="2" fill="var(--accent-soft)"/>
+            </g>
+            <g>
+              <rect x="108" y="60" width="26" height="20" rx="3"/>
+              <circle cx="121" cy="70" r="4"/>
+              <path d="M121 80 v 12"/>
+              <rect x="108" y="94" width="26" height="14" rx="2" fill="var(--accent-soft)"/>
+            </g>
+            <g>
+              <rect x="150" y="60" width="26" height="20" rx="3"/>
+              <circle cx="163" cy="70" r="4"/>
+              <path d="M163 80 v 12"/>
+              <rect x="150" y="94" width="26" height="14" rx="2" fill="var(--accent-soft)"/>
+            </g>
+            <g>
+              <rect x="192" y="60" width="26" height="20" rx="3"/>
+              <circle cx="205" cy="70" r="4"/>
+              <path d="M205 80 v 12"/>
+              <rect x="192" y="94" width="26" height="14" rx="2" fill="var(--accent-soft)"/>
+            </g>
+            <!-- 流水线方向箭头 -->
+            <path d="M22 130 h 200" stroke-width="2" class="dash-flow"/>
+            <path d="M218 126 l 6 4 l -6 4" stroke-width="2"/>
+            <text x="120" y="45" text-anchor="middle" style="fill:var(--accent)" stroke="none" font-weight="700">按流程线性排列</text>
+            <text x="120" y="158" text-anchor="middle" style="fill:var(--accent)" stroke="none">原料 → 加工 → 装配 → 成品</text>
+            <text x="120" y="182" text-anchor="middle" style="fill:var(--pro)" stroke="none" font-size="8">局部可停 · 可扩产 · 可加班</text>
+          </g>
+        </svg>
+        <div class="drive-cap">
+          <strong>动力布线跟着流程走，不跟着物理约束走。</strong>机器摆放解放后 → 福特把屠宰场的传送带理念搬进汽车厂 → 流水线 → 咆哮的 20 年代。
+          <br><br>
+          <em>对位今天</em>：Agent 化的工单闭环、SRE 值班 Agent、PR reviewer、每单元有 SLA/审计线/回退线。<strong>不是「装 AI」，是「重造工厂」</strong>。
+        </div>
+      </div>
+    </div>
+
+    <p>Cal Newport 2021 借 Paul David 讲过一句最锋利的话，值得贴在每个「AI 落地项目」的开工日：</p>
+
+    <blockquote class="pull">
+      「我们停留在这个时刻 —— 只是把非结构化的互动搬进邮件线程与 Zoom 会议 —— 相当于数字时代版本的『把新电机接到老蒸汽传动轴上』。」
+      <cite>—— Cal Newport · <cite>On the Dynamo and Email</cite>（2021）</cite>
+    </blockquote>
+
+    <p>翻译到 FDE 视角：<strong>写业务代码时，永远问一句「这是 group drive 还是 unit drive？」</strong>。如果只是把 LLM 塞在旧流程侧栏，做的就是 group drive。如果整个工作流被拆散成 agent 单元、按流程重装 —— 每个 agent 有 SLA、审计线、回退线 —— 那才是 unit drive。前者做 3-10% 提效（符合 Ⅰ 阶段），后者才是 Ⅲ 阶段的入场券。</p>
+
+    <!-- ═════════ 四、投资视角 vs FDE 视角 ═════════ -->
+    <h2 id="two-lenses"><span class="sec-num">四</span>两个镜头 · 投资者眼中 vs FDE 眼中<a href="#two-lenses" class="anchor">#</a></h2>
+    <p class="kicker">同一段历史 · 两种落点</p>
+
+    <p>视频的作者是投资人，他从三阶段模型里读出的是「买谁」。我读代码、做落地，从同一段历史里读出的是「怎么做」。两个镜头合起来看，才算把这个类比用尽。</p>
+
+    <!-- ▼ 视觉四：两个镜头 -->
+    <div class="lens reveal">
+      <div class="lens-card">
+        <div class="lens-eyebrow">Lens Ⅰ · 投资者视角</div>
+        <div class="lens-title">谁像通用电气 / 谁像福特</div>
+        <ul>
+          <li><strong>Anthropic ≈ GE 的角色</strong>：手握前沿模型，最有可能在自己内部做「ROI 不划算的先驱」；ToB 基因最纯，跑通后能带动整片行业。</li>
+          <li><strong>Meta ≈ 福特的角色</strong>：创始人掌控 · 小扎酷爱重构 · 内部 AI 采纳最激进（不惜得罪员工录屏训模）· 谷歌苹果亚马逊大公司病重。</li>
+          <li><strong>基础层警惕煤炭陷阱</strong>：护城河低、易被替代的 AI 基础层，可能像当年煤炭一样先热后萧条。</li>
+          <li><strong>周期定位</strong>：现在是阶段 Ⅰ 后段 · 局部进入 Ⅱ · 阶段 Ⅲ 一旦跑通即井喷。</li>
+        </ul>
+        <div class="who">押注来源：美投君「AI 竟与 100 年前电力革命如此相似？」（19:23-25:02）</div>
+      </div>
+
+      <div class="lens-card">
+        <div class="lens-eyebrow">Lens Ⅱ · FDE 视角</div>
+        <div class="lens-title">谁是 20 世纪的「电气化巡回工程师」</div>
+        <ul>
+          <li><strong>Palantir FDE 是这一版类比里的关键角色</strong> —— 视频原话：「通过前端部署工程师 FDE，帮助每一家企业去定制化解决运营瓶颈的问题」。</li>
+          <li><strong>数据打通链条</strong>：Cloudflare / CrowdStrike（安全）· Snowflake（数据库）· ServiceNow（Agent 管理）—— 都是 AI 采纳的必经关口。</li>
+          <li><strong>本地小模型</strong>：绕开「大模型收集全公司数据」的合规死结，让每个员工/每个岗位有专属 agent。</li>
+          <li><strong>项目选择准则</strong>：所有面向企业的 AI 项目，先问「这是 group drive 还是 unit drive？」—— 前者砍掉、后者押重注。</li>
+        </ul>
+        <div class="who">对应本站 <a href="../../index.html">work_as_fde</a> 的核心定位：帮企业做电气化重构的巡回工程师</div>
+      </div>
+    </div>
+
+    <p>值得注意的是：<strong>投资者视角与 FDE 视角在因果链上是耦合的</strong>。Meta 之所以有机会成为「AI 时代的福特」，正是因为它可以聘/内建大量「电气化巡回工程师」去重构自己所有的产品线。Palantir 之所以能吃阶段 Ⅱ→Ⅲ 的红利，是因为它的 FDE 团队每一次交付都是一次小型 unit drive 改造。<strong>投资的是船票 · FDE 是造船的人</strong>。</p>
+
+    <!-- ═════════ 五、辩论未决 · 待验证问题 ═════════ -->
+    <h2 id="open-debate"><span class="sec-num">五</span>辩论未决 · 待验证问题<a href="#open-debate" class="anchor">#</a></h2>
+    <p class="kicker">类比乐观派与经济学悲观派的分歧 · 本文「信心：中」的原因</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">悲观派证据</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>Acemoglu 2024</strong>：《The Simple Macroeconomics of AI》用 task-based 模型算出十年 TFP 增益仅 <strong>0.53–0.71%</strong>、累计 GDP 1.1–1.6%，远低于 Goldman Sachs 的 7%。核心机制：能被 AI 有效自动化的「认知任务」比例被系统性高估。</li>
+        <li><strong>Jason Furman（Harvard）2025</strong>：承认技术真实，但担忧 Shiller CAPE ≈ 40、NVIDIA 向 OpenAI 换股借芯片的循环融资 —— 「the AI is on the demand side only」。</li>
+        <li><strong>Goldman Sachs Jim Covello 2024</strong>：《Gen AI: Too Much Spend, Too Little Benefit?》—— 「AI is exceptionally expensive, and to justify those costs, the technology must solve complex problems, which it isn't designed to do.」</li>
+        <li><strong>Baily 等 2025</strong>（<a href="https://arxiv.org/pdf/2505.14588v1.pdf">arXiv:2505.14588</a>）：不给 GenAI「灯泡（Light Bulb）」的评级 —— 给 Dynamo + Microscope 双重身份，等待 IMI（Invention of Method of Invention）证据。</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">乐观派证据</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>McElheran 等 2025</strong>（<a href="https://conference.nber.org/conf_papers/f229353.pdf">NBER · Rise of Industrial AI</a>）：用 US Census 数据做微观追踪，发现工业 AI 采用者「先经历生产率下降后期反弹」—— J 曲线活体复现。</li>
+        <li><strong>Brynjolfsson-Rock-Syverson 2018/2021</strong>：Productivity J-Curve 模型 —— 前期无形资本积累被记为费用不是投资，宏观数据滞后 3-5 年。</li>
+        <li><strong>Perez 周期</strong>：当前处于 Installation Frenzy 后段 · 估值 disconnect 是拐点前的典型现象。</li>
+      </ul>
+    </div>
+
+    <ol>
+      <li><strong>压缩比究竟是多少？</strong>电力用 40 年，AI 会用几年？视频隐含 5-8 年，学术界最快到 2035，Acemoglu 认为可能永远不到。这个数字直接决定阶段 Ⅱ 的窗口有多长。</li>
+      <li><strong>阶段 Ⅱ 的先驱者会是谁？</strong>视频押 Anthropic + Meta。但如果先驱者不来自现有大公司、而来自 AI-native 新创（e.g. Cursor / Cognition / Sierra），历史类比就要重写。</li>
+      <li><strong>Palantir FDE 模式是否可复制到中小企业？</strong>Palantir 单客户合同数千万美元、深度定制。中小企业买不起 FDE，那 unit drive 改造由谁来做？是 SaaS 化的 AI-native 工具（Sierra 的方向），还是自研 agent 平台？</li>
+      <li><strong>「Dumb 越可靠 vs Smart 越不透明」这条破裂点会不会自愈？</strong>如果对齐 / 可解释性研究突破，Agent 达到「电插座级可靠」，六维对撞会塌成五维 —— 类比反而更成立。</li>
+      <li><strong>本文的 Meta 押注是否成立？</strong>可观察指标：Meta 内部生产率数据泄露 · 广告业务效率跃升 · 员工数量停止扩张但营收持续增长。视频写在 2026-07，本文写在 2026-07-15，我们打个卡在 <em>2027-01</em> 回来复盘。</li>
+    </ol>
+
+    <hr>
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-15 初稿（基于「美投君 2026-07-12」视频 + Paul David 1990 + Acemoglu 2024 + Altman CS153 独立调研）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      &nbsp;·&nbsp;
+      <a href="../../frontier/vendors/openai/deep_dives/2026-06-15_sam-altman-stanford-cs153-scale-agi.html">相关篇：Altman CS153 · 「不卖电、卖夜间照明」</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
