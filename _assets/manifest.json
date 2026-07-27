@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-07-27T07:31:27.722836+00:00",
+  "generated_at": "2026-07-27T08:25:56.103685+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07_embodied-technical-schools.html",
+      "title": "具身智能技术方案 · Five Schools五大流派扫盲",
+      "date": "2026-07-27",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "具身智能",
+        "技术扫盲",
+        "VLA",
+        "Diffusion Policy",
+        "World Model"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "insights/cross/2026-07_embodied-world-models-landscape.html",
       "title": "具身智能 × World Models全景地图与判断台",

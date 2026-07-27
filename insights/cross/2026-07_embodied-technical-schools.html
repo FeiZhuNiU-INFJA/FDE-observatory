@@ -1,0 +1,1300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>具身智能技术方案 · 五大流派扫盲 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #0891b2;
+    --accent-deep: #0e7490;
+    --accent-ink: #164e63;
+    --accent-soft: color-mix(in srgb, #0891b2 10%, white);
+    --accent-glow: color-mix(in srgb, #0891b2 20%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #22d3ee;
+    --accent-soft: color-mix(in srgb, #0891b2 24%, #1a1a22);
+    --accent-ink: #a5f3fc;
+    --accent-glow: color-mix(in srgb, #22d3ee 22%, transparent);
+  }
+
+  .arch text, .stack text, .terms text { font-family: var(--mono); }
+  .arch .disp, .stack .disp, .terms .disp { font-family: var(--display); font-weight: 700; }
+
+  .dash-flow { stroke-dasharray: 5 6; animation: dashflow 1.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -22; } }
+
+  /* ═════════ 视觉一：术语速查卡 ═════════ */
+  .terms { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.6em 0; }
+  @media (max-width: 980px) { .terms { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 560px) { .terms { grid-template-columns: 1fr; } }
+  .term {
+    border: 1px solid var(--border); border-radius: 12px; padding: .9rem 1rem;
+    background: var(--surface); position: relative;
+    transition: transform .2s, border-color .2s;
+    display: flex; flex-direction: column; gap: .45rem;
+  }
+  .term:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .term-head { display: flex; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+  .term-name { font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--text); margin: 0; }
+  .term-en { font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--accent); }
+  .term-vis { color: var(--accent); height: 42px; display: flex; align-items: center; justify-content: center; }
+  .term-vis svg { height: 100%; width: auto; max-width: 100%; }
+  .term-desc { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .term-desc b { color: var(--text); }
+
+  /* ═════════ 视觉二：五大方案架构对照卡 ═════════ */
+  .arch { display: grid; gap: 1rem; margin: 1.8em 0; }
+  .arch-card {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.3rem 1.1rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .arch-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 10px 26px rgba(0,0,0,.06); }
+  .arch-card::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c, var(--accent));
+  }
+  .arch-card.a1 { --c: var(--accent); }
+  .arch-card.a2 { --c: var(--info); }
+  .arch-card.a3 { --c: #7c3aed; }
+  .arch-card.a4 { --c: var(--warn); }
+  .arch-card.a5 { --c: var(--pro); }
+  .arch-head { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: flex-start; margin-bottom: .8rem; }
+  .arch-name {
+    font-family: var(--display); font-weight: 700; font-size: 1.35rem; color: var(--text); margin: 0;
+    line-height: 1.15; border: none; padding: 0;
+  }
+  .arch-name .num { color: var(--c); font-style: italic; font-weight: 500; margin-right: .35em; }
+  .arch-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .68rem; letter-spacing: .08em; color: var(--text-muted); margin-top: .25em; }
+  .arch-mat {
+    display: flex; gap: .3rem; flex-direction: column; align-items: flex-end;
+    font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
+  }
+  .arch-mat .stars { color: var(--c); font-size: .95rem; letter-spacing: .05em; }
+  .arch-mat .lab { color: var(--text-muted); }
+
+  .arch-one {
+    background: var(--bg-soft); border: 1px dashed var(--border-strong); border-radius: 8px;
+    padding: .55rem .8rem; font-size: .85rem; color: var(--text); margin: 0 0 .8rem; line-height: 1.5;
+  }
+  .arch-one strong { color: var(--c); }
+
+  .arch-diag {
+    background: color-mix(in srgb, var(--surface) 60%, var(--bg-soft));
+    border-radius: 10px; padding: 1rem .5rem; margin: 0 0 .9rem;
+    display: flex; justify-content: center; overflow-x: auto;
+  }
+  .arch-diag svg { max-width: 100%; width: 100%; height: auto; }
+
+  .arch-body { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
+  @media (max-width: 760px) { .arch-body { grid-template-columns: 1fr; } }
+  .arch-mech { font-size: .9rem; color: var(--text-soft); line-height: 1.65; margin: 0; }
+  .arch-mech b { color: var(--text); }
+  .arch-mech ul { margin: .3em 0; padding-left: 1.2em; }
+  .arch-mech li { margin: .15em 0; }
+
+  .arch-side { display: flex; flex-direction: column; gap: .6rem; }
+  .arch-side .h5 {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--text-muted); margin: 0;
+  }
+  .arch-players { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .arch-chip {
+    display: inline-flex; align-items: center; gap: .3em;
+    border: 1px solid var(--border-strong); border-radius: 6px; padding: .18em .5em;
+    font-family: var(--mono); font-size: .68rem; color: var(--text); background: var(--surface);
+    transition: border-color .15s, color .15s;
+  }
+  .arch-chip:hover { border-color: var(--c); color: var(--c); }
+  .arch-chip.hi { border-color: var(--c); color: var(--c); font-weight: 600; }
+
+  .arch-prosCons { display: grid; grid-template-columns: 1fr; gap: .35rem; }
+  .arch-line {
+    display: grid; grid-template-columns: 44px 1fr; gap: .55rem; align-items: baseline;
+    font-size: .78rem; line-height: 1.4;
+  }
+  .arch-line .tag {
+    font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; text-transform: uppercase;
+    padding: .1em .3em; border-radius: 4px; text-align: center; font-weight: 600;
+  }
+  .arch-line.pro .tag { color: var(--pro); border: 1px solid var(--pro); }
+  .arch-line.con .tag { color: var(--con); border: 1px solid var(--con); }
+  .arch-line .txt { color: var(--text-soft); }
+  .arch-line .txt b { color: var(--text); }
+
+  /* ═════════ 视觉三：抽象层级栈 ═════════ */
+  .stack { margin: 1.8em 0; display: flex; flex-direction: column; gap: .5rem; }
+  .stack-row {
+    display: grid; grid-template-columns: 130px 1fr; gap: 1rem; align-items: stretch;
+    border: 1px solid var(--border); border-radius: 12px; padding: .9rem 1rem;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .stack-row:hover { transform: translateX(3px); border-color: var(--accent); }
+  @media (max-width: 640px) { .stack-row { grid-template-columns: 1fr; } }
+  .stack-head { display: flex; flex-direction: column; gap: .3rem; }
+  .stack-num {
+    font-family: var(--display); font-weight: 700; font-style: italic; font-size: 1.6rem;
+    color: var(--accent); line-height: 1;
+  }
+  .stack-layer { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); }
+  .stack-layer .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .62rem; color: var(--text-muted); margin-top: .15em; letter-spacing: .06em; }
+  .stack-body { display: flex; flex-direction: column; gap: .35rem; justify-content: center; }
+  .stack-desc { font-size: .85rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .stack-tags { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
+  .stack-tag {
+    font-family: var(--mono); font-size: .68rem; padding: .15em .5em;
+    border: 1px solid var(--border-strong); border-radius: 999px; color: var(--text);
+  }
+  .stack-tag.hot { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+
+  /* ═════════ 判断台四色卡 ═════════ */
+  .verdicts { display: grid; grid-template-columns: repeat(2, 1fr); gap: .9rem; margin: 1.6em 0; }
+  @media (max-width: 760px) { .verdicts { grid-template-columns: 1fr; } }
+  .verdict {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem;
+    background: var(--surface); border-top: 3px solid var(--c);
+    transition: transform .2s; display: flex; flex-direction: column; gap: .5rem;
+  }
+  .verdict:hover { transform: translateY(-3px); }
+  .verdict.v1 { --c: var(--accent); }
+  .verdict.v2 { --c: var(--info); }
+  .verdict.v3 { --c: #7c3aed; }
+  .verdict.v4 { --c: var(--warn); }
+  .verdict.v5 { --c: var(--pro); }
+  .verdict-head { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; }
+  .verdict-title { font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); margin: 0; }
+  .verdict-stamps { display: flex; gap: .25rem; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .verdict-stamp {
+    font-family: var(--mono); font-size: .55rem; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid var(--c); color: var(--c); padding: .15em .4em; border-radius: 4px;
+    white-space: nowrap;
+  }
+  .verdict-body { font-size: .85rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .verdict-body b { color: var(--text); }
+
+  /* π0.5 vs V-JEPA 2 专题对比块 */
+  .pk {
+    margin: 1.8em 0 1em; padding: 1.1rem 1.1rem .8rem;
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface);
+  }
+  .pk svg { display: block; }
+  .fig-cap {
+    font-size: .78rem; color: var(--text-muted); text-align: center;
+    margin: .5em 0 0; font-style: italic;
+  }
+  .pk-table { margin: 1em 0 1.6em; overflow-x: auto; }
+  .pk-table table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .pk-table thead th {
+    text-align: left; padding: .55em .7em; background: var(--surface-alt, var(--surface));
+    border-bottom: 2px solid var(--border); font-family: var(--display); font-weight: 700;
+    position: sticky; top: 0;
+  }
+  .pk-table tbody td {
+    padding: .5em .7em; border-bottom: 1px solid var(--border); vertical-align: top;
+    line-height: 1.55;
+  }
+  .pk-table tbody tr:hover { background: color-mix(in oklab, var(--accent) 4%, transparent); }
+  .pk-table tbody td:first-child {
+    font-family: var(--display); color: var(--text); white-space: nowrap;
+    width: 12em;
+  }
+  @media (max-width: 760px) {
+    .pk-table table { font-size: .82rem; }
+    .pk-table tbody td:first-child { width: auto; white-space: normal; }
+    .pk svg { min-width: 640px; }
+    .pk { overflow-x: auto; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow { animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      具身智能技术方案 · 五大流派<span class="brand-sub">跨市场 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>具身智能技术方案<span class="en"> · Five Schools</span><br />五大流派扫盲</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">给技术 Manager 的一次骨架级梳理 · 一张架构图配一句话定位 · 术语首次出现即解释</p>
+      <div class="doc-meta">
+        <span>2026-07-27</span>
+        <span>跨市场</span>
+        <span>具身智能</span>
+        <span>技术扫盲</span>
+        <span>VLA</span>
+        <span>Diffusion Policy</span>
+        <span>World Model</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5</div><div class="lab">主流架构<br />分工 &amp; 差异</div></div>
+        <div class="hero-stat"><div class="num">4</div><div class="lab">抽象层<br />感知/决策/控制/数据</div></div>
+        <div class="hero-stat"><div class="num">6</div><div class="lab">基础术语<br />先规整再讨论</div></div>
+        <div class="hero-stat"><div class="num">2027</div><div class="lab">路线赛点<br />端到端 vs 分层</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        <strong>姊妹篇</strong>：<a href="./2026-07_embodied-world-models-landscape.html">具身智能 × 世界模型 · 全景地图与判断台</a>（做广度扫描 + 玩家阵营）。这一篇是补充的深度篇 —— 广度篇告诉你「谁在场上」，深度篇告诉你「他们在打什么」。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>"具身智能"不是<strong>一种</strong>技术方案，而是<strong>五种正在博弈的架构</strong>——它们分居在感知/决策/控制/数据四个抽象层：<strong>VLA 端到端</strong>（控制层主力）、<strong>Diffusion / Flow Policy</strong>（动作头范式）、<strong>世界模型 + 规划</strong>（感知/规划外挂）、<strong>LLM 分层</strong>（决策层的慢思考）、<strong>模仿学习管线</strong>（所有方案的公共数据底座）。理解这五种的<strong>分工</strong>比追任何一家公司的发布会更有信号。上一篇姊妹文里我说 π0.5 是"生成派"，那是<strong>松散归类</strong>——π0.5 严格说是「VLA 骨干 + Flow 动作头」，本文正好把这类术语先规整清楚。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>不要把"具身智能"当一种技术</strong>——它是四个抽象层上五种流派的合称，每层各有各的当红方案。</li>
+        <li><strong>VLA 是当下商用主战场</strong>（RT-2 → OpenVLA → π0 → π0.5 → Helix），一个大模型端到端吐动作。</li>
+        <li><strong>Diffusion / Flow Policy 不是独立流派，而是"动作头"</strong>——它已被 VLA 吸收成组件（π0 家族）。</li>
+        <li><strong>世界模型分生成派（Sora/Cosmos/Genie）和判别派（V-JEPA/JEPA）</strong>，两派赌"什么才是学到物理"，2027 前赛点见分晓。</li>
+        <li><strong>LLM 分层是长任务的现实解</strong>——SayCan / Code-as-Policies / Helix System 2，语言 = 慢思考、底层 = 快反应。</li>
+        <li><strong>模仿学习管线是公共底座</strong>——遥操作数据没有替代品，谁的真机部署量大，谁的模型迭代快。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、术语速查 ========== -->
+    <h2 id="vocab"><span class="sec-num">一</span>先规整术语：六个词不通、下面全糊<a href="#vocab" class="anchor">#</a></h2>
+    <p class="kicker">Vocabulary · 一次性把术语拆干净</p>
+
+    <p>下面六个词是本文（也是这个方向所有讨论）的基础词。<strong>它们互相不对等，但经常被混用</strong>——比如把 "Diffusion Policy" 和 "VLA" 当同类比，其实一个是"动作头"一个是"整机架构"；把 "Policy" 和 "World Model" 当同类比，其实一个决定"做什么"一个是"预判做完会怎样"。</p>
+
+    <div class="terms reveal">
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">Policy 策略</div>
+          <span class="term-en">π(a|s)</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="策略：状态到动作的函数">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="10" width="30" height="20" rx="4"/>
+              <line x1="34" y1="20" x2="66" y2="20"/>
+              <path d="M66 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <circle cx="86" cy="20" r="12"/>
+              <line x1="98" y1="20" x2="120" y2="20"/>
+              <path d="M120 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="126" y="12" width="10" height="16" rx="2"/>
+            </g>
+            <g font-size="7" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="19" y="24">状态</text>
+              <text x="86" y="23">π</text>
+              <text x="131" y="24">动</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>"看到什么状态该做什么动作"的函数</b>——机器人所有可训练模块的通用名。VLA、Diffusion Policy 都是不同实现的 policy。</p>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">VLA</div>
+          <span class="term-en">Vision-Language-Action</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="VLA：图像+语言进，动作出">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="4" width="18" height="14" rx="3"/>
+              <rect x="4" y="22" width="18" height="14" rx="3"/>
+              <path d="M22 11 L48 15 M22 29 L48 25"/>
+              <rect x="48" y="8" width="46" height="24" rx="6" style="fill:var(--accent-soft)"/>
+              <path d="M94 20 L118 20"/>
+              <path d="M118 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="124" y="12" width="12" height="16" rx="2"/>
+            </g>
+            <g font-size="6.5" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="13" y="14">图</text><text x="13" y="32">语</text>
+              <text x="71" y="22" font-size="8" font-weight="700">VLA</text>
+              <text x="130" y="24">动</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>一个大模型端到端吃图像+语言指令、直接吐动作</b>——把 VLM（视觉语言模型）+ 动作生成头合成一个整机。代表：RT-2、π0。</p>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">World Model 世界模型</div>
+          <span class="term-en">f(s,a)→s'</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="世界模型：预测下一个状态">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="18" cy="20" r="8"/>
+              <circle cx="18" cy="20" r="2" fill="currentColor"/>
+              <path d="M28 20 L52 20"/>
+              <path d="M52 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="60" y="10" width="34" height="20" rx="4" style="fill:var(--accent-soft)"/>
+              <path d="M96 20 L118 20"/>
+              <path d="M118 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <circle cx="128" cy="20" r="8"/>
+            </g>
+            <g font-size="6.5" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="18" y="36">s</text>
+              <text x="77" y="24" font-size="7">f(s,a)</text>
+              <text x="128" y="36">s'</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>"脑内仿真器"</b>——给我当前状态和一个动作，预测下一个状态。有它就能在头脑里 rollout、搜索、规划。分<em>生成式</em>（重建像素）和<em>判别式</em>（只学表征）。</p>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">Diffusion / Flow</div>
+          <span class="term-en">Action Head</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="扩散/流匹配：噪声去噪成动作">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <g style="color:var(--text-muted)"><circle cx="14" cy="12" r="1.5" fill="currentColor"/><circle cx="20" cy="22" r="1.5" fill="currentColor"/><circle cx="10" cy="28" r="1.5" fill="currentColor"/><circle cx="22" cy="14" r="1.5" fill="currentColor"/><circle cx="16" cy="32" r="1.5" fill="currentColor"/></g>
+              <path d="M30 20 L58 20"/>
+              <path d="M58 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="64" y="8" width="34" height="24" rx="12" style="fill:var(--accent-soft)"/>
+              <path d="M100 20 L120 20"/>
+              <path d="M120 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <path d="M126 12 Q132 20 126 28" stroke-width="2"/>
+              <path d="M130 12 Q136 20 130 28" stroke-width="2" opacity=".6"/>
+            </g>
+            <g font-size="6.5" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="16" y="6">噪声</text>
+              <text x="81" y="24" font-size="7">去噪</text>
+              <text x="133" y="38">动作链</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>不是独立方案，是"动作头"的新范式</b>——把动作序列当分布采样。<em>Flow Matching</em>（π0/π0.5 用的）是扩散的高效近亲，一到几步就出结果。</p>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">Sim2Real</div>
+          <span class="term-en">仿真到真机</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="仿真到真机迁移">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="4" y="8" width="46" height="24" rx="3"/>
+              <path d="M12 16 L42 16 M12 22 L38 22 M12 28 L42 28" stroke-dasharray="2 2"/>
+              <path d="M52 20 L84 20"/>
+              <path d="M84 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="90" y="8" width="46" height="24" rx="3" style="fill:var(--accent-soft)"/>
+              <g transform="translate(113,20)">
+                <circle cx="0" cy="-4" r="4"/>
+                <line x1="-6" y1="8" x2="6" y2="8"/>
+                <line x1="0" y1="0" x2="0" y2="8"/>
+              </g>
+            </g>
+            <g font-size="6.5" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="27" y="6">仿真</text>
+              <text x="113" y="6">真机</text>
+              <text x="68" y="16">迁移</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>先在仿真里训练，再迁移到真机</b>——省数据也省摔机器人。工具链：Isaac Sim / MuJoCo / Cosmos。核心难点是"仿真的物理不完全对"。</p>
+      </div>
+
+      <div class="term">
+        <div class="term-head">
+          <div class="term-name">Behavior Cloning</div>
+          <span class="term-en">BC · 行为克隆</span>
+        </div>
+        <div class="term-vis">
+          <svg viewBox="0 0 140 40" role="img" aria-label="行为克隆：模仿人类示范">
+            <g fill="none" stroke="currentColor" stroke-width="1.5">
+              <g transform="translate(18,20)">
+                <circle cx="0" cy="-8" r="5"/>
+                <path d="M-7 10 a10 10 0 0 1 14 0"/>
+              </g>
+              <path d="M32 20 L58 20" stroke-dasharray="2 2"/>
+              <path d="M58 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="64" y="10" width="26" height="20" rx="4"/>
+              <path d="M90 20 L112 20"/>
+              <path d="M112 16 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(126,20)">
+                <rect x="-6" y="-10" width="12" height="20" rx="2"/>
+                <circle cx="0" cy="-14" r="2"/>
+              </g>
+            </g>
+            <g font-size="6.5" fill="currentColor" stroke="none" text-anchor="middle">
+              <text x="18" y="38">示范</text>
+              <text x="77" y="24">π</text>
+              <text x="126" y="38">机器人</text>
+            </g>
+          </svg>
+        </div>
+        <p class="term-desc"><b>用人类示范监督学习一个策略</b>——是所有真机 policy 最古老、也最有效的训练范式。ALOHA、π0、Helix 都靠它。</p>
+      </div>
+
+    </div>
+
+    <!-- ========== 二、抽象层级栈 ========== -->
+    <h2 id="stack"><span class="sec-num">二</span>抽象层级：五个方案分居四层<a href="#stack" class="anchor">#</a></h2>
+    <p class="kicker">The Stack · 别把控制层和感知层拿来比谁强</p>
+
+    <p>下面把五个方案按它们在"具身系统"里的<strong>工作层</strong>归位。这一步做好了，"π0.5 vs V-JEPA 2 谁更强"这类问题就自动消失——它们不在同一层。</p>
+
+    <div class="stack reveal">
+      <div class="stack-row">
+        <div class="stack-head">
+          <div class="stack-num">L1</div>
+          <div class="stack-layer">感知 &amp; 想象<span class="en">Perception · World Model</span></div>
+        </div>
+        <div class="stack-body">
+          <p class="stack-desc">把原始摄像头/关节读数<strong>压缩成潜空间表征</strong>；有能力的话还能预测"下一步世界长什么样"。这是"脑内仿真器"的落脚点。</p>
+          <div class="stack-tags">
+            <span class="stack-tag hot">世界模型</span>
+            <span class="stack-tag">Dreamer</span>
+            <span class="stack-tag">V-JEPA 2</span>
+            <span class="stack-tag">Cosmos</span>
+            <span class="stack-tag">Genie 3</span>
+          </div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-head">
+          <div class="stack-num">L2</div>
+          <div class="stack-layer">决策 &amp; 规划<span class="en">Planning · Task Decomp.</span></div>
+        </div>
+        <div class="stack-body">
+          <p class="stack-desc">收到"把桌子收拾干净"这种粗粒度指令，<strong>拆成有序的原语动作</strong>——"打开抽屉→拿海绵→擦桌子→放回海绵"。是"慢思考"层，天然由 LLM 承担。</p>
+          <div class="stack-tags">
+            <span class="stack-tag hot">LLM 分层</span>
+            <span class="stack-tag">SayCan</span>
+            <span class="stack-tag">Code-as-Policies</span>
+            <span class="stack-tag">Voxposer</span>
+            <span class="stack-tag">Helix S2</span>
+          </div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-head">
+          <div class="stack-num">L3</div>
+          <div class="stack-layer">控制 &amp; 动作<span class="en">Control · Actuation</span></div>
+        </div>
+        <div class="stack-body">
+          <p class="stack-desc">拿到一个具体子任务（"抓这个杯子"），<strong>输出关节角/末端力</strong>——直接驱动电机。是"快反应"层，需要毫秒级闭环。当下所有 SOTA 都堆在这里。</p>
+          <div class="stack-tags">
+            <span class="stack-tag hot">VLA</span>
+            <span class="stack-tag hot">Diffusion/Flow Policy</span>
+            <span class="stack-tag">RT-2</span>
+            <span class="stack-tag">π0 · π0.5</span>
+            <span class="stack-tag">OpenVLA</span>
+            <span class="stack-tag">Helix S1</span>
+          </div>
+        </div>
+      </div>
+      <div class="stack-row">
+        <div class="stack-head">
+          <div class="stack-num">L0</div>
+          <div class="stack-layer">数据 &amp; 训练<span class="en">Data · Training Pipeline</span></div>
+        </div>
+        <div class="stack-body">
+          <p class="stack-desc">所有 L1-L3 的<strong>食粮供给</strong>——遥操作、仿真、真机自主、互联网视频。这一层被误当"苦力活"，实则是护城河真正长出来的地方。</p>
+          <div class="stack-tags">
+            <span class="stack-tag hot">模仿学习管线</span>
+            <span class="stack-tag">ALOHA</span>
+            <span class="stack-tag">DROID</span>
+            <span class="stack-tag">Bridge V2</span>
+            <span class="stack-tag">Isaac + Cosmos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">看这张栈能得到什么</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>π0.5 在 L3</strong>（控制层），<strong>V-JEPA 2 在 L1</strong>（感知层）——它们理论上应该<strong>合作</strong>而不是竞争：一个当大脑一个当手脚。</li>
+        <li><strong>Helix 是 L2 + L3 的组合拳</strong>（System 2 = LLM 分层，System 1 = VLA 控制），这是当前架构上最"整机"的实现。</li>
+        <li><strong>所有 SOTA 的共同底座是 L0</strong>——PI/Figure/1X 拼的不是"我模型比你好"，是"我的遥操作时长比你多 5 倍"。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 三、五大方案 ========== -->
+    <h2 id="schools"><span class="sec-num">三</span>五大方案：每张卡片一个流派<a href="#schools" class="anchor">#</a></h2>
+    <p class="kicker">Five Schools · 骨架 + 代表 + 优劣 · 每卡三分钟看完</p>
+
+    <div class="arch">
+
+      <!-- ═════ 方案一：端到端 VLA ═════ -->
+      <div class="arch-card a1 reveal">
+        <div class="arch-head">
+          <h3 class="arch-name"><span class="num">01</span>端到端 VLA<span class="en">Vision-Language-Action · 大一统主流</span></h3>
+          <div class="arch-mat">
+            <span class="stars">★★★★☆</span>
+            <span class="lab">部署成熟度</span>
+          </div>
+        </div>
+        <p class="arch-one"><strong>一句话：</strong>把 VLM（视觉语言模型）当骨干、接一个动作生成头，一个模型端到端吃「图像 + 语言指令」直接吐动作。</p>
+
+        <div class="arch-diag">
+          <svg viewBox="0 0 720 130" role="img" aria-label="VLA 架构：图像+语言 → VLM backbone → 动作头 → 动作 chunk">
+            <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--accent)">
+              <rect x="10" y="20" width="90" height="30" rx="6"/>
+              <rect x="10" y="60" width="90" height="30" rx="6"/>
+              <path d="M100 35 L200 55 M100 75 L200 65"/>
+              <rect x="200" y="30" width="180" height="70" rx="10" style="fill:var(--accent-soft)"/>
+              <path d="M380 65 L440 65"/>
+              <path d="M440 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="440" y="45" width="140" height="40" rx="18" style="fill:var(--accent-soft)"/>
+              <path d="M580 65 L640 65"/>
+              <path d="M640 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(650,65)">
+                <rect x="0" y="-14" width="10" height="28" rx="2"/>
+                <rect x="14" y="-14" width="10" height="28" rx="2"/>
+                <rect x="28" y="-14" width="10" height="28" rx="2"/>
+                <rect x="42" y="-14" width="10" height="28" rx="2"/>
+              </g>
+            </g>
+            <g font-size="11" fill="currentColor" stroke="none" style="color:var(--text)">
+              <text x="55" y="40" text-anchor="middle" fill="currentColor">图像帧</text>
+              <text x="55" y="80" text-anchor="middle" fill="currentColor">"把杯子放好"</text>
+              <text x="290" y="62" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">VLM Backbone</text>
+              <text x="290" y="80" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">PaliGemma / Llama-VL</text>
+              <text x="510" y="62" text-anchor="middle" font-size="12" fill="currentColor">Action Head</text>
+              <text x="510" y="78" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">token 或 flow</text>
+              <text x="672" y="42" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">动作 chunk</text>
+              <text x="672" y="98" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">50 步 @ 50Hz</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="arch-body">
+          <div class="arch-mech">
+            <p style="margin:.15em 0;"><b>关键机制：</b></p>
+            <ul>
+              <li><b>动作 tokenization</b>（RT-2 路线）：把动作离散化成 token，跟语言 token 一起自回归。简单但精度受限。</li>
+              <li><b>连续动作头</b>（π0 / OpenVLA 路线）：接 diffusion / flow matching 头，一次吐一整段 chunk（如 50 步 × 7 维），精度高但训练贵。</li>
+              <li><b>Chunked prediction</b>：不预测单步，而是一整段动作序列——避免"帧间抖动"，提高稳态。</li>
+              <li><b>训练数据配方</b>：VLM 预训练（互联网视频/图文） + 遥操作真机数据混合微调。</li>
+            </ul>
+          </div>
+          <div class="arch-side">
+            <div>
+              <div class="h5">代表玩家</div>
+              <div class="arch-players">
+                <span class="arch-chip">RT-2 (2023)</span>
+                <span class="arch-chip">OpenVLA (2024)</span>
+                <span class="arch-chip hi">π0 · π0.5 (PI)</span>
+                <span class="arch-chip hi">Helix S1 (Figure)</span>
+                <span class="arch-chip">Gemini-Robotics</span>
+              </div>
+            </div>
+            <div class="arch-prosCons">
+              <div class="arch-line pro"><span class="tag">优</span><div class="txt"><b>跨任务泛化</b>好；能直接吃 VLM 预训练的语义先验。</div></div>
+              <div class="arch-line con"><span class="tag">劣</span><div class="txt"><b>真机数据永远不够</b>；长尾任务需要遥操作补，成本高。</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════ 方案二：Diffusion / Flow Policy ═════ -->
+      <div class="arch-card a2 reveal">
+        <div class="arch-head">
+          <h3 class="arch-name"><span class="num">02</span>Diffusion / Flow Policy<span class="en">动作生成头范式 · 已被 VLA 吸收</span></h3>
+          <div class="arch-mat">
+            <span class="stars">★★★★★</span>
+            <span class="lab">作为组件普及度</span>
+          </div>
+        </div>
+        <p class="arch-one"><strong>一句话：</strong>把机器人动作当"分布"，用<strong>扩散模型</strong>（去噪）或它的高效近亲<strong>Flow Matching</strong>采样出一整段动作 chunk。</p>
+
+        <div class="arch-diag">
+          <svg viewBox="0 0 720 130" role="img" aria-label="Diffusion Policy：噪声去噪成动作">
+            <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--info)">
+              <rect x="10" y="45" width="80" height="40" rx="6"/>
+              <path d="M90 65 L150 65"/>
+              <path d="M150 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(170,65)" style="color:var(--text-muted)">
+                <circle cx="0" cy="-10" r="2" fill="currentColor"/><circle cx="8" cy="0" r="2" fill="currentColor"/>
+                <circle cx="-6" cy="8" r="2" fill="currentColor"/><circle cx="12" cy="-8" r="2" fill="currentColor"/>
+                <circle cx="4" cy="12" r="2" fill="currentColor"/>
+              </g>
+              <path d="M200 65 L260 65"/>
+              <path d="M260 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="260" y="35" width="200" height="60" rx="12" style="fill:color-mix(in srgb, var(--info) 15%, var(--surface))"/>
+              <path d="M360 25 Q400 8 440 25" stroke-dasharray="3 3"/>
+              <path d="M440 25 l-6 -2 l0 -6 z" fill="currentColor" stroke="none"/>
+              <path d="M460 65 L520 65"/>
+              <path d="M520 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(530,65)">
+                <path d="M0 0 Q20 -20 40 0 T80 0 T120 0" stroke-width="2"/>
+                <circle cx="0" cy="0" r="2.5" fill="currentColor"/>
+                <circle cx="40" cy="0" r="2.5" fill="currentColor"/>
+                <circle cx="80" cy="0" r="2.5" fill="currentColor"/>
+                <circle cx="120" cy="0" r="2.5" fill="currentColor"/>
+              </g>
+            </g>
+            <g font-size="11" fill="currentColor" stroke="none" style="color:var(--text)">
+              <text x="50" y="70" text-anchor="middle" fill="currentColor">观测 o</text>
+              <text x="180" y="58" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">噪声 a_T</text>
+              <text x="360" y="70" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">去噪网络</text>
+              <text x="360" y="86" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">U-Net / Transformer</text>
+              <text x="400" y="18" text-anchor="middle" font-size="9" style="fill:var(--info)">T 步迭代</text>
+              <text x="590" y="88" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">动作轨迹 a_0</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="arch-body">
+          <div class="arch-mech">
+            <p style="margin:.15em 0;"><b>关键机制：</b></p>
+            <ul>
+              <li><b>相比 BC 的核心优势</b>：处理"多模态动作分布"——同一个观测下有多种合理动作时，BC 会取平均（错的），扩散会保留多峰。</li>
+              <li><b>Flow Matching（π0/π0.5 采用）</b>：不像扩散要几十步去噪，一到几步就能采样，推理速度提升 10× 以上。</li>
+              <li><b>严格说不是"独立架构"</b>：它是<strong>动作头</strong>——上面接什么骨干都行（ResNet、Transformer、VLM 都用过）。</li>
+              <li><b>3D Diffusion Policy / DP3</b>：加 point cloud 输入，处理 3D 空间任务更强。</li>
+            </ul>
+          </div>
+          <div class="arch-side">
+            <div>
+              <div class="h5">代表玩家</div>
+              <div class="arch-players">
+                <span class="arch-chip hi">Diffusion Policy (TRI/Columbia, 2023)</span>
+                <span class="arch-chip">RDT-1B</span>
+                <span class="arch-chip">3D DP</span>
+                <span class="arch-chip hi">π0 · π0.5 (作为组件)</span>
+              </div>
+            </div>
+            <div class="arch-prosCons">
+              <div class="arch-line pro"><span class="tag">优</span><div class="txt"><b>多模态动作</b>不塌陷；输出平滑连续。</div></div>
+              <div class="arch-line con"><span class="tag">劣</span><div class="txt">不含语义 / 语言理解，<b>必须</b>跟 VLM 配对。</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════ 方案三：世界模型 + 规划 ═════ -->
+      <div class="arch-card a3 reveal">
+        <div class="arch-head">
+          <h3 class="arch-name"><span class="num">03</span>世界模型 + 规划<span class="en">World Model + Planning · 感知/规划外挂</span></h3>
+          <div class="arch-mat">
+            <span class="stars">★★☆☆☆</span>
+            <span class="lab">真机部署成熟度</span>
+          </div>
+        </div>
+        <p class="arch-one"><strong>一句话：</strong>先训一个"脑内仿真器"能预测未来状态，然后在其中<strong>搜索 / 规划</strong>最优动作序列。</p>
+
+        <div class="arch-diag">
+          <svg viewBox="0 0 720 130" role="img" aria-label="世界模型 + 规划：编码→rollout→规划器→动作">
+            <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:#7c3aed">
+              <rect x="10" y="45" width="70" height="40" rx="6"/>
+              <path d="M80 65 L120 65"/>
+              <path d="M120 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <circle cx="145" cy="65" r="18" style="fill:color-mix(in srgb, #7c3aed 12%, var(--surface))"/>
+              <path d="M163 65 L220 65"/>
+              <path d="M220 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(240,65)">
+                <circle cx="0" cy="0" r="12" style="fill:color-mix(in srgb, #7c3aed 10%, var(--surface))"/>
+                <path d="M12 0 L28 0"/>
+                <circle cx="40" cy="0" r="12" style="fill:color-mix(in srgb, #7c3aed 10%, var(--surface))"/>
+                <path d="M52 0 L68 0"/>
+                <circle cx="80" cy="0" r="12" style="fill:color-mix(in srgb, #7c3aed 10%, var(--surface))"/>
+                <path d="M12 -6 L28 -18" opacity=".5"/>
+                <circle cx="40" cy="-20" r="8" opacity=".4"/>
+                <path d="M12 6 L28 18" opacity=".5"/>
+                <circle cx="40" cy="20" r="8" opacity=".4"/>
+              </g>
+              <path d="M340 65 L400 65"/>
+              <path d="M400 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="400" y="45" width="120" height="40" rx="8" style="fill:color-mix(in srgb, #7c3aed 15%, var(--surface))"/>
+              <path d="M520 65 L580 65"/>
+              <path d="M580 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="590" y="50" width="80" height="30" rx="6"/>
+            </g>
+            <g font-size="11" fill="currentColor" stroke="none" style="color:var(--text)">
+              <text x="45" y="70" text-anchor="middle" fill="currentColor">观测</text>
+              <text x="145" y="70" text-anchor="middle" font-size="11" fill="currentColor">z (潜)</text>
+              <text x="280" y="18" text-anchor="middle" font-size="10" style="fill:#7c3aed">rollout / 分支</text>
+              <text x="280" y="108" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">z→z'→z''</text>
+              <text x="460" y="63" text-anchor="middle" font-size="12" fill="currentColor">规划器</text>
+              <text x="460" y="80" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">MPC / MCTS</text>
+              <text x="630" y="70" text-anchor="middle" font-size="11" fill="currentColor">动作</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="arch-body">
+          <div class="arch-mech">
+            <p style="margin:.15em 0;"><b>关键机制 &amp; 两条分支：</b></p>
+            <ul>
+              <li><b>生成派（Dreamer / Cosmos / Genie）</b>：世界模型输出重建的像素 / 视频，训练目标是"预测像素"。信号密但含大量物理无关噪声。</li>
+              <li><b>判别派（V-JEPA 2 / TD-MPC / JEPA 全家）</b>：只在潜空间预测未来表征，不重建像素——LeCun 认为像素级预测浪费算力。</li>
+              <li><b>规划器</b>：拿到世界模型后，用 MPC（模型预测控制）或 MCTS 采样式搜索找最优动作。天然分层结构。</li>
+              <li><b>核心难题</b>：<em>模型失真会累积</em>——rollout 5 步还行，rollout 50 步就漂了；工程上很难。</li>
+            </ul>
+          </div>
+          <div class="arch-side">
+            <div>
+              <div class="h5">代表玩家</div>
+              <div class="arch-players">
+                <span class="arch-chip">Dreamer V3 (2023)</span>
+                <span class="arch-chip">TD-MPC2</span>
+                <span class="arch-chip hi">V-JEPA 2 (Meta)</span>
+                <span class="arch-chip">Cosmos (NVIDIA)</span>
+                <span class="arch-chip">Genie 3 (DeepMind)</span>
+              </div>
+            </div>
+            <div class="arch-prosCons">
+              <div class="arch-line pro"><span class="tag">优</span><div class="txt"><b>数据效率高</b>——"想象"可无限扩充；天然可解释。</div></div>
+              <div class="arch-line con"><span class="tag">劣</span><div class="txt">真机部署 SOTA <b>极少</b>；模型误差累积严重。</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════ 方案四：LLM 分层 ═════ -->
+      <div class="arch-card a4 reveal">
+        <div class="arch-head">
+          <h3 class="arch-name"><span class="num">04</span>LLM 分层<span class="en">Hierarchical · 慢思考 + 快反应</span></h3>
+          <div class="arch-mat">
+            <span class="stars">★★★★☆</span>
+            <span class="lab">长任务成熟度</span>
+          </div>
+        </div>
+        <p class="arch-one"><strong>一句话：</strong>LLM 做"慢思考"（把粗粒度指令拆成原语序列），底层策略做"快反应"（毫秒级闭环执行）。Figure 的 Helix "System 1 + System 2" 是当红代表。</p>
+
+        <div class="arch-diag">
+          <svg viewBox="0 0 720 140" role="img" aria-label="LLM 分层：System 2 规划 → System 1 执行">
+            <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--warn)">
+              <rect x="10" y="15" width="140" height="30" rx="4"/>
+              <path d="M80 45 L80 62"/>
+              <path d="M76 62 l4 6 l4 -6 z" fill="currentColor" stroke="none"/>
+              <rect x="10" y="68" width="220" height="42" rx="10" style="fill:color-mix(in srgb, var(--warn) 14%, var(--surface))"/>
+              <path d="M230 89 L280 89"/>
+              <path d="M280 85 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(290,89)">
+                <rect x="0" y="-12" width="60" height="24" rx="4"/>
+                <path d="M60 0 L84 0"/>
+                <path d="M84 -4 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+                <rect x="94" y="-12" width="60" height="24" rx="4"/>
+                <path d="M154 0 L178 0"/>
+                <path d="M178 -4 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+                <rect x="188" y="-12" width="60" height="24" rx="4"/>
+              </g>
+              <path d="M594 89 L640 89"/>
+              <path d="M640 85 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="640" y="70" width="70" height="38" rx="8" style="fill:color-mix(in srgb, var(--warn) 20%, var(--surface))"/>
+            </g>
+            <g font-size="11" fill="currentColor" stroke="none" style="color:var(--text)">
+              <text x="80" y="34" text-anchor="middle" fill="currentColor">"收拾一下桌子"</text>
+              <text x="120" y="92" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">System 2 · LLM 规划器</text>
+              <text x="120" y="106" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">任务分解 / 代码生成</text>
+              <text x="320" y="93" text-anchor="middle" font-size="10" fill="currentColor">拿海绵</text>
+              <text x="414" y="93" text-anchor="middle" font-size="10" fill="currentColor">擦桌面</text>
+              <text x="508" y="93" text-anchor="middle" font-size="10" fill="currentColor">放回</text>
+              <text x="675" y="92" text-anchor="middle" font-size="11" fill="currentColor">System 1</text>
+              <text x="675" y="105" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">VLA 执行</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="arch-body">
+          <div class="arch-mech">
+            <p style="margin:.15em 0;"><b>关键机制：</b></p>
+            <ul>
+              <li><b>SayCan（2022, Google）</b>：LLM 打分"这一步合不合理" × affordance 打分"这一步能不能做"，联合选下一步。</li>
+              <li><b>Code-as-Policies（2022）</b>：LLM 直接生成 Python 代码调用一组预定义 skill API——最可解释、最可 debug。</li>
+              <li><b>Helix System 1+2（Figure, 2025）</b>：VLM 慢思考（7-9Hz 全局理解）+ VLA 快反应（200Hz 闭环控制），是当前最激进的双系统整机。</li>
+              <li><b>Voxposer</b>：LLM 直接生成 3D affordance 场，把语义映射到空间。</li>
+            </ul>
+          </div>
+          <div class="arch-side">
+            <div>
+              <div class="h5">代表玩家</div>
+              <div class="arch-players">
+                <span class="arch-chip">SayCan (2022)</span>
+                <span class="arch-chip">Code-as-Policies</span>
+                <span class="arch-chip">Voxposer</span>
+                <span class="arch-chip hi">Helix (Figure, 2025)</span>
+                <span class="arch-chip">Gemini-Robotics ER</span>
+              </div>
+            </div>
+            <div class="arch-prosCons">
+              <div class="arch-line pro"><span class="tag">优</span><div class="txt"><b>可解释、可组合</b>；天然支持长任务与人机协作。</div></div>
+              <div class="arch-line con"><span class="tag">劣</span><div class="txt">底层 skill 边界要预先定义；LLM 的<b>物理直觉薄</b>。</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═════ 方案五：模仿学习管线 ═════ -->
+      <div class="arch-card a5 reveal">
+        <div class="arch-head">
+          <h3 class="arch-name"><span class="num">05</span>模仿学习管线<span class="en">Imitation Learning Pipeline · 所有方案的公共底座</span></h3>
+          <div class="arch-mat">
+            <span class="stars">★★★★★</span>
+            <span class="lab">工业化成熟度</span>
+          </div>
+        </div>
+        <p class="arch-one"><strong>一句话：</strong>不是模型架构，而是<strong>数据供给方式</strong>——人工远程操控机器人做示范，收集 (观测, 动作) 轨迹训练策略。所有 L1-L3 方案<em>都靠这条流水线喂饭</em>。</p>
+
+        <div class="arch-diag">
+          <svg viewBox="0 0 720 140" role="img" aria-label="模仿学习管线：遥操作 → 数据集 → 训练 → 策略">
+            <g fill="none" stroke="currentColor" stroke-width="1.6" style="color:var(--pro)">
+              <g transform="translate(50,65)">
+                <circle cx="0" cy="-14" r="8"/>
+                <path d="M-10 8 a12 12 0 0 1 20 0"/>
+                <line x1="10" y1="-6" x2="26" y2="-14"/>
+              </g>
+              <rect x="85" y="45" width="46" height="30" rx="4"/>
+              <path d="M131 60 L170 60" stroke-dasharray="3 3"/>
+              <path d="M170 56 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(200,65)">
+                <rect x="-14" y="-16" width="28" height="34" rx="4"/>
+                <circle cx="0" cy="-22" r="5"/>
+              </g>
+              <path d="M225 65 L275 65"/>
+              <path d="M275 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <g transform="translate(300,65)">
+                <rect x="0" y="-20" width="60" height="40" rx="4"/>
+                <path d="M0 -12 L60 -12 M0 -4 L60 -4 M0 4 L60 4 M0 12 L60 12" stroke-dasharray="2 2"/>
+              </g>
+              <path d="M360 65 L400 65"/>
+              <path d="M400 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <rect x="400" y="45" width="120" height="40" rx="8" style="fill:color-mix(in srgb, var(--pro) 15%, var(--surface))"/>
+              <path d="M520 65 L580 65"/>
+              <path d="M580 61 l6 4 l-6 4 z" fill="currentColor" stroke="none"/>
+              <circle cx="620" cy="65" r="24" style="fill:color-mix(in srgb, var(--pro) 20%, var(--surface))"/>
+              <path d="M620 90 Q400 130 300 105" stroke-dasharray="4 4"/>
+              <path d="M300 105 l8 -2 l-2 -6 z" fill="currentColor" stroke="none"/>
+            </g>
+            <g font-size="10" fill="currentColor" stroke="none" style="color:var(--text)">
+              <text x="60" y="90" text-anchor="middle" fill="currentColor">人操作员</text>
+              <text x="108" y="90" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">ALOHA / VR</text>
+              <text x="200" y="95" text-anchor="middle" fill="currentColor">真机</text>
+              <text x="330" y="93" text-anchor="middle" fill="currentColor">数据集</text>
+              <text x="330" y="108" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">(o, a) 对</text>
+              <text x="460" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="currentColor">训练</text>
+              <text x="460" y="78" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">BC / Diffusion / VLA</text>
+              <text x="620" y="68" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">π</text>
+              <text x="620" y="102" text-anchor="middle" font-size="9" style="fill:var(--text-muted)">策略</text>
+              <text x="460" y="128" text-anchor="middle" font-size="9" style="fill:var(--pro)">部署自主数据回流</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="arch-body">
+          <div class="arch-mech">
+            <p style="margin:.15em 0;"><b>关键机制：</b></p>
+            <ul>
+              <li><b>遥操作硬件生态</b>：ALOHA（斯坦福双臂）、GELLO、Apple Vision Pro + 手部追踪、Meta Quest + 手柄——把"如何优雅示范"变成硬件问题。</li>
+              <li><b>训练算法</b>可以是 BC、Diffusion Policy、VLA——它们只是<em>模型选型</em>，共享同一条数据流水线。</li>
+              <li><b>数据规模是所有 SOTA 的暗线</b>：PI 的 π0 训练用了约 <em>10,000 小时</em>遥操作；Figure 目标做到 <em>100,000 小时</em>。</li>
+              <li><b>真正的护城河</b>：真机部署后的<em>自主运行数据回流</em>——这才是"具身版飞轮"。</li>
+            </ul>
+          </div>
+          <div class="arch-side">
+            <div>
+              <div class="h5">代表玩家 / 数据集</div>
+              <div class="arch-players">
+                <span class="arch-chip hi">ALOHA (Stanford)</span>
+                <span class="arch-chip hi">DROID (2024)</span>
+                <span class="arch-chip">Bridge V2</span>
+                <span class="arch-chip">Open X-Embodiment</span>
+                <span class="arch-chip">PI 内部数据</span>
+              </div>
+            </div>
+            <div class="arch-prosCons">
+              <div class="arch-line pro"><span class="tag">优</span><div class="txt"><b>真机保真度最高</b>；直接对齐部署分布，无 Sim2Real gap。</div></div>
+              <div class="arch-line con"><span class="tag">劣</span><div class="txt"><b>贵、慢、覆盖窄</b>；需要千小时级人力。</div></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========== 四、横向对比 ========== -->
+    <h2 id="compare"><span class="sec-num">四</span>横向对比：五个方案摆一张桌<a href="#compare" class="anchor">#</a></h2>
+    <p class="kicker">Head-to-Head · 一图看清定位差异</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="min-width:100px;">维度</th>
+            <th>VLA</th>
+            <th>Diffusion / Flow</th>
+            <th>世界模型</th>
+            <th>LLM 分层</th>
+            <th>模仿学习</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>工作层</strong></td><td>L3 控制</td><td>L3 动作头</td><td>L1 感知</td><td>L2 决策</td><td>L0 数据</td></tr>
+          <tr><td><strong>模型 / 组件</strong></td><td>整机架构</td><td>组件</td><td>整机架构</td><td>整机架构</td><td>非模型</td></tr>
+          <tr><td><strong>训练数据</strong></td><td>大（视频 + 真机）</td><td>中（真机）</td><td>大（视频 / 仿真）</td><td>小（skill + LLM）</td><td>极大（真机）</td></tr>
+          <tr><td><strong>长尾任务</strong></td><td>弱</td><td>中</td><td>中</td><td><strong>强</strong></td><td>弱</td></tr>
+          <tr><td><strong>可解释性</strong></td><td>弱</td><td>弱</td><td>中</td><td><strong>强</strong></td><td>—</td></tr>
+          <tr><td><strong>部署成熟度</strong></td><td><strong>高</strong></td><td>中</td><td>低</td><td>中-高</td><td><strong>高</strong></td></tr>
+          <tr><td><strong>计算成本（推理）</strong></td><td>高</td><td>中</td><td>高</td><td>中</td><td>低</td></tr>
+          <tr><td><strong>2026 商用代表</strong></td><td>π0.5, Helix S1, RT-2</td><td>RDT-1B, DP3</td><td>（暂无真机 SOTA）</td><td>Helix S2, SayCan</td><td>ALOHA, DROID</td></tr>
+          <tr><td><strong>是否可组合</strong></td><td>常作 L2 分层的底层</td><td>常作 VLA 的动作头</td><td>可当 VLA 的想象引擎</td><td>常调 VLA / skill</td><td>喂饭所有其他方案</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对比表怎么读</div>
+      <p style="margin:.3em 0;">这张表<strong>不是</strong>"谁比谁强"，而是"谁在哪一层做什么"。真正的 SOTA 系统都是<strong>多方案叠加</strong>——Helix = LLM 分层（L2）+ VLA（L3）+ Diffusion 动作头（L3）+ 模仿学习管线（L0），四个方案一起用。<strong>如果一家公司告诉你他们只做某一个方案，那要么定位很清楚（数据 / 工具链），要么在选错架构。</strong></p>
+    </div>
+
+    <!-- ========== 五、组合公式 ========== -->
+    <h2 id="composition"><span class="sec-num">五</span>SOTA 都是组合拳：三家真实拆解<a href="#composition" class="anchor">#</a></h2>
+    <p class="kicker">Compositions · 谁用了什么</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>系统</th><th>L1 感知</th><th>L2 决策</th><th>L3 控制</th><th>L0 数据</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>π0.5</strong>（PI, 2025）</td>
+            <td>VLM 隐式（无显式世界模型）</td>
+            <td>直接端到端（无独立 L2）</td>
+            <td><strong>VLA</strong>（PaliGemma）+ <strong>Flow Matching</strong> 动作头</td>
+            <td>≈ 10,000 小时遥操作 + 跨机器人协同数据</td>
+          </tr>
+          <tr>
+            <td><strong>Helix</strong>（Figure, 2025）</td>
+            <td>VLM 联合感知（S2 内）</td>
+            <td><strong>System 2</strong>：VLM 慢思考 @ 7-9Hz</td>
+            <td><strong>System 1</strong>：VLA @ 200Hz 闭环 + Diffusion 头</td>
+            <td>Figure 全员遥操作 + 跨机器人共享 policy</td>
+          </tr>
+          <tr>
+            <td><strong>Gemini-Robotics</strong>（DeepMind, 2025）</td>
+            <td>Gemini VLM</td>
+            <td>Gemini-Robotics-ER（体现层推理）</td>
+            <td>Gemini-Robotics（VLA）+ 特定任务微调</td>
+            <td>DeepMind Robotics + Open X-Embodiment</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>看这张表最容易得出的错觉是"π0.5 结构更简洁 = 更好"。<strong>不是。</strong>π0.5 走的是"用海量数据把 L1/L2 隐式塞进 L3"的路线——它赌"数据够多、端到端会自动涌现长任务能力"；Helix 走的是"显式分层"路线——它赌"人类心智就是双系统，工程上分层更可控"。<strong>这是当下最大的一场架构赌局，2027 前必分晓。</strong></p>
+
+    <!-- ========== 六、π0.5 vs V-JEPA 2 详细对比 ========== -->
+    <h2 id="pi-vs-jepa"><span class="sec-num">六</span>专题对比：π0.5 vs V-JEPA 2，为什么这场"PK"其实是错位<a href="#pi-vs-jepa" class="anchor">#</a></h2>
+    <p class="kicker">Deep Dive · 一张架构图 + 一张 16 维对比表</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">先说结论</div>
+      <p style="margin:.3em 0;"><strong>π0.5 和 V-JEPA 2 不是竞品，是"栈的不同层"。</strong>π0.5 是 <b>Policy</b>（决策 + 控制）；V-JEPA 2 是 <b>Representation / World Model 表征骨干</b>（感知）。硬要 PK 就像问"BERT 和 GPT 哪个厉害"——2018 年这么问尚可，2026 年这么问基本没意义，因为两者根本不解决同一件事。真正有意义的对比是：<b>π0.5 vs Diffusion Policy / OpenVLA / RT-2</b>（同层横评），<b>V-JEPA 2 vs V-JEPA / DINO-WM / IRIS</b>（同层横评）。</p>
+    </div>
+
+    <div class="pk reveal">
+      <svg viewBox="0 0 800 320" role="img" aria-label="π0.5 和 V-JEPA 2 的架构信息流对比图" style="width:100%;height:auto;">
+        <defs>
+          <marker id="pkarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"/>
+          </marker>
+          <linearGradient id="pkgradA" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="var(--accent)" stop-opacity=".08"/>
+            <stop offset="1" stop-color="var(--accent)" stop-opacity=".22"/>
+          </linearGradient>
+          <linearGradient id="pkgradB" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#8b5cf6" stop-opacity=".08"/>
+            <stop offset="1" stop-color="#8b5cf6" stop-opacity=".22"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 左：π0.5 -->
+        <rect x="20" y="20" width="360" height="280" rx="10" fill="url(#pkgradA)" stroke="var(--accent)" stroke-width="1.2" stroke-opacity=".5"/>
+        <text x="200" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="var(--accent)">π0.5 · Policy（决策+控制）</text>
+        <text x="200" y="62" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">Physical Intelligence · 2024-25</text>
+
+        <!-- π0.5 输入 -->
+        <rect x="40" y="80" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="80" y="101" text-anchor="middle" font-size="10.5" fill="var(--text)">RGB 图像</text>
+        <rect x="40" y="122" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="80" y="143" text-anchor="middle" font-size="10.5" fill="var(--text)">自然语言</text>
+        <rect x="40" y="164" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="80" y="185" text-anchor="middle" font-size="10.5" fill="var(--text)">机器人状态</text>
+
+        <!-- π0.5 骨干 -->
+        <rect x="150" y="105" width="100" height="88" rx="6" fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)" stroke-width="1.5"/>
+        <text x="200" y="140" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text)">VLM 骨干</text>
+        <text x="200" y="158" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">PaliGemma</text>
+        <text x="200" y="174" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">图 + 语 → tokens</text>
+
+        <!-- π0.5 动作头 -->
+        <rect x="280" y="105" width="80" height="42" rx="6" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="320" y="125" text-anchor="middle" font-size="10.5" fill="var(--text)">Flow Matching</text>
+        <text x="320" y="140" text-anchor="middle" font-size="10.5" fill="var(--text)">Action Head</text>
+
+        <!-- π0.5 输出 -->
+        <rect x="280" y="160" width="80" height="34" rx="6" fill="var(--accent)" fill-opacity=".35" stroke="var(--accent)"/>
+        <text x="320" y="181" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text)">动作 chunk</text>
+
+        <!-- π0.5 箭头 -->
+        <line x1="120" y1="97" x2="150" y2="130" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="120" y1="139" x2="150" y2="145" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="120" y1="181" x2="150" y2="160" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="250" y1="130" x2="280" y2="126" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="320" y1="147" x2="320" y2="160" stroke="var(--accent)" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+
+        <!-- π0.5 底栏 -->
+        <text x="200" y="230" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">目标：</tspan>π(a | o, l)</text>
+        <text x="200" y="248" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">训练：</tspan>真机遥操作 · 数千小时</text>
+        <text x="200" y="266" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">输出：</tspan>连续动作 · 直接进电机</text>
+        <text x="200" y="285" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-weight="700">"能不能干活"</text>
+
+        <!-- 中间竖线 -->
+        <line x1="400" y1="70" x2="400" y2="290" stroke="var(--border)" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="400" y="60" text-anchor="middle" font-size="10" fill="var(--text-muted)">vs</text>
+
+        <!-- 右：V-JEPA 2 -->
+        <rect x="420" y="20" width="360" height="280" rx="10" fill="url(#pkgradB)" stroke="#8b5cf6" stroke-width="1.2" stroke-opacity=".5"/>
+        <text x="600" y="45" text-anchor="middle" font-size="14" font-weight="700" fill="#8b5cf6">V-JEPA 2 · World Model（感知/表征）</text>
+        <text x="600" y="62" text-anchor="middle" font-size="10.5" fill="var(--text-muted)">Meta AI · 2025</text>
+
+        <!-- V-JEPA 输入 -->
+        <rect x="440" y="105" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="480" y="126" text-anchor="middle" font-size="10.5" fill="var(--text)">视频帧 x_t</text>
+        <rect x="440" y="147" width="80" height="34" rx="6" fill="var(--surface)" stroke="var(--border)"/>
+        <text x="480" y="168" text-anchor="middle" font-size="10.5" fill="var(--text)">未来帧 x_t+k</text>
+
+        <!-- V-JEPA 编码器 -->
+        <rect x="550" y="105" width="80" height="34" rx="6" fill="#8b5cf6" fill-opacity=".22" stroke="#8b5cf6" stroke-width="1.5"/>
+        <text x="590" y="122" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text)">编码器</text>
+        <text x="590" y="134" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">ViT</text>
+        <rect x="550" y="147" width="80" height="34" rx="6" fill="#8b5cf6" fill-opacity=".22" stroke="#8b5cf6" stroke-width="1.5"/>
+        <text x="590" y="164" text-anchor="middle" font-size="10.5" font-weight="700" fill="var(--text)">编码器</text>
+        <text x="590" y="176" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">(sg)</text>
+
+        <!-- V-JEPA 预测器 -->
+        <rect x="660" y="105" width="80" height="76" rx="6" fill="var(--surface)" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <text x="700" y="130" text-anchor="middle" font-size="10.5" fill="var(--text)">Predictor</text>
+        <text x="700" y="148" text-anchor="middle" font-size="10.5" fill="var(--text)">z_t → ẑ_t+k</text>
+        <text x="700" y="166" text-anchor="middle" font-size="9.5" fill="var(--text-muted)">潜空间</text>
+
+        <!-- V-JEPA 输出 -->
+        <text x="600" y="220" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">目标：</tspan>‖ẑ_t+k − z_t+k‖</text>
+        <text x="600" y="238" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">训练：</tspan>互联网视频 · 数万小时</text>
+        <text x="600" y="256" text-anchor="middle" font-size="10.5" fill="var(--text)"><tspan font-weight="700">输出：</tspan>潜表征 · 不能直接控电机</text>
+        <text x="600" y="285" text-anchor="middle" font-size="10.5" fill="#8b5cf6" font-weight="700">"能不能理解物理"</text>
+
+        <!-- V-JEPA 箭头 -->
+        <line x1="520" y1="122" x2="550" y2="122" stroke="#8b5cf6" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="520" y1="164" x2="550" y2="164" stroke="#8b5cf6" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="630" y1="122" x2="660" y2="134" stroke="#8b5cf6" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+        <line x1="630" y1="164" x2="660" y2="152" stroke="#8b5cf6" stroke-width="1.3" marker-end="url(#pkarrow)"/>
+      </svg>
+      <p class="fig-cap">两者的信息流根本不重合：π0.5 学「怎么动」，V-JEPA 2 学「世界是什么」。</p>
+    </div>
+
+    <div class="pk-table reveal">
+      <table>
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th style="color:var(--accent);">π0.5</th>
+            <th style="color:#8b5cf6;">V-JEPA 2</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>栈上位置</b></td>
+            <td>L2 决策 + L3 控制（Policy）</td>
+            <td>L1 感知 / 表征骨干（Perception / WM）</td>
+          </tr>
+          <tr>
+            <td><b>范式</b></td>
+            <td>VLA · Vision-Language-Action</td>
+            <td>判别式世界模型 · JEPA</td>
+          </tr>
+          <tr>
+            <td><b>建模目标</b></td>
+            <td>π(a | o, l) —— 给我观察和指令，输出动作</td>
+            <td>f(z_t) → ẑ_t+k —— 给我当前，预测未来潜表征</td>
+          </tr>
+          <tr>
+            <td><b>是否"生成式"</b></td>
+            <td><b>局部生成</b> · 只在 Action Head 用 Flow Matching 采样连续动作</td>
+            <td><b>完全非生成</b> · 只做表征对齐，不重建任何像素</td>
+          </tr>
+          <tr>
+            <td><b>骨干</b></td>
+            <td>预训练 VLM（PaliGemma / SigLIP + Gemma）</td>
+            <td>ViT 编码器 · 从头预训练 + Predictor</td>
+          </tr>
+          <tr>
+            <td><b>输入</b></td>
+            <td>多路 RGB + 自然语言 + 机器人本体状态</td>
+            <td>视频序列（当前帧 + 遮挡的未来帧）</td>
+          </tr>
+          <tr>
+            <td><b>输出</b></td>
+            <td>连续动作 chunk（关节角/末端位姿·50Hz+）</td>
+            <td>潜空间向量（不能直接驱动电机）</td>
+          </tr>
+          <tr>
+            <td><b>主训练数据</b></td>
+            <td>真机遥操作轨迹（数千小时 · 昂贵）</td>
+            <td>互联网视频（数万小时 · 便宜）</td>
+          </tr>
+          <tr>
+            <td><b>能否直接控机器人</b></td>
+            <td><b>能</b> · 已在真机做家务、叠衣服、打包外卖</td>
+            <td><b>不能</b> · 需接下游 policy 头才能输出动作</td>
+          </tr>
+          <tr>
+            <td><b>核心能力测评</b></td>
+            <td>真机任务成功率（LIBERO / DROID / 真机长任务）</td>
+            <td>视频物理直觉（Something-Something-v2, IntPhys, Ego4D）</td>
+          </tr>
+          <tr>
+            <td><b>长任务能力</b></td>
+            <td>弱 → 中 · 靠 language conditioning 把任务串起来</td>
+            <td>无原生 · 只是表征骨干，需上层规划者</td>
+          </tr>
+          <tr>
+            <td><b>硬件依赖</b></td>
+            <td>强 · 与具体机器人本体绑定（AgileX / ALOHA / Franka）</td>
+            <td>零 · 只吃视频，与本体解耦</td>
+          </tr>
+          <tr>
+            <td><b>公平的比较对象</b></td>
+            <td>Diffusion Policy · OpenVLA · RT-2 · RDT-1B · Helix</td>
+            <td>V-JEPA (v1) · DINO-WM · IRIS · Cosmos-DVA</td>
+          </tr>
+          <tr>
+            <td><b>解决什么问题</b></td>
+            <td>"我要造一个能干活的机器人"</td>
+            <td>"我要一个懂物理的通用视觉表征"</td>
+          </tr>
+          <tr>
+            <td><b>风险 / 天花板</b></td>
+            <td>数据成本极高、跨本体迁移弱、失败 mode 不可解释</td>
+            <td>是否真"懂物理" · 是否能替代 CLIP 成为具身默认骨干</td>
+          </tr>
+          <tr>
+            <td><b>2026-27 赛点</b></td>
+            <td>能否在长任务（>3 分钟连续操作）稳定跑通 &amp; 跨本体泛化</td>
+            <td>能否作为 policy backbone 打过 CLIP/SigLIP · 能否让下游 policy 少一个量级数据</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">如果你在想"要不要 fuse 两者"</div>
+      <p style="margin:.3em 0;">这正是 2026 年最热的研究方向之一：<b>用 V-JEPA / DINO-WM 当 VLA 的视觉骨干</b>（替代 SigLIP），让 policy 拿到"懂物理"的表征。已有若干论文尝试（DINO-WM policies · V-JEPA policies），初步结果显示<b>数据效率提升 3-10×</b>，但真机长任务成功率还没稳定超过 SigLIP-VLA。<strong>2027 前若 V-JEPA-VLA 组合能横扫 DROID benchmark，就是"判别派世界模型"真正的胜利时刻。</strong></p>
+    </div>
+
+    <!-- ========== 七、判断台 ========== -->
+    <h2 id="verdicts"><span class="sec-num">七</span>判断台：五张时机 / 信心票<a href="#verdicts" class="anchor">#</a></h2>
+    <p class="kicker">The Verdicts · 每个方案给一张钤印</p>
+
+    <div class="verdicts reveal">
+      <div class="verdict v1">
+        <div class="verdict-head">
+          <div class="verdict-title">01 · 端到端 VLA</div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：进行中</span><span class="verdict-stamp">信心：高</span></div>
+        </div>
+        <p class="verdict-body">是当下商用主战场；每 3-6 个月出一代 SOTA。押注这一路 = 押注"端到端 scaling 会赢"。<b>短期最稳，长期看 scaling law 是否在具身场景成立。</b></p>
+      </div>
+
+      <div class="verdict v2">
+        <div class="verdict-head">
+          <div class="verdict-title">02 · Diffusion / Flow Policy</div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：已发生</span><span class="verdict-stamp">信心：高</span></div>
+        </div>
+        <p class="verdict-body">作为"动作头组件"已被主流吸收；Flow Matching 相对 Diffusion 的推理加速已是共识。<b>2026 后不再是独立争议点，只是标配。</b></p>
+      </div>
+
+      <div class="verdict v3">
+        <div class="verdict-head">
+          <div class="verdict-title">03 · 世界模型 + 规划</div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：1-2 年</span><span class="verdict-stamp">信心：中</span></div>
+        </div>
+        <p class="verdict-body">生成派做数据引擎 / ToC 娱乐已能变现；判别派（V-JEPA）做真机 policy 尚在实验室。<b>2027 前赛点：V-JEPA 2 在具身 benchmark 是否能打过 π0.5。</b></p>
+      </div>
+
+      <div class="verdict v4">
+        <div class="verdict-head">
+          <div class="verdict-title">04 · LLM 分层</div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：进行中</span><span class="verdict-stamp">信心：中</span></div>
+        </div>
+        <p class="verdict-body">长任务的现实解，Helix 已工业级验证。争议在"System 2 的物理直觉是否够用"——如果只当 planner 够，如果要处理物理反常识可能失灵。<b>组合拳里几乎必选。</b></p>
+      </div>
+
+      <div class="verdict v5">
+        <div class="verdict-head">
+          <div class="verdict-title">05 · 模仿学习管线</div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：已发生</span><span class="verdict-stamp">信心：高</span></div>
+        </div>
+        <p class="verdict-body">是<strong>唯一没有争议</strong>的一层——所有 SOTA 都要它喂饭。当前的真机部署数据护城河将持续 2-3 年，直到 Sim2Real 或视频预训练真的能顶上（大概率不会那么快）。<b>投入这一层最稳。</b></p>
+      </div>
+    </div>
+
+    <!-- ========== 七、给读者的实用地图 ========== -->
+    <h2 id="mapping"><span class="sec-num">八</span>给读者的实用地图：怎么用这张知识<a href="#mapping" class="anchor">#</a></h2>
+    <p class="kicker">Mapping · 从概念到判断</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">看一家公司 / 一篇论文时可以怎么问</div>
+      <ol style="margin:.3em 0;">
+        <li><strong>他们工作在哪一层？</strong>（L0 / L1 / L2 / L3）—— 直接决定它能不能被同类比较。</li>
+        <li><strong>用了哪些方案的组合？</strong>—— 只做一个方案的公司很少，看清组合才能判断"缺哪块"。</li>
+        <li><strong>数据从哪里来？</strong>—— 遥操作时长、仿真管线、视频源，是 L0 的三条真实指标。</li>
+        <li><strong>动作头是什么？</strong>—— token 化、diffusion、flow matching 意味着不同的精度/速度权衡。</li>
+        <li><strong>System 2 有没有？</strong>—— 短任务不需要，长任务不用会崩。判断该系统"能不能做长链任务"。</li>
+        <li><strong>Sim2Real 依赖度多高？</strong>—— 依赖仿真越重、真机保真度越低，Demo 和上线的差距越大。</li>
+      </ol>
+    </div>
+
+    <p>回到你上一篇姊妹文最后遗留的那个问题——「π0.5 是不是生成式，跟 V-JEPA 2 比谁强」——用这张地图重答就是：<strong>π0.5 是 L3 的 VLA（其中动作头是生成式的 flow matching），V-JEPA 2 是 L1 的判别式世界模型；它们不在同一层，谁"强"取决于你的问题是"现在能不能装机干活"（π0.5 赢）还是"未来能不能少数据学新任务"（V-JEPA 2 赌的方向）</strong>。这就是"知识地图"的价值：把伪命题过滤掉，只留下真问题。</p>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-27 初稿 · 深度扫盲 v1，五大流派 + 六个术语 + 三家组合拆解
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      <a href="./2026-07_embodied-world-models-landscape.html">姊妹篇：广度地图 →</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
