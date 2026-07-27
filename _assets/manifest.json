@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-07-15T08:14:00.330416+00:00",
+  "generated_at": "2026-07-27T07:31:27.722836+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-07_embodied-world-models-landscape.html",
+      "title": "具身智能 × World Models全景地图与判断台",
+      "date": "2026-07-27",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "具身智能",
+        "世界模型",
+        "VLA",
+        "Sim2Real",
+        "范式地图"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-07_greenfield-bypass-phase-ii.html",
       "title": "Greenfield 战术 · Bypass Phase II",

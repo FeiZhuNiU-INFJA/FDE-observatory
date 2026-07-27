@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>具身智能 × 世界模型 · 全景地图与判断台 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：plasma-fuchsia（避开 pro/con/warn/info）═════════ */
+  :root {
+    --accent: #a21caf;
+    --accent-deep: #86198f;
+    --accent-ink: #701a75;
+    --accent-soft: color-mix(in srgb, #a21caf 10%, white);
+    --accent-glow: color-mix(in srgb, #a21caf 20%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #e879f9;
+    --accent-soft: color-mix(in srgb, #a21caf 24%, #1a1a22);
+    --accent-ink: #f5d0fe;
+    --accent-glow: color-mix(in srgb, #e879f9 22%, transparent);
+  }
+
+  /* SVG 文字字体统一（var() 在 SVG 属性里不解析，一律走 CSS） */
+  .lane text, .quad text, .timeline text, .funnel text { font-family: var(--mono); }
+  .lane .disp, .quad .disp, .timeline .disp, .funnel .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 通用动画 */
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 1.6s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -28; } }
+  .pulse { animation: livepulse 2.4s ease-in-out infinite; }
+  @keyframes livepulse { 0%,100% { opacity: 1 } 50% { opacity: .35 } }
+
+  /* ═════════ 视觉一：三条泳道地图 ═════════ */
+  .lane { margin: 1.8em 0; display: grid; gap: 1rem; }
+  .lane-row {
+    display: grid; grid-template-columns: 180px 1fr; gap: 1rem; align-items: stretch;
+    border: 1px solid var(--border); border-radius: 14px; padding: 1rem 1.1rem;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .lane-row:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .lane-row.hi { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  @media (max-width: 760px) { .lane-row { grid-template-columns: 1fr; } }
+  .lane-head { display: flex; flex-direction: column; gap: .35rem; justify-content: center; }
+  .lane-head .badge {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid var(--accent); padding: .15em .55em; border-radius: 999px;
+    align-self: flex-start;
+  }
+  .lane-head .name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); }
+  .lane-head .name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .68rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .2em; }
+  .lane-head .role { font-size: .82rem; color: var(--text-soft); line-height: 1.5; }
+  .lane-players { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  .lane-chip {
+    display: inline-flex; align-items: center; gap: .35em;
+    border: 1px solid var(--border-strong); border-radius: 8px; padding: .35em .65em;
+    font-family: var(--mono); font-size: .74rem; color: var(--text); background: var(--bg-soft);
+    transition: transform .15s, border-color .15s, color .15s;
+  }
+  .lane-chip:hover { transform: translateY(-1px); border-color: var(--accent); color: var(--accent); }
+  .lane-chip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .lane-chip.acad .dot { background: var(--info); }
+  .lane-chip.big .dot { background: var(--accent); }
+  .lane-chip.start .dot { background: var(--warn); }
+  .lane-legend {
+    display: flex; gap: 1rem; flex-wrap: wrap; font-family: var(--mono); font-size: .7rem;
+    color: var(--text-muted); margin-top: .3rem;
+  }
+  .lane-legend span { display: inline-flex; align-items: center; gap: .35em; }
+  .lane-legend .d { width: 8px; height: 8px; border-radius: 50%; }
+
+  /* ═════════ 视觉二：技术路线四象限 ═════════ */
+  .quad { margin: 1.8em 0; }
+  .quad-frame { position: relative; aspect-ratio: 16 / 11; max-width: 780px; margin: 0 auto; }
+  .quad-frame svg { width: 100%; height: 100%; display: block; }
+  .quad-cap { font-size: .82rem; color: var(--text-soft); text-align: center; margin: .6rem auto 0; max-width: 640px; }
+  .quad-legend { display: flex; justify-content: center; gap: 1.2rem; flex-wrap: wrap; margin-top: .8rem; font-family: var(--mono); font-size: .72rem; color: var(--text-muted); }
+  .quad-legend span { display: inline-flex; align-items: center; gap: .4em; }
+  .quad-legend .sw { width: 12px; height: 12px; border-radius: 3px; }
+
+  /* ═════════ 视觉三：时间线 ═════════ */
+  .timeline { margin: 1.8em 0; position: relative; }
+  .timeline-track {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: .3rem; position: relative;
+    padding: 3.2rem 0 3.4rem;
+  }
+  .timeline-track::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 2px;
+    background: linear-gradient(90deg, var(--border-strong), var(--accent) 40%, var(--accent) 70%, var(--warn));
+    transform: translateY(-50%);
+  }
+  .tl-col { position: relative; display: flex; flex-direction: column; align-items: center; }
+  .tl-year {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    background: var(--bg); border: 2px solid var(--accent); border-radius: 999px;
+    width: 46px; height: 46px; display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700; font-size: .82rem; color: var(--accent);
+    z-index: 2;
+  }
+  .tl-col.now .tl-year { background: var(--accent); color: white; box-shadow: 0 0 0 6px var(--accent-soft); }
+  .tl-events {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    width: 92%; max-width: 160px; display: flex; flex-direction: column; gap: .25rem;
+    font-family: var(--mono); font-size: .68rem; color: var(--text-soft); text-align: center; line-height: 1.35;
+  }
+  .tl-events.top { bottom: calc(50% + 32px); }
+  .tl-events.bot { top: calc(50% + 32px); }
+  .tl-events .tl-e {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 6px;
+    padding: .35em .5em; transition: border-color .15s, transform .15s;
+  }
+  .tl-events .tl-e:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .tl-events .tl-e b { font-family: var(--display); font-weight: 700; color: var(--text); }
+  @media (max-width: 860px) {
+    .timeline-track { grid-template-columns: 1fr; gap: 1rem; padding: 0; }
+    .timeline-track::before { left: 22px; right: auto; top: 0; bottom: 0; width: 2px; height: auto; background: linear-gradient(180deg, var(--border-strong), var(--accent) 40%, var(--warn)); }
+    .tl-col { flex-direction: row; align-items: flex-start; gap: .8rem; }
+    .tl-year { position: static; transform: none; flex-shrink: 0; }
+    .tl-events { position: static; transform: none; width: auto; max-width: none; text-align: left; }
+    .tl-events.top, .tl-events.bot { position: static; }
+  }
+
+  /* ═════════ 视觉四：数据金字塔漏斗 ═════════ */
+  .funnel { margin: 1.8em 0; display: grid; grid-template-columns: minmax(280px, 380px) 1fr; gap: 2rem; align-items: center; }
+  @media (max-width: 880px) { .funnel { grid-template-columns: 1fr; } .funnel-vis { max-width: 380px; margin: 0 auto; } }
+  .funnel-vis svg { width: 100%; height: auto; display: block; }
+  .funnel-legend { display: flex; flex-direction: column; gap: .7rem; }
+  .funnel-row {
+    display: grid; grid-template-columns: 82px 1fr; gap: .8rem; align-items: center;
+    padding: .6rem .7rem; border-radius: 10px; border: 1px solid var(--border); background: var(--surface);
+    transition: transform .15s, border-color .15s;
+  }
+  .funnel-row:hover { transform: translateX(3px); border-color: var(--accent); }
+  .funnel-row .qty {
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--c, var(--accent));
+    text-align: center; line-height: 1.1;
+  }
+  .funnel-row .qty small { display: block; font-family: var(--mono); font-weight: 500; font-size: .58rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-top: .2em; }
+  .funnel-row .lab { font-family: var(--display); font-weight: 700; font-size: .95rem; color: var(--text); }
+  .funnel-row .lab small { display: block; font-family: var(--mono); font-weight: 500; font-size: .72rem; color: var(--text-soft); margin-top: .2em; line-height: 1.4; }
+  .funnel-row.f1 { --c: var(--info); }
+  .funnel-row.f2 { --c: var(--accent); }
+  .funnel-row.f3 { --c: var(--warn); }
+  .funnel-row.f4 { --c: var(--con); }
+
+  /* ═════════ 判断台四色卡 ═════════ */
+  .verdicts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1.6em 0; }
+  @media (max-width: 760px) { .verdicts { grid-template-columns: 1fr; } }
+  .verdict {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem;
+    background: var(--surface); border-top: 3px solid var(--c);
+    transition: transform .2s; display: flex; flex-direction: column; gap: .55rem;
+  }
+  .verdict:hover { transform: translateY(-3px); }
+  .verdict.v1 { --c: var(--accent); }
+  .verdict.v2 { --c: var(--info); }
+  .verdict.v3 { --c: var(--warn); }
+  .verdict.v4 { --c: var(--pro); }
+  .verdict-head { display: flex; justify-content: space-between; gap: .6rem; align-items: baseline; }
+  .verdict-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0; }
+  .verdict-title .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .64rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .15em; }
+  .verdict-stamps { display: flex; gap: .3rem; flex-shrink: 0; }
+  .verdict-stamp {
+    font-family: var(--mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase;
+    border: 1px solid var(--c); color: var(--c); padding: .18em .45em; border-radius: 4px;
+  }
+  .verdict-body { font-size: .88rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .verdict-body b { color: var(--text); }
+  .verdict-key {
+    font-family: var(--mono); font-size: .7rem; color: var(--c); padding-top: .5rem;
+    border-top: 1px dashed var(--border-strong); margin-top: .2rem;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      具身智能 × 世界模型 · 全景地图<span class="brand-sub">跨市场 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>具身智能 <span class="en">× World Models</span><br />全景地图与判断台</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">三条泳道 · 四条路线 · 十八家玩家 · 一张 2026 中盘图</p>
+      <div class="doc-meta">
+        <span>2026-07-27</span>
+        <span>跨市场</span>
+        <span>具身智能</span>
+        <span>世界模型</span>
+        <span>VLA</span>
+        <span>Sim2Real</span>
+        <span>范式地图</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">3</div><div class="lab">技术泳道<br />认知 · 执行 · 基建</div></div>
+        <div class="hero-stat"><div class="num">4</div><div class="lab">路线阵营<br />生成/判别 × 端到端/分层</div></div>
+        <div class="hero-stat"><div class="num">18<small>+</small></div><div class="lab">主要玩家<br />学界 · 大厂 · 创业</div></div>
+        <div class="hero-stat"><div class="num">10<sup>4</sup><small>×</small></div><div class="lab">数据量级差<br />视频 → 真机</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        写作视角：本文不是综述，而是<strong>一张我的地图 + 四条判断</strong>——不追求穷举玩家，追求辨识出「哪条路径值得押注、哪条是被高估的噪音」。全文数据以 2026-07 公开信号为准，具体产品参数以官方为准。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心判断：</strong>具身智能与世界模型不是同一件事，而是<strong>被同一波资本、同一批话术、同一个「AGI 补短板」焦虑捆绑在一起的三条独立技术泳道</strong>——认知层的<strong>世界模型</strong>（Sora/Genie/JEPA 之争）、执行层的<strong>具身载体</strong>（Figure/1X/Optimus/PI 的硬件与 VLA 之争）、底层的<strong>数据与仿真基建</strong>（Cosmos/Isaac/合成数据飞轮）。三条泳道的时机窗口、瓶颈、护城河都不同。把它们当一个「赛道」谈，是叙事的胜利、判断的失败。这篇文章就是把它们拆开重画。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>三条泳道</strong>：世界模型（认知合成）· 具身载体（硬件+控制）· 数据/仿真基建（供给侧）——只有第三条决定长期护城河。</li>
+        <li><strong>四条路线</strong>：生成式世界模型（Sora/Genie/Cosmos）· 判别式世界模型（JEPA/V-JEPA）· 端到端 VLA（RT-2/OpenVLA/π0）· 分层规划（LLM-plan + 底层控制）——它们在互相偷师。</li>
+        <li><strong>硬件已到临界点</strong>：Figure/1X/Optimus/Unitree 把整机 BOM 打到 3-5 万美元，2026 内工业场景商用可期；家庭场景仍在 3-5 年外。</li>
+        <li><strong>被高估的是「世界模型 = AGI 补丁」叙事</strong>：生成视频再好，也不等于「懂物理」；LeCun 的 JEPA 路线赌的是这一点。</li>
+        <li><strong>真瓶颈是数据金字塔</strong>：互联网视频 &gt; 仿真 &gt; 遥操作 &gt; 真机自主，量级差 10<sup>4</sup>，保真度反向；谁能把漏斗打通，谁拿终局。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、为什么此刻 ========== -->
+    <h2 id="why-now"><span class="sec-num">一</span>为什么此刻同时热起来<a href="#why-now" class="anchor">#</a></h2>
+    <p class="kicker">Three Winds · 三股风同向</p>
+
+    <p>「具身」和「世界模型」两个词在 2024 年之前是两条独立的学术小道——前者活在机器人实验室，后者活在 Ha &amp; Schmidhuber 的 <cite>World Models</cite> (2018) 引用图里。它们在 2026 年之所以合流成一个「热点」，是三股风同向叠加的结果：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>风向</th><th>触发信号</th><th>把谁推上牌桌</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>生成范式外溢</strong></td>
+            <td>Sora (2024-02) 把「视频合成」变成可信的物理约束近似；Genie 系列 (DeepMind, 2024-2026) 把「可交互世界」变成可训练目标</td>
+            <td>DeepMind · OpenAI · Runway · World Labs · Odyssey</td>
+          </tr>
+          <tr>
+            <td><strong>LLM Scale 撞墙焦虑</strong></td>
+            <td>GPT-4/Claude/Gemini 拉平后，头部实验室转向「多模态 + 具身 + 物理」寻找下一条 scale 曲线；LeCun 反复公开唱衰「LLM 是死胡同」</td>
+            <td>Meta FAIR (JEPA) · Fei-Fei Li (World Labs) · Physical Intelligence</td>
+          </tr>
+          <tr>
+            <td><strong>机器人硬件成本骤降</strong></td>
+            <td>Unitree G1 定价 1.6 万美元；Figure 02 / 1X NEO 的 BOM 传闻在 3-5 万；特斯拉 Optimus Gen 2/3 路线把「量产」写进 KR</td>
+            <td>Figure · 1X · Tesla · Unitree · Agility · Apptronik · 银河通用 / 智元 / 宇树</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>三股风把两个原本互不相干的社区推到同一场发布会——但风向叠加不等于问题合并。<strong>「世界模型」是给认知层做外挂，「具身」是给执行层配硬件，它们只是共用了「让 AI 走进物理世界」的话术</strong>。这也是本文要先做的地图工作：把话术拆掉，把泳道分开。</p>
+
+    <!-- ========== 二、地图：三条泳道 ========== -->
+    <h2 id="lanes"><span class="sec-num">二</span>地图：三条泳道，各是什么<a href="#lanes" class="anchor">#</a></h2>
+    <p class="kicker">The Landscape · 泳道 &amp; 玩家阵营</p>
+
+    <p>下图把 18 家主要玩家按「他们真正在造什么」分到三条泳道。同一家公司可能横跨两条（如 NVIDIA、DeepMind），我按<strong>他们最强的一条</strong>归位。</p>
+
+    <div class="lane reveal">
+      <div class="lane-row hi">
+        <div class="lane-head">
+          <span class="badge">Lane 01</span>
+          <div class="name">世界模型<span class="en">World Model · Cognition</span></div>
+          <div class="role">把感知/交互压成可预测的潜在动力学，是「脑内仿真器」。产出：视频 / 潜空间 / 可控 rollout。</div>
+        </div>
+        <div class="lane-players">
+          <span class="lane-chip big"><span class="dot"></span>OpenAI · Sora</span>
+          <span class="lane-chip big"><span class="dot"></span>DeepMind · Genie 3</span>
+          <span class="lane-chip big"><span class="dot"></span>NVIDIA · Cosmos</span>
+          <span class="lane-chip acad"><span class="dot"></span>Meta FAIR · V-JEPA 2</span>
+          <span class="lane-chip start"><span class="dot"></span>World Labs (Fei-Fei)</span>
+          <span class="lane-chip start"><span class="dot"></span>Odyssey</span>
+          <span class="lane-chip start"><span class="dot"></span>Runway · Gen-4</span>
+          <span class="lane-chip start"><span class="dot"></span>Wayve · GAIA-2</span>
+        </div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lane-head">
+          <span class="badge">Lane 02</span>
+          <div class="name">具身载体<span class="en">Embodiment · Actuation</span></div>
+          <div class="role">硬件本体 + 端到端 / 分层控制策略。产出：能拿、能走、能装配的整机 + VLA/VLM 模型。</div>
+        </div>
+        <div class="lane-players">
+          <span class="lane-chip big"><span class="dot"></span>Tesla · Optimus Gen 3</span>
+          <span class="lane-chip start"><span class="dot"></span>Figure · Helix / F.02</span>
+          <span class="lane-chip start"><span class="dot"></span>1X · NEO</span>
+          <span class="lane-chip start"><span class="dot"></span>Physical Intelligence · π0/π0.5</span>
+          <span class="lane-chip start"><span class="dot"></span>Skild AI</span>
+          <span class="lane-chip start"><span class="dot"></span>Agility · Digit</span>
+          <span class="lane-chip start"><span class="dot"></span>Apptronik · Apollo</span>
+          <span class="lane-chip start"><span class="dot"></span>Unitree · G1 / H1</span>
+          <span class="lane-chip start"><span class="dot"></span>银河通用 / 智元 / 星动纪元</span>
+          <span class="lane-chip acad"><span class="dot"></span>Google DeepMind · RT-2 / Gemini-Robotics</span>
+        </div>
+      </div>
+
+      <div class="lane-row">
+        <div class="lane-head">
+          <span class="badge">Lane 03</span>
+          <div class="name">数据 / 仿真基建<span class="en">Data · Simulation</span></div>
+          <div class="role">合成数据、遥操作平台、仿真-真机迁移工具链。产出：Token 供给、飞轮基座。</div>
+        </div>
+        <div class="lane-players">
+          <span class="lane-chip big"><span class="dot"></span>NVIDIA · Isaac + Cosmos</span>
+          <span class="lane-chip big"><span class="dot"></span>DeepMind · SIMA</span>
+          <span class="lane-chip start"><span class="dot"></span>Wayve · GAIA (自驾)</span>
+          <span class="lane-chip start"><span class="dot"></span>Sereact · Pi 系数据平台</span>
+          <span class="lane-chip acad"><span class="dot"></span>Stanford · OpenVLA / RoboVerse</span>
+          <span class="lane-chip acad"><span class="dot"></span>UC Berkeley · Bridge / DROID</span>
+          <span class="lane-chip start"><span class="dot"></span>Covariant → Amazon</span>
+        </div>
+      </div>
+
+      <div class="lane-legend">
+        <span><span class="d" style="background:var(--info)"></span>学界 / 研究实验室</span>
+        <span><span class="d" style="background:var(--accent)"></span>大厂产品线</span>
+        <span><span class="d" style="background:var(--warn)"></span>创业公司</span>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">地图使用说明</div>
+      <p style="margin:.3em 0;">Lane 01 上的玩家 <strong>不必</strong>有硬件，Lane 02 上的玩家 <strong>必须</strong>有整机产品线，Lane 03 上的玩家 <strong>可以</strong>是纯软件/纯数据平台。判断一家公司「在哪条泳道」的标准，不是它 PR 说的赛道，而是<strong>它的估值故事被写在哪张幻灯片</strong>——World Labs 讲的是 spatial intelligence，估值给的是 Lane 01；Physical Intelligence 讲的是通用大脑，估值给的是 Lane 02 的软件溢价。</p>
+    </div>
+
+    <!-- ========== 三、四条路线 ========== -->
+    <h2 id="quadrant"><span class="sec-num">三</span>四条路线：技术分歧的坐标系<a href="#quadrant" class="anchor">#</a></h2>
+    <p class="kicker">The Quadrant · 生成 vs 判别，端到端 vs 分层</p>
+
+    <p>把技术路线拍到二维坐标系上：<strong>横轴</strong> = 世界模型是<em>生成式</em>（重建像素/视频）还是<em>判别式</em>（只学抽象表征）；<strong>纵轴</strong> = 控制是<em>端到端 VLA</em>（一个大模型直接输出动作）还是<em>分层</em>（LLM 规划 + 底层控制器）。</p>
+
+    <div class="quad reveal">
+      <div class="quad-frame">
+        <svg viewBox="0 0 780 540" role="img" aria-label="具身 × 世界模型四象限：生成/判别 × 端到端/分层">
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <!-- 坐标轴 -->
+          <g style="color:var(--text-muted)" stroke="currentColor" stroke-width="1.4">
+            <line x1="60" y1="480" x2="740" y2="480" marker-end="url(#ah)"/>
+            <line x1="60" y1="480" x2="60" y2="40" marker-end="url(#ah)"/>
+          </g>
+          <g style="color:var(--text-muted)" fill="currentColor" stroke="none">
+            <text class="disp" x="740" y="505" text-anchor="end" font-size="12">生成式世界模型 →</text>
+            <text class="disp" x="50" y="40" text-anchor="end" font-size="12" transform="rotate(-90 50 40)">端到端 VLA ↑</text>
+            <text x="60" y="505" font-size="10">判别 / 表征</text>
+            <text x="10" y="480" font-size="10">分层规划</text>
+          </g>
+
+          <!-- 象限背景 -->
+          <g opacity=".07">
+            <rect x="60" y="40" width="340" height="220" fill="var(--info)"/>
+            <rect x="400" y="40" width="340" height="220" fill="var(--accent)"/>
+            <rect x="60" y="260" width="340" height="220" fill="var(--warn)"/>
+            <rect x="400" y="260" width="340" height="220" fill="var(--pro)"/>
+          </g>
+
+          <!-- 象限标签 -->
+          <g style="color:var(--text-muted)" fill="currentColor" stroke="none">
+            <text class="disp" x="230" y="65" text-anchor="middle" font-size="13" style="fill:var(--info)">Q2 · JEPA + VLA</text>
+            <text x="230" y="82" text-anchor="middle" font-size="9.5">抽象表征 + 端到端</text>
+            <text class="disp" x="570" y="65" text-anchor="middle" font-size="13" style="fill:var(--accent)">Q1 · Sora-style + VLA</text>
+            <text x="570" y="82" text-anchor="middle" font-size="9.5">视频合成 + 端到端</text>
+            <text class="disp" x="230" y="290" text-anchor="middle" font-size="13" style="fill:var(--warn)">Q3 · 表征 + 分层</text>
+            <text x="230" y="307" text-anchor="middle" font-size="9.5">经典机器人路线</text>
+            <text class="disp" x="570" y="290" text-anchor="middle" font-size="13" style="fill:var(--pro)">Q4 · 生成 + 分层</text>
+            <text x="570" y="307" text-anchor="middle" font-size="9.5">数据引擎 + LLM 规划</text>
+          </g>
+
+          <!-- 玩家散点 -->
+          <g class="disp" font-size="10.5" fill="currentColor" stroke="none">
+            <!-- Q2 (左上：判别 + 端到端) -->
+            <g style="color:var(--info)">
+              <circle cx="180" cy="150" r="7"/><text x="192" y="154" style="fill:var(--text)">V-JEPA 2 (Meta)</text>
+              <circle cx="240" cy="200" r="7"/><text x="252" y="204" style="fill:var(--text)">OpenVLA (Stanford)</text>
+              <circle cx="140" cy="230" r="7"/><text x="152" y="234" style="fill:var(--text)">RT-2</text>
+            </g>
+            <!-- Q1 (右上：生成 + 端到端) -->
+            <g style="color:var(--accent)">
+              <circle cx="480" cy="130" r="8" class="pulse"/><text x="494" y="134" style="fill:var(--text)">π0 · π0.5 (PI)</text>
+              <circle cx="560" cy="170" r="8"/><text x="574" y="174" style="fill:var(--text)">Helix (Figure)</text>
+              <circle cx="660" cy="220" r="7"/><text x="622" y="240" style="fill:var(--text)">Gemini-Robotics</text>
+              <circle cx="580" cy="240" r="6"/><text x="592" y="244" style="fill:var(--text)">Skild</text>
+            </g>
+            <!-- Q3 (左下：判别 + 分层) -->
+            <g style="color:var(--warn)">
+              <circle cx="140" cy="360" r="6"/><text x="152" y="364" style="fill:var(--text)">Boston Dynamics (经典)</text>
+              <circle cx="240" cy="410" r="6"/><text x="252" y="414" style="fill:var(--text)">Agility · Digit</text>
+              <circle cx="180" cy="440" r="6"/><text x="192" y="444" style="fill:var(--text)">Unitree (硬件优先)</text>
+            </g>
+            <!-- Q4 (右下：生成 + 分层) -->
+            <g style="color:var(--pro)">
+              <circle cx="480" cy="360" r="8"/><text x="494" y="364" style="fill:var(--text)">Cosmos + Isaac (NVIDIA)</text>
+              <circle cx="580" cy="400" r="7"/><text x="594" y="404" style="fill:var(--text)">Genie 3 (DeepMind)</text>
+              <circle cx="660" cy="440" r="7"/><text x="546" y="460" style="fill:var(--text)">GAIA-2 (Wayve · 自驾)</text>
+              <circle cx="480" cy="430" r="6"/><text x="494" y="434" style="fill:var(--text)">World Labs / Odyssey</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+
+      <div class="quad-legend">
+        <span><span class="sw" style="background:var(--accent)"></span>Q1 · 押注生成式世界模型 + 大一统 VLA</span>
+        <span><span class="sw" style="background:var(--info)"></span>Q2 · LeCun 派：只学抽象表征</span>
+        <span><span class="sw" style="background:var(--warn)"></span>Q3 · 传统机器人 + 稳态控制</span>
+        <span><span class="sw" style="background:var(--pro)"></span>Q4 · 生成用作数据引擎，控制走分层</span>
+      </div>
+
+      <p class="quad-cap">四个象限中，Q1（Sora 风 + VLA）是 2026 年<strong>叙事密度最高</strong>的位置——PI 的 π0 系列、Figure 的 Helix 都在这里；Q2 是 <strong>LeCun 的孤军</strong>，学术强、产品弱；Q3 是<strong>老钱阵地</strong>，稳但天花板低；Q4 是<strong>被低估的组合</strong>，把生成模型退到「合成数据供给」而不是「大脑」，是我认为最有工程理性的一路。</p>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">分歧核心一句话</div>
+      <p style="margin:.3em 0;">Q1 派相信「用视频/像素级重建能逼近物理」；Q2 派（LeCun）相信「像素级重建是浪费算力，物理只在抽象空间成立」；Q4 派相信「生成模型别当大脑，只当数据工厂」。<strong>三派赌的是同一件事的三种可能——「什么才是学到物理」——这才是这个方向最深的分歧，不是拿去讲故事的 AGI 焦虑。</strong></p>
+    </div>
+
+    <!-- ========== 四、时间线 ========== -->
+    <h2 id="timeline"><span class="sec-num">四</span>时间线：五年，六个转折点<a href="#timeline" class="anchor">#</a></h2>
+    <p class="kicker">Timeline · 2022 → 2027 的判断锚</p>
+
+    <div class="timeline reveal">
+      <div class="timeline-track">
+        <div class="tl-col">
+          <div class="tl-year">2022</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>SayCan</b> · Google Robotics<br />LLM 首次进机器人回路</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>Cicero</b> · Meta<br />语言+策略雏形</div>
+          </div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-year">2023</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>PaLM-E</b> · Google<br />多模态具身首秀</div>
+            <div class="tl-e"><b>RT-2</b> · DeepMind<br />VLA 概念定型</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>Figure 01</b><br />人形创业开闸</div>
+          </div>
+        </div>
+        <div class="tl-col now">
+          <div class="tl-year">2024</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>Sora</b> · OpenAI<br />视频=物理近似</div>
+            <div class="tl-e"><b>Optimus Gen 2</b><br />量产路线明牌</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>OpenVLA</b> · Stanford<br />开源 VLA 基座</div>
+            <div class="tl-e"><b>Genie / Genie 2</b><br />可交互世界初现</div>
+          </div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-year">2025</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>π0 → π0.5</b> · PI<br />端到端 VLA 商用</div>
+            <div class="tl-e"><b>Cosmos</b> · NVIDIA<br />合成数据管线</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>Helix</b> · Figure<br />家务级 dexterous</div>
+            <div class="tl-e"><b>V-JEPA 2</b> · Meta<br />判别式反击</div>
+          </div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-year">2026</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>Genie 3</b> · DeepMind<br />可 prompt 世界</div>
+            <div class="tl-e"><b>Figure/1X 商用</b><br />工业场景规模化</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>Unitree G1 &lt; 2 万美元</b><br />硬件下探临界</div>
+            <div class="tl-e"><b>中国具身四小龙</b><br />银河/智元/星动/宇树</div>
+          </div>
+        </div>
+        <div class="tl-col">
+          <div class="tl-year">2027</div>
+          <div class="tl-events top">
+            <div class="tl-e"><b>路线分化</b><br />生成派 vs 判别派赛点</div>
+          </div>
+          <div class="tl-events bot">
+            <div class="tl-e"><b>家用场景</b><br />窗口仍未开</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>看这条线，我最想强调两点：<strong>①</strong> 2024 是转折——Sora + RT-2 + 硬件成本下探三条曲线在同一年相交，才让「具身+世界模型」变成一个共同话术；<strong>②</strong> 2026-2027 会分化——工业场景开始收敛（Figure/1X/Optimus 的 B 端案例），但家庭场景的窗口远远没开（安全、通用性、成本三重卡口）。<strong>叙事已到高点，产品才刚起步。</strong></p>
+
+    <!-- ========== 五、真正的瓶颈：数据金字塔 ========== -->
+    <h2 id="funnel"><span class="sec-num">五</span>真正的瓶颈：数据金字塔<a href="#funnel" class="anchor">#</a></h2>
+    <p class="kicker">The Bottleneck · 量级差 10⁴ 的漏斗</p>
+
+    <p>如果只挑一条最重要的判断带走，就是这一条：<strong>这个方向的护城河不是模型架构，是数据金字塔。</strong>互联网视频、仿真、遥操作、真机自主，四层数据的<strong>数量级差 10<sup>4</sup>，保真度反向</strong>——顶层数量最多但含义最模糊，底层数量最少但最接近真实分布。谁能把漏斗打通，谁拿终局。</p>
+
+    <div class="funnel reveal">
+      <div class="funnel-vis">
+        <svg viewBox="0 0 380 380" role="img" aria-label="数据金字塔：从互联网视频到真机自主，量级递减、保真度递增">
+          <defs>
+            <linearGradient id="fg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0284c7" stop-opacity=".9"/>
+              <stop offset="33%" stop-color="#a21caf" stop-opacity=".9"/>
+              <stop offset="66%" stop-color="#b45309" stop-opacity=".9"/>
+              <stop offset="100%" stop-color="#dc2626" stop-opacity=".9"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 漏斗（倒金字塔）-->
+          <g stroke="var(--border-strong)" stroke-width="1.5">
+            <polygon points="30,30 350,30 340,120 40,120" fill="url(#fg)" opacity=".22"/>
+            <polygon points="40,130 340,130 320,200 60,200" fill="url(#fg)" opacity=".38"/>
+            <polygon points="60,210 320,210 280,280 100,280" fill="url(#fg)" opacity=".55"/>
+            <polygon points="100,290 280,290 240,350 140,350" fill="url(#fg)" opacity=".78"/>
+          </g>
+
+          <!-- 层标签 -->
+          <g class="disp" font-size="12.5" fill="var(--text)" stroke="none" text-anchor="middle">
+            <text x="190" y="80">互联网视频</text>
+            <text x="190" y="170">仿真 Sim</text>
+            <text x="190" y="250">遥操作 Teleop</text>
+            <text x="190" y="326">真机自主</text>
+          </g>
+          <g font-size="9.5" fill="var(--text-muted)" stroke="none" text-anchor="middle">
+            <text x="190" y="98">~10¹² tokens · YouTube 级</text>
+            <text x="190" y="187">~10¹⁰ · Isaac/Cosmos</text>
+            <text x="190" y="267">~10⁸ · 人力标注</text>
+            <text x="190" y="343">~10⁶ · 部署反馈</text>
+          </g>
+
+          <!-- 右侧箭头：保真度 -->
+          <g style="color:var(--accent)" stroke="currentColor" stroke-width="1.4" fill="none">
+            <line x1="365" y1="45" x2="365" y2="345"/>
+            <path d="M365 345 l-4 -8 l8 0 z" fill="currentColor" stroke="none"/>
+          </g>
+          <text class="disp" x="365" y="30" text-anchor="middle" font-size="10" fill="var(--accent)" stroke="none">保真度 ↑</text>
+          <text class="disp" x="15" y="30" text-anchor="middle" font-size="10" fill="var(--info)" stroke="none">数量 ↑</text>
+          <g style="color:var(--info)" stroke="currentColor" stroke-width="1.4" fill="none">
+            <line x1="15" y1="45" x2="15" y2="345" stroke-dasharray="4 4"/>
+          </g>
+        </svg>
+      </div>
+
+      <div class="funnel-legend">
+        <div class="funnel-row f1">
+          <div class="qty">10<sup>12</sup><small>Tokens</small></div>
+          <div class="lab">互联网视频<small>YouTube / TikTok 级；便宜但语义模糊，没标签、没动作监督。V-JEPA 押注它。</small></div>
+        </div>
+        <div class="funnel-row f2">
+          <div class="qty">10<sup>10</sup><small>Frames</small></div>
+          <div class="lab">仿真 <em>Sim</em><small>Isaac Sim / Cosmos / MuJoCo，可标注、可域随机化，但物理保真度是永恒争议。</small></div>
+        </div>
+        <div class="funnel-row f3">
+          <div class="qty">10<sup>8</sup><small>Traj.</small></div>
+          <div class="lab">遥操作 <em>Teleop</em><small>Figure/PI/1X 招人工程；贵、慢，但含真机动作监督——当前 VLA 主力食粮。</small></div>
+        </div>
+        <div class="funnel-row f4">
+          <div class="qty">10<sup>6</sup><small>Deploy</small></div>
+          <div class="lab">真机自主<small>已部署机器人的自主运行数据；最珍贵、也最难拿。真正的护城河在此。</small></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">数据侧的战略含义</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>顶层选手</strong>（Meta/OpenAI/DeepMind）：手握视频语料库，赌「无监督视频预训练能长出物理直觉」——JEPA、Genie 都是这类。</li>
+        <li><strong>中层选手</strong>（NVIDIA/Wayve）：靠仿真管线做数据工厂，把 Cosmos/Isaac 当「合成 tokens 印钞机」——这是我最看好的位置。</li>
+        <li><strong>底层选手</strong>（Figure/PI/1X/Tesla）：把整机部署到工厂/家庭，用<strong>真机自主数据</strong>反哺——量少但含金量最高。谁先把整机装机量拉到 10K+，谁的模型迭代速率会陡增。</li>
+        <li><strong>穿透金字塔者</strong>：NVIDIA 是唯一同时在三层都有牌的公司（Cosmos 视频合成 + Isaac 仿真 + Jetson 部署）——所以我在下面的判断台里给 Lane 03 打「信心：高」。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 六、判断台 ========== -->
+    <h2 id="verdicts"><span class="sec-num">六</span>判断台：四条泳道，四张时机 / 信心票<a href="#verdicts" class="anchor">#</a></h2>
+    <p class="kicker">The Verdicts · 我给出的四张钤印</p>
+
+    <div class="verdicts reveal">
+      <div class="verdict v1">
+        <div class="verdict-head">
+          <div class="verdict-title">Lane 01 · 世界模型（生成派）<span class="en">Sora / Genie / Cosmos</span></div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：1-2 年</span><span class="verdict-stamp">信心：中</span></div>
+        </div>
+        <p class="verdict-body">生成质量真在暴涨，但<strong>「视频美 ≠ 懂物理」</strong>被系统性忽视。作为「合成数据引擎」它已在兑现价值；作为「大脑」它被高估。娱乐/游戏场景（ToC 侧）先落地，具身场景要靠 Q4 组合。</p>
+        <p class="verdict-key">押注方向：<b>把它当数据引擎，别当 AGI 补丁。</b></p>
+      </div>
+
+      <div class="verdict v2">
+        <div class="verdict-head">
+          <div class="verdict-title">Lane 01 · 世界模型（判别派 / JEPA）<span class="en">V-JEPA · 抽象表征</span></div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：2 年+</span><span class="verdict-stamp">信心：观察中</span></div>
+        </div>
+        <p class="verdict-body">LeCun 赌的是「预测像素是无效功」，路线学理漂亮但工业化落差大。V-JEPA 2 是关键指标——如果它的下游具身任务打不过 Q1 派，这条路会在 2027 年前被市场淘汰；如果打得过，会是范式级冲击。<strong>值得盯，但别 all in。</strong></p>
+        <p class="verdict-key">押注方向：<b>看 2027 年前的 benchmark 分晓。</b></p>
+      </div>
+
+      <div class="verdict v3">
+        <div class="verdict-head">
+          <div class="verdict-title">Lane 02 · 具身载体<span class="en">Figure / 1X / Optimus / PI / 国产四小龙</span></div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：6-12 月</span><span class="verdict-stamp">信心：高</span></div>
+        </div>
+        <p class="verdict-body">硬件成本已破临界点（BOM 3-5 万美元 → 1.6 万），VLA 端到端方案已能做家务级 dexterous。<strong>工业 B 端 12 个月内规模化</strong>（物流、装配、巡检）；家庭 C 端仍需 3-5 年（安全 + 长尾任务 + 售后）。硬件+软件复合创新窗口正在这里。</p>
+        <p class="verdict-key">押注方向：<b>B 端行业场景 + 数据反哺闭环。</b></p>
+      </div>
+
+      <div class="verdict v4">
+        <div class="verdict-head">
+          <div class="verdict-title">Lane 03 · 数据 / 仿真基建<span class="en">Cosmos + Isaac / OpenVLA / Roboverse</span></div>
+          <div class="verdict-stamps"><span class="verdict-stamp">时机：已发生</span><span class="verdict-stamp">信心：高</span></div>
+        </div>
+        <p class="verdict-body">是整条赛道<strong>唯一可复利的护城河层</strong>。NVIDIA 是全场唯一横跨金字塔三层的玩家。开源侧 OpenVLA / DROID / Bridge / Roboverse 正在成为「Hugging Face for Robots」。谁掌握合成+真机+仿真的三合一供给，谁拿终局利润。</p>
+        <p class="verdict-key">押注方向：<b>算力+仿真+真机数据三位一体。</b></p>
+      </div>
+    </div>
+
+    <!-- ========== 七、给我们的映射 ========== -->
+    <h2 id="mapping"><span class="sec-num">七</span>给我们的映射：ToB / ToC 双面看<a href="#mapping" class="anchor">#</a></h2>
+    <p class="kicker">Mapping · 从地图到行动</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">ToB 侧 · 具身机器人</div>
+        <h4 style="margin:.3rem 0;">窗口：12-24 个月的行业 SI 化</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);margin:0;">硬件本体正在被 Figure/1X/Optimus/宇树打成一层通用底座；真正的价值溢出层会是<strong>行业化的 VLA fine-tune + 场景 SI</strong>：物流、装配、巡检、洁净车间——每一个垂直场景都是一次数据+策略的独立飞轮。类比 2020 年前后的自动驾驶头部与 Tier-1 关系。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">ToC 侧 · 世界模型</div>
+        <h4 style="margin:.3rem 0;">窗口：18-36 个月的娱乐/游戏融合</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);margin:0;">Genie 3 / Odyssey / World Labs 的真正 killer app 不会是「让 AI 走进世界」，而是<strong>让人走进 AI 生成的世界</strong>——UGC 游戏、可 prompt 影视、开放世界沙盒的下一代。这条路的商业化比具身更早，但天花板取决于版权/内容生态。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">数据侧 · 我们能做什么</div>
+        <h4 style="margin:.3rem 0;">窗口：现在</h4>
+        <p style="font-size:.9rem;color:var(--text-soft);margin:0;">如果不做硬件、不做基础模型，最有价值的介入点是<strong>「数据/评测/工具链」</strong>：具身 eval 框架、合成-真机迁移工具、真机自主数据的隐私/权属治理。这是「淘金卖水」层，也是本站长期关注的 FDE / Evolution / Eval 方法论的自然延伸。</p>
+      </div>
+    </div>
+
+    <!-- ========== 八、待验证 ========== -->
+    <h2 id="open"><span class="sec-num">八</span>下一轮观察的关键信号<a href="#open" class="anchor">#</a></h2>
+    <p class="kicker">Signals to Watch · 三个季度内的验证点</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">验证信号清单</div>
+      <ol style="margin:.3em 0;">
+        <li><strong>V-JEPA 2 vs π0.5</strong> —— 谁在同一具身 benchmark（如 LIBERO / SimplerEnv / RoboArena）上先破 90% —— 决定生成派 vs 判别派赛点。</li>
+        <li><strong>Figure / 1X 装机量首次公开数据</strong> —— B 端商用是否真规模化，还是继续 demo 循环。</li>
+        <li><strong>Genie 3 是否公开 API + 用户可 prompt 交互世界</strong> —— 决定「世界模型 ToC 化」是否真发生。</li>
+        <li><strong>NVIDIA Cosmos 的商业化路径</strong> —— 是纯 SaaS，还是绑 Isaac + Jetson 卖硬件，决定谁能在数据层长期抽税。</li>
+        <li><strong>国产四小龙（银河/智元/星动/宇树）出海动作</strong> —— 硬件平权后，模型/场景/生态谁的溢价更持久。</li>
+        <li><strong>「具身 Foundation Model」是否出现真正意义上的第三方 API</strong>（类似 Claude/GPT-API 之于 LLM）—— 这是「大脑层」被通用化 vs 被垂直分裂的关键岔口。</li>
+      </ol>
+    </div>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-07-27 初稿 · 广度扫描 v1，覆盖 18 家玩家 + 4 张判断
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      <a href="../../readings/index.html">相关阅读材料 →</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+
+<style>
+  /* 无障碍：动画兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .pulse { animation: none; }
+  }
+</style>
+</body>
+</html>
