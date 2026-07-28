@@ -503,8 +503,8 @@
         <li><strong>L2 有两条主流：</strong>反事实回放（AgenTracer / AgentDebug）需要能重跑;Agent-as-a-Judge + 依赖图（GraphTracer / FALAT / AgentEval DAG）纯静态即可做。</li>
         <li><strong>L3 的关键分野：</strong>不是"能不能 replay"，而是"结论是论证还是证明"。A2P / CHIEF / Re-Ex 三样搭起来就是能交付的论证性 L3；CausalFlow / CAR 才是可选的验证性升级。</li>
         <li><strong>业界工具留了缺口：</strong>Langfuse / LangSmith / Braintrust / Phoenix 都要"上传全量数据"，正好卡在客户拒绝的门槛上——「只要打分和轨迹」的归因方案是差异化窗口。</li>
-        <li><strong>产品结构：</strong>三层同心圆——L1 客户资产不动、L2 开源评测框架（LIFT 通用化）分摊接入成本、L3 归因分析作为付费服务承接分析价值；<strong>skill 是这套结构的胶水</strong>。</li>
-        <li><strong>一句判断：</strong>方法论 GO、载体 GO、变现 GO——但落地次序是「先做 skill wedge → 拿真实反馈 → 再做通用化」，不要闭门造车。</li>
+        <li><strong>产品结构：</strong>三层同心圆是<strong>能力递进</strong>而非产品分层——L1 客户 agent 不动、L2 LIFT 评测层做数据入口、L3 归因层做分析出口。<strong>L2 与 L3 同框内嵌</strong>，跑一次评测就出报告；skill 是 L1 → L2 的胶水。</li>
+        <li><strong>一句判断：</strong>方法论 GO、载体 GO、一体化 GO——落地次序是「先做 skill wedge → 拿真实反馈 → 再做 LIFT 通用化 + 归因判据内嵌」，不要闭门造车。</li>
       </ul>
     </div>
 
@@ -1130,23 +1130,25 @@
 
     <p>过去做企业交付的默认模式是——写一份 SDK、给一份接入文档、派一个前场工程师帮客户接。这套模式在 Agent 评测这个场景里有个致命的成本：<strong>每个客户的 agent 编排框架都不一样</strong>（有的是 LangGraph、有的自研、有的走 dify），SDK 每接一个客户就要改一次，前场同学的时间被无限稀释。</p>
 
-    <p>换个思路——<strong>如果已经有一个开源评测框架，客户接入它的成本已经被开源社区分摊了；我们只在这个框架之上做归因分析</strong>，接入工作量就从"改客户系统"退化成"客户接一个开源工具 + 我们消费它的输出"。这是**我们内部一个已经在做的开源项目 LIFT** 的天然定位——只要把它从"进化增益专用"通用化成"任意 agent 评测框架"，就能作为这条路径的载体。</p>
+    <p>换个思路——<strong>如果已经有一个开源评测框架，客户接入它的成本已经被开源社区分摊了；我们把评测 + 归因都做进这个框架里</strong>，接入工作量就从"改客户系统"退化成"客户接一个开源工具 + 该工具原地出报告"。这是**我们内部一个已经在做的开源项目 LIFT** 的天然定位——只要把它从"进化增益专用"通用化成"任意 agent 评测框架"，就能作为这条路径的载体。</p>
+
+    <p><strong>归因不做成独立服务、不做二次接入</strong>——客户装一个 LIFT，跑一次评测，同时拿到分数 dashboard 和归因报告。产品心智一体化：<em>评测和归因是同一个动作的两半，不是两个产品</em>。</p>
 
     <div class="callout callout-info">
       <div class="callout-tag">关键假设</div>
       本节论证的所有产品结构，前提是 <strong>LIFT 可以通用化</strong>（从"专门评测进化增益"改造成"通用 agent 评测框架"）。这个改造是可行的（原有的 warmup / holdout 逻辑可以作为一个 preset 模式保留），工作量约 4–8 周，是走这条路径的先决投入。
     </div>
 
-    <h3 id="delivery-layers">8.2 三层同心圆：开源做载体、服务做变现</h3>
+    <h3 id="delivery-layers">8.2 三层同心圆：能力递进、同框交付</h3>
 
-    <div class="layers" role="group" aria-label="三层产品结构：客户 agent / 开源评测框架 / 归因分析服务">
-      <div class="layers-eyebrow">Product Layering</div>
-      <div class="layers-title">三层同心圆 · 每一层的角色都不一样</div>
+    <div class="layers" role="group" aria-label="三层能力结构：客户 agent / LIFT 评测层 / LIFT 归因层">
+      <div class="layers-eyebrow">Capability Layering</div>
+      <div class="layers-title">三层同心圆 · 一个产品、三层能力</div>
       <div class="layers-sub">
-        <strong>L1 客户资产</strong>——客户自己的 agent，我们不动。<strong>L2 开源载体</strong>——LIFT 通用化后作为接入桥梁，成本被开源社区分摊。<strong>L3 变现层</strong>——归因分析作为付费服务，消费 L2 产出的标准化 trace 与 scores。三层解耦，客户只用 L2 免费也能走通，升级 L3 才付费。
+        <strong>L1 客户资产</strong>——客户自己的 agent，我们不动。<strong>L2 评测层</strong>——LIFT 通用化后跑评测、打分、Langfuse 采集，这是"数据入口"。<strong>L3 归因层</strong>——A2P / CHIEF / Re-Ex 判据、标准化归因报告，这是"分析出口"。<strong>L2 与 L3 同属 LIFT</strong>，跑一次评测就出报告，不做独立服务、不做二次接入。三层是能力递进关系，不是产品分层。
       </div>
       <div class="layers-body">
-        <svg viewBox="0 0 460 380" role="img" aria-label="三层同心圆产品结构" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 460 380" role="img" aria-label="三层能力同心圆" xmlns="http://www.w3.org/2000/svg">
           <!-- 外圈：客户 agent -->
           <g style="color:var(--text-muted)">
             <circle cx="230" cy="200" r="170" fill="none" stroke="currentColor" stroke-width="1.5"
@@ -1155,29 +1157,29 @@
                   font-weight="600" class="disp">L1 · 客户的 Agent</text>
             <text x="230" y="60" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">CUSTOMER · 不动</text>
           </g>
-          <!-- 中圈：LIFT 开源 -->
+          <!-- 中圈：LIFT 评测层 -->
           <g style="color:var(--info)">
             <circle cx="230" cy="200" r="120" fill="var(--surface)"
                     stroke="currentColor" stroke-width="1.8" opacity=".95"/>
             <text x="230" y="95" text-anchor="middle" font-size="10.5" fill="currentColor"
-                  font-weight="700" class="disp">L2 · LIFT 开源评测框架</text>
-            <text x="230" y="110" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">OSS · 分发通道</text>
+                  font-weight="700" class="disp">L2 · LIFT 评测层</text>
+            <text x="230" y="110" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">EVAL · 数据入口</text>
             <text x="230" y="126" text-anchor="middle" font-size="8.5" fill="currentColor">跑评测 · 打分 · Langfuse trace</text>
           </g>
-          <!-- 内圈：归因分析 -->
+          <!-- 内圈：LIFT 归因层 -->
           <g style="color:var(--accent)">
             <circle cx="230" cy="200" r="70" fill="var(--accent-soft)"
                     stroke="currentColor" stroke-width="2.2"/>
             <text x="230" y="185" text-anchor="middle" font-size="11.5" fill="currentColor"
-                  font-weight="700" class="disp">L3 · 归因分析</text>
-            <text x="230" y="199" text-anchor="middle" font-size="8" fill="currentColor" opacity=".85">PAID · 核心价值</text>
+                  font-weight="700" class="disp">L3 · LIFT 归因层</text>
+            <text x="230" y="199" text-anchor="middle" font-size="8" fill="currentColor" opacity=".85">ATTRIBUTE · 分析出口</text>
             <text x="230" y="216" text-anchor="middle" font-size="8" fill="currentColor">A2P · CHIEF · Re-Ex</text>
             <text x="230" y="229" text-anchor="middle" font-size="8" fill="currentColor">标准化报告</text>
           </g>
           <!-- 底部注解 -->
           <text x="230" y="365" text-anchor="middle" font-size="8.5" fill="currentColor"
                 style="color:var(--text-muted)" font-family="var(--mono)">
-            开源分摊接入成本 · 服务消化数据价值
+            评测与归因同框 · Skill 是接入桥梁
           </text>
         </svg>
 
@@ -1191,28 +1193,28 @@
             </div>
           </div>
           <div class="layers-row oss">
-            <div class="layers-lvl">L2<small>OSS</small></div>
+            <div class="layers-lvl">L2<small>Eval</small></div>
             <div>
-              <div class="layers-name">LIFT 通用化后的开源评测框架</div>
-              <div class="layers-role">Distribution · Free</div>
-              <div class="layers-desc">承担"跑评测 + 采 trace + 出基础 dashboard"。开源分摊接入成本，也是<strong>获客通道</strong>。</div>
+              <div class="layers-name">LIFT · 评测层</div>
+              <div class="layers-role">Data Ingress</div>
+              <div class="layers-desc">跑评测 + 打分 + Langfuse trace 采集 + 基础 dashboard。这是<strong>标准化数据入口</strong>——L3 归因所需要的 trace 与 scores 在这一层就已就绪。</div>
             </div>
           </div>
           <div class="layers-row paid">
-            <div class="layers-lvl">L3<small>Paid</small></div>
+            <div class="layers-lvl">L3<small>Attr</small></div>
             <div>
-              <div class="layers-name">归因分析服务</div>
-              <div class="layers-role">Monetization · Core</div>
-              <div class="layers-desc">消费 L2 的 trace + scores，跑 A2P / CHIEF / Re-Ex 三件套，出标准化归因报告。这是<strong>变现层</strong>与真正的差异化。</div>
+              <div class="layers-name">LIFT · 归因层</div>
+              <div class="layers-role">Analysis Egress</div>
+              <div class="layers-desc">跑 A2P / CHIEF / Re-Ex 三件套，出标准化归因报告。<strong>与 L2 同框</strong>——跑一次评测就顺带出报告，不做二次接入。这是真正的差异化。</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <p>这个结构最有意思的地方在于——<strong>L2 免费也能走通</strong>。客户只用 L2 就已经比"什么都没有"好很多（有评测框架、有 dashboard、有 trace）；他要不要升级到 L3 完全是自愿的。<strong>不升级也是获客</strong>：L2 一直在按我们定义的契约产 trace，未来任何时候升级 L3，数据都是现成的。</p>
+    <p>这个结构最有意思的地方在于——<strong>L2 和 L3 在同一次运行里一起交付</strong>。客户不需要"先跑一遍评测，再申请一个归因服务，再上传 trace"——那种设计会让接入门槛翻倍。<strong>装一个 LIFT，跑一次评测，评测跑完的最后一步就是归因报告</strong>。</p>
 
-    <p>这就是<em>开源做载体、服务做变现</em>的经典结构——类似 LangChain 之于 LangSmith、Ray 之于 Anyscale。**skill 是这套结构的"胶水"**——它让 L1 → L2 的接入变成引导式的十分钟事件，而不是"读一本文档、写一堆胶水代码"的一周项目。</p>
+    <p>三层解耦的地方在于<em>能力粒度</em>而非<em>产品边界</em>：如果客户只想看 dashboard，L3 可以关掉；如果客户已经有别的评测框架，理论上 L3 也能吃"符合契约的 trace + scores"独立跑。<strong>skill 是这套结构的"胶水"</strong>——它让 L1 → L2 的接入变成引导式的十分钟事件，而不是"读一本文档、写一堆胶水代码"的一周项目。</p>
 
     <h3 id="delivery-differentiator">8.3 差异化在哪：不是评测跑得好，而是 skill × 归因</h3>
 
@@ -1244,7 +1246,7 @@
 
     <div class="callout callout-warn">
       <div class="callout-tag">如果三样只做一样</div>
-      单独做 skill 引导——只是好用的 CLI，无法变现。单独做归因分析——没有获客通道，卖不动。单独做通用评测——直面 LangSmith 的正面竞争。<strong>只有三样绑一起才是差异化。</strong>
+      单独做 skill 引导——只是好用的 CLI，撑不起价值。单独做归因分析——缺少接入通道，用户接不进来。单独做通用评测——直面 LangSmith 的正面竞争。<strong>只有三样绑一起才是差异化。</strong>
     </div>
 
     <h3 id="delivery-roadmap">8.4 落地路径：先做 wedge，再做通用化</h3>
@@ -1272,20 +1274,20 @@
       </div>
       <div class="steps-card reveal d2">
         <div class="steps-num">3</div>
-        <div class="steps-eyebrow">Decouple &amp; Scale</div>
-        <div class="steps-name">归因分析先独立起步</div>
+        <div class="steps-eyebrow">Attribution In-Framework</div>
+        <div class="steps-name">归因判据内嵌到 LIFT</div>
         <div class="steps-desc">
-          归因分析<strong>不要马上和 LIFT 深度耦合</strong>。先做成独立服务，输入接口是"任何符合契约的 trace + scores"。等 LIFT 通用化到位，再把 LIFT 作为归因分析的<strong>首选默认数据源</strong>（不是唯一）。这样即使 LIFT 卡壳，归因分析可以独立活着。
+          归因<strong>不做成独立服务</strong>——评测跑完的最后一步就是出报告。先把 A2P / CHIEF / Re-Ex 三件套作为 LIFT 的一个 built-in analyzer 落地，输入是本次评测已经在手的 trace + scores，输出是标准化报告。<strong>输入契约保持通用</strong>（也能吃外部 trace），但默认路径是"跑评测→出报告"一体化。
         </div>
-        <div class="steps-when">周期：与 1/2 并行<br/>产出：独立归因服务 API</div>
+        <div class="steps-when">周期：与 1/2 并行<br/>产出：LIFT 内置归因 analyzer</div>
       </div>
     </div>
 
-    <p>这三步的核心逻辑是<strong>解耦风险</strong>：任何一步做不成，其他两步都还能独立活着。skill 做不出效果——归因服务还能独立卖；LIFT 通用化卡壳——skill + 归因服务照样能对接 LangSmith / lm-eval-harness 的 trace；归因分析不好卖——LIFT 加 skill 至少还是个不错的开源项目。三条腿走路，比一条腿蹦要稳。</p>
+    <p>这三步的核心逻辑是<strong>能力递进但不做二次接入</strong>：客户装一次 LIFT 就能拿到"评测 + 归因"的完整闭环。归因判据（A2P / CHIEF / Re-Ex）内嵌为 LIFT 的一个 analyzer 模块，输入契约仍然保持通用——如果未来客户想让归因去消费 LangSmith / lm-eval-harness 的 trace，也不会被架构锁死。<strong>一体化交付是默认路径，跨框架能力是可选路径。</strong></p>
 
     <div class="callout callout-accent">
       <div class="callout-tag">一句话总结</div>
-      <strong>LIFT 是评测的锅，我们的归因分析是评完之后的品菜师。锅可以借开源社区的、可以让客户免费用；但品菜师是核心价值，是变现层。skill 是这两层之间的胶水，让接入变成十分钟的事。</strong>三层同心圆——L1 客户资产不动、L2 开源分摊接入成本、L3 服务承接分析价值。
+      <strong>LIFT 是评测的锅，我们的归因分析是评完之后的品菜师——但锅和品菜师是同一个人。</strong>装一次 LIFT，跑一次评测，评测跑完就出归因报告，不做独立服务、不做二次接入。skill 让接入变成十分钟的事；评测与归因同框，让客户拿到完整闭环——这是三层同心圆的核心，也是差异化的落点。
     </div>
 
     <!-- ========== 九、判断印章 ========== -->
@@ -1297,13 +1299,13 @@
         <li><strong>时机 · 进行中：</strong>业界几家工具型平台在 2025-2026 都陆续加入 trajectory-level 分析，但都要求"全量数据 + 平台自主接入"——留出了「轻合约、专注归因报告」的产品缺口。<strong>此刻切入正当其时。</strong></li>
         <li><strong>信心 · 中：</strong>方法论层面已经足够扎实（十多篇成熟工作 + 多个开源实现）；不确定性主要在<em>客户交付的数据粒度</em>与 <em>LIFT 通用化的执行速度</em>——这两条走通了就是完整闭环。</li>
         <li><strong>必须记住的第一句：</strong>L3 归因不是必须依赖 replay 的；「replay 是<em>验证</em>的前提，不是<em>归因</em>的前提」。第一版就靠论证性 L3 落地，把 replay 作为付费升级预留。</li>
-        <li><strong>必须记住的第二句：</strong>LIFT 是评测的锅，归因分析是品菜师。<strong>三层同心圆</strong>——开源做载体、服务做变现、skill 做胶水——不是三选一，是三个一起做才能有差异化。</li>
+        <li><strong>必须记住的第二句：</strong>LIFT 是评测的锅，归因分析是品菜师——<strong>但锅和品菜师是同一个人</strong>。评测与归因同框内嵌，跑一次评测就出报告；不做独立归因服务、不做二次接入。三层同心圆是能力递进，不是产品分层。</li>
       </ul>
     </div>
 
     <hr />
     <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
-      修订记录：2026-07-28 初稿（基于会议纪要脱敏后的调研整理）· 2026-07-28 增补第八章「接入方案：开源框架 + Skill + 归因分析」
+      修订记录：2026-07-28 初稿（基于会议纪要脱敏后的调研整理）· 2026-07-28 增补第八章「接入方案：开源框架 + Skill + 归因分析」· 2026-07-28 修订 8.2/8.4/印章——归因内嵌 LIFT、评测与归因同框
     </p>
 
     <div class="doc-footer">
