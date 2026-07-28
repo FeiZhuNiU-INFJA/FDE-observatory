@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-28T08:51:21.541969+00:00",
+  "generated_at": "2026-07-28T09:44:44.250427+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -511,6 +511,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-07_20vc-glean-arvind-app-layer.html",
+      "title": "模型公司赢不下应用层 Why OpenAI & Anthropic Won't Win the App Layer",
+      "date": "2026-07-28",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "模型层商品化",
+        "开源模型",
+        "机构学习护城河",
+        "幂律使用",
+        "访谈解读"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-07_field-guide-to-fable-unknowns.html",
       "title": "地图不是领土 Field Guide to Fable · Finding Your Unknowns",
