@@ -1,6 +1,23 @@
 {
-  "generated_at": "2026-07-27T08:25:56.103685+00:00",
+  "generated_at": "2026-07-28T08:04:39.550815+00:00",
   "insights": [
+    {
+      "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
+      "title": "Agent Badcase 归因 · 方法论调研",
+      "date": "2026-07-28",
+      "audience": "tob",
+      "status": "草案",
+      "tags": [
+        "Agent 评测",
+        "归因分析",
+        "方法论调研"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-07_embodied-technical-schools.html",
       "title": "具身智能技术方案 · Five Schools五大流派扫盲",

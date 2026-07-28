@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent Badcase 归因 · 方法论调研 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：inquest-plum —— 「归因 / 证据 / 审讯」 ═════════ */
+  :root {
+    --accent: #6d28d9;
+    --accent-deep: #5b21b6;
+    --accent-ink: #4c1d95;
+    --accent-soft: color-mix(in srgb, #6d28d9 10%, white);
+    --accent-glow: color-mix(in srgb, #6d28d9 22%, transparent);
+    --accent-mist: #f5f3ff;
+  }
+  [data-theme="dark"] {
+    --accent: #c4b5fd;
+    --accent-deep: #a78bfa;
+    --accent-ink: #ddd6fe;
+    --accent-soft: color-mix(in srgb, #c4b5fd 20%, #14121c);
+    --accent-glow: color-mix(in srgb, #c4b5fd 26%, transparent);
+    --accent-mist: #1e1b3a;
+  }
+
+  /* SVG 内文字统一走 CSS（DESIGN_STANDARD §4.3） */
+  .stages text, .stack text, .forkroad text, .contract text, .layers text { font-family: var(--mono); }
+  .stages .disp, .stack .disp, .forkroad .disp, .contract .disp, .layers .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 通用动画 */
+  .dash-flow { stroke-dasharray: 5 8; animation: dashflow 3.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -52; } }
+  .pulse-dot { animation: pulse-dot 3.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse-dot { 0%,100%{opacity:.35;} 50%{opacity:1;} }
+
+  /* ═════════════════════════════════════════════════════
+     视觉一：三阶段评测链路 + 反向切入
+     ═════════════════════════════════════════════════════ */
+  .stages {
+    margin: 1.8em 0 2em;
+    padding: 1.4rem 1.2rem 1.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 5%, var(--surface)) 0%,
+      var(--surface) 100%);
+    box-shadow: var(--shadow);
+  }
+  .stages-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .4rem;
+  }
+  .stages-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .stages-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.1rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .stages-sub {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.55; margin-bottom: 1rem; max-width: 720px;
+  }
+  .stages svg {
+    display: block; width: 100%; height: auto;
+    max-width: 900px; margin: 0 auto;
+  }
+  .stages-caption {
+    font-size: .78rem; color: var(--text-muted);
+    text-align: center; margin-top: .4rem;
+    font-family: var(--mono); letter-spacing: .04em;
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉二：归因三层栈 L1 / L2 / L3
+     ═════════════════════════════════════════════════════ */
+  .stack { margin: 1.8em 0 1.8em; display: grid; gap: .8rem; }
+  .stack-row {
+    display: grid; grid-template-columns: 92px 1fr 260px;
+    gap: 1rem; align-items: stretch;
+    padding: 1rem 1.2rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .stack-row:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .stack-badge {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    border-right: 1px dashed var(--border);
+    padding-right: .8rem;
+  }
+  .stack-badge .lvl {
+    font-family: var(--display); font-weight: 800; font-size: 1.9rem;
+    line-height: 1; color: var(--accent);
+    letter-spacing: -.02em;
+  }
+  .stack-badge .lvl small {
+    font-size: .5em; font-weight: 600; color: var(--text-muted);
+    letter-spacing: .12em; text-transform: uppercase;
+    display: block; margin-top: .15rem;
+  }
+  .stack-body { padding: 0 .5rem; }
+  .stack-q {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .12em;
+    color: var(--text-muted); text-transform: uppercase; margin-bottom: .25rem;
+  }
+  .stack-h {
+    font-family: var(--display); font-weight: 700; font-size: 1.05rem;
+    color: var(--text-strong); margin-bottom: .3rem;
+  }
+  .stack-desc { font-size: .88rem; line-height: 1.6; color: var(--text-soft); }
+  .stack-out {
+    padding: .7rem .85rem;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    font-size: .78rem; line-height: 1.55;
+    color: var(--text-strong);
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .stack-out-tag {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .3rem;
+  }
+  @media (max-width: 820px) {
+    .stack-row { grid-template-columns: 68px 1fr; gap: .6rem; }
+    .stack-out { grid-column: 1 / -1; }
+    .stack-badge { border-right: none; border-bottom: 1px dashed var(--border); padding: 0 0 .5rem 0; flex-direction: row; gap: .5rem; }
+    .stack-badge .lvl { font-size: 1.4rem; }
+    .stack-badge .lvl small { display: inline; margin-top: 0; margin-left: .3rem; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉三：L3 分岔路 —— 论证性 vs 验证性
+     ═════════════════════════════════════════════════════ */
+  .forkroad {
+    display: grid; grid-template-columns: 1fr auto 1fr;
+    gap: 1rem; margin: 1.8em 0 1.6em;
+    align-items: stretch;
+  }
+  .fork-side {
+    padding: 1.2rem 1rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column;
+  }
+  .fork-side.soft {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--info) 6%, var(--surface)) 0%,
+      var(--surface) 100%);
+    border-color: color-mix(in srgb, var(--info) 30%, var(--border));
+  }
+  .fork-side.hard {
+    background: linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 8%, var(--surface)) 0%,
+      var(--surface) 100%);
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  }
+  .fork-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; margin-bottom: .5rem;
+    display: flex; align-items: center; gap: .5em;
+  }
+  .fork-side.soft .fork-eyebrow { color: var(--info); }
+  .fork-side.hard .fork-eyebrow { color: var(--accent); }
+  .fork-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: currentColor;
+    box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 15%, transparent);
+  }
+  .fork-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.05rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .fork-sub {
+    font-size: .78rem; color: var(--text-muted);
+    line-height: 1.5; margin-bottom: .8rem;
+  }
+  .forkroad svg {
+    display: block; width: 100%; max-width: 320px;
+    height: auto; margin: .3rem auto .5rem;
+  }
+  .fork-props {
+    display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .8rem;
+    margin: .5rem 0 .6rem;
+    font-family: var(--mono); font-size: .72rem;
+  }
+  .fork-props .k { color: var(--text-muted); }
+  .fork-props .v { color: var(--text-strong); }
+  .fork-side.soft .fork-props .v { color: var(--info); }
+  .fork-side.hard .fork-props .v { color: var(--accent); }
+  .fork-verdict {
+    margin-top: auto;
+    padding: .55rem .7rem;
+    font-family: var(--mono); font-size: .74rem;
+    border-radius: 8px;
+    border: 1px dashed var(--border);
+    line-height: 1.55; color: var(--text-strong);
+  }
+  .fork-side.soft .fork-verdict { border-color: color-mix(in srgb, var(--info) 40%, var(--border)); }
+  .fork-side.hard .fork-verdict { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); background: var(--accent-soft); }
+  .fork-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-size: 1.6rem;
+    font-family: var(--display); font-weight: 700;
+    letter-spacing: .1em;
+  }
+  @media (max-width: 860px) {
+    .forkroad { grid-template-columns: 1fr; }
+    .fork-arrow { transform: rotate(90deg); padding: .3rem 0; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉四：数据契约 —— 四类输入 → 归因输出
+     ═════════════════════════════════════════════════════ */
+  .contract {
+    margin: 1.8em 0 1.6em;
+    padding: 1.4rem 1rem 1.2rem;
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-radius: 16px;
+    background:
+      radial-gradient(ellipse at center top,
+        color-mix(in srgb, var(--accent) 8%, transparent) 0%,
+        transparent 60%),
+      var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .contract-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .4rem;
+  }
+  .contract-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .contract-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.1rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .contract-sub {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.55; margin-bottom: 1rem; max-width: 680px;
+  }
+  .contract svg {
+    display: block; width: 100%; height: auto;
+    max-width: 820px; margin: 0 auto;
+  }
+  .contract-caption {
+    font-size: .78rem; color: var(--text-muted);
+    text-align: center; margin-top: .5rem;
+    font-family: var(--mono); letter-spacing: .04em;
+  }
+
+  /* 匹配矩阵表格微调 */
+  .fit-matrix td.fit-ok { color: var(--pro); font-family: var(--mono); font-weight: 600; }
+  .fit-matrix td.fit-mid { color: var(--warn); font-family: var(--mono); font-weight: 600; }
+  .fit-matrix td.fit-no { color: var(--con); font-family: var(--mono); font-weight: 600; }
+
+  /* ═════════════════════════════════════════════════════
+     视觉五：三层同心圆 · 接入方案分层
+     ═════════════════════════════════════════════════════ */
+  .layers {
+    margin: 1.8em 0 1.8em;
+    padding: 1.6rem 1rem 1.2rem;
+    border: 1.5px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    border-radius: 16px;
+    background:
+      radial-gradient(ellipse at center top,
+        color-mix(in srgb, var(--accent) 8%, transparent) 0%,
+        transparent 60%),
+      var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .layers-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--accent);
+    display: flex; align-items: center; gap: .5em;
+    margin-bottom: .4rem;
+  }
+  .layers-eyebrow::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .layers-title {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1.1rem; margin-bottom: .3rem;
+    color: var(--text-strong);
+  }
+  .layers-sub {
+    font-size: .82rem; color: var(--text-muted);
+    line-height: 1.55; margin-bottom: 1rem; max-width: 720px;
+  }
+  .layers-body {
+    display: grid; grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 1.4rem;
+    align-items: center;
+  }
+  .layers svg {
+    display: block; width: 100%; height: auto;
+    max-width: 480px; margin: 0 auto;
+  }
+  .layers-legend {
+    display: flex; flex-direction: column; gap: .7rem;
+  }
+  .layers-row {
+    display: grid; grid-template-columns: 40px 1fr;
+    gap: .8rem;
+    padding: .7rem .9rem;
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    align-items: start;
+    transition: border-color .18s ease, transform .18s ease;
+  }
+  .layers-row:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); transform: translateX(3px); }
+  .layers-row.paid { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); background: var(--accent-soft); }
+  .layers-row.oss { border-color: color-mix(in srgb, var(--info) 40%, var(--border)); }
+  .layers-row.customer { background: color-mix(in srgb, var(--text-muted) 5%, var(--surface)); }
+  .layers-lvl {
+    font-family: var(--display); font-weight: 800;
+    font-size: 1.3rem; line-height: 1;
+    text-align: center;
+    color: var(--accent);
+  }
+  .layers-row.oss .layers-lvl { color: var(--info); }
+  .layers-row.customer .layers-lvl { color: var(--text-muted); }
+  .layers-lvl small {
+    font-family: var(--mono); font-size: .55em;
+    font-weight: 600; letter-spacing: .1em;
+    display: block; margin-top: .2rem;
+    color: var(--text-muted);
+  }
+  .layers-name {
+    font-family: var(--display); font-weight: 700;
+    font-size: .95rem; color: var(--text-strong);
+    margin-bottom: .15rem;
+  }
+  .layers-role {
+    font-family: var(--mono); font-size: .7rem;
+    letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-muted); margin-bottom: .3rem;
+  }
+  .layers-desc {
+    font-size: .78rem; line-height: 1.55;
+    color: var(--text-soft);
+  }
+  @media (max-width: 860px) {
+    .layers-body { grid-template-columns: 1fr; }
+    .layers svg { max-width: 360px; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉六：三步落地 timeline
+     ═════════════════════════════════════════════════════ */
+  .steps { margin: 2em 0 1.8em; display: grid; gap: 1rem; grid-template-columns: repeat(3, 1fr); padding-top: 14px; }
+  .steps-card {
+    padding: 1.3rem 1.1rem 1rem;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: visible;
+    transition: transform .18s ease, border-color .18s ease;
+  }
+  .steps-card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .steps-num {
+    position: absolute; top: -14px; left: 14px;
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: white;
+    font-family: var(--display); font-weight: 700;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 8px var(--accent-glow);
+    z-index: 2;
+  }
+  [data-theme="dark"] .steps-num { color: #1a1424; }
+  .steps-eyebrow {
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+    margin-top: .3rem; margin-bottom: .35rem;
+  }
+  .steps-name {
+    font-family: var(--display); font-weight: 700;
+    font-size: 1rem; color: var(--text-strong);
+    margin-bottom: .35rem;
+  }
+  .steps-desc { font-size: .82rem; line-height: 1.55; color: var(--text-soft); margin-bottom: .5rem; }
+  .steps-when {
+    font-family: var(--mono); font-size: .72rem;
+    color: var(--text-muted);
+    padding-top: .5rem;
+    border-top: 1px dashed var(--border);
+  }
+  @media (max-width: 860px) {
+    .steps { grid-template-columns: 1fr; }
+  }
+
+  /* Reduced-motion 兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow { animation: none; }
+    .pulse-dot { animation: none; opacity: .8; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      Agent Badcase 归因 · 方法论调研<span class="brand-sub">ToB · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Agent Badcase 归因 · <span style="color:var(--accent);">方法论调研</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        当客户只愿意交出「轨迹 · 产物 · 打分 · 维度」四类数据时，学界与工业界能为「badcase 归因报告」提供什么样的方法论底盘？
+      </p>
+      <div class="doc-meta">
+        <span>2026-07-28</span>
+        <span>ToB</span>
+        <span>Agent 评测</span>
+        <span>归因分析</span>
+        <span>方法论调研</span>
+        <span>草案</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">3<small>层</small></div>
+          <div class="lab">L1 分类 / L2 定位 / L3 归因</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">4<small>类</small></div>
+          <div class="lab">客户约定交付的数据：轨迹 · 产物 · 打分 · 维度</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">3<small>同心圆</small></div>
+          <div class="lab">客户 agent / 开源载体 / 归因服务</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">15+</div>
+          <div class="lab">值得复用的学界工作与开源方案</div>
+        </div>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem; margin-top: .6rem;">
+        起点：一位团队负责人在会上抛出一个具体的方法论问题——「我们要给客户输出 badcase 归因报告，学界现有的方法论都有哪些？我们该抄哪几条？」本文是围绕这个问题的一次调研整理。
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>「Agent badcase 归因」不是一个方法，而是一条<strong>三层堆叠的栈</strong>——先把错误<em>分类（L1）</em>、再把错误<em>定位到步（L2）</em>、最后回答<em>为什么错、怎么改（L3）</em>。这三层各有成熟方法论，且都<strong>不必依赖对 agent 的 replay 能力</strong>。真正的分野不在"能不能重跑"，而在**报告结论到底是「论证」还是「证明」**——这两条 L3 路径都成立，只是可信度不同。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>问题栈化：</strong>Badcase 归因 = 「L1 是哪类错？」+「L2 是哪一步先错？」+「L3 为什么错、怎么改？」——把三个问题拆开，每一层都能独立落地。</li>
+        <li><strong>L1 不用自己发明：</strong>AgentErrorTaxonomy（Memory / Reflection / Planning / Action / System）+ Future AGI 五分类（Planning / Tool / Retrieval / Reasoning / Safety）交叉即可覆盖 80% 场景。</li>
+        <li><strong>L2 有两条主流：</strong>反事实回放（AgenTracer / AgentDebug）需要能重跑;Agent-as-a-Judge + 依赖图（GraphTracer / FALAT / AgentEval DAG）纯静态即可做。</li>
+        <li><strong>L3 的关键分野：</strong>不是"能不能 replay"，而是"结论是论证还是证明"。A2P / CHIEF / Re-Ex 三样搭起来就是能交付的论证性 L3；CausalFlow / CAR 才是可选的验证性升级。</li>
+        <li><strong>业界工具留了缺口：</strong>Langfuse / LangSmith / Braintrust / Phoenix 都要"上传全量数据"，正好卡在客户拒绝的门槛上——「只要打分和轨迹」的归因方案是差异化窗口。</li>
+        <li><strong>产品结构：</strong>三层同心圆——L1 客户资产不动、L2 开源评测框架（LIFT 通用化）分摊接入成本、L3 归因分析作为付费服务承接分析价值；<strong>skill 是这套结构的胶水</strong>。</li>
+        <li><strong>一句判断：</strong>方法论 GO、载体 GO、变现 GO——但落地次序是「先做 skill wedge → 拿真实反馈 → 再做通用化」，不要闭门造车。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、用户故事 ========== -->
+    <h2 id="story"><span class="sec-num">一</span>用户故事：为什么要现在做这件事<a href="#story" class="anchor">#</a></h2>
+    <p class="kicker">— The evaluation chain and why we enter from the last stage</p>
+
+    <p>先讲清楚问题的来源。团队正在承接客户侧 Agent 系统的评测工作，链路很长——从跑数据、打分、到最后的归因报告，中间夹着人工评审、多模态判官、跨实验对比等一大串环节。团队内部的讨论围绕着一个问题：<strong>作为交付方，我们从哪一段切入最有价值？</strong></p>
+
+    <p>共识是把整条链路拆成三段，然后<em>反过来做</em>——不从"数据"往"报告"推，而从"报告"倒推回"数据"。原因不复杂：<strong>报告是客户唯一会拿去汇报的东西</strong>，前面所有环节的价值都要靠它来兑现；同时它也是唯一一段可以「不动客户系统、也不要客户全量数据」就能建的能力。</p>
+
+    <div class="stages" role="group" aria-label="评测三阶段与反向切入">
+      <div class="stages-eyebrow">Evaluation Chain</div>
+      <div class="stages-title">三阶段评测链路 · 反向切入</div>
+      <div class="stages-sub">
+        采样阶段客户主导（我们不介入）；打分阶段有共创空间（多模态判官设计）；归因阶段最后交付，但反过来是<strong>第一个动手</strong>的地方——因为它只要打分产物就能做，不需要重跑 agent、不需要客户全量数据。
+      </div>
+      <svg viewBox="0 0 900 260" role="img" aria-label="三阶段评测链路与反向推进方向"
+           xmlns="http://www.w3.org/2000/svg">
+        <!-- 三个 stage 卡片 -->
+        <g style="color:var(--text-muted)" stroke="currentColor" fill="none">
+          <!-- Stage 1: 采样 -->
+          <g transform="translate(30,60)">
+            <rect x="0" y="0" width="240" height="130" rx="12" stroke-width="1.4" stroke-dasharray="4 4"/>
+            <text x="120" y="26" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7" class="disp">① 采样</text>
+            <text x="120" y="46" text-anchor="middle" font-size="9" fill="currentColor">SAMPLING</text>
+            <text x="120" y="72" text-anchor="middle" font-size="8.5" fill="currentColor">跑 agent · 采数据</text>
+            <text x="120" y="90" text-anchor="middle" font-size="8.5" fill="currentColor">客户环境 · 客户主导</text>
+            <text x="120" y="115" text-anchor="middle" font-size="8" fill="currentColor" opacity=".55">— 我们不介入 —</text>
+          </g>
+          <!-- Stage 2: 打分 -->
+          <g transform="translate(310,60)">
+            <rect x="0" y="0" width="240" height="130" rx="12" stroke-width="1.4"/>
+            <text x="120" y="26" text-anchor="middle" font-size="10" fill="currentColor" opacity=".85" class="disp">② 打分</text>
+            <text x="120" y="46" text-anchor="middle" font-size="9" fill="currentColor">SCORING</text>
+            <text x="120" y="72" text-anchor="middle" font-size="8.5" fill="currentColor">评测 agent · 多模态判官</text>
+            <text x="120" y="90" text-anchor="middle" font-size="8.5" fill="currentColor">人机混合 · 自动化率提升</text>
+            <text x="120" y="115" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">— 有共创空间 —</text>
+          </g>
+        </g>
+        <!-- Stage 3: 归因（accent 高亮）-->
+        <g style="color:var(--accent)">
+          <g transform="translate(590,60)">
+            <rect x="0" y="0" width="280" height="130" rx="12" fill="var(--accent-soft)"
+                  stroke="currentColor" stroke-width="2"/>
+            <text x="140" y="26" text-anchor="middle" font-size="11" fill="currentColor" font-weight="700" class="disp">③ 归因报告</text>
+            <text x="140" y="46" text-anchor="middle" font-size="9" fill="currentColor" opacity=".8">ATTRIBUTION</text>
+            <text x="140" y="72" text-anchor="middle" font-size="9" fill="currentColor" font-weight="600">短板定位 · 双变量对比</text>
+            <text x="140" y="90" text-anchor="middle" font-size="9" fill="currentColor" font-weight="600">标准化报告 · 方法论沉淀</text>
+            <text x="140" y="115" text-anchor="middle" font-size="8.5" fill="currentColor" font-weight="700">← 首个切入点</text>
+          </g>
+        </g>
+        <!-- 正向流水线（灰）-->
+        <g style="color:var(--text-muted)" fill="none">
+          <path d="M270 125 L310 125" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+          <polygon points="310,125 302,121 302,129" fill="currentColor" opacity=".7"/>
+          <path d="M550 125 L590 125" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity=".7"/>
+          <polygon points="590,125 582,121 582,129" fill="currentColor" opacity=".7"/>
+        </g>
+        <!-- 反向大箭头（accent）-->
+        <g style="color:var(--accent)">
+          <path d="M760 215 Q450 245 130 215"
+                stroke="currentColor" stroke-width="2.5" fill="none"
+                stroke-linecap="round" class="dash-flow"/>
+          <polygon points="130,215 145,208 145,222" fill="currentColor"/>
+          <text x="450" y="250" text-anchor="middle" font-size="10" fill="currentColor"
+                font-weight="700" class="disp">反向推进：先落地归因，再回补打分环节</text>
+        </g>
+        <!-- 顶注 -->
+        <text x="450" y="30" text-anchor="middle" font-size="10" fill="currentColor"
+              style="color:var(--text-soft)">评测链路（正向）</text>
+      </svg>
+      <div class="stages-caption">从"能不能做"来看，第 3 阶段成本最低；从"客户是否愿意配合"来看，第 3 阶段门槛最低——两个信号指向同一个入口。</div>
+    </div>
+
+    <p>输入侧同样收敛：<strong>只要客户交付四类数据——agent 运行轨迹、产出产物、打分结果、打分维度——不要全量原始数据、不要重跑权限、不要模型底层日志</strong>。这既是团队自己给客户的产品承诺（降低对接门槛），也是一个学术意义上的<em>问题约束</em>：<strong>在这个约束下，学界的哪些归因方法能用、哪些必须放弃、哪些能改造后用？</strong>这就是本次调研要回答的问题。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">调研问题（精简版）</div>
+      <ol style="margin: .3em 0 .3em 1.1em;">
+        <li>Agent badcase 归因在学界如何被结构化？有没有公认的问题分层？</li>
+        <li>每一层有哪些代表方法论？它们各自的输入门槛是什么？</li>
+        <li>在「只有轨迹 · 产物 · 打分 · 维度」的约束下，哪几条方法能拼成一个可交付的第一版？</li>
+      </ol>
+    </div>
+
+    <!-- ========== 二、把问题分三层 ========== -->
+    <h2 id="stack"><span class="sec-num">二</span>把「归因」拆成三层<a href="#stack" class="anchor">#</a></h2>
+    <p class="kicker">— L1 classify / L2 localize / L3 attribute</p>
+
+    <p>把学界十多年做过的相关工作（从 debugging → error analysis → causal attribution → agent tracing）梳理到一张纸上，最干净的结构是把「归因」拆成三个独立的原子问题，每一层回答一个不同的问题、输出不同的粒度。这三层可以独立设计、独立评测、也独立落地。</p>
+
+    <div class="stack">
+      <div class="stack-row reveal">
+        <div class="stack-badge">
+          <div class="lvl">L1<small>Classify</small></div>
+        </div>
+        <div class="stack-body">
+          <div class="stack-q">这条 trace 属于哪类错误？</div>
+          <div class="stack-h">失败分类（Failure Taxonomy）</div>
+          <div class="stack-desc">把 badcase 归到一个词表里——是 Planning 出错、Tool 调用错、还是 Reflection 不足？这一层不追究原因，只做<strong>分类学</strong>：给每条失败一个标签，让跨实验、跨客户的失败可以被汇总、可以被对比。</div>
+        </div>
+        <div class="stack-out">
+          <div class="stack-out-tag">典型输出</div>
+          <div>Planning Error · Tool Selection · Retrieval Gap · Reasoning Loop · Safety Violation……</div>
+        </div>
+      </div>
+
+      <div class="stack-row reveal d1">
+        <div class="stack-badge">
+          <div class="lvl">L2<small>Localize</small></div>
+        </div>
+        <div class="stack-body">
+          <div class="stack-q">是哪个 agent / 哪一步先坏的？</div>
+          <div class="stack-h">故障定位（Who &amp; When）</div>
+          <div class="stack-desc">在多步轨迹里指出<strong>决定性错误步（decisive step）</strong>——不是最后崩掉的那一步，而是让 trace 从"能救"变成"救不回来"的那一步。多智能体系统里还要多回答一个 who：是哪个角色导致了失败。</div>
+        </div>
+        <div class="stack-out">
+          <div class="stack-out-tag">典型输出</div>
+          <div>Step 7 · agent「searcher」· 用错了 tool（read_file 应为 search）</div>
+        </div>
+      </div>
+
+      <div class="stack-row reveal d2">
+        <div class="stack-badge">
+          <div class="lvl">L3<small>Attribute</small></div>
+        </div>
+        <div class="stack-body">
+          <div class="stack-q">为什么坏？改哪一处能救回来？</div>
+          <div class="stack-h">根因解释 + 修复建议</div>
+          <div class="stack-desc">L2 只是指认现场，L3 要给出<strong>根因</strong>和<strong>最小编辑（minimum edit）</strong>：如果把这一步改成 X，trace 大概率能翻转到成功。这一层的结论可以是「论证性」的（LLM scaffolding），也可以是「验证性」的（真反事实回放）。</div>
+        </div>
+        <div class="stack-out">
+          <div class="stack-out-tag">典型输出</div>
+          <div>根因：prompt 未明确「优先使用 search 检索」→ 建议：在 system prompt 加入检索优先级规则</div>
+        </div>
+      </div>
+    </div>
+
+    <p>这个分层对本项目最直接的启发是：<strong>三层不是"从上到下必须做完"，而是"每一层都能独立交付一份价值"</strong>。第一版只做 L1（打标签 + 汇总统计）就已经能给客户提供他们此前没有的东西；加上 L2 就能进入"哪一步"的粒度；再加上 L3 才是完整的归因报告。这也决定了 roadmap 的优先级——先做 L1 覆盖度，再叠 L2 定位，最后攻 L3。</p>
+
+    <!-- ========== 三、L1 分类学 ========== -->
+    <h2 id="l1"><span class="sec-num">三</span>L1 · 失败分类学：不用自己发明词表<a href="#l1" class="anchor">#</a></h2>
+    <p class="kicker">— Reuse taxonomies, don't invent one</p>
+
+    <p>L1 的核心不是算法，而是<strong>词表</strong>。词表决定了报告页面上每条 badcase 会被贴上什么标签，也决定了跨实验汇总时哪些失败会被"归为同一类"。有意思的是——学界和工业界过去两年已经收敛出了几套主流分类，直接复用就好。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:22%">分类学</th>
+            <th style="width:20%">来源</th>
+            <th>核心类别</th>
+            <th style="width:22%">对本项目的价值</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>AgentErrorTaxonomy</strong></td>
+            <td>UIUC / Stanford（2025，AgentDebug 附带）</td>
+            <td>Memory / Reflection / Planning / Action / System 五模块</td>
+            <td>基于 500 条真实失败轨迹归纳，模块视角最清晰</td>
+          </tr>
+          <tr>
+            <td><strong>MAST</strong></td>
+            <td>Cemri et al.（2025）</td>
+            <td>System Design / Inter-Agent Misalignment / Task Verification</td>
+            <td>点出"很多故障不是模型不行，是通信协议不行"</td>
+          </tr>
+          <tr>
+            <td><strong>TRAIL</strong></td>
+            <td>Patronus AI（2025）</td>
+            <td>148 条 OpenTelemetry trace 的人工标注</td>
+            <td>最贴近工业观测栈（OTel-native）</td>
+          </tr>
+          <tr>
+            <td><strong>Beyond the Leaderboard</strong></td>
+            <td>Oxford 综述（2026）</td>
+            <td>工具 / 规划 / 长程 / 多智能体 / 安全 / 测量效度 六大簇</td>
+            <td>回答"跨场景通用共性"最直接的一篇</td>
+          </tr>
+          <tr>
+            <td><strong>Future AGI 五分类</strong></td>
+            <td>业界工程口径</td>
+            <td>Planning / Tool / Retrieval / Reasoning / Safety</td>
+            <td>学术分类去噪后的工程标签，可直接贴到前场报告上</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>推荐做法：<strong>AgentErrorTaxonomy（模块视角）× Future AGI 五分类（工程视角）做交叉，一级 5–6 类，二级 20–30 子类；每个客户场景保留 1–2 个专属扩展槽</strong>。这样做的价值有三个——(1) 客户能听懂（工程标签），(2) 团队能沉淀（学术模块），(3) 跨客户能汇总（同一套词表）。这个正好对应会议里"所有人在同一套语言体系下讨论问题"的目标。</p>
+
+    <!-- ========== 四、L2 定位 ========== -->
+    <h2 id="l2"><span class="sec-num">四</span>L2 · 定位到步：两条主流路径<a href="#l2" class="anchor">#</a></h2>
+    <p class="kicker">— Counterfactual replay vs static analysis</p>
+
+    <p>L2 要在多步轨迹里指出"决定性错误步"。学界目前有两条主流路径，分野在于：<strong>能不能重跑 agent</strong>。</p>
+
+    <h3 id="l2-replay">4.1 反事实回放：因果证据强，但门槛高</h3>
+
+    <p>核心操作是从失败轨迹的第 1 步开始，逐步用"理想动作"替换、重跑 agent、观察结果是否翻转——第一次翻转的那一步就是 decisive step。代表工作：</p>
+
+    <ul>
+      <li><strong>AgenTracer</strong>（2025，arXiv:2509.03312）—— 把反事实回放 + 编程式故障注入做成数据生成管线，训练出 8B 专用归因模型，Who&amp;When 数据集上准确率显著超过通用 reasoning 模型。</li>
+      <li><strong>AgentDebug</strong>（2025，arXiv:2509.25370）—— 把"定位 critical error → 生成靶向 feedback → 迭代 refine"闭环，任务成功率提升 26%。</li>
+    </ul>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对本项目的门槛</div>
+      反事实回放<strong>要求客户开放 agent 重跑能力</strong>：能重放 tool 调用、能 mock 环境、能重复评分。在「客户只给四类数据」的约束下，这条路第一版<strong>不可用</strong>。但它的思想可以退化——同一 query 的多组实验（模型 A vs 模型 B、提示词 A vs B）之间的差异，就是一次<em>天然的反事实实验</em>，只是干预粒度从"单步"退成了"整套配置"。会议里的「双变量对比」需求，本质上就是把这个退化版当能力用。
+    </div>
+
+    <h3 id="l2-static">4.2 静态分析：Agent-as-a-Judge + 依赖图</h3>
+
+    <p>另一条路完全不重跑，只在已有轨迹上做静态推理。三种主流做法：</p>
+
+    <ul>
+      <li><strong>Agent-as-a-Judge</strong>（ICML 2025）—— 让 judge 自己也是个 agent，能调用 execute_code / read_file / search 做外部验证，DevAI 上与人工评分一致率显著超过普通 LLM-as-a-Judge。<em>特别适合多模态判官设计</em>（正好接上会议里第二阶段的共创空间）。</li>
+      <li><strong>AgentEval DAG</strong>（arXiv:2604.23581）—— 把 agent 执行显式建成 DAG，每个节点挂 judge，仅"加 DAG 依赖建模"就能给 root cause accuracy 带来 +34pp。<strong>这篇是最接近本项目要做的产品形态的学术工作。</strong></li>
+      <li><strong>GraphTracer / FALAT</strong>（2025–2026）—— 把节点间的<em>信息依赖</em>（不只是时序）建成图，从失败节点反向追溯根因。FALAT 引入 typed dependency，能区分"引入错误的步"和"仅继承错误的步"。</li>
+    </ul>
+
+    <p>这些方法的共同特点：<strong>输入只需要 trace（可以是打分/日志/工具调用），不需要重跑</strong>——正好落在本项目的数据契约里。第一版 L2 就从这条路搭。</p>
+
+    <!-- ========== 五、L3 分岔路 ========== -->
+    <h2 id="l3"><span class="sec-num">五</span>L3 · 从"哪一步"到"为什么 &amp; 怎么修"<a href="#l3" class="anchor">#</a></h2>
+    <p class="kicker">— The most misunderstood layer</p>
+
+    <p>L3 是最容易被误解的一层。误解在于——一旦提到"归因"这个词，很多人就直觉觉得<strong>非得能重跑（replay）才能做</strong>。这不对。L3 有两条完全独立的路径，一条要 replay、一条不要；差别不在"能不能做"，而在<strong>结论的可信度类型</strong>。</p>
+
+    <p>REFLECT 论文里那句话最能点破："correction is not attribution"——你只是给了一个更合理的解释，不等于你证明了那就是原因。真正的证明要靠反事实实验。<strong>但这不等于"没实验就没归因"</strong>——把两条路认清楚，第一版就可以理直气壮地只做左边一条。</p>
+
+    <div class="forkroad" role="group" aria-label="L3 两条路径对照">
+      <div class="fork-side soft reveal">
+        <div class="fork-eyebrow">路径 A</div>
+        <div class="fork-title">论证性 L3 · Argumentative</div>
+        <div class="fork-sub">在已有轨迹上做静态推理，产出"看起来最合理"的根因解释。</div>
+        <svg viewBox="0 0 320 180" role="img" aria-label="论证性 L3：静态推理路径"
+             xmlns="http://www.w3.org/2000/svg">
+          <!-- 已有 trace -->
+          <g style="color:var(--info)" stroke="currentColor" fill="none">
+            <rect x="20" y="35" width="120" height="110" rx="8" stroke-width="1.4"/>
+            <text x="80" y="55" text-anchor="middle" font-size="9" fill="currentColor" font-weight="600">已有 trace</text>
+            <line x1="35" y1="70" x2="125" y2="70" stroke-width="1" opacity=".5"/>
+            <line x1="35" y1="82" x2="125" y2="82" stroke-width="1" opacity=".5"/>
+            <line x1="35" y1="94" x2="125" y2="94" stroke-width="1" opacity=".5"/>
+            <line x1="35" y1="106" x2="125" y2="106" stroke-width="1" opacity=".5"/>
+            <line x1="35" y1="118" x2="125" y2="118" stroke-width="1" opacity=".5"/>
+            <line x1="35" y1="130" x2="125" y2="130" stroke-width="1" opacity=".5"/>
+            <!-- 标出错误步 -->
+            <rect x="35" y="87" width="90" height="12" rx="2" fill="currentColor" opacity=".25"/>
+            <text x="130" y="97" font-size="7" fill="currentColor" font-weight="700">step 4?</text>
+          </g>
+          <!-- 静态推理箭头 -->
+          <g style="color:var(--info)" fill="none">
+            <path d="M155 90 L200 90" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="4 3"/>
+            <polygon points="200,90 192,86 192,94" fill="currentColor"/>
+          </g>
+          <text x="177" y="80" text-anchor="middle" font-size="7.5" fill="currentColor" style="color:var(--text-muted)">reasoning</text>
+          <!-- 输出 -->
+          <g style="color:var(--info)">
+            <rect x="210" y="55" width="100" height="70" rx="8" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <text x="260" y="76" text-anchor="middle" font-size="9" fill="currentColor" font-weight="700">解释</text>
+            <text x="260" y="92" text-anchor="middle" font-size="7.5" fill="currentColor">"因为 prompt</text>
+            <text x="260" y="103" text-anchor="middle" font-size="7.5" fill="currentColor">未指定优先级"</text>
+            <text x="260" y="118" text-anchor="middle" font-size="7" fill="currentColor" opacity=".6">— 可辩驳 —</text>
+          </g>
+        </svg>
+        <div class="fork-props">
+          <div class="k">证据类型</div><div class="v">静态推理</div>
+          <div class="k">因果强度</div><div class="v">相关性 + scaffolding</div>
+          <div class="k">代表工作</div><div class="v">A2P / CHIEF / Re-Ex</div>
+          <div class="k">客户成本</div><div class="v">零额外</div>
+        </div>
+        <div class="fork-verdict"><strong>第一版报告能力就靠这条。</strong>纯静态、零客户配合、结论可辩驳但可读性极强。适合"降低前场同学写报告的多样性"这类目标。</div>
+      </div>
+
+      <div class="fork-arrow" aria-hidden="true">/</div>
+
+      <div class="fork-side hard reveal d2">
+        <div class="fork-eyebrow">路径 B</div>
+        <div class="fork-title">验证性 L3 · Causal</div>
+        <div class="fork-sub">用 do(·) 干预单步 · 重跑 agent · 观察结果是否翻转 —— Pearl 意义上的因果证据。</div>
+        <svg viewBox="0 0 320 180" role="img" aria-label="验证性 L3：反事实回放路径"
+             xmlns="http://www.w3.org/2000/svg">
+          <!-- 原 trace -->
+          <g style="color:var(--accent)" stroke="currentColor" fill="none">
+            <rect x="20" y="20" width="110" height="60" rx="6" stroke-width="1.4"/>
+            <text x="75" y="36" text-anchor="middle" font-size="8" fill="currentColor" font-weight="600">原 trace</text>
+            <line x1="30" y1="46" x2="120" y2="46" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="55" x2="120" y2="55" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="64" x2="120" y2="64" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="73" x2="120" y2="73" stroke-width="1" opacity=".5"/>
+            <rect x="30" y="50" width="90" height="8" rx="2" fill="currentColor" opacity=".3"/>
+            <text x="145" y="55" font-size="7" fill="currentColor" opacity=".9">step k</text>
+          </g>
+          <!-- 干预箭头 -->
+          <g style="color:var(--accent)" fill="none">
+            <path d="M75 84 L75 100" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <polygon points="75,100 71,92 79,92" fill="currentColor"/>
+            <text x="120" y="98" font-size="7.5" fill="currentColor" font-weight="700">do( step k := X )</text>
+          </g>
+          <!-- 反事实 trace -->
+          <g style="color:var(--accent)" stroke="currentColor" fill="none">
+            <rect x="20" y="105" width="110" height="60" rx="6" stroke-width="2"/>
+            <text x="75" y="121" text-anchor="middle" font-size="8" fill="currentColor" font-weight="600">反事实 trace</text>
+            <line x1="30" y1="131" x2="120" y2="131" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="140" x2="120" y2="140" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="149" x2="120" y2="149" stroke-width="1" opacity=".5"/>
+            <line x1="30" y1="158" x2="120" y2="158" stroke-width="1" opacity=".5"/>
+            <!-- 翻转标记 -->
+            <circle cx="115" cy="140" r="5" fill="currentColor"/>
+            <text x="140" y="144" font-size="7" fill="currentColor" font-weight="700">✓ pass</text>
+          </g>
+          <!-- 结论 -->
+          <g style="color:var(--accent)">
+            <rect x="210" y="60" width="100" height="70" rx="8" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.6"/>
+            <text x="260" y="82" text-anchor="middle" font-size="9" fill="currentColor" font-weight="700">证明</text>
+            <text x="260" y="99" text-anchor="middle" font-size="7.5" fill="currentColor">"改 step k</text>
+            <text x="260" y="110" text-anchor="middle" font-size="7.5" fill="currentColor">→ 翻转成功"</text>
+            <text x="260" y="123" text-anchor="middle" font-size="7" fill="currentColor" opacity=".85">— 可复现 —</text>
+          </g>
+          <g style="color:var(--accent)" fill="none">
+            <path d="M170 130 Q195 105 205 95" stroke="currentColor" stroke-width="1.4"
+                  stroke-linecap="round" stroke-dasharray="4 3" class="dash-flow"/>
+            <polygon points="207,93 200,94 205,101" fill="currentColor"/>
+          </g>
+        </svg>
+        <div class="fork-props">
+          <div class="k">证据类型</div><div class="v">真实反事实</div>
+          <div class="k">因果强度</div><div class="v">带置信区间</div>
+          <div class="k">代表工作</div><div class="v">CausalFlow / CAR / REFLECT</div>
+          <div class="k">客户成本</div><div class="v">开放 replay + mock</div>
+        </div>
+        <div class="fork-verdict"><strong>第二阶段能力，作为产品分层预留。</strong>只在客户愿意开放 agent 重跑权限时启用；这条是「高级版」的杀手锏，但不是「基础版」的准入条件。</div>
+      </div>
+    </div>
+
+    <h3 id="l3-argument">5.1 论证性 L3 的最小可用套装</h3>
+
+    <p>三样组合起来就是一份能交付的 L3 报告——都是纯静态、都不需要 replay：</p>
+
+    <div class="card-grid">
+      <div class="card reveal">
+        <div class="card-eyebrow">Abduce · Act · Predict</div>
+        <h4 style="margin:.2em 0 .3em;">A2P scaffolding</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          Westlake 2025 提出的三步 prompting——先反推隐藏根因（Abduction）、再定义最小干预（Action）、再模拟干预后结果（Prediction）。<strong>整个过程在 LLM 一次推理内完成</strong>，Who&amp;When step accuracy 从 16.67% 拉到 47.46%。是"没有 replay 也能做因果推理"的方法学基石。
+        </p>
+      </div>
+      <div class="card reveal d1">
+        <div class="card-eyebrow">Hierarchical Causal Graph</div>
+        <h4 style="margin:.2em 0 .3em;">CHIEF 三判据</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          区分"症状步"与"根因步"的判据非常工程化：<strong>local-origin OR earliest data corruption AND irreversibility AND strongest downstream impact</strong>。这三条判据可以直接抄进报告 rubric，用来在 L2 定位的候选步里再挑出真正的 root cause。
+        </p>
+      </div>
+      <div class="card reveal d2">
+        <div class="card-eyebrow">Revising after Explanation</div>
+        <h4 style="margin:.2em 0 .3em;">Re-Ex 报告模板</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          "先解释错误 → 再基于解释重写"——不仅是一种归因方法，也是<strong>报告的最佳输出模板</strong>：错误陈述 → 证据 → 修复建议对比对。前场同学交付时天然在同一套语言里，避免"每个人写的报告都长得不一样"。
+        </p>
+      </div>
+    </div>
+
+    <h3 id="l3-honest">5.2 一点诚实：论证性 L3 会在哪儿翻车</h3>
+
+    <p>说完能用的，也要说说不能用的。论证性 L3 的<strong>结论本质是可辩驳的</strong>——你说"因为 step 3 tool 参数错，导致后面 5 步偏"，这个论断没有反事实实验作证，只是在轨迹上找到了最合理的解释。以下场景会翻车：</p>
+
+    <ul>
+      <li><strong>长轨迹（&gt;20 步）</strong>——错误交互复杂，pattern matching 会找错步。</li>
+      <li><strong>Silent failure</strong>——trace 表面完全正常，答案却错，这类情况必须 replay 才能暴露。</li>
+      <li><strong>决策步 vs 执行步分离</strong>——比如"是否退款"的决策在早 step、"执行 issue_refund"在晚 step，静态推理容易把归因错误放到执行步。</li>
+    </ul>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">推荐做法：给结论标注证据类型</div>
+      借鉴 CAR 的做法——每条归因结论在报告里明确标注 <strong>"证据类型：静态推理 / 反事实验证"</strong>和一个置信度分数。这样：(1) 客户知道结论的可信度，(2) 前场同学交付时"在同一套语言里"，(3) 后期升级到验证性 L3 时不用改报告结构，只改证据类型标签。
+    </div>
+
+    <!-- ========== 六、方法学与数据契约的匹配矩阵 ========== -->
+    <h2 id="fit"><span class="sec-num">六</span>方法学 × 数据契约 · 匹配矩阵<a href="#fit" class="anchor">#</a></h2>
+    <p class="kicker">— What we can actually build with what we get</p>
+
+    <p>把上面所有方法学放到一张表里，用"客户只给四类数据"这个硬约束筛一遍——绿色是可以直接用、黄色是能改造后用、红色是必须客户开放更多权限才能用。</p>
+
+    <div class="contract" role="group" aria-label="数据契约与归因输出的关系">
+      <div class="contract-eyebrow">Data Contract</div>
+      <div class="contract-title">四类数据 → 三层归因输出</div>
+      <div class="contract-sub">客户只交付轨迹 / 产物 / 打分 / 维度四类；我方基于此完成 L1 分类 · L2 定位 · L3 论证性归因。<strong>不需要重跑 agent、不需要模型底层日志、不需要生产环境访问权限。</strong>这是产品对客户的承诺，也是本次调研的约束条件。</div>
+      <svg viewBox="0 0 820 300" role="img" aria-label="数据契约漏斗：四类输入到三层输出" xmlns="http://www.w3.org/2000/svg">
+        <!-- 左边四类输入 -->
+        <g style="color:var(--text-strong)" stroke="currentColor" fill="none">
+          <g transform="translate(20,30)">
+            <rect x="0" y="0" width="140" height="42" rx="8" stroke-width="1.5" fill="var(--surface)"/>
+            <text x="70" y="19" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">运行轨迹</text>
+            <text x="70" y="33" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">tool calls · steps · logs</text>
+          </g>
+          <g transform="translate(20,90)">
+            <rect x="0" y="0" width="140" height="42" rx="8" stroke-width="1.5" fill="var(--surface)"/>
+            <text x="70" y="19" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">产出产物</text>
+            <text x="70" y="33" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">final output · intermediate</text>
+          </g>
+          <g transform="translate(20,150)">
+            <rect x="0" y="0" width="140" height="42" rx="8" stroke-width="1.5" fill="var(--surface)"/>
+            <text x="70" y="19" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">打分结果</text>
+            <text x="70" y="33" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">scores · pass/fail</text>
+          </g>
+          <g transform="translate(20,210)">
+            <rect x="0" y="0" width="140" height="42" rx="8" stroke-width="1.5" fill="var(--surface)"/>
+            <text x="70" y="19" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">打分维度</text>
+            <text x="70" y="33" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">rubrics · categories</text>
+          </g>
+        </g>
+        <!-- 汇聚线 -->
+        <g style="color:var(--accent)" fill="none">
+          <path d="M160 51 Q260 130 320 148" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7" class="dash-flow"/>
+          <path d="M160 111 Q260 130 320 148" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7" class="dash-flow"/>
+          <path d="M160 171 Q260 160 320 148" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7" class="dash-flow"/>
+          <path d="M160 231 Q260 190 320 148" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7" class="dash-flow"/>
+        </g>
+
+        <!-- 中间归因引擎 -->
+        <g style="color:var(--accent)">
+          <circle cx="380" cy="148" r="60" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/>
+          <text x="380" y="140" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700" class="disp">归因引擎</text>
+          <text x="380" y="156" text-anchor="middle" font-size="8" fill="currentColor" opacity=".8">judge · rubric tree</text>
+          <text x="380" y="169" text-anchor="middle" font-size="8" fill="currentColor" opacity=".8">A2P · CHIEF</text>
+        </g>
+
+        <!-- 分发线 -->
+        <g style="color:var(--accent)" fill="none">
+          <path d="M440 148 L560 65" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+          <path d="M440 148 L560 148" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+          <path d="M440 148 L560 231" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" opacity=".7"/>
+        </g>
+
+        <!-- 右边三层输出 -->
+        <g style="color:var(--accent)" stroke="currentColor" fill="none">
+          <g transform="translate(570,45)">
+            <rect x="0" y="0" width="230" height="55" rx="10" fill="var(--surface)" stroke-width="1.8"/>
+            <text x="115" y="20" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">L1 · 分类</text>
+            <text x="115" y="36" text-anchor="middle" font-size="8" fill="currentColor" opacity=".8">Planning / Tool / Retrieval / …</text>
+            <text x="115" y="48" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">跨实验汇总标签</text>
+          </g>
+          <g transform="translate(570,125)">
+            <rect x="0" y="0" width="230" height="55" rx="10" fill="var(--surface)" stroke-width="1.8"/>
+            <text x="115" y="20" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">L2 · 定位</text>
+            <text x="115" y="36" text-anchor="middle" font-size="8" fill="currentColor" opacity=".8">decisive step · who &amp; when</text>
+            <text x="115" y="48" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">DAG 依赖 · Agent-as-Judge</text>
+          </g>
+          <g transform="translate(570,205)">
+            <rect x="0" y="0" width="230" height="55" rx="10" fill="var(--surface)" stroke-width="1.8"/>
+            <text x="115" y="20" text-anchor="middle" font-size="10" fill="currentColor" font-weight="700">L3 · 论证性归因</text>
+            <text x="115" y="36" text-anchor="middle" font-size="8" fill="currentColor" opacity=".8">根因解释 + 修复建议</text>
+            <text x="115" y="48" text-anchor="middle" font-size="8" fill="currentColor" opacity=".6">带证据类型标签</text>
+          </g>
+        </g>
+      </svg>
+      <div class="contract-caption">「必须给全量数据才能分析」的门槛对客户是一种风险；「只要四类数据」既是产品差异化，也是对客户的保护。</div>
+    </div>
+
+    <p class="kicker" style="margin-top:1.5em">— Fit matrix: 具体方法与数据契约</p>
+
+    <div class="table-wrap fit-matrix">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:22%">方法学</th>
+            <th style="width:12%">层</th>
+            <th style="width:12%">路径</th>
+            <th>输入门槛</th>
+            <th style="width:12%">与四类数据契合度</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>AgentErrorTaxonomy / Future AGI 五分类</td>
+            <td>L1</td>
+            <td>词表</td>
+            <td>轨迹 + 打分即可打标签</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>Mind2Web 2 · Rubric Tree</td>
+            <td>L1 + L2</td>
+            <td>静态</td>
+            <td>打分维度 + rubric 定义</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>Agent-as-a-Judge</td>
+            <td>L2</td>
+            <td>静态 (judge)</td>
+            <td>轨迹（judge 可 execute_code / read_file）</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>AgentEval · DAG-Structured</td>
+            <td>L2</td>
+            <td>静态 (图)</td>
+            <td>轨迹可解析成 DAG</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>GraphTracer / FALAT · 依赖图</td>
+            <td>L2 + L3</td>
+            <td>静态 (图)</td>
+            <td>轨迹里能识别信息流转</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>A2P · Abduct-Act-Predict</td>
+            <td>L3</td>
+            <td>论证性</td>
+            <td>轨迹 + 打分（LLM scaffolding）</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>CHIEF · 三判据剪枝</td>
+            <td>L3</td>
+            <td>论证性</td>
+            <td>轨迹 + 数据依赖标注</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>Re-Ex · 报告模板</td>
+            <td>L3</td>
+            <td>报告 UX</td>
+            <td>任何归因结论</td>
+            <td class="fit-ok">✓ 完全契合</td>
+          </tr>
+          <tr>
+            <td>AgenTracer · Counterfactual Replay</td>
+            <td>L2 + L3</td>
+            <td>验证性</td>
+            <td>agent 可重跑 + tool mock + 分数回归</td>
+            <td class="fit-no">✗ 需 replay</td>
+          </tr>
+          <tr>
+            <td>CausalFlow · CRS 反事实评分</td>
+            <td>L3</td>
+            <td>验证性</td>
+            <td>agent 可重跑 + 结果可评分</td>
+            <td class="fit-no">✗ 需 replay</td>
+          </tr>
+          <tr>
+            <td>CAR · Causal Agent Replay + Shapley</td>
+            <td>L3</td>
+            <td>验证性</td>
+            <td>agent 可重跑 + Monte-Carlo 采样</td>
+            <td class="fit-no">✗ 需 replay</td>
+          </tr>
+          <tr>
+            <td>双变量对比（同 query 多实验）</td>
+            <td>L2 + L3</td>
+            <td>类反事实</td>
+            <td>≥2 组实验的轨迹 + 打分</td>
+            <td class="fit-mid">△ 退化版：粒度=整套配置</td>
+          </tr>
+          <tr>
+            <td>REFLECT · Silent Failure 修复</td>
+            <td>L3</td>
+            <td>验证性</td>
+            <td>agent 可干预 + 重放</td>
+            <td class="fit-no">✗ 需 replay</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 七、落地建议 ========== -->
+    <h2 id="plan"><span class="sec-num">七</span>对本项目的落地建议<a href="#plan" class="anchor">#</a></h2>
+    <p class="kicker">— A stack we can actually ship</p>
+
+    <p>把这次调研的结论压成一份可以直接用的技术栈：</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">第一版能力（不需要客户额外配合）</div>
+      <ol style="margin: .3em 0 .3em 1.2em;">
+        <li><strong>L1 分类学：</strong>AgentErrorTaxonomy × Future AGI 五分类交叉，一级 5–6 类、二级 20–30 子类，客户场景保留专属扩展槽。</li>
+        <li><strong>L2 定位：</strong>Agent-as-a-Judge + AgentEval DAG 静态建图，双变量场景加"首个显著分歧步"对齐算法。</li>
+        <li><strong>L3 论证性归因：</strong>A2P scaffolding + CHIEF 三判据 + Re-Ex 报告模板；每条结论标注证据类型 + 置信度。</li>
+        <li><strong>报告标准化：</strong>Potato trajectory_eval schema 作为最小字段集（correctness / error type / severity / rationale / running score），前场同学"在同一套语言体系里讨论问题"。</li>
+      </ol>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">第二版能力（当客户愿意开放更多权限时）</div>
+      <ol style="margin: .3em 0 .3em 1.2em;">
+        <li><strong>L3 验证性归因：</strong>CausalFlow 的 CRS 反事实评分 + CAR 的 Shapley 信用分配——需要客户开放 replay 接口，但只作为高级付费能力，不是基础版准入条件。</li>
+        <li><strong>Cross-run 共性挖掘：</strong>把所有失败步做 embedding 聚类，命名成 named signals（参考 Latitude Signals），报告里输出"top-K 反复出现的失败模式"——这正好对应"越通用越有价值"这条判断。</li>
+        <li><strong>自动化评测环节延伸：</strong>在打分阶段（第二阶段）加入 Agent-as-a-Judge 的多模态判官能力，与客户共创；这是反向推进的第二个自然落点。</li>
+      </ol>
+    </div>
+
+    <h3 id="differentiator">7.1 差异化的定位</h3>
+
+    <p>行业里已有的一堆工具——Langfuse / LangSmith / Braintrust / Arize Phoenix / MLflow——都要客户"上传全量数据"，正好卡在客户拒绝的门槛上。<strong>本项目的差异化窗口就在这里</strong>：只要打分和轨迹，不要全量数据；输出标准化归因报告，不要客户去平台里点点点。这不是能力更强，是<strong>合约更轻</strong>——对企业客户来说，合约门槛低于工具能力更重要。</p>
+
+    <h3 id="open-questions">7.2 需要和算法同学对齐的问题</h3>
+
+    <p>下面这些问题是纸面调研解决不了的，得约到相关算法同学一起过一遍：</p>
+
+    <ol>
+      <li>客户交付的"打分数据"粒度到底是 <strong>trace 级还是 step 级</strong>？如果只到 trace 级，L2 定位必须走 judge 二次拆解，方法学要重估。</li>
+      <li>客户是否愿意开放 <strong>rubric 定义</strong>？rubric tree 是把"打分维度"翻译成"归因维度"的关键桥梁。</li>
+      <li>双变量对比里"变量"的可枚举范围（模型 / prompt / workflow 节点 / tool 版本）？变量维度决定统计分析的 feature space。</li>
+      <li>是否需要复用<strong>内部现有的进化 / auto-prompt 框架</strong>的对比协议？会议里提到"作为进化框架的延展"，需要看是否共享 experiment schema。</li>
+      <li>报告输出形态：<strong>纯文本 markdown / 交互式 HTML / 集成到现有平台</strong>？这决定了 L3 结论的呈现是否能利用 rubric tree 的层级结构下钻。</li>
+    </ol>
+
+    <!-- ========== 八、接入方案：LIFT + skill + 归因分析 ========== -->
+    <h2 id="delivery"><span class="sec-num">八</span>接入方案：开源框架 + Skill + 归因分析<a href="#delivery" class="anchor">#</a></h2>
+    <p class="kicker">— How this actually reaches customers</p>
+
+    <p>方法论到位了，还剩最后一个问题：<strong>怎么把归因能力送到客户手里？</strong>方法论本身不是产品，"客户能十分钟接入、跑一次评测就拿到归因报告"才是产品。这一节把接入方案单独拆出来。</p>
+
+    <h3 id="delivery-insight">8.1 一条被忽视的路径：借开源框架做载体</h3>
+
+    <p>过去做企业交付的默认模式是——写一份 SDK、给一份接入文档、派一个前场工程师帮客户接。这套模式在 Agent 评测这个场景里有个致命的成本：<strong>每个客户的 agent 编排框架都不一样</strong>（有的是 LangGraph、有的自研、有的走 dify），SDK 每接一个客户就要改一次，前场同学的时间被无限稀释。</p>
+
+    <p>换个思路——<strong>如果已经有一个开源评测框架，客户接入它的成本已经被开源社区分摊了；我们只在这个框架之上做归因分析</strong>，接入工作量就从"改客户系统"退化成"客户接一个开源工具 + 我们消费它的输出"。这是**我们内部一个已经在做的开源项目 LIFT** 的天然定位——只要把它从"进化增益专用"通用化成"任意 agent 评测框架"，就能作为这条路径的载体。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">关键假设</div>
+      本节论证的所有产品结构，前提是 <strong>LIFT 可以通用化</strong>（从"专门评测进化增益"改造成"通用 agent 评测框架"）。这个改造是可行的（原有的 warmup / holdout 逻辑可以作为一个 preset 模式保留），工作量约 4–8 周，是走这条路径的先决投入。
+    </div>
+
+    <h3 id="delivery-layers">8.2 三层同心圆：开源做载体、服务做变现</h3>
+
+    <div class="layers" role="group" aria-label="三层产品结构：客户 agent / 开源评测框架 / 归因分析服务">
+      <div class="layers-eyebrow">Product Layering</div>
+      <div class="layers-title">三层同心圆 · 每一层的角色都不一样</div>
+      <div class="layers-sub">
+        <strong>L1 客户资产</strong>——客户自己的 agent，我们不动。<strong>L2 开源载体</strong>——LIFT 通用化后作为接入桥梁，成本被开源社区分摊。<strong>L3 变现层</strong>——归因分析作为付费服务，消费 L2 产出的标准化 trace 与 scores。三层解耦，客户只用 L2 免费也能走通，升级 L3 才付费。
+      </div>
+      <div class="layers-body">
+        <svg viewBox="0 0 460 380" role="img" aria-label="三层同心圆产品结构" xmlns="http://www.w3.org/2000/svg">
+          <!-- 外圈：客户 agent -->
+          <g style="color:var(--text-muted)">
+            <circle cx="230" cy="200" r="170" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-dasharray="3 4" opacity=".55"/>
+            <text x="230" y="45" text-anchor="middle" font-size="10.5" fill="currentColor"
+                  font-weight="600" class="disp">L1 · 客户的 Agent</text>
+            <text x="230" y="60" text-anchor="middle" font-size="8" fill="currentColor" opacity=".7">CUSTOMER · 不动</text>
+          </g>
+          <!-- 中圈：LIFT 开源 -->
+          <g style="color:var(--info)">
+            <circle cx="230" cy="200" r="120" fill="var(--surface)"
+                    stroke="currentColor" stroke-width="1.8" opacity=".95"/>
+            <text x="230" y="95" text-anchor="middle" font-size="10.5" fill="currentColor"
+                  font-weight="700" class="disp">L2 · LIFT 开源评测框架</text>
+            <text x="230" y="110" text-anchor="middle" font-size="8" fill="currentColor" opacity=".75">OSS · 分发通道</text>
+            <text x="230" y="126" text-anchor="middle" font-size="8.5" fill="currentColor">跑评测 · 打分 · Langfuse trace</text>
+          </g>
+          <!-- 内圈：归因分析 -->
+          <g style="color:var(--accent)">
+            <circle cx="230" cy="200" r="70" fill="var(--accent-soft)"
+                    stroke="currentColor" stroke-width="2.2"/>
+            <text x="230" y="185" text-anchor="middle" font-size="11.5" fill="currentColor"
+                  font-weight="700" class="disp">L3 · 归因分析</text>
+            <text x="230" y="199" text-anchor="middle" font-size="8" fill="currentColor" opacity=".85">PAID · 核心价值</text>
+            <text x="230" y="216" text-anchor="middle" font-size="8" fill="currentColor">A2P · CHIEF · Re-Ex</text>
+            <text x="230" y="229" text-anchor="middle" font-size="8" fill="currentColor">标准化报告</text>
+          </g>
+          <!-- 底部注解 -->
+          <text x="230" y="365" text-anchor="middle" font-size="8.5" fill="currentColor"
+                style="color:var(--text-muted)" font-family="var(--mono)">
+            开源分摊接入成本 · 服务消化数据价值
+          </text>
+        </svg>
+
+        <div class="layers-legend">
+          <div class="layers-row customer">
+            <div class="layers-lvl">L1<small>Own</small></div>
+            <div>
+              <div class="layers-name">客户的 Agent</div>
+              <div class="layers-role">Customer Asset</div>
+              <div class="layers-desc">不动。任何编排框架（LangGraph / 自研 / dify）都可以，通过 skill 引导接入到 L2。</div>
+            </div>
+          </div>
+          <div class="layers-row oss">
+            <div class="layers-lvl">L2<small>OSS</small></div>
+            <div>
+              <div class="layers-name">LIFT 通用化后的开源评测框架</div>
+              <div class="layers-role">Distribution · Free</div>
+              <div class="layers-desc">承担"跑评测 + 采 trace + 出基础 dashboard"。开源分摊接入成本，也是<strong>获客通道</strong>。</div>
+            </div>
+          </div>
+          <div class="layers-row paid">
+            <div class="layers-lvl">L3<small>Paid</small></div>
+            <div>
+              <div class="layers-name">归因分析服务</div>
+              <div class="layers-role">Monetization · Core</div>
+              <div class="layers-desc">消费 L2 的 trace + scores，跑 A2P / CHIEF / Re-Ex 三件套，出标准化归因报告。这是<strong>变现层</strong>与真正的差异化。</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>这个结构最有意思的地方在于——<strong>L2 免费也能走通</strong>。客户只用 L2 就已经比"什么都没有"好很多（有评测框架、有 dashboard、有 trace）；他要不要升级到 L3 完全是自愿的。<strong>不升级也是获客</strong>：L2 一直在按我们定义的契约产 trace，未来任何时候升级 L3，数据都是现成的。</p>
+
+    <p>这就是<em>开源做载体、服务做变现</em>的经典结构——类似 LangChain 之于 LangSmith、Ray 之于 Anyscale。**skill 是这套结构的"胶水"**——它让 L1 → L2 的接入变成引导式的十分钟事件，而不是"读一本文档、写一堆胶水代码"的一周项目。</p>
+
+    <h3 id="delivery-differentiator">8.3 差异化在哪：不是评测跑得好，而是 skill × 归因</h3>
+
+    <p>要清醒一点——**开源评测框架赛道已经很拥挤**。LangSmith / lm-eval-harness / HELM / Braintrust / OpenAI evals 都在做。LIFT 通用化后想突围，靠的<em>不是</em>"评测跑得比谁好"，而是三件事绑在一起的组合拳：</p>
+
+    <div class="card-grid">
+      <div class="card reveal">
+        <div class="card-eyebrow">Wedge 1 · 接入体验</div>
+        <h4 style="margin:.2em 0 .3em;">Skill 化引导</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          <strong>行业目前没人这么做</strong>。skill 让"接一个评测框架"从"读一份 30 页文档"变成"跑一个引导脚本"。这是接入体验层面的真差异化，不是能力差异化。
+        </p>
+      </div>
+      <div class="card reveal d1">
+        <div class="card-eyebrow">Wedge 2 · 轻数据契约</div>
+        <h4 style="margin:.2em 0 .3em;">只要 4 类数据</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          其他平台都要"上传全量数据"，我们只要轨迹 / 产物 / 打分 / 维度。<strong>对企业客户，合约门槛低于工具能力更重要</strong>——数据安全是他们的第一顾虑。
+        </p>
+      </div>
+      <div class="card reveal d2">
+        <div class="card-eyebrow">Wedge 3 · 分析深度</div>
+        <h4 style="margin:.2em 0 .3em;">L1/L2/L3 分层归因</h4>
+        <p style="font-size:.88rem; line-height:1.6; color:var(--text-soft);">
+          其他工具停在 trace viewer + 单条 judge；我们做分类学 + 定位到步 + 论证性根因 + 修复建议。<strong>这是从"看板工具"跳到"分析师团队"的定位跃迁。</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">如果三样只做一样</div>
+      单独做 skill 引导——只是好用的 CLI，无法变现。单独做归因分析——没有获客通道，卖不动。单独做通用评测——直面 LangSmith 的正面竞争。<strong>只有三样绑一起才是差异化。</strong>
+    </div>
+
+    <h3 id="delivery-roadmap">8.4 落地路径：先做 wedge，再做通用化</h3>
+
+    <p>方向定了，落地次序也要清晰。<strong>不要一上来就投 8 周做通用化</strong>——那是闭门造车。正确的次序是**先用 wedge 拿真实客户反馈，再回过头做通用化**。</p>
+
+    <div class="steps">
+      <div class="steps-card reveal">
+        <div class="steps-num">1</div>
+        <div class="steps-eyebrow">Wedge First</div>
+        <div class="steps-name">先把 skill 打磨出来</div>
+        <div class="steps-desc">
+          即使 LIFT 还是"进化增益"专用框架也没关系。<strong>先把 skill 引导接入 + langfuse 采集 + 基础归因报告</strong>这三件事做通，拿给 3–5 个真实客户试跑。验证"skill 化的接入体验"是否真的解决问题。
+        </div>
+        <div class="steps-when">周期：约 4 周<br/>产出：skill + demo</div>
+      </div>
+      <div class="steps-card reveal d1">
+        <div class="steps-num">2</div>
+        <div class="steps-eyebrow">Feedback-Driven</div>
+        <div class="steps-name">再基于反馈做通用化</div>
+        <div class="steps-desc">
+          Runtime 抽象怎么设计、suite 格式要不要兼容 HELM / lm-eval-harness、judge 逻辑要多灵活——<strong>这些不是纯技术问题，是产品问题</strong>，必须靠真实客户的接入反馈来定。避免"我们以为的通用"变成"没人用的通用"。
+        </div>
+        <div class="steps-when">周期：约 4–8 周<br/>产出：LIFT v2 通用化</div>
+      </div>
+      <div class="steps-card reveal d2">
+        <div class="steps-num">3</div>
+        <div class="steps-eyebrow">Decouple &amp; Scale</div>
+        <div class="steps-name">归因分析先独立起步</div>
+        <div class="steps-desc">
+          归因分析<strong>不要马上和 LIFT 深度耦合</strong>。先做成独立服务，输入接口是"任何符合契约的 trace + scores"。等 LIFT 通用化到位，再把 LIFT 作为归因分析的<strong>首选默认数据源</strong>（不是唯一）。这样即使 LIFT 卡壳，归因分析可以独立活着。
+        </div>
+        <div class="steps-when">周期：与 1/2 并行<br/>产出：独立归因服务 API</div>
+      </div>
+    </div>
+
+    <p>这三步的核心逻辑是<strong>解耦风险</strong>：任何一步做不成，其他两步都还能独立活着。skill 做不出效果——归因服务还能独立卖；LIFT 通用化卡壳——skill + 归因服务照样能对接 LangSmith / lm-eval-harness 的 trace；归因分析不好卖——LIFT 加 skill 至少还是个不错的开源项目。三条腿走路，比一条腿蹦要稳。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一句话总结</div>
+      <strong>LIFT 是评测的锅，我们的归因分析是评完之后的品菜师。锅可以借开源社区的、可以让客户免费用；但品菜师是核心价值，是变现层。skill 是这两层之间的胶水，让接入变成十分钟的事。</strong>三层同心圆——L1 客户资产不动、L2 开源分摊接入成本、L3 服务承接分析价值。
+    </div>
+
+    <!-- ========== 九、判断印章 ========== -->
+    <h2 id="stamp"><span class="sec-num">九</span>判断印章<a href="#stamp" class="anchor">#</a></h2>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Verdict</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>时机 · 进行中：</strong>业界几家工具型平台在 2025-2026 都陆续加入 trajectory-level 分析，但都要求"全量数据 + 平台自主接入"——留出了「轻合约、专注归因报告」的产品缺口。<strong>此刻切入正当其时。</strong></li>
+        <li><strong>信心 · 中：</strong>方法论层面已经足够扎实（十多篇成熟工作 + 多个开源实现）；不确定性主要在<em>客户交付的数据粒度</em>与 <em>LIFT 通用化的执行速度</em>——这两条走通了就是完整闭环。</li>
+        <li><strong>必须记住的第一句：</strong>L3 归因不是必须依赖 replay 的；「replay 是<em>验证</em>的前提，不是<em>归因</em>的前提」。第一版就靠论证性 L3 落地，把 replay 作为付费升级预留。</li>
+        <li><strong>必须记住的第二句：</strong>LIFT 是评测的锅，归因分析是品菜师。<strong>三层同心圆</strong>——开源做载体、服务做变现、skill 做胶水——不是三选一，是三个一起做才能有差异化。</li>
+      </ul>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-28 初稿（基于会议纪要脱敏后的调研整理）· 2026-07-28 增补第八章「接入方案：开源框架 + Skill + 归因分析」
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      &nbsp;·&nbsp;
+      <a href="../../insights/tob/2026-07_org-chart-trap-single-agent-identity.html">相关：Org-Chart 陷阱 · 企业 Agent 不该是团队</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
