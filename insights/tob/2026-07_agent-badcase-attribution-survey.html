@@ -135,12 +135,133 @@
     text-transform: uppercase; color: var(--accent);
     margin-bottom: .3rem;
   }
+  .stack-io {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: .5rem; margin-top: .55rem;
+    font-size: .78rem; line-height: 1.5;
+  }
+  .stack-io-cell {
+    padding: .5rem .65rem;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--text-strong) 3%, var(--surface));
+    border: 1px dashed var(--border);
+  }
+  .stack-io-tag {
+    font-family: var(--mono); font-size: .65rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--text-muted);
+    display: block; margin-bottom: .2rem;
+  }
   @media (max-width: 820px) {
     .stack-row { grid-template-columns: 68px 1fr; gap: .6rem; }
     .stack-out { grid-column: 1 / -1; }
+    .stack-io { grid-column: 1 / -1; grid-template-columns: 1fr; }
     .stack-badge { border-right: none; border-bottom: 1px dashed var(--border); padding: 0 0 .5rem 0; flex-direction: row; gap: .5rem; }
     .stack-badge .lvl { font-size: 1.4rem; }
     .stack-badge .lvl small { display: inline; margin-top: 0; margin-left: .3rem; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉二·前置：贯穿案例交底卡
+     ═════════════════════════════════════════════════════ */
+  .case-card {
+    margin: 1.6em 0 1.2em;
+    padding: 1.15rem 1.3rem 1.2rem;
+    border: 1.5px solid var(--accent);
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent-soft), var(--surface) 65%);
+    box-shadow: var(--shadow);
+    position: relative;
+  }
+  .case-card::before {
+    content: "贯穿案例";
+    position: absolute; top: -.65rem; left: 1.1rem;
+    padding: .1rem .55rem; border-radius: 999px;
+    background: var(--accent); color: #fff;
+    font-family: var(--mono); font-size: .65rem; letter-spacing: .16em;
+    text-transform: uppercase; font-weight: 700;
+  }
+  .case-title {
+    font-family: var(--display); font-weight: 800; font-size: 1.1rem;
+    color: var(--text-strong); margin: .3rem 0 .35rem;
+  }
+  .case-sub {
+    font-size: .82rem; color: var(--text-soft); margin-bottom: .9rem;
+  }
+  .case-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: .55rem;
+  }
+  .case-slot {
+    padding: .6rem .7rem;
+    border-radius: 9px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: .78rem; line-height: 1.5;
+    color: var(--text-strong);
+  }
+  .case-slot-tag {
+    display: block;
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent);
+    margin-bottom: .25rem; font-weight: 700;
+  }
+  @media (max-width: 820px) {
+    .case-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ═════════════════════════════════════════════════════
+     视觉二·后置：三层接力（walkthrough）
+     ═════════════════════════════════════════════════════ */
+  .walk {
+    margin: 1.4em 0 1.8em;
+    display: grid; gap: .65rem;
+  }
+  .walk-eyebrow {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: .1rem;
+  }
+  .walk-row {
+    display: grid; grid-template-columns: 60px 1fr auto 1fr;
+    gap: .7rem; align-items: stretch;
+    padding: .7rem .9rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    font-size: .8rem; line-height: 1.5;
+  }
+  .walk-lvl {
+    font-family: var(--display); font-weight: 800; font-size: 1.1rem;
+    color: var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    border-right: 1px dashed var(--border);
+  }
+  .walk-in, .walk-out {
+    padding: .3rem .3rem;
+  }
+  .walk-in { color: var(--text-soft); }
+  .walk-out { color: var(--text-strong); font-weight: 600; }
+  .walk-arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent); font-family: var(--mono);
+    font-size: 1.05rem; font-weight: 700;
+  }
+  .walk-cap-tag {
+    display: block;
+    font-family: var(--mono); font-size: .6rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: .15rem; font-weight: 700;
+  }
+  .walk-baton {
+    text-align: center; font-family: var(--mono); font-size: .68rem;
+    letter-spacing: .12em; color: var(--accent);
+    margin: -.25rem 0 -.25rem;
+  }
+  @media (max-width: 820px) {
+    .walk-row { grid-template-columns: 50px 1fr; gap: .5rem; }
+    .walk-arrow { display: none; }
+    .walk-out { grid-column: 2 / -1; border-top: 1px dashed var(--border); padding-top: .4rem; }
+    .walk-lvl { grid-row: 1 / 3; }
   }
 
   /* ═════════════════════════════════════════════════════
@@ -580,7 +701,7 @@
       <div class="stages-caption">从"能不能做"来看，第 3 阶段成本最低；从"客户是否愿意配合"来看，第 3 阶段门槛最低——两个信号指向同一个入口。</div>
     </div>
 
-    <p>输入侧同样收敛：<strong>只要客户交付四类数据——agent 运行轨迹、产出产物、打分结果、打分维度——不要全量原始数据、不要重跑权限、不要模型底层日志</strong>。这既是团队自己给客户的产品承诺（降低对接门槛），也是一个学术意义上的<em>问题约束</em>：<strong>在这个约束下，学界的哪些归因方法能用、哪些必须放弃、哪些能改造后用？</strong>这就是本次调研要回答的问题。</p>
+    <p>输入侧同样收敛：<strong>只要客户交付四类数据——agent 运行轨迹、产出产物、打分结果、打分维度——不要全量原始数据、不要重跑权限、不要模型底层日志</strong>。其中「打分结果」的粒度已经和相关同学对齐：<strong>是针对 agent 最终产物的多维度评分（正确性 / 深度 / 可执行性…），而不是逐 step 判分</strong>；对应的<strong>打分维度（rubric 树）客户也愿意开放</strong>。这两条约束反过来锁定了本方案 L2 的技术路径——必须走"产物分 → rubric → step"的反向归因，rubric 树是这条链上的桥梁。既是团队自己给客户的产品承诺（降低对接门槛），也是一个学术意义上的<em>问题约束</em>：<strong>在这个约束下，学界的哪些归因方法能用、哪些必须放弃、哪些能改造后用？</strong>这就是本次调研要回答的问题。</p>
 
     <div class="callout callout-info">
       <div class="callout-tag">调研问题（精简版）</div>
@@ -597,6 +718,33 @@
 
     <p>把学界十多年做过的相关工作（从 debugging → error analysis → causal attribution → agent tracing）梳理到一张纸上，最干净的结构是把「归因」拆成三个独立的原子问题，每一层回答一个不同的问题、输出不同的粒度。这三层可以独立设计、独立评测、也独立落地。</p>
 
+    <p>但直接讲三层还是太抽象。<strong>先摆一个具体 badcase，接下来所有讨论都围着它走。</strong></p>
+
+    <div class="case-card" role="group" aria-label="贯穿案例：BI 数据分析助手的一条 badcase">
+      <div class="case-title">BI 数据分析助手 · 「上周 GMV 环比下降原因」的一条 badcase</div>
+      <div class="case-sub">这是一个多步 agent：它要读数据表、拆维度、对比同环比、最后写一份分析结论。以下四类数据就是客户能交出来的全部——<strong>没有重跑权限、没有底层日志</strong>。</div>
+      <div class="case-grid">
+        <div class="case-slot">
+          <span class="case-slot-tag">① 任务</span>
+          分析上周 GMV 环比下降 12% 的主要原因，输出一份可发给业务方的短报告。
+        </div>
+        <div class="case-slot">
+          <span class="case-slot-tag">② 期望产物</span>
+          从「品类 × 渠道 × 地区 × 新老客」四个维度拆解，指出至少一个可归因的主要维度 + 数据支撑。
+        </div>
+        <div class="case-slot">
+          <span class="case-slot-tag">③ 实际产物</span>
+          结论直接说"GMV 下降是因为大盘走弱"，没做维度拆解，也没引用具体数据。
+        </div>
+        <div class="case-slot">
+          <span class="case-slot-tag">④ 多维度打分</span>
+          正确性 <strong>2/5</strong>、深度 <strong>1/5</strong>、可执行性 <strong>2/5</strong>、引用完整度 <strong>1/5</strong>。
+        </div>
+      </div>
+    </div>
+
+    <p>报告拿到这条 case、看到四个维度都低分，客户想问的其实只有三件事——<strong>这类错叫什么、错在哪一步、为什么错</strong>。这三件事之间不是可选项，而是<em>接力关系</em>：上一层的答案是下一层的入口。三层归因栈就是把这三个问题一层层往里挖。</p>
+
     <div class="stack">
       <div class="stack-row reveal">
         <div class="stack-badge">
@@ -604,12 +752,22 @@
         </div>
         <div class="stack-body">
           <div class="stack-q">这条 trace 属于哪类错误？</div>
-          <div class="stack-h">失败分类（Failure Taxonomy）</div>
-          <div class="stack-desc">把 badcase 归到一个词表里——是 Planning 出错、Tool 调用错、还是 Reflection 不足？这一层不追究原因，只做<strong>分类学</strong>：给每条失败一个标签，让跨实验、跨客户的失败可以被汇总、可以被对比。</div>
+          <div class="stack-h">给失败贴一个标签（Failure Taxonomy · 失败分类学）</div>
+          <div class="stack-desc">从一个大家共用的<strong>词表</strong>里挑一个词贴上去——是「计划出错」（Planning）、「工具用错」（Tool Selection）、「查资料没查到」（Retrieval Gap）、还是「反思不到位」（Reflection）？这一层<strong>不问为什么，只问是哪一类</strong>。作用是让跨实验、跨客户的失败可以被汇总、可以被对比。</div>
+          <div class="stack-io">
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输入 · 拿什么</span>
+              整条 trace（步骤序列） + 产物 + 多维度打分
+            </div>
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输出 · 给什么</span>
+              一个标签（来自词表），可选一个置信度
+            </div>
+          </div>
         </div>
         <div class="stack-out">
-          <div class="stack-out-tag">典型输出</div>
-          <div>Planning Error · Tool Selection · Retrieval Gap · Reasoning Loop · Safety Violation……</div>
+          <div class="stack-out-tag">贯穿案例 · L1 的答案</div>
+          <div>标签：<strong>Planning Error / Sub-goal Decomposition Missing</strong>（该拆维度没拆）</div>
         </div>
       </div>
 
@@ -618,13 +776,23 @@
           <div class="lvl">L2<small>Localize</small></div>
         </div>
         <div class="stack-body">
-          <div class="stack-q">是哪个 agent / 哪一步先坏的？</div>
-          <div class="stack-h">故障定位（Who &amp; When）</div>
-          <div class="stack-desc">在多步轨迹里指出<strong>决定性错误步（decisive step）</strong>——不是最后崩掉的那一步，而是让 trace 从"能救"变成"救不回来"的那一步。多智能体系统里还要多回答一个 who：是哪个角色导致了失败。</div>
+          <div class="stack-q">是哪一步、哪个角色先坏的？</div>
+          <div class="stack-h">在时间线上圈出关键那一步（Decisive Step · 决定性错误步）</div>
+          <div class="stack-desc">多步 agent 崩溃的那一步，通常<em>不是</em>让 trace 从"能救"变成"救不回来"的那一步。L2 要在整条时间线上找到<strong>最早的那个致命节点</strong>——把它改对，后面大概率能翻转成功。多智能体系统里还多回答一个 who：是哪个角色先偏航。</div>
+          <div class="stack-io">
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输入 · 拿什么</span>
+              L1 标签 + 整条 trace + rubric 树（哪些维度低分）
+            </div>
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输出 · 给什么</span>
+              一个（或几个）步骤指针，标注"为什么这一步是致命的"
+            </div>
+          </div>
         </div>
         <div class="stack-out">
-          <div class="stack-out-tag">典型输出</div>
-          <div>Step 7 · agent「searcher」· 用错了 tool（read_file 应为 search）</div>
+          <div class="stack-out-tag">贯穿案例 · L2 的答案</div>
+          <div>决定性步骤：<strong>Step 2 · Planner</strong>——它把任务直接翻译成"跑一个 GMV 总量 SQL"，跳过了"先按维度拆"这一步。<em>Step 5 的 SQL 报错和 Step 8 的敷衍结论都是后果，不是原因。</em></div>
         </div>
       </div>
 
@@ -633,18 +801,77 @@
           <div class="lvl">L3<small>Attribute</small></div>
         </div>
         <div class="stack-body">
-          <div class="stack-q">为什么坏？改哪一处能救回来？</div>
-          <div class="stack-h">根因解释 + 修复建议</div>
-          <div class="stack-desc">L2 只是指认现场，L3 要给出<strong>根因</strong>和<strong>最小编辑（minimum edit）</strong>：如果把这一步改成 X，trace 大概率能翻转到成功。这一层的结论可以是「论证性」的（LLM scaffolding），也可以是「验证性」的（真反事实回放）。</div>
+          <div class="stack-q">为什么这一步会错？改哪一处能救回来？</div>
+          <div class="stack-h">给出根因 + 最小修改建议（Root Cause + Minimum Edit）</div>
+          <div class="stack-desc">L2 只是指认现场，L3 要回答<strong>动机</strong>：Planner 为什么会跳过维度拆解？是提示词里没写、是没给示例、还是模型上下文里 rubric 缺席？然后给出<strong>最小编辑</strong>——只改这一处，trace 大概率能翻转到成功。这一层的结论可以是「论证性」的（LLM scaffolding + 静态推理），也可以是「验证性」的（真反事实回放）。<strong>在客户不开放重跑权限的约束下，本方案先走论证性。</strong></div>
+          <div class="stack-io">
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输入 · 拿什么</span>
+              L2 定位的关键步骤 + 上下文（prompt / tool schema / rubric）
+            </div>
+            <div class="stack-io-cell">
+              <span class="stack-io-tag">输出 · 给什么</span>
+              根因一句话 + 最小编辑建议 + 反事实预测
+            </div>
+          </div>
         </div>
         <div class="stack-out">
-          <div class="stack-out-tag">典型输出</div>
-          <div>根因：prompt 未明确「优先使用 search 检索」→ 建议：在 system prompt 加入检索优先级规则</div>
+          <div class="stack-out-tag">贯穿案例 · L3 的答案</div>
+          <div>根因：<strong>Planner 的 system prompt 里没有「先按维度拆解」这条硬性规则，且没有 few-shot 示例</strong>。<br>最小编辑：在 planner prompt 加入「任何环比/同比分析必须先输出维度拆解计划」+ 一条示例。<br>反事实预测：翻转概率高（同一类 case 在预演集有 3/4 翻转）。</div>
         </div>
       </div>
     </div>
 
-    <p>这个分层对本项目最直接的启发是：<strong>三层不是"从上到下必须做完"，而是"每一层都能独立交付一份价值"</strong>。第一版只做 L1（打标签 + 汇总统计）就已经能给客户提供他们此前没有的东西；加上 L2 就能进入"哪一步"的粒度；再加上 L3 才是完整的归因报告。这也决定了 roadmap 的优先级——先做 L1 覆盖度，再叠 L2 定位，最后攻 L3。</p>
+    <p><strong>把这三层放在一起看，本质是一条接力：</strong>L1 给出"这是什么错" → L2 拿着这个标签在时间线上定位"错在哪儿" → L3 拿着定位的那一步反推"为什么错、怎么改"。<em>每一层的输出，就是下一层的入口。</em></p>
+
+    <div class="walk" role="group" aria-label="三层接力：同一条 badcase 的输入输出流">
+      <div class="walk-eyebrow">Walkthrough · 沿着贯穿案例走一遍</div>
+
+      <div class="walk-row">
+        <div class="walk-lvl">L1</div>
+        <div class="walk-in">
+          <span class="walk-cap-tag">输入</span>
+          Trace 8 步 + 产物文本 + 四维打分（正确性/深度/可执行性/引用完整度）
+        </div>
+        <div class="walk-arrow">→</div>
+        <div class="walk-out">
+          <span class="walk-cap-tag">输出</span>
+          Planning Error · Sub-goal Decomposition Missing
+        </div>
+      </div>
+
+      <div class="walk-baton">▼ 上一层的输出 = 下一层的入口 ▼</div>
+
+      <div class="walk-row">
+        <div class="walk-lvl">L2</div>
+        <div class="walk-in">
+          <span class="walk-cap-tag">输入</span>
+          L1 标签 + 整条 trace + rubric 树（哪几个维度低分、每个维度关联哪些步骤）
+        </div>
+        <div class="walk-arrow">→</div>
+        <div class="walk-out">
+          <span class="walk-cap-tag">输出</span>
+          决定性步骤：Step 2 · Planner（不是最后崩溃的 Step 5 或 Step 8）
+        </div>
+      </div>
+
+      <div class="walk-baton">▼ 上一层的输出 = 下一层的入口 ▼</div>
+
+      <div class="walk-row">
+        <div class="walk-lvl">L3</div>
+        <div class="walk-in">
+          <span class="walk-cap-tag">输入</span>
+          Step 2 的上下文：Planner 的 system prompt / tool schema / rubric 定义
+        </div>
+        <div class="walk-arrow">→</div>
+        <div class="walk-out">
+          <span class="walk-cap-tag">输出</span>
+          根因 + 一条最小编辑（改 planner prompt + 加示例）+ 翻转概率预测
+        </div>
+      </div>
+    </div>
+
+    <p>这个分层对本项目最直接的启发是：<strong>三层不是"从上到下必须做完才有价值"，而是"每一层都能独立交付一份价值"</strong>。第一版只做 L1（打标签 + 汇总统计）就已经能给客户提供他们此前没有的东西；加上 L2 就能进入"哪一步"的粒度；再加上 L3 才是完整的归因报告。这也决定了 roadmap 的优先级——先做 L1 覆盖度，再叠 L2 定位，最后攻 L3。<strong>后续三、四、五章分别拆解这三层的方法论——每一章都会回到这条 BI badcase 上，具体看方法怎么用。</strong></p>
 
     <!-- ========== 三、L1 分类学 ========== -->
     <h2 id="l1"><span class="sec-num">三</span>L1 · 失败分类学：不用自己发明词表<a href="#l1" class="anchor">#</a></h2>
@@ -699,6 +926,10 @@
 
     <p>推荐做法：<strong>AgentErrorTaxonomy（模块视角）× Future AGI 五分类（工程视角）做交叉，一级 5–6 类，二级 20–30 子类；每个客户场景保留 1–2 个专属扩展槽</strong>。这样做的价值有三个——(1) 客户能听懂（工程标签），(2) 团队能沉淀（学术模块），(3) 跨客户能汇总（同一套词表）。这个正好对应会议里"所有人在同一套语言体系下讨论问题"的目标。</p>
 
+    <div class="callout callout-info">
+      <div class="callout-tag">回到贯穿案例 · L1 怎么打这个标签</div>
+      把「BI 助手把 GMV 环比分析做成了大盘总量结论」这条 trace 交给 L1，词表里最贴合的一级标签是 <strong>Planning</strong>；二级子类是 <strong>Sub-goal Decomposition Missing</strong>（该拆维度没拆）。这个标签本身不解释为什么，但一旦贴上，跨 100 条 BI badcase 汇总的时候，就能一眼看到"Planning · 子目标缺失"这类占了多少比例——这就是分类学的价值。</div>
+
     <!-- ========== 四、L2 定位 ========== -->
     <h2 id="l2"><span class="sec-num">四</span>L2 · 定位到步：两条主流路径<a href="#l2" class="anchor">#</a></h2>
     <p class="kicker">— Counterfactual replay vs static analysis</p>
@@ -730,6 +961,20 @@
     </ul>
 
     <p>这些方法的共同特点：<strong>输入只需要 trace（可以是打分/日志/工具调用），不需要重跑</strong>——正好落在本项目的数据契约里。第一版 L2 就从这条路搭。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">回到贯穿案例 · L2 怎么定位到 Step 2</div>
+      BI badcase 里 trace 有 8 步，产物分四个维度都低。走静态分析路径：<br>
+      <strong>①</strong> 从 rubric 树入手——"深度 1/5"这一维度对应的 rubric 子树，明确要求"必须做维度拆解"。<br>
+      <strong>②</strong> 沿 trace 反查——找覆盖"维度拆解"这条 rubric 的步骤，结果<em>整条 trace 都没有</em>；这就意味着"该拆维度的动作被跳过了"。<br>
+      <strong>③</strong> 定位最早的责任步——"拆维度"这个子目标本该在<strong>Step 2（Planner）</strong>生成，但它没有；这是最早的偏航点。<br>
+      <strong>④</strong> 用 GraphTracer 的 typed dependency 判据验证：Step 5 的 SQL 报错、Step 8 的敷衍结论都<em>依赖</em>于 Step 2 的错误规划，是"继承错误"而非"引入错误"。<br>
+      L2 的答案：<strong>Step 2 · Planner</strong> 是决定性错误步。
+    </div>
+
+    <p style="font-size:.92em;color:var(--text-muted);border-left:2px solid var(--accent);padding:.35em .7em;margin:.9em 0;">
+      → 展开阅读：<a href="../../readings/2026-07_agent-grade-judging.html"><strong>Agent-Grade Judging · AgentEval vs Agent-as-a-Judge 的对照拆解</strong></a>。两条 process-aware 评测路径的完整拆解 + 一个原创拼接视角（Critic → DAG → Judge → A2P 的流水线），并给出这两条线如何各占 L1 / L2 / L3 的落位建议。
+    </p>
 
     <!-- ========== 五、L3 分岔路 ========== -->
     <h2 id="l3"><span class="sec-num">五</span>L3 · 从"哪一步"到"为什么 &amp; 怎么修"<a href="#l3" class="anchor">#</a></h2>
@@ -871,6 +1116,21 @@
           "先解释错误 → 再基于解释重写"——不仅是一种归因方法，也是<strong>报告的最佳输出模板</strong>：错误陈述 → 证据 → 修复建议对比对。前场同学交付时天然在同一套语言里，避免"每个人写的报告都长得不一样"。
         </p>
       </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">回到贯穿案例 · 三件套怎么协作</div>
+      L2 已经指认 <strong>Step 2 · Planner</strong> 是决定性错误步。L3 三件套接手：<br>
+      <strong>①  A2P 溯因 —— Abduction / Action / Prediction</strong><br>
+      <em>Abduce（反推根因）：</em>"Planner 没生成维度拆解子目标"这个观察，最合理的解释是什么？枚举三种假说——<em>(a)</em> system prompt 没写、<em>(b)</em> few-shot 里没这类示例、<em>(c)</em> 模型能力不够。<br>
+      <em>Act（定义最小干预）：</em>假说 (a) 只要检查 prompt 就能证伪，成本最低——优先。检查后确认 prompt 里确实没有"必须先拆维度"的规则。<br>
+      <em>Predict（预测干预结果）：</em>如果只在 prompt 里加入这条规则 + 一条示例，其他不动，翻转概率多高？基于 rubric 里"深度"维度的定义 + 同类 case，估计翻转率 &gt; 70%。<br>
+      <strong>② CHIEF 三判据 —— 症状 vs 根因</strong><br>
+      对 L2 定位到的 Step 2 走一遍三判据：<em>local-origin</em>（Step 2 的错误不是从上一步继承的、是本地引入的）✅ / <em>earliest data corruption</em>（Step 2 是首次让"该拆维度"这个信息缺失的步）✅ / <em>irreversibility</em>（Step 2 之后没有反思环节能补回来）✅ / <em>strongest downstream impact</em>（Step 5、Step 8 都依赖它）✅。四条全过，Step 2 = 真正的 root cause 步，不是症状。<br>
+      <strong>③ Re-Ex 模板 —— 报告最终形态</strong><br>
+      <em>Error statement：</em>Planner 在环比分析任务里跳过了「按维度拆解」子目标，直接落到总量口径。<br>
+      <em>Evidence：</em>trace Step 2 输出 = "跑一次 GMV total SQL"；rubric「深度」要求维度拆解；同类 4 个 case 有 3 个观察到同一模式。<br>
+      <em>Fix：</em>在 planner system prompt 加入硬性规则 + 1 条 few-shot；预计翻转率 &gt; 70%，证据类型：<strong>静态推理</strong>，置信度：<strong>0.72</strong>。
     </div>
 
     <h3 id="l3-honest">5.2 一点诚实：论证性 L3 会在哪儿翻车</h3>
@@ -1108,16 +1368,29 @@
 
     <p>行业里已有的一堆工具——Langfuse / LangSmith / Braintrust / Arize Phoenix / MLflow——都要客户"上传全量数据"，正好卡在客户拒绝的门槛上。<strong>本项目的差异化窗口就在这里</strong>：只要打分和轨迹，不要全量数据；输出标准化归因报告，不要客户去平台里点点点。这不是能力更强，是<strong>合约更轻</strong>——对企业客户来说，合约门槛低于工具能力更重要。</p>
 
-    <h3 id="open-questions">7.2 需要和算法同学对齐的问题</h3>
+    <h3 id="open-questions">7.2 已澄清的约束 & 尚待对齐的问题</h3>
 
-    <p>下面这些问题是纸面调研解决不了的，得约到相关算法同学一起过一遍：</p>
+    <p>调研过程中和相关同学同步了两条关键前提，先把它们从"疑问"里挪出来、明确记录为<strong>方法学的输入约束</strong>；剩下的才是真正需要继续对齐的开放项。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">已澄清的约束</div>
+      <ol style="margin:.3em 0 0;padding-left:1.35em">
+        <li><strong>打分粒度：产物级多维度打分</strong>——客户交付的分数是针对 <em>agent 最终产物</em> 的多维度评分（正确性 / 深度 / 可执行性 / …），<strong>不是</strong>针对 trace 或单个 step 的判分。<br/>
+          <span style="color:var(--text-muted);font-size:.92em">→ 方法学影响：L2 定位必须走"<strong>产物分 → step</strong>"的<strong>反向归因</strong>路径。产物打分维度 = 归因起点；judge 二次拆解 / rubric-to-trace 映射不是可选项、是必选路径。</span>
+        </li>
+        <li><strong>Rubric 开放：客户愿意开放打分维度</strong>——每个维度的定义、rubric 树都可以给我们。<br/>
+          <span style="color:var(--text-muted);font-size:.92em">→ 方法学影响：rubric tree 直接充当"<strong>打分维度 → 归因维度</strong>"的桥梁。比如"深度分低"→ 归因到"信息检索 / 维度拆解"这条 rubric 子树 → 沿 trace DAG 定位到相关 step。整个 L2 拆解可以由 rubric 结构驱动。</span>
+        </li>
+      </ol>
+    </div>
+
+    <p><strong>剩下真正需要和算法同学一起过的开放项：</strong></p>
 
     <ol>
-      <li>客户交付的"打分数据"粒度到底是 <strong>trace 级还是 step 级</strong>？如果只到 trace 级，L2 定位必须走 judge 二次拆解，方法学要重估。</li>
-      <li>客户是否愿意开放 <strong>rubric 定义</strong>？rubric tree 是把"打分维度"翻译成"归因维度"的关键桥梁。</li>
       <li>双变量对比里"变量"的可枚举范围（模型 / prompt / workflow 节点 / tool 版本）？变量维度决定统计分析的 feature space。</li>
       <li>是否需要复用<strong>内部现有的进化 / auto-prompt 框架</strong>的对比协议？会议里提到"作为进化框架的延展"，需要看是否共享 experiment schema。</li>
       <li>报告输出形态：<strong>纯文本 markdown / 交互式 HTML / 集成到现有平台</strong>？这决定了 L3 结论的呈现是否能利用 rubric tree 的层级结构下钻。</li>
+      <li>rubric-to-trace 映射的粒度：是 <strong>rubric 维度 → step 类型</strong>（静态映射），还是需要一个 judge 在线判断"这次分数低是哪几步造成的"（动态归属）？这决定了 L2 是配置驱动还是 model-in-the-loop。</li>
     </ol>
 
     <!-- ========== 八、接入方案：LIFT + skill + 归因分析 ========== -->
@@ -1305,7 +1578,7 @@
 
     <hr />
     <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
-      修订记录：2026-07-28 初稿（基于会议纪要脱敏后的调研整理）· 2026-07-28 增补第八章「接入方案：开源框架 + Skill + 归因分析」· 2026-07-28 修订 8.2/8.4/印章——归因内嵌 LIFT、评测与归因同框
+      修订记录：2026-07-28 初稿（基于会议纪要脱敏后的调研整理）· 2026-07-28 增补第八章「接入方案：开源框架 + Skill + 归因分析」· 2026-07-28 修订 8.2/8.4/印章——归因内嵌 LIFT、评测与归因同框 · 2026-07-29 澄清打分粒度（产物级多维度）与 rubric 开放的约束，7.2 重写为「已澄清约束 + 开放项」· 2026-07-29 4.2 加"→ 展开阅读"链接，指向新篇《Agent-Grade Judging》深度拆解 · 2026-07-29 第二章重写——加"贯穿案例（BI · GMV 环比）"交底卡 + 三层 stack 加"输入/输出"栏 + 加 walkthrough 接力视觉块，让 L1/L2/L3 边界与接力关系一眼可见；章三/四/五分别追加"回到贯穿案例"callout，让每层方法都用同一条 BI badcase 走完。
     </p>
 
     <div class="doc-footer">

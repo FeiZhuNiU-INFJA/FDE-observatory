@@ -1,0 +1,832 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent-Grade Judging：从"打一个分"到"沿图判定" · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页 accent：judge-forge indigo（未被其他文档占用） */
+  :root {
+    --accent: #1e40af;
+    --accent-deep: #1e3a8a;
+    --accent-ink: #1e3a8a;
+    --accent-soft: color-mix(in srgb, #1e40af 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent-soft: color-mix(in srgb, #1e40af 26%, #14141c);
+    --accent-ink: #a5b4fc;
+  }
+
+  /* SVG 文字字体统一 */
+  .paths text, .trio text, .dag text, .radar text { font-family: var(--mono); }
+  .paths text.disp, .trio text.disp, .dag text.disp, .radar text.disp { font-family: var(--display); font-weight: 700; }
+
+  /* ═════════ 视觉一：两条路径 · 结构在哪 ═════════ */
+  .paths {
+    margin: 1.8em 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+  }
+  @media (max-width: 860px) { .paths { grid-template-columns: 1fr; } }
+  .paths-card {
+    border: 1.5px solid var(--border); border-radius: 14px; padding: 1.2rem 1.3rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .8rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .paths-card:hover { transform: translateY(-3px); }
+  .paths-card.p-ae { border-color: var(--info); }
+  .paths-card.p-ae .paths-eyebrow { color: var(--info); }
+  .paths-card.p-aj { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .paths-card.p-aj .paths-eyebrow { color: var(--accent); }
+  .paths-eyebrow {
+    font-family: var(--mono); font-size: .68rem; font-weight: 600; letter-spacing: .14em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .paths-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .paths-name { font-family: var(--display); font-weight: 700; font-size: 1.16rem; color: var(--text); margin: 0; line-height: 1.25; }
+  .paths-name small { display: block; font-family: var(--mono); font-size: .68rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .2em; font-weight: 500; }
+  .paths-svg { display: flex; justify-content: center; padding: .4rem 0 .2rem; }
+  .paths-svg svg { width: 100%; max-width: 280px; height: auto; }
+  .paths-tag {
+    font-size: .82rem; color: var(--text-soft); font-style: italic; padding: .55rem .75rem;
+    background: var(--bg-soft); border-radius: 8px; border-left: 2.5px solid currentColor;
+    margin: 0;
+  }
+  .paths-card.p-ae .paths-tag { color: var(--info); }
+  .paths-card.p-aj .paths-tag { color: var(--accent); }
+  .paths-tag em { color: var(--text-soft); }
+  .paths-cap {
+    font-size: .88rem; line-height: 1.55; color: var(--text-soft); margin: 0;
+  }
+
+  /* ═════════ 视觉二：AgentEval 三 agent 时序 ═════════ */
+  .trio {
+    margin: 1.8em 0; padding: 1.4rem 1.5rem; border: 1.5px solid var(--info);
+    border-radius: 16px; background: var(--surface);
+  }
+  .trio-title {
+    font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text);
+    margin: 0 0 .3em; display: flex; align-items: center; gap: .6em;
+  }
+  .trio-title .badge { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; color: var(--info); text-transform: uppercase; padding: .2em .55em; border: 1px solid var(--info); border-radius: 999px; }
+  .trio-sub { font-size: .9rem; color: var(--text-muted); margin: 0 0 1em; }
+  .trio-svg { display: flex; justify-content: center; margin: .3rem 0 .8rem; }
+  .trio-svg svg { width: 100%; max-width: 720px; height: auto; }
+  .trio-legend {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: .5rem;
+  }
+  @media (max-width: 720px) { .trio-legend { grid-template-columns: 1fr; } }
+  .trio-role {
+    padding: .8rem .95rem; border-left: 3px solid var(--info); background: var(--bg-soft);
+    border-radius: 0 8px 8px 0;
+  }
+  .trio-role.r2 { border-left-color: var(--accent); }
+  .trio-role.r3 { border-left-color: var(--warn); }
+  .trio-rname { font-family: var(--display); font-weight: 700; font-size: .96rem; color: var(--text); margin: 0 0 .2em; }
+  .trio-rname small { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; color: var(--text-muted); display: block; font-weight: 500; margin-top: .1em; }
+  .trio-rdesc { font-size: .83rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+
+  /* ═════════ 视觉三：Requirements DAG 构造 + 遍历 ═════════ */
+  .dag {
+    margin: 1.8em 0; padding: 1.4rem 1.5rem; border: 1.5px solid var(--accent);
+    border-radius: 16px; background: var(--surface); box-shadow: 0 6px 22px var(--accent-glow);
+  }
+  .dag-title { font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); margin: 0 0 .3em; display: flex; align-items: center; gap: .6em; }
+  .dag-title .badge { font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; padding: .2em .55em; border: 1px solid var(--accent); border-radius: 999px; }
+  .dag-sub { font-size: .9rem; color: var(--text-muted); margin: 0 0 1em; }
+  .dag-svg { display: flex; justify-content: center; margin: .3rem 0 .8rem; }
+  .dag-svg svg { width: 100%; max-width: 720px; height: auto; }
+  .dag-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: .5rem; }
+  @media (max-width: 720px) { .dag-steps { grid-template-columns: 1fr; } }
+  .dag-step { padding: .8rem .95rem; background: var(--bg-soft); border-radius: 8px; border-top: 3px solid var(--accent); }
+  .dag-stepnum { font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; color: var(--accent); text-transform: uppercase; }
+  .dag-stepname { font-family: var(--display); font-weight: 700; font-size: .96rem; color: var(--text); margin: .2em 0 .3em; }
+  .dag-stepdesc { font-size: .82rem; color: var(--text-soft); line-height: 1.5; margin: 0; }
+
+  /* dash-flow 动画（judge agent 沿 DAG 遍历的虚线走光） */
+  .dag-flow { stroke-dasharray: 4 6; animation: dagflow 1.6s linear infinite; }
+  @keyframes dagflow { to { stroke-dashoffset: -20; } }
+
+  /* ═════════ 视觉四：对比雷达 ═════════ */
+  .radar {
+    margin: 1.8em 0; padding: 1.4rem 1.5rem; border: 1.5px solid var(--border-strong);
+    border-radius: 16px; background: var(--surface);
+    display: grid; grid-template-columns: 1fr 1.15fr; gap: 1.6rem; align-items: center;
+  }
+  @media (max-width: 860px) { .radar { grid-template-columns: 1fr; } }
+  .radar-title { font-family: var(--display); font-weight: 700; font-size: 1.08rem; color: var(--text); margin: 0 0 .3em; }
+  .radar-sub { font-size: .88rem; color: var(--text-muted); margin: 0 0 1em; }
+  .radar-svg { display: flex; justify-content: center; }
+  .radar-svg svg { width: 100%; max-width: 340px; height: auto; }
+  .radar-key { display: flex; gap: 1.2rem; margin: .5em 0 1em; font-size: .85rem; }
+  .radar-key span { display: inline-flex; align-items: center; gap: .4em; color: var(--text-soft); }
+  .radar-key .swatch { width: 12px; height: 12px; border-radius: 2px; }
+  .radar-key .k-ae { background: var(--info); }
+  .radar-key .k-aj { background: var(--accent); }
+  .radar-notes { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: .5rem; font-size: .88rem; color: var(--text-soft); }
+  .radar-notes li { padding: .55rem .75rem; background: var(--bg-soft); border-radius: 8px; line-height: 1.5; border-left: 2px solid var(--border-strong); }
+  .radar-notes li b { color: var(--text); font-weight: 600; }
+
+  /* ═════════ 拼接图：Rubric → Critic → DAG → Judge → A2P ═════════ */
+  .fuse { margin: 1.4em 0; padding: 1.3rem 1.4rem; border: 1.5px solid var(--accent); border-radius: 16px; background: linear-gradient(135deg, var(--accent-soft), var(--surface)); }
+  .fuse-title { font-family: var(--display); font-weight: 700; font-size: 1.02rem; color: var(--accent); margin: 0 0 .8em; letter-spacing: .01em; }
+  .fuse-title small { display: block; font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; color: var(--text-muted); font-weight: 500; margin-top: .15em; text-transform: uppercase; }
+  .fuse-chain { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; align-items: stretch; }
+  @media (max-width: 860px) { .fuse-chain { grid-template-columns: 1fr; } }
+  .fuse-node { padding: .75rem .8rem; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; text-align: center; display: flex; flex-direction: column; gap: .3rem; position: relative; }
+  .fuse-node::after { content: "→"; position: absolute; right: -.75rem; top: 50%; transform: translateY(-50%); font-family: var(--display); color: var(--accent); font-size: 1.1rem; font-weight: 500; z-index: 2; }
+  .fuse-node:last-child::after { content: ""; }
+  @media (max-width: 860px) { .fuse-node::after { content: "↓"; right: 50%; top: auto; bottom: -1.1rem; transform: translateX(50%); } }
+  .fuse-tag { font-family: var(--mono); font-size: .58rem; letter-spacing: .1em; color: var(--text-muted); text-transform: uppercase; }
+  .fuse-name { font-family: var(--display); font-weight: 700; font-size: .82rem; color: var(--text); line-height: 1.25; }
+  .fuse-role { font-size: .72rem; color: var(--text-soft); line-height: 1.4; }
+
+  /* reduced-motion 兜底 */
+  @media (prefers-reduced-motion: reduce) {
+    .dag-flow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      Agent-Grade Judging<span class="brand-sub">跨市场 · Agent 评测 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Agent-Grade Judging：从"打一个分"到"沿图判定"</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">AgentEval vs Agent-as-a-Judge · 两条 process-aware 评测路径的对照拆解</p>
+      <div class="doc-meta">
+        <span>2026-07-29</span>
+        <span>跨市场</span>
+        <span>Agent 评测</span>
+        <span>LLM-as-a-Judge</span>
+        <span>方法论</span>
+        <span>对内</span>
+        <span>时机：6–12 月</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">2<small>路径</small></div><div class="lab">Critic/Quantifier/Verifier<br />vs Requirements DAG</div></div>
+        <div class="hero-stat"><div class="num">0.9<small>+</small></div><div class="lab">DevAI benchmark<br />人类对齐度</div></div>
+        <div class="hero-stat"><div class="num">97<small>%</small></div><div class="lab">成本下降<br />对比 human eval</div></div>
+        <div class="hero-stat"><div class="num">3<small>层</small></div><div class="lab">L1 分类 · L2 定位<br />L3 归因栈对接</div></div>
+      </div>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>Agent 评测的下一站不是"更聪明的 judge"，而是<strong>把结构显式化</strong>——要么把结构放进 <em>judge 内部</em>（AgentEval 三 agent 分工），要么把结构放进 <em>任务外部</em>（Agent-as-a-Judge 的 requirements DAG）。这两条路径互为镜像，但在企业归因场景里其实是<strong>上下游关系</strong>：Critic 发现该看哪些维度、DAG 固化维度间的依赖、judge agent 沿图行走、失败节点直接喂给 A2P 溯因——这就是本篇要拼出来的原创视角。
+    </div>
+
+    <!-- ========== 一、为什么 pass/fail 不够 ========== -->
+    <h2 id="why-not-passfail"><span class="sec-num">一</span>为什么 pass/fail 不够<a href="#why-not-passfail" class="anchor">#</a></h2>
+
+    <p>过去十年 LLM 评测的默认动作是——给一个任务、跑一次模型、判一个分。<strong>Agent 场景把这套动作打碎了</strong>：一个 deep agent 完成一次任务可能要经过几十步——规划、工具调用、检索、反思、再规划——最终一个"pass"或"fail"完全掩盖了中间过程的信息。</p>
+
+    <p>问题不是"分数是错的"，问题是<strong>分数是不够信息量的</strong>。工程师拿到一个 "3/5" 打开 Langfuse 只能一步步翻 trace 猜"这一步是不是就是它扣分的地方"——这套人工归因的成本吃掉了评测的所有收益。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">outcome-only 的信息损失</div>
+      Agent trace 是一条 <em>由多个决策组成的因果链</em>，最终分数只反映链的末端。中间任何一步的错、退化、绕路、无效重试——都被浓缩成一个数字。<strong>信息损失量随 trace 长度呈超线性增长。</strong>
+    </div>
+
+    <p>两篇 2024 年下半年出来的论文，从不同方向回答了这个问题——<strong>AgentEval</strong>（Arabzadeh 等 · Microsoft AutoGen）与 <strong>Agent-as-a-Judge</strong>（Zhuge 等 · Meta AI）。两条路径都在 process-aware 评测这个大伞下，但技术选择完全不一样。</p>
+
+    <!-- ========== 二、两条路径的分野 ========== -->
+    <h2 id="two-paths"><span class="sec-num">二</span>两条路径的分野：结构放在哪儿<a href="#two-paths" class="anchor">#</a></h2>
+
+    <p>先把两条线的本质差异说透：<strong>它们对"如何让 judging 变得 process-aware"给出了截然相反的结构性回答</strong>。</p>
+
+    <div class="paths">
+      <div class="paths-card p-ae">
+        <div class="paths-eyebrow"><span class="dot"></span> Path A · Structure inside judge</div>
+        <h3 class="paths-name">AgentEval<small>Arabzadeh et al. · Microsoft AutoGen · 2024</small></h3>
+        <div class="paths-svg">
+          <svg viewBox="0 0 240 180" role="img" aria-label="AgentEval 三个 agent 组成的内部结构">
+            <!-- 外框：judge system -->
+            <rect x="18" y="16" width="204" height="148" rx="14"
+                  fill="none" stroke="var(--info)" stroke-width="1.6"/>
+            <text x="120" y="35" text-anchor="middle" font-size="9" fill="var(--info)"
+                  font-family="var(--mono)" opacity=".85">JUDGE SYSTEM (BOX)</text>
+            <!-- 三个 agent circle -->
+            <g style="color:var(--info)">
+              <circle cx="65" cy="95" r="22" fill="var(--info-soft)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="65" y="98" text-anchor="middle" font-size="9" fill="currentColor" font-weight="700" class="disp">Critic</text>
+              <circle cx="120" cy="95" r="22" fill="var(--info-soft)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="120" y="98" text-anchor="middle" font-size="8" fill="currentColor" font-weight="700" class="disp">Quantifier</text>
+              <circle cx="175" cy="95" r="22" fill="var(--info-soft)" stroke="currentColor" stroke-width="1.5"/>
+              <text x="175" y="98" text-anchor="middle" font-size="9" fill="currentColor" font-weight="700" class="disp">Verifier</text>
+              <!-- 连线 -->
+              <path d="M 87 95 L 98 95" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah-info)"/>
+              <path d="M 142 95 L 153 95" stroke="currentColor" stroke-width="1.4" marker-end="url(#ah-info)"/>
+            </g>
+            <!-- 输入输出 -->
+            <text x="120" y="145" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">3 agents · 内部分工</text>
+            <defs>
+              <marker id="ah-info" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--info)"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <p class="paths-tag">结构<strong>在 judge 内部</strong>——一个不透明的黑箱被拆成 3 个可分工的 agent。</p>
+        <p class="paths-cap">Critic 提议评分维度、Quantifier 给分并量化解释、Verifier 校验一致性与 bias。三 agent 通过 hand-off 协议流水线协作。对客户 rubric 更宽松——Critic 可以在线发现新维度。</p>
+      </div>
+
+      <div class="paths-card p-aj">
+        <div class="paths-eyebrow"><span class="dot"></span> Path B · Structure outside task</div>
+        <h3 class="paths-name">Agent-as-a-Judge<small>Zhuge et al. · Meta AI · 2024</small></h3>
+        <div class="paths-svg">
+          <svg viewBox="0 0 240 180" role="img" aria-label="Agent-as-a-Judge 使用 requirements DAG 作为外部结构">
+            <!-- 单个 judge agent -->
+            <circle cx="45" cy="90" r="20" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.7"/>
+            <text x="45" y="93" text-anchor="middle" font-size="8" fill="var(--accent)" font-weight="700" class="disp">Judge</text>
+            <!-- DAG 节点 -->
+            <g style="color:var(--accent)">
+              <circle cx="130" cy="45" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="180" cy="70" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="130" cy="95" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="180" cy="120" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <circle cx="130" cy="145" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <!-- DAG 边 -->
+              <path d="M 139 45 L 171 68" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/>
+              <path d="M 139 95 L 171 72" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/>
+              <path d="M 139 95 L 171 120" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/>
+              <path d="M 139 145 L 171 122" stroke="currentColor" stroke-width="1.2" fill="none" opacity=".6"/>
+              <!-- judge 遍历流光 -->
+              <path d="M 65 90 Q 100 60 121 45" stroke="var(--accent)" stroke-width="1.5" fill="none" class="dag-flow" marker-end="url(#ah-acc)"/>
+            </g>
+            <text x="130" y="20" text-anchor="middle" font-size="8" fill="var(--accent)" font-family="var(--mono)" opacity=".85">REQUIREMENTS DAG</text>
+            <text x="120" y="170" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">1 judge · 沿图遍历</text>
+            <defs>
+              <marker id="ah-acc" viewBox="0 0 8 8" refX="6" refY="4" markerWidth="6" markerHeight="6" orient="auto">
+                <path d="M 0 0 L 8 4 L 0 8 Z" fill="var(--accent)"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <p class="paths-tag">结构<strong>在任务外部</strong>——用户需求先被显式分解成 requirements DAG，judge agent 沿图行走。</p>
+        <p class="paths-cap">requirements 是节点、依赖关系是边，judge agent 拓扑序遍历每个节点独立判定。上游失败自动短路——归因链免费得到。对客户 rubric 更忠实——直接映射为 DAG 骨架。</p>
+      </div>
+    </div>
+
+    <p><strong>这个分野的本质是"结构在哪"</strong>：AgentEval 把结构放进 judge 内部（不同 agent 负责不同判分职能），Agent-as-a-Judge 把结构放进任务外部（DAG 描述任务的分解与依赖）。这不是一个 metaphor——它决定了两条线接下来的几乎所有工程选择：judge 数量、前置成本、判分粒度、归因链的形成方式、动态性、可复现性……都由这个根性差异生长出来。</p>
+
+    <!-- ========== 三、AgentEval 拆解 ========== -->
+    <h2 id="agenteval"><span class="sec-num">三</span>AgentEval · Critic + Quantifier + Verifier<a href="#agenteval" class="anchor">#</a></h2>
+
+    <p>AgentEval 发表于 2024 年 5 月，是 AutoGen 团队在多 agent 评测方向的代表作。它的核心动作是：<strong>把"给一个分"这个动作分解为三个 agent 的顺序协作</strong>——每个 agent 负责一件事、可以独立优化、可以互相校验。</p>
+
+    <div class="trio">
+      <div class="trio-title">
+        <span>AgentEval 三 agent 流水线</span>
+        <span class="badge">Path A · Internal Structure</span>
+      </div>
+      <p class="trio-sub">任务描述 + agent 输出 → 三个 agent 顺序流水线 → 多维度评分 + 一致性检验</p>
+      <div class="trio-svg">
+        <svg viewBox="0 0 720 200" role="img" aria-label="AgentEval 三 agent 时序：Critic → Quantifier → Verifier">
+          <defs>
+            <marker id="ae-ah" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--info)"/>
+            </marker>
+          </defs>
+          <!-- 输入 -->
+          <g>
+            <rect x="12" y="72" width="80" height="56" rx="8" fill="var(--bg-soft)" stroke="var(--border-strong)" stroke-width="1.2"/>
+            <text x="52" y="94" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700" class="disp">任务</text>
+            <text x="52" y="110" text-anchor="middle" font-size="9" fill="var(--text-muted)">+ agent 输出</text>
+          </g>
+          <path d="M 92 100 L 130 100" stroke="var(--info)" stroke-width="1.5" fill="none" marker-end="url(#ae-ah)"/>
+
+          <!-- Critic -->
+          <g>
+            <rect x="130" y="60" width="150" height="80" rx="10" fill="var(--info-soft)" stroke="var(--info)" stroke-width="1.8"/>
+            <text x="205" y="82" text-anchor="middle" font-size="12" fill="var(--info)" font-weight="700" class="disp">Critic</text>
+            <text x="205" y="100" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">提议评分维度</text>
+            <text x="205" y="114" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">criteria proposal</text>
+            <text x="205" y="128" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">→ criteria list</text>
+          </g>
+          <path d="M 280 100 L 320 100" stroke="var(--info)" stroke-width="1.5" fill="none" marker-end="url(#ae-ah)"/>
+
+          <!-- Quantifier -->
+          <g>
+            <rect x="320" y="60" width="150" height="80" rx="10" fill="var(--info-soft)" stroke="var(--info)" stroke-width="1.8"/>
+            <text x="395" y="82" text-anchor="middle" font-size="12" fill="var(--info)" font-weight="700" class="disp">Quantifier</text>
+            <text x="395" y="100" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">按维度打分</text>
+            <text x="395" y="114" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">+ 量化解释</text>
+            <text x="395" y="128" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">→ scores + rationale</text>
+          </g>
+          <path d="M 470 100 L 510 100" stroke="var(--info)" stroke-width="1.5" fill="none" marker-end="url(#ae-ah)"/>
+
+          <!-- Verifier -->
+          <g>
+            <rect x="510" y="60" width="150" height="80" rx="10" fill="var(--info-soft)" stroke="var(--info)" stroke-width="1.8"/>
+            <text x="585" y="82" text-anchor="middle" font-size="12" fill="var(--info)" font-weight="700" class="disp">Verifier</text>
+            <text x="585" y="100" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">一致性 / bias 校验</text>
+            <text x="585" y="114" text-anchor="middle" font-size="8.5" fill="var(--text-soft)">robustness check</text>
+            <text x="585" y="128" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">→ validated report</text>
+          </g>
+          <path d="M 660 100 L 700 100" stroke="var(--info)" stroke-width="1.5" fill="none" marker-end="url(#ae-ah)"/>
+          <text x="708" y="103" text-anchor="start" font-size="9" fill="var(--text-muted)" font-family="var(--mono)">report</text>
+
+          <!-- 反馈回路 -->
+          <path d="M 585 60 Q 585 30 395 30 T 205 30 L 205 60" stroke="var(--warn)" stroke-width="1.2"
+                stroke-dasharray="4 4" fill="none"/>
+          <text x="395" y="24" text-anchor="middle" font-size="8" fill="var(--warn)" font-family="var(--mono)">发现 bias / 冲突 → 回退调 criteria</text>
+
+          <!-- 底部 -->
+          <text x="365" y="180" text-anchor="middle" font-size="9" fill="var(--text-muted)"
+                font-family="var(--mono)" opacity=".85">HAND-OFF PIPELINE · 每个 agent 是 LLM prompt · 输出可独立审计</text>
+        </svg>
+      </div>
+
+      <div class="trio-legend">
+        <div class="trio-role">
+          <div class="trio-rname">Critic<small>CRITERIA PROPOSER</small></div>
+          <p class="trio-rdesc">给定任务和 agent 输出，提议一组评分维度（例如"正确性 / 效率 / 可读性 / 完备性"）。Critic 是<strong>发散</strong>器——它可以在线扩展客户没预设的维度。</p>
+        </div>
+        <div class="trio-role r2">
+          <div class="trio-rname">Quantifier<small>SCORE ASSIGNER</small></div>
+          <p class="trio-rdesc">按 Critic 提出的每个维度独立打分，并给出<strong>量化解释</strong>（"因为 X 缺失所以扣 2 分"）。粒度可配为 binary、Likert-5、连续分。</p>
+        </div>
+        <div class="trio-role r3">
+          <div class="trio-rname">Verifier<small>CONSISTENCY CHECKER</small></div>
+          <p class="trio-rdesc">校验前两 agent 的输出是否自洽——criteria 是否互斥、分数是否与 rationale 一致、有无 length bias / position bias。发现问题回退 Critic 重议。</p>
+        </div>
+      </div>
+    </div>
+
+    <p><strong>AgentEval 的三个核心工程价值</strong>：</p>
+
+    <ol>
+      <li><strong>动态维度发现</strong>——Critic 可以为 unseen 任务临时构造评分维度，比"固定 rubric"更适合开放式生成任务（写作、UX、生成式对话）。</li>
+      <li><strong>可解释性</strong>——每个分数附带量化解释（不是"因为好所以 5 分"，而是"因为完成了 X、Y、Z 三条子目标所以 5 分"）。</li>
+      <li><strong>自校验闭环</strong>——Verifier 相当于给整个 judge system 装了个 QA 层，能显著降低 LLM-as-a-Judge 常见的 bias（论文里在 MATH / HumanEval 上做了实证）。</li>
+    </ol>
+
+    <p><strong>AgentEval 的两个短板也同样明显</strong>：</p>
+
+    <ol>
+      <li><strong>Judge bias 传递</strong>——三个 agent 都用同族 LLM 有<strong>共谋风险</strong>（同类型模型对同类错误集体盲）。论文里通过 cross-family verifier 缓解，但没根除。</li>
+      <li><strong>不做"哪一步错"</strong>——AgentEval 天然是<strong>结果导向</strong>的（对 agent 的最终输出打分），trace 内部的过程判定不是它的直接目标。这是它与 Agent-as-a-Judge 的最大 gap。</li>
+    </ol>
+
+    <!-- ========== 四、Agent-as-a-Judge 拆解 ========== -->
+    <h2 id="agent-as-judge"><span class="sec-num">四</span>Agent-as-a-Judge · Requirements DAG + Judge Loop<a href="#agent-as-judge" class="anchor">#</a></h2>
+
+    <p>Agent-as-a-Judge 发表于 2024 年 10 月，是 Meta AI 团队的作品，也是"把评测本身做成一个 agent"这个 idea 的最完整体现。它的核心动作是——<strong>先把任务分解为 requirements DAG，再让 judge agent 沿图行走</strong>。</p>
+
+    <div class="dag">
+      <div class="dag-title">
+        <span>Requirements DAG 构造 + Judge 遍历</span>
+        <span class="badge">Path B · External Structure</span>
+      </div>
+      <p class="dag-sub">任务自然语言 → LLM 分解为 sub-requirements → 建依赖关系 → judge agent 拓扑序遍历</p>
+      <div class="dag-svg">
+        <svg viewBox="0 0 720 260" role="img" aria-label="Requirements DAG 构造过程与 judge 遍历">
+          <defs>
+            <marker id="aj-ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--accent)"/>
+            </marker>
+            <marker id="aj-ah-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 Z" fill="var(--con)"/>
+            </marker>
+          </defs>
+
+          <!-- Step 1: 任务描述 -->
+          <g>
+            <rect x="12" y="110" width="98" height="46" rx="8" fill="var(--bg-soft)" stroke="var(--border-strong)" stroke-width="1.2"/>
+            <text x="61" y="132" text-anchor="middle" font-size="10" fill="var(--text)" font-weight="700" class="disp">Task</text>
+            <text x="61" y="146" text-anchor="middle" font-size="8" fill="var(--text-muted)">natural language</text>
+          </g>
+          <path d="M 112 133 L 148 133" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#aj-ah)"/>
+
+          <!-- Step 2: LLM decomposer -->
+          <g>
+            <rect x="150" y="105" width="106" height="56" rx="9" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
+            <text x="203" y="127" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-weight="700" class="disp">LLM Decomposer</text>
+            <text x="203" y="143" text-anchor="middle" font-size="8" fill="var(--text-muted)">requirement extraction</text>
+            <text x="203" y="155" text-anchor="middle" font-size="8" fill="var(--text-muted)">+ dependency inference</text>
+          </g>
+          <path d="M 258 133 L 296 133" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#aj-ah)"/>
+
+          <!-- Step 3: DAG 结构 -->
+          <g style="color:var(--accent)">
+            <!-- 节点 R1..R5 -->
+            <circle cx="345" cy="60" r="14" fill="var(--pro-bg)" stroke="var(--pro)" stroke-width="1.5"/>
+            <text x="345" y="63" text-anchor="middle" font-size="8" fill="var(--pro)" font-weight="700">R1</text>
+            <text x="345" y="42" text-anchor="middle" font-size="7" fill="var(--text-muted)">Root</text>
+
+            <circle cx="410" cy="105" r="14" fill="var(--pro-bg)" stroke="var(--pro)" stroke-width="1.5"/>
+            <text x="410" y="108" text-anchor="middle" font-size="8" fill="var(--pro)" font-weight="700">R2</text>
+
+            <circle cx="410" cy="165" r="14" fill="var(--con-bg)" stroke="var(--con)" stroke-width="1.7"/>
+            <text x="410" y="168" text-anchor="middle" font-size="8" fill="var(--con)" font-weight="700">R3</text>
+            <text x="410" y="192" text-anchor="middle" font-size="7" fill="var(--con)" opacity=".9">FAIL</text>
+
+            <circle cx="480" cy="130" r="14" fill="var(--bg-soft)" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="3 3"/>
+            <text x="480" y="133" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-weight="700">R4</text>
+            <text x="480" y="156" text-anchor="middle" font-size="7" fill="var(--text-muted)">SKIP</text>
+
+            <circle cx="345" cy="200" r="14" fill="var(--pro-bg)" stroke="var(--pro)" stroke-width="1.5"/>
+            <text x="345" y="203" text-anchor="middle" font-size="8" fill="var(--pro)" font-weight="700">R5</text>
+
+            <!-- DAG 边 -->
+            <path d="M 358 66 Q 380 82 397 100" stroke="currentColor" stroke-width="1.3" fill="none" opacity=".6"/>
+            <path d="M 358 68 Q 380 130 397 160" stroke="currentColor" stroke-width="1.3" fill="none" opacity=".6"/>
+            <path d="M 423 111 Q 450 118 470 126" stroke="var(--text-muted)" stroke-width="1.3" fill="none" opacity=".55" stroke-dasharray="4 4"/>
+            <path d="M 423 165 Q 450 148 470 132" stroke="var(--con)" stroke-width="1.3" fill="none" opacity=".7" stroke-dasharray="4 4"/>
+            <path d="M 345 186 L 345 78" stroke="currentColor" stroke-width="1.3" fill="none" opacity=".6"/>
+          </g>
+
+          <!-- Judge agent -->
+          <g>
+            <circle cx="570" cy="130" r="20" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="570" y="133" text-anchor="middle" font-size="9" fill="var(--accent)" font-weight="700" class="disp">Judge</text>
+            <text x="570" y="164" text-anchor="middle" font-size="8" fill="var(--text-muted)" font-family="var(--mono)">reads trace</text>
+          </g>
+          <!-- 遍历流光 -->
+          <path d="M 552 130 Q 522 82 358 60" stroke="var(--accent)" stroke-width="1.4" fill="none" class="dag-flow"/>
+          <path d="M 552 130 Q 522 110 423 105" stroke="var(--accent)" stroke-width="1.4" fill="none" class="dag-flow"/>
+          <path d="M 552 130 Q 522 148 423 165" stroke="var(--accent)" stroke-width="1.4" fill="none" class="dag-flow"/>
+
+          <!-- 输出 -->
+          <path d="M 592 130 L 630 130" stroke="var(--accent)" stroke-width="1.5" fill="none" marker-end="url(#aj-ah)"/>
+          <g>
+            <rect x="632" y="105" width="80" height="56" rx="9" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.5"/>
+            <text x="672" y="127" text-anchor="middle" font-size="10" fill="var(--accent)" font-weight="700" class="disp">Report</text>
+            <text x="672" y="141" text-anchor="middle" font-size="7.5" fill="var(--text-muted)">per-node</text>
+            <text x="672" y="152" text-anchor="middle" font-size="7.5" fill="var(--text-muted)">pass/fail + evidence</text>
+          </g>
+
+          <!-- 图例 -->
+          <g font-size="8" font-family="var(--mono)">
+            <rect x="12" y="220" width="10" height="10" fill="var(--pro-bg)" stroke="var(--pro)"/>
+            <text x="27" y="228" fill="var(--text-muted)">pass</text>
+            <rect x="60" y="220" width="10" height="10" fill="var(--con-bg)" stroke="var(--con)"/>
+            <text x="75" y="228" fill="var(--text-muted)">fail (root cause)</text>
+            <rect x="170" y="220" width="10" height="10" fill="var(--bg-soft)" stroke="var(--text-muted)" stroke-dasharray="3 3"/>
+            <text x="185" y="228" fill="var(--text-muted)">short-circuit skip</text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="dag-steps">
+        <div class="dag-step">
+          <div class="dag-stepnum">Step 1 · Decompose</div>
+          <div class="dag-stepname">任务 → Requirements</div>
+          <p class="dag-stepdesc">LLM 把任务自然语言分解为原子级 requirements（"数据查询正确" / "维度拆解完整" / "结论有证据支撑"…），每条能被独立判定。</p>
+        </div>
+        <div class="dag-step">
+          <div class="dag-stepnum">Step 2 · Wire Edges</div>
+          <div class="dag-stepname">推断依赖 → DAG</div>
+          <p class="dag-stepdesc">通过 LLM 或规则推断 requirements 间的依赖关系。<strong>DAG 而非 tree</strong>——同一子 requirement 可以被多个上游依赖（共享子目标）。</p>
+        </div>
+        <div class="dag-step">
+          <div class="dag-stepnum">Step 3 · Judge Walk</div>
+          <div class="dag-stepname">拓扑序遍历</div>
+          <p class="dag-stepdesc">Judge agent 拓扑序访问每个节点、读 trace 找证据、独立判 pass/fail。<strong>上游 fail 自动短路下游</strong>——归因链免费得到。</p>
+        </div>
+      </div>
+    </div>
+
+    <p><strong>Agent-as-a-Judge 的四个核心工程价值</strong>：</p>
+
+    <ol>
+      <li><strong>DAG 而非 Tree</strong>——一个 requirement 可以有多个父节点。例：任务"生成带图表的 BI 报告"里"图表数据正确性"同时依赖"数据查询正确"和"聚合维度正确"，是 DAG 而不是 tree。这个结构选择很重要——共享子目标在企业级任务里普遍存在，tree 建模会强行拆分导致语义丢失。</li>
+      <li><strong>上游失败的短路判定 = 免费归因链</strong>——如果 requirement A 依赖 B，B 已经 fail，A 不再单独 judge（因 A 的失败无法归因到 A 自身），标记为"blocked by B"。这是 DAG 拓扑给出的<strong>零算法归因</strong>——拓扑排序就是归因序。</li>
+      <li><strong>Judge Agent 不是 pure LLM call</strong>——它有工具（读 trace、跳步骤、查 spec），能在判定时<strong>主动去 trace 里找证据</strong>。这一点常被忽视——"agent-as-a-judge" 的 "agent" 是字面意思，不是修辞。</li>
+      <li><strong>DevAI 上的实证数据扎实</strong>——55 个真实开发任务、365 requirements、8 个 baseline agent。Agent-as-a-Judge 与人类标注一致度 ~0.9、比 LLM-as-a-Judge 高约 40%、成本降低 <strong>97%</strong>（相对 human evaluation）。</li>
+    </ol>
+
+    <p><strong>Agent-as-a-Judge 的三个短板</strong>：</p>
+
+    <ol>
+      <li><strong>DAG 定义前置成本高</strong>——好的 DAG 是有质量的，靠 LLM 自动分解不够、需要人工校对。企业场景里通常需要工程师 + 业务方一起定义。</li>
+      <li><strong>DAG 是静态的</strong>——一旦任务类型或 rubric 变化，DAG 需要重建。相比 AgentEval 的 Critic 动态发现维度，这在灵活性上是逆风。</li>
+      <li><strong>Judge agent 的 tool call 成本</strong>——每个节点判定都要读 trace / 跳步骤，一次评测的 token 消耗比单次 LLM-as-a-Judge 大。但相对 human eval 仍便宜 97%，所以在实际权衡里这是可接受成本。</li>
+    </ol>
+
+    <!-- ========== 五、对比矩阵 ========== -->
+    <h2 id="matrix"><span class="sec-num">五</span>两条线的对比矩阵<a href="#matrix" class="anchor">#</a></h2>
+
+    <p>把关键维度放在一起对照，能更清楚看到"结构位置"这个根性差异如何生长出所有工程差异：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:26%">维度</th>
+            <th style="width:37%; color: var(--info)">AgentEval</th>
+            <th style="width:37%; color: var(--accent)">Agent-as-a-Judge</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>结构位置</strong></td>
+            <td>Judge 内部：3 个 agent 分工</td>
+            <td>任务外部：requirements DAG</td>
+          </tr>
+          <tr>
+            <td><strong>Judge 数量</strong></td>
+            <td>3（Critic / Quantifier / Verifier）</td>
+            <td>1（沿 DAG 遍历）</td>
+          </tr>
+          <tr>
+            <td><strong>前置成本</strong></td>
+            <td>定义 3 个 agent prompt</td>
+            <td>定义 requirements DAG（含依赖关系）</td>
+          </tr>
+          <tr>
+            <td><strong>判分粒度</strong></td>
+            <td>每个 criteria 一个分（Likert / 连续）</td>
+            <td>每个 requirement 一个 pass/fail</td>
+          </tr>
+          <tr>
+            <td><strong>归因链</strong></td>
+            <td>需要额外分析 Quantifier 的 rationale</td>
+            <td>拓扑序自然形成（上游 fail 短路下游）</td>
+          </tr>
+          <tr>
+            <td><strong>动态性</strong></td>
+            <td>Critic 可在线扩展新维度</td>
+            <td>DAG 静态、需要重建</td>
+          </tr>
+          <tr>
+            <td><strong>人类对齐</strong></td>
+            <td>通过 Verifier 校准（论文未大规模测）</td>
+            <td>DevAI 上 <strong>~0.9</strong></td>
+          </tr>
+          <tr>
+            <td><strong>成本 vs LLM-Judge</strong></td>
+            <td>3 倍 token（三 agent）</td>
+            <td>~|DAG| 倍 token，但相对 human eval 降 97%</td>
+          </tr>
+          <tr>
+            <td><strong>对客户 rubric 的吸收</strong></td>
+            <td>客户维度 → Critic 参考；灵活但可能被覆盖</td>
+            <td>客户 rubric 树 → 直接映射 DAG 骨架；忠实但缺弹性</td>
+          </tr>
+          <tr>
+            <td><strong>典型场景</strong></td>
+            <td>开放式生成任务（写作、UX、对话）</td>
+            <td>有明确 spec 的任务（代码、报告、BI）</td>
+          </tr>
+          <tr>
+            <td><strong>可复现性</strong></td>
+            <td>中：依赖 Critic 的稳定性</td>
+            <td>高：DAG 固定、judge 只做局部判定</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="radar">
+      <div>
+        <h3 class="radar-title">六维对照 · 一眼看差异</h3>
+        <p class="radar-sub">越远离圆心越"强"。两条线在不同维度上互补。</p>
+        <div class="radar-key">
+          <span><span class="swatch k-ae"></span>AgentEval</span>
+          <span><span class="swatch k-aj"></span>Agent-as-a-Judge</span>
+        </div>
+        <ul class="radar-notes">
+          <li><b>AgentEval 强项</b>：动态性、开放任务适配、维度可解释性。</li>
+          <li><b>Agent-as-a-Judge 强项</b>：归因链天生、可复现性高、DevAI 上人类对齐已量化。</li>
+          <li><b>共同短板</b>：都无法完全消除 judge bias；两者都建议 human-in-the-loop 采样校验。</li>
+        </ul>
+      </div>
+      <div class="radar-svg">
+        <svg viewBox="0 0 320 320" role="img" aria-label="六维雷达对比图">
+          <defs>
+            <radialGradient id="rad-bg">
+              <stop offset="0%" stop-color="var(--surface)"/>
+              <stop offset="100%" stop-color="var(--bg-soft)"/>
+            </radialGradient>
+          </defs>
+          <!-- 背景网格：6 边形，4 层 -->
+          <g fill="none" stroke="var(--border)" stroke-width=".8">
+            <!-- 六边形顶点：(160,40) (280,110) (280,210) (160,280) (40,210) (40,110) -->
+            <polygon points="160,55 264,115 264,205 160,265 56,205 56,115"/>
+            <polygon points="160,88 234,131 234,189 160,232 86,189 86,131"/>
+            <polygon points="160,121 204,146 204,174 160,199 116,174 116,146"/>
+            <polygon points="160,154 174,162 174,178 160,186 146,178 146,162"/>
+          </g>
+          <!-- 轴 -->
+          <g stroke="var(--border-strong)" stroke-width=".8">
+            <line x1="160" y1="160" x2="160" y2="55"/>
+            <line x1="160" y1="160" x2="264" y2="115"/>
+            <line x1="160" y1="160" x2="264" y2="205"/>
+            <line x1="160" y1="160" x2="160" y2="265"/>
+            <line x1="160" y1="160" x2="56" y2="205"/>
+            <line x1="160" y1="160" x2="56" y2="115"/>
+          </g>
+          <!-- 六个维度标签 -->
+          <g fill="var(--text-soft)" font-size="10" font-family="var(--mono)">
+            <text x="160" y="45" text-anchor="middle">动态性</text>
+            <text x="272" y="112" text-anchor="start">可解释</text>
+            <text x="272" y="212" text-anchor="start">归因链</text>
+            <text x="160" y="280" text-anchor="middle">可复现</text>
+            <text x="48" y="212" text-anchor="end">人类对齐</text>
+            <text x="48" y="112" text-anchor="end">开放任务</text>
+          </g>
+          <!-- AgentEval 曲线：动态性高、开放任务高、可解释高、归因链低、可复现中、人类对齐中 -->
+          <!-- 6 值（0-100）：动态90 / 可解释80 / 归因链40 / 可复现60 / 人类对齐55 / 开放任务85 -->
+          <!-- 顶点：轴向从(160,160)朝各方向按距离缩放 -->
+          <!-- 动态性：轴到(160,55)，长度105； 90% → (160, 160-105*.9)=(160,65.5) -->
+          <!-- 可解释：到(264,115)，dx=104,dy=-45；80% → (160+83.2, 160-36)=(243.2,124) -->
+          <!-- 归因链：到(264,205)，dx=104,dy=45；40% → (201.6,178) -->
+          <!-- 可复现：到(160,265)，长度105； 60% → (160,223) -->
+          <!-- 人类对齐：到(56,205)，dx=-104,dy=45； 55% → (102.8,184.75) -->
+          <!-- 开放任务：到(56,115)，dx=-104,dy=-45； 85% → (71.6,121.75) -->
+          <polygon points="160,65.5 243.2,124 201.6,178 160,223 102.8,184.75 71.6,121.75"
+                  fill="var(--info)" fill-opacity=".18" stroke="var(--info)" stroke-width="1.6"/>
+          <!-- Agent-as-a-Judge：动态40 / 可解释65 / 归因链95 / 可复现90 / 人类对齐90 / 开放任务50 -->
+          <!-- 动态40：(160,118) 可解释65：(227.6,130.75) 归因链95：(258.8,202.75) 可复现90：(160,254.5) 人类对齐90：(66.4,200.5) 开放任务50：(108,137.5) -->
+          <polygon points="160,118 227.6,130.75 258.8,202.75 160,254.5 66.4,200.5 108,137.5"
+                  fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)" stroke-width="1.6"/>
+          <!-- 中心点 -->
+          <circle cx="160" cy="160" r="2" fill="var(--text-muted)"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ========== 六、能不能拼在一起 ========== -->
+    <h2 id="fusion"><span class="sec-num">六</span>能不能拼在一起？—— 一个原创视角<a href="#fusion" class="anchor">#</a></h2>
+
+    <p>论文都是各写各的、把自己那条线做到极致。但如果<strong>把两条线看成一条产品级流水线的两个环节</strong>，会发现它们其实是<strong>上下游关系</strong>而不是竞争关系——</p>
+
+    <ul>
+      <li><strong>AgentEval 的 Critic</strong> 擅长回答"该看哪些维度"——它是维度的<em>探索器</em>。</li>
+      <li><strong>Agent-as-a-Judge 的 DAG</strong> 擅长回答"这些维度之间的依赖关系"——它是结构的<em>固化器</em>。</li>
+    </ul>
+
+    <p>Critic 是发散的、DAG 是收敛的；Critic 靠 LLM 灵活性、DAG 靠图的确定性。<strong>把 Critic 的输出喂给 DAG builder、再让 judge agent 沿 DAG 遍历——就得到一个能处理"客户 rubric 不完全 + 需要严谨归因"两个需求的完整系统。</strong></p>
+
+    <div class="fuse">
+      <div class="fuse-title">Fused pipeline · Critic → DAG → Judge → A2P<small>本篇的原创拼接视角</small></div>
+      <div class="fuse-chain">
+        <div class="fuse-node">
+          <div class="fuse-tag">Input</div>
+          <div class="fuse-name">Client Rubric</div>
+          <div class="fuse-role">客户开放的打分维度树</div>
+        </div>
+        <div class="fuse-node">
+          <div class="fuse-tag">AgentEval</div>
+          <div class="fuse-name">Critic</div>
+          <div class="fuse-role">动态扩展缺失维度（dimension exploration）</div>
+        </div>
+        <div class="fuse-node">
+          <div class="fuse-tag">Bridge</div>
+          <div class="fuse-name">DAG Builder</div>
+          <div class="fuse-role">推断维度间依赖 · 建立 requirements DAG</div>
+        </div>
+        <div class="fuse-node">
+          <div class="fuse-tag">Agent-as-a-Judge</div>
+          <div class="fuse-name">Judge Agent</div>
+          <div class="fuse-role">沿 DAG 遍历判定 · 输出 per-node pass/fail + evidence</div>
+        </div>
+        <div class="fuse-node">
+          <div class="fuse-tag">Attribute</div>
+          <div class="fuse-name">A2P</div>
+          <div class="fuse-role">失败节点集 = 候选假设集 · 溯因归因</div>
+        </div>
+      </div>
+    </div>
+
+    <p>这不是"想象一下"——每一环都是现有论文已经验证过的能力，缺的只是<strong>把它们串成一条流水线</strong>的工程实现。对企业归因这个场景来说，这条流水线的价值在于：<strong>既保留了 AgentEval 的灵活性（Critic 能动态发现客户没想到的维度），又保留了 Agent-as-a-Judge 的严谨性（DAG 给出免费归因链），最终把 output 直接喂给 A2P 做 L3 溯因</strong>。</p>
+
+    <!-- ========== 七、对接三层归因栈 ========== -->
+    <h2 id="attribution-stack"><span class="sec-num">七</span>对接三层归因栈：这两条线在我们的产品里各司什么职？<a href="#attribution-stack" class="anchor">#</a></h2>
+
+    <p>把视角拉回到 <a href="../insights/tob/2026-07_agent-badcase-attribution-survey.html">Agent Badcase 归因方法论调研</a>里那个三层栈——L1 分类 / L2 定位 / L3 归因。两条线在这个栈里的落位如下：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>层</th>
+            <th>核心任务</th>
+            <th style="color: var(--info)">AgentEval 的角色</th>
+            <th style="color: var(--accent)">Agent-as-a-Judge 的角色</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>L1 · Classify</strong></td>
+            <td>错的是哪一类</td>
+            <td>Critic 动态生成分类候选 → 作为 L1 taxonomy 的<strong>动态扩展器</strong></td>
+            <td>DAG 节点类型即分类（Plan / Reason / Tool / Retrieval …）</td>
+          </tr>
+          <tr>
+            <td><strong>L2 · Localize</strong></td>
+            <td>先在哪一步崩</td>
+            <td>Quantifier rationale 提供"哪个维度扣分"，但无 step 定位</td>
+            <td><strong>DAG 天然是 L2 骨架</strong>——短路点即定位点</td>
+          </tr>
+          <tr>
+            <td><strong>L3 · Attribute</strong></td>
+            <td>为什么错、怎么改</td>
+            <td>Verifier 校验 bias、Quantifier rationale 作为解释素材</td>
+            <td>失败节点集 → A2P Abduction 的<strong>候选假设集</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>核心洞察</strong>：Agent-as-a-Judge 在 L2 上是<em>不可替代</em>的（DAG 短路 = 免费归因链），AgentEval 在 L1 上是<em>不可替代</em>的（Critic 动态发现 = 客户 rubric 覆盖不到时的兜底）。<strong>两者不是二选一——是各占一层</strong>。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">给三层栈选武器</div>
+      <ul style="margin:.3em 0">
+        <li><strong>L1 分类</strong>：以固定 taxonomy 为主（AgentErrorTaxonomy 五分类），AgentEval Critic 作为<strong>动态补充</strong>——当固定 taxonomy 覆盖不了时才让 Critic 出手。</li>
+        <li><strong>L2 定位</strong>：Agent-as-a-Judge 的 DAG 是首选——上游 fail 短路机制就是天然的定位算法。</li>
+        <li><strong>L3 归因</strong>：DAG 输出 → A2P Abduction 直接消费；AgentEval Verifier 作为 bias 兜底、保证 judge 不会集体盲。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 八、局限与工程 tradeoff ========== -->
+    <h2 id="limits"><span class="sec-num">八</span>局限与工程 tradeoff<a href="#limits" class="anchor">#</a></h2>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">两条线共同的三个陷阱</div>
+      <ol style="margin:.3em 0">
+        <li><strong>Judge bias 传递</strong>——同族 LLM 会共谋，同类型模型对同类错误集体盲。两条线都建议<strong>跨 family 部署</strong>（Critic 用 Claude、Quantifier 用 GPT、Verifier 用 Gemini），但成本翻倍。</li>
+        <li><strong>DAG / criteria 定义的前置成本</strong>——好的结构不能全自动产生，需要工程师 + 业务方共建。这是 process-aware 评测的"启动税"。</li>
+        <li><strong>可复现性挑战</strong>——LLM 的 non-determinism 让两次评测可能给出不同分数。两条线都建议<strong>低温度 + seed fixing + repeat-N 取均值</strong>作为工程实践。</li>
+      </ol>
+    </div>
+
+    <p><strong>AgentEval 特有的陷阱</strong>：Critic 可能<strong>过度发散</strong>——给一个"写一封邮件"的任务提议 15 个评分维度。工程上需要给 Critic 加维度数上限、或让 Verifier 做维度合并/剪枝。</p>
+
+    <p><strong>Agent-as-a-Judge 特有的陷阱</strong>：DAG 中的<strong>隐蔽循环依赖</strong>——LLM 分解 requirements 时可能构造出实际是循环的"DAG"（A 依赖 B、B 又依赖 A 的某个 side effect）。工程上需要拓扑检验 + 循环告警。</p>
+
+    <!-- ========== 九、在 LIFT 内实现的路径 ========== -->
+    <h2 id="lift-impl"><span class="sec-num">九</span>在 LIFT 内实现的路径<a href="#lift-impl" class="anchor">#</a></h2>
+
+    <p>把这两条线落地到我们的 LIFT 框架，分三阶段推进（对应 <a href="../insights/tob/2026-07_agent-badcase-attribution-survey.html#delivery">接入方案 8.4</a> 的落地节奏）：</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-header"><span class="card-tag">阶段 1</span><h3>先落 Agent-as-a-Judge</h3></div>
+        <p>把客户开放的 rubric 树直接转成 requirements DAG（1:1 映射，不做发散）。judge agent 用一个 vanilla LLM + trace 读取工具。产出每节点 pass/fail + 短路归因。<strong>2-3 周可 MVP</strong>。</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-tag">阶段 2</span><h3>叠 AgentEval Critic</h3></div>
+        <p>在 DAG builder 前加一个 Critic step——分析客户 rubric 是否有覆盖 gap，动态扩展缺失维度。此时 DAG 是"客户 rubric ∪ Critic 发现"的并集。Verifier 作为 bias 抽查工具。<strong>4-6 周叠加</strong>。</p>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-tag">阶段 3</span><h3>Judge Module 融合</h3></div>
+        <p>把两条线固化为 LIFT 的一个 <code>agent_judge</code> analyzer 模块，暴露统一 API：<code>judge(trace, artifact, rubric) → dag_report</code>。dag_report 再喂给 A2P analyzer 做 L3 溯因。<strong>与 A2P 集成同期</strong>。</p>
+      </div>
+    </div>
+
+    <p><strong>MVP 阶段的关键工程决策</strong>：先做 <em>rubric 树 → DAG</em> 的确定性映射（不用 LLM 自动分解），把不确定性延到 judge 阶段——这样早期版本能给客户一个"可预期"的评测体验，之后再逐步引入 Critic 的动态维度。</p>
+
+    <!-- ========== 十、判断印章 ========== -->
+    <h2 id="stamp"><span class="sec-num">十</span>判断印章<a href="#stamp" class="anchor">#</a></h2>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Verdict</div>
+      <ul style="margin: .3em 0">
+        <li><strong>时机 · 6-12 月</strong>——两条线都在 2024 年下半年发表、2025-2026 会有大量后续工作。DAG-based judging 是当年趋势，赶早接住能拿到红利。</li>
+        <li><strong>信心 · 高</strong>——Agent-as-a-Judge 在 DevAI 上给出的实证数据扎实（对齐 0.9、成本降 97%）；AgentEval 在 MATH / HumanEval 上做过对照实验，Verifier 的 bias 减少效果可复现。</li>
+        <li><strong>产品落点</strong>：<strong>L1 靠 AgentEval Critic 动态兜底</strong>、<strong>L2 靠 Agent-as-a-Judge DAG 定位</strong>、<strong>L3 靠 DAG 输出喂 A2P 溯因</strong>——三层栈里两条线各占其位、不是二选一。</li>
+        <li><strong>必须记住的一句</strong>：Agent 评测的下一步不是<em>更聪明的 judge</em>，而是<strong>让结构显式化</strong>——不管你把结构放在 judge 内部还是任务外部，只要它显式了，归因链就顺理成章地出现。</li>
+      </ul>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-29 初稿（论文拆解 + 原创拼接视角）· 关联：<a href="../insights/tob/2026-07_agent-badcase-attribution-survey.html">Agent Badcase 归因方法论调研</a>
+    </p>
+
+    <div class="doc-footer">
+      <a href="../readings/index.html">← 阅读材料索引</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

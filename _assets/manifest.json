@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-28T09:44:44.250427+00:00",
+  "generated_at": "2026-07-29T05:15:32.162934+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -511,6 +511,23 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-07_agent-grade-judging.html",
+      "title": "Agent-Grade Judging：从\"打一个分\"到\"沿图判定\"",
+      "date": "2026-07-29",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Agent 评测",
+        "LLM-as-a-Judge",
+        "方法论"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "高"
+      }
+    },
     {
       "path": "readings/2026-07_20vc-glean-arvind-app-layer.html",
       "title": "模型公司赢不下应用层 Why OpenAI & Anthropic Won't Win the App Layer",
