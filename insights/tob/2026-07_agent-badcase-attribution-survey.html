@@ -264,6 +264,22 @@
     .walk-lvl { grid-row: 1 / 3; }
   }
 
+  /* 暗色下对比度加强：case-card 收敛、stack-io/walk 边框加强 */
+  [data-theme="dark"] .case-card {
+    background: linear-gradient(135deg,
+      color-mix(in srgb, var(--accent) 14%, var(--surface)) 0%,
+      var(--surface) 55%);
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--border));
+  }
+  [data-theme="dark"] .stack-io-cell {
+    border-color: color-mix(in srgb, var(--accent) 25%, var(--border));
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+  }
+  [data-theme="dark"] .walk-baton {
+    color: var(--accent-ink);
+    opacity: .85;
+  }
+
   /* ═════════════════════════════════════════════════════
      视觉三：L3 分岔路 —— 论证性 vs 验证性
      ═════════════════════════════════════════════════════ */
