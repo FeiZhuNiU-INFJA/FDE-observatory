@@ -1,0 +1,618 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ark-agent-feishu-bot 深度拆解 · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent: #059669; --accent-soft: #ecfdf5; --accent-deep: #065f46; --accent-ink: #064e3b; }
+  [data-theme="dark"] { --accent: #6ee7b7; --accent-soft: #052e26; --accent-deep: #a7f3d0; --accent-ink: #d1fae5; }
+
+  pre.code-block { font-size: .78rem; line-height: 1.5; overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: .9em 1em; border-radius: 8px; border: 1px solid #1e293b; }
+  [data-theme="dark"] pre.code-block { background: #020617; }
+  pre.code-block code,
+  pre.code-block span { background: transparent !important; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code-block code { color: inherit; }
+  pre.code-block .cm { color: #64748b; font-style: italic; }
+  pre.code-block .kw { color: #f472b6; }
+  pre.code-block .st { color: #86efac; }
+  pre.code-block .fn { color: #93c5fd; }
+  pre.code-block ::selection { background: rgba(148, 163, 184, .35); color: inherit; }
+
+  /* ============ Bespoke 1: 双身份分离图（.duo-id）============ */
+  .duo-id { margin: 1.4em 0; padding: 1.4em 1.2em; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  .duo-id svg { width: 100%; height: auto; max-height: 320px; display: block; }
+  .duo-id text { font-family: var(--sans); }
+  .duo-id .role { font-size: 12px; font-weight: 700; letter-spacing: .05em; }
+  .duo-id .lab  { font-size: 10.5px; fill: var(--text-muted); }
+  .duo-id .cap  { font-size: 11px; fill: var(--text); }
+  .duo-id-note  { font-size: .82rem; color: var(--text-muted); text-align: center; margin-top: .8em; }
+
+  /* ============ Bespoke 2: 消息流水线（.pipe-msg）============ */
+  .pipe-msg { display: grid; grid-template-columns: repeat(6, 1fr); gap: .5em; margin: 1.2em 0; position: relative; }
+  .pipe-step { position: relative; border: 1px solid var(--border); border-radius: 10px; padding: .85em .7em; background: var(--surface); box-shadow: var(--shadow); }
+  .pipe-step::after {
+    content: "→"; position: absolute; right: -.55em; top: 50%; transform: translateY(-50%);
+    color: var(--accent); font-weight: 700; font-size: 1.2rem;
+    background: var(--bg); padding: 0 .1em; z-index: 2;
+  }
+  .pipe-step:last-child::after { content: ""; }
+  .pipe-num { display: inline-block; width: 1.4em; height: 1.4em; line-height: 1.4em; text-align: center; border-radius: 50%; background: var(--accent); color: white; font-family: var(--mono); font-size: .72rem; font-weight: 700; margin-bottom: .3em; }
+  .pipe-t { font-weight: 700; font-size: .82rem; margin-bottom: .2em; }
+  .pipe-d { font-size: .72rem; color: var(--text-muted); line-height: 1.4; }
+  .pipe-f { font-family: var(--mono); font-size: .68rem; color: var(--accent); margin-top: .4em; display: block; word-break: break-all; }
+  @media (max-width: 980px) { .pipe-msg { grid-template-columns: repeat(3, 1fr); } .pipe-step:nth-child(3)::after, .pipe-step:nth-child(6)::after { content: ""; } .pipe-step:nth-child(4)::before, .pipe-step:nth-child(5)::before, .pipe-step:nth-child(6)::before { content: "↑"; position: absolute; left: 50%; top: -.7em; transform: translateX(-50%); color: var(--accent); } }
+  @media (max-width: 640px) { .pipe-msg { grid-template-columns: 1fr; } .pipe-step::after { content: "↓"; right: 50%; top: auto; bottom: -.9em; transform: translateX(50%); } .pipe-step:last-child::after { content: ""; } }
+
+  /* ============ Bespoke 3: 凭证保险箱（.vault-map）============ */
+  .vault-map { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin: 1.2em 0; box-shadow: var(--shadow); background: var(--surface); }
+  .vault-row { display: grid; grid-template-columns: 200px 1fr 1fr; align-items: center; border-bottom: 1px solid var(--border); }
+  .vault-row:last-child { border-bottom: none; }
+  .vault-row.header { background: var(--accent-soft); font-family: var(--mono); font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); font-weight: 700; }
+  .vault-cell { padding: .75em 1em; font-size: .85rem; }
+  .vault-cell.label { font-weight: 700; color: var(--accent-deep, var(--accent)); border-right: 1px solid var(--border); background: color-mix(in srgb, var(--accent) 4%, transparent); }
+  .vault-cell.loc { font-family: var(--mono); font-size: .78rem; color: var(--text-muted); border-right: 1px solid var(--border); }
+  .vault-cell.loc code { background: rgba(0,0,0,.05); padding: 0 .35em; border-radius: 3px; }
+  [data-theme="dark"] .vault-cell.loc code { background: rgba(255,255,255,.08); }
+  .vault-cell.why { font-size: .8rem; color: var(--text-muted); line-height: 1.5; }
+  @media (max-width: 760px) {
+    .vault-row { grid-template-columns: 1fr; }
+    .vault-cell { border-right: none; border-bottom: 1px dashed var(--border); }
+    .vault-cell:last-child { border-bottom: none; }
+  }
+
+  /* ============ Bespoke 4: 关键洞察卡（.insight-card）============ */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
+  .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .insight-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 12px 0 0 12px; }
+  .insight-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .4em; font-weight: 700; }
+  .insight-card .t { font-weight: 700; font-size: .95rem; margin-bottom: .4em; }
+  .insight-card .d { font-size: .82rem; color: var(--text-muted); line-height: 1.55; }
+  .insight-card .src { font-size: .72rem; color: var(--text-muted); margin-top: .55em; font-family: var(--mono); }
+  .insight-card .src a { color: var(--accent); }
+  @media (max-width: 760px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  /* ============ Bespoke 5: 时序图（.seq）============ */
+  .seq { margin: 1.2em 0; padding: 1.3em 1em; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  .seq svg { width: 100%; height: auto; max-height: 460px; display: block; }
+  .seq text { font-family: var(--sans); font-size: 11px; }
+  .seq .actor { font-size: 12px; font-weight: 700; }
+  .seq .msg { font-family: var(--mono); font-size: 10.5px; }
+  .seq .note { font-size: 10px; fill: var(--text-muted); font-style: italic; }
+  .seq .lifeline { stroke: var(--border); stroke-dasharray: 3 3; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insight-card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      ark-agent-feishu-bot<span class="brand-sub">开源拆解 · Managed Agents 参考实现 · 2026-07</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>ark-agent-feishu-bot · <span class="en">Managed Agents</span> 的最小参考实现</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">1059 行 TypeScript 拆解出 Session 复用、SSE 消费、凭证托管与超时补拉的完整工程范式</p>
+      <div class="doc-meta">
+        <span>2026-07-29</span>
+        <span>跨市场</span>
+        <span>架构拆解</span>
+        <span>Managed Agents</span>
+        <span>飞书 Bot</span>
+        <span>Session 复用</span>
+        <span>OAuth Device Flow</span>
+        <span>对内</span>
+        <span>时机：已发生</span>
+        <span>信心：高</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .9rem;">
+        项目：<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot" target="_blank" rel="noopener">wangjiangwen-gif/ark-agent-feishu-bot</a>
+        &nbsp;·&nbsp;
+        1059 lines TypeScript · Node.js 22 · <code>@larksuiteoapi/node-sdk</code>
+        <br />
+        配套厂商拆解：<a href="../frontier/vendors/volcengine/deep_dives/2026-07-29_ark-managed-agents.html">火山方舟 Managed Agents 深度拆解</a>
+      </p>
+    </header>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">1059<small> lines</small></div><div class="lab">TypeScript 总代码量（10 个源文件）</div></div>
+      <div class="hero-stat"><div class="num">2<small> 次扫码</small></div><div class="lab">Bot 身份 + 用户身份分离授权</div></div>
+      <div class="hero-stat"><div class="num">10<small> 分钟</small></div><div class="lab">Session 默认超时 + 3 次补拉恢复</div></div>
+      <div class="hero-stat"><div class="num">5<small> 分钟</small></div><div class="lab">OAuth token 剩余时长触发主动 refresh</div></div>
+    </div>
+
+    <div class="lede">
+      <strong>核心结论：</strong>这不是「又一个飞书机器人 demo」。它是<strong>目前公开可见最完整的 Managed Agents 客户端参考实现</strong>——用 1059 行代码把 Session 复用、SSE 消费、凭证 5 分钟前置刷新、超时补拉、事件去重、双身份分离、飞书 3 秒响应约束<strong>全部落到能跑起来的形态</strong>。对 FDE 而言，它同时是「客户接入模板」和「厂商拆解的实证补充」——上一篇文档里我说 <code>environment_variable</code> credential 是"二期"，这个项目<strong>已经在用它</strong>做用户身份注入；上一篇说不支持 Custom Tool，这个项目<strong>严格照做</strong>，用 <code>agent_toolset_20260701</code> 里的 <code>bash</code> 起 <code>lark-cli</code>。<strong>把它作为客户第一次接入 Managed Agents 的骨架参考。</strong>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>骨架 = 10 个文件</strong>：<code>cli / init / oauth / feishu / gateway / ark / store / config / scopes / paths</code>，每个 &lt; 300 行</li>
+        <li><strong>身份分离</strong>：Bot 收消息（应用扫码）+ 用户操作资源（OAuth Device Flow）→ user_access_token 走 Vault 的 <code>environment_variable</code> 类型注入沙箱</li>
+        <li><strong>Session 复用策略</strong>：飞书 <code>(tenant, chat, thread, user)</code> 四元组 → 一个 Ark Session；<code>/new</code> 显式重置</li>
+        <li><strong>SSE 消费</strong>：<code>drainEventBuffer</code> 手写 SSE 解析（<code>\n\n</code> 分块）+ <code>event.id</code> seen-set 去重</li>
+        <li><strong>超时兜底</strong>：AbortController 到点后走 <code>GET /sessions/{id}/events?limit=200</code> × 3 次补拉，按 <code>processed_at &gt;= startedAt</code> 筛回本轮消息</li>
+        <li><strong>凭证保鲜</strong>：ensureCredentialFresh 在 access token 剩余 &lt; 5 分钟时主动 refresh + <code>updateEnvironmentCredential</code> 同步更新 Ark Vault</li>
+        <li><strong>进度旁白</strong>：只转发 <code>agent.tool_use.input.description</code>（Agent 主动提供的自然语言描述），<strong>拒绝转发 command / 路径 / 工具参数</strong></li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-position"><span class="sec-num">一</span>定位：为什么这个项目是 FDE 应答的关键武器<a href="#sec-position" class="anchor">#</a></h2>
+    <p class="kicker">— 它不是官方 SDK，但比官方 SDK 更贴近客户真实迁移问题</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>状态</th></tr></thead>
+        <tbody>
+          <tr><td>发布人</td><td>字节内部工程师个人项目（<code>wangjiangwen-gif</code> / 提交者 <code>Javin-w</code>），非官方组织出品</td></tr>
+          <tr><td>官方引用</td><td>README 引用了《一个 API Key，两次扫码，认领你的飞书办公助手》飞书文档 + 官方 Managed Agents API 文档</td></tr>
+          <tr><td>最后更新</td><td>2026-07-21（近一周内）</td></tr>
+          <tr><td>目标场景</td><td>个人办公助手 MVP · 单用户单实例 · 本地/Docker 运行</td></tr>
+          <tr><td>规模边界</td><td>作者明确标注：<strong>不是多租户托管服务</strong>，只有 init 扫码授权的 open_id 可以驱动</td></tr>
+          <tr><td>对 FDE 的价值</td><td>「客户第一次接 Managed Agents」的最小可运行骨架 + 上一篇厂商拆解的实证补充</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">这篇拆解补足上一篇的三个空白</div>
+      <ol style="margin: .3em 0;">
+        <li><strong><code>environment_variable</code> credential 已经能用</strong>——不是二期。<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L132" target="_blank" rel="noopener"><code>ark.ts:132</code></a> <code>createEnvironmentCredential</code> 正是用它把 <code>LARKSUITE_CLI_USER_ACCESS_TOKEN</code> 塞进沙箱</li>
+        <li><strong>Environment 还有个 <code>config.setup_script</code></strong>——除声明式 <code>packages</code>，还能写完整 shell 装包脚本（<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L96" target="_blank" rel="noopener"><code>ark.ts:96</code></a>）</li>
+        <li><strong>SSE 断开后的正确恢复姿势</strong>——不是重连，是<strong>补拉事件历史</strong>：<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L195" target="_blank" rel="noopener"><code>recoverTimedOutRun</code></a> 用 <code>?limit=200</code> + 时间戳过滤按需捞回</li>
+      </ol>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-arch"><span class="sec-num">二</span>架构：双身份 · 三层落点<a href="#sec-arch" class="anchor">#</a></h2>
+    <p class="kicker">— 一个应用（Bot 身份）+ 一个 OAuth（用户身份），凭据分两处存</p>
+
+    <p>整个项目的核心难题不是「怎么调 Managed Agents API」，而是<strong>怎么把「谁在跟 Bot 说话」和「Bot 代表谁操作资源」两件事拆开</strong>。作者用两次扫码解决——这也是给客户教练的关键：</p>
+
+    <div class="duo-id reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="双身份分离架构图">
+        <!-- 用户 -->
+        <circle cx="80" cy="150" r="30" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="80" y="155" text-anchor="middle" class="role" fill="var(--text)">飞书用户</text>
+
+        <!-- 扫码 1: Bot 身份 -->
+        <g style="color: var(--accent)">
+          <rect x="180" y="40" width="220" height="90" rx="10" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.5"/>
+          <text x="290" y="60" text-anchor="middle" class="role" fill="currentColor">扫码 1：创建应用</text>
+          <text x="290" y="80" text-anchor="middle" class="cap">Bot 身份 · 谁来接收消息</text>
+          <text x="290" y="98" text-anchor="middle" class="lab">→ App ID / App Secret</text>
+          <text x="290" y="115" text-anchor="middle" class="lab">→ 事件订阅 im.message.receive_v1</text>
+        </g>
+
+        <!-- 扫码 2: 用户身份 -->
+        <g style="color: var(--info)">
+          <rect x="180" y="170" width="220" height="90" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+          <text x="290" y="190" text-anchor="middle" class="role" fill="currentColor">扫码 2：用户 OAuth</text>
+          <text x="290" y="210" text-anchor="middle" class="cap">用户身份 · Bot 代表谁操作资源</text>
+          <text x="290" y="228" text-anchor="middle" class="lab">→ access_token / refresh_token</text>
+          <text x="290" y="245" text-anchor="middle" class="lab">→ user open_id · scope: docs,drive</text>
+        </g>
+
+        <!-- 落点 1: 本地 config.env -->
+        <g style="color: var(--warn)">
+          <rect x="470" y="40" width="220" height="90" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+          <text x="580" y="60" text-anchor="middle" class="role" fill="currentColor">本地 ~/.arkagent/config.env</text>
+          <text x="580" y="80" text-anchor="middle" class="cap">Gateway 启动时读取</text>
+          <text x="580" y="98" text-anchor="middle" class="lab">App ID · App Secret · refresh_token</text>
+          <text x="580" y="115" text-anchor="middle" class="lab">chmod 0600 · 0700 dir</text>
+        </g>
+
+        <!-- 落点 2: Ark Vault -->
+        <g style="color: var(--con)">
+          <rect x="470" y="170" width="220" height="90" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+          <text x="580" y="190" text-anchor="middle" class="role" fill="currentColor">Ark Vault Credential</text>
+          <text x="580" y="210" text-anchor="middle" class="cap">Session 运行时注入沙箱</text>
+          <text x="580" y="228" text-anchor="middle" class="lab">type: environment_variable</text>
+          <text x="580" y="245" text-anchor="middle" class="lab">secret_name: LARKSUITE_CLI_USER_ACCESS_TOKEN</text>
+        </g>
+
+        <!-- 关系 -->
+        <line x1="110" y1="140" x2="180" y2="80" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="110" y1="160" x2="180" y2="215" stroke="var(--text-muted)" stroke-width="1"/>
+        <line x1="400" y1="85" x2="470" y2="85" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <line x1="400" y1="215" x2="470" y2="215" stroke="var(--info)" stroke-width="1.5" stroke-dasharray="4 3"/>
+      </svg>
+      <div class="duo-id-note">Bot 身份 → 本地文件；用户身份 → Ark Vault。两条线交汇于 Session：<code>vault_ids: [vaultId]</code> 挂进来后，沙箱内 <code>lark-cli</code> 自动读 <code>$LARKSUITE_CLI_USER_ACCESS_TOKEN</code> 以用户身份跑。</div>
+    </div>
+
+    <p><strong>作者的原话（README 里）</strong>：「这两个身份不能混为一谈：Bot 身份可以收发消息，但看不到你的个人资源；用户身份可以访问你授权的办公数据，却不负责承载消息入口。」——<strong>这是 FDE 给客户讲多租户设计时最容易被质疑的一句话</strong>，这个项目给了实证。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-vault"><span class="sec-num">三</span>凭证保险箱：哪个存哪儿、为什么<a href="#sec-vault" class="anchor">#</a></h2>
+    <p class="kicker">— 五种凭证 · 五个落点 · 一条设计原则</p>
+
+    <div class="vault-map reveal">
+      <div class="vault-row header">
+        <div class="vault-cell label">凭证</div>
+        <div class="vault-cell loc">存哪儿</div>
+        <div class="vault-cell why">为什么</div>
+      </div>
+      <div class="vault-row">
+        <div class="vault-cell label">方舟 API Key</div>
+        <div class="vault-cell loc"><code>~/.arkagent/config.env</code></div>
+        <div class="vault-cell why">Gateway 用它调 Managed Agents API</div>
+      </div>
+      <div class="vault-row">
+        <div class="vault-cell label">飞书 App Secret</div>
+        <div class="vault-cell loc"><code>~/.arkagent/config.env</code></div>
+        <div class="vault-cell why">WebSocket 鉴权与 refresh token 时都要用</div>
+      </div>
+      <div class="vault-row">
+        <div class="vault-cell label">refresh_token</div>
+        <div class="vault-cell loc"><code>~/.arkagent/config.env</code></div>
+        <div class="vault-cell why">用来换新 access token，长期活着</div>
+      </div>
+      <div class="vault-row">
+        <div class="vault-cell label">user access_token</div>
+        <div class="vault-cell loc">Ark Vault Credential</div>
+        <div class="vault-cell why">只在 Session 运行时注入沙箱，2 小时短期凭证</div>
+      </div>
+      <div class="vault-row">
+        <div class="vault-cell label">飞书 App ID</div>
+        <div class="vault-cell loc">Environment <code>config.env.LARKSUITE_CLI_APP_ID</code></div>
+        <div class="vault-cell why">供沙箱内的 <code>lark-cli</code> 使用，不敏感</div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">FDE 现场收藏级细节</div>
+      <p style="margin:.3em 0;">1. 配置目录 chmod <code>0700</code>；配置文件 chmod <code>0600</code>——OS 层保护。<br/>
+      2. Gateway 在 access token <strong>距离过期不足 5 分钟</strong>时触发 refresh，走 <code>ensureCredentialFresh</code>：先 <code>oauth.refresh()</code>，再 <code>ark.updateEnvironmentCredential()</code> 更新 Vault，最后原子替换本地 <code>config.env</code> 的 refresh_token。<br/>
+      3. <strong>refresh 触发时机是"发消息前"</strong>——防止 Session 跑到一半 token 过期，见 <a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/cli.ts#L38" target="_blank" rel="noopener"><code>cli.ts:38</code></a>。</p>
+    </div>
+
+    <p>注意 secret_name 命名：<code>LARKSUITE_CLI_USER_ACCESS_TOKEN</code>——<strong>没有 <code>ARK_*</code> / <code>VOLC_*</code> 前缀</strong>，避开了保留前缀的坑。这个命名规则可以直接抄给客户。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-pipeline"><span class="sec-num">四</span>消息全链路：飞书 → Gateway → Ark Session → 飞书<a href="#sec-pipeline" class="anchor">#</a></h2>
+    <p class="kicker">— 6 步流水线，每一步都对应一个可以踩的坑</p>
+
+    <div class="pipe-msg reveal">
+      <div class="pipe-step">
+        <span class="pipe-num">1</span>
+        <div class="pipe-t">WebSocket 收</div>
+        <div class="pipe-d">飞书 <code>im.message.receive_v1</code></div>
+        <span class="pipe-f">feishu.ts:29</span>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-num">2</span>
+        <div class="pipe-t">归一化</div>
+        <div class="pipe-d">JSON 解析 content · 剥离 @Bot mention</div>
+        <span class="pipe-f">normalizeFeishuMessage</span>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-num">3</span>
+        <div class="pipe-t">去重 + 入队</div>
+        <div class="pipe-d">SQLite <code>claimEvent</code> · KeyedQueue 串行</div>
+        <span class="pipe-f">gateway.ts:49</span>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-num">4</span>
+        <div class="pipe-t">Session 复用</div>
+        <div class="pipe-d">四元组查 → 复用 or createSession</div>
+        <span class="pipe-f">gateway.ts:80</span>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-num">5</span>
+        <div class="pipe-t">SSE 消费</div>
+        <div class="pipe-d">流事件 → 只留 agent.message → 拿终态</div>
+        <span class="pipe-f">ark.ts:164 run()</span>
+      </div>
+      <div class="pipe-step">
+        <span class="pipe-num">6</span>
+        <div class="pipe-t">飞书回复</div>
+        <div class="pipe-d">取最后一条 agent.message 发回原 chat</div>
+        <span class="pipe-f">gateway.ts:118</span>
+      </div>
+    </div>
+
+    <p>每一步的关键设计：</p>
+
+    <h3 id="sec-p-1">4.1 步骤 1-2：WebSocket 而不是 HTTP 回调</h3>
+    <p>飞书事件订阅有两种：HTTP 回调（要开公网） / WebSocket 长连接（本地也能跑）。作者选后者——「使用长连接接收事件」在 SDK 层就是 <code>Lark.WSClient</code>。对客户而言，<strong>本地开发不需要 ngrok 或公网入口</strong>是首次接入的最大摩擦点，这个选择直接解掉。</p>
+
+    <h3 id="sec-p-3">4.2 步骤 3：飞书 3 秒响应约束的解法</h3>
+    <p>飞书要求事件订阅 handler 3 秒内 ACK，否则重试。<strong>Agent 通常跑几十秒到几分钟</strong>，怎么办？作者的处理：</p>
+    <pre class="code-block"><code><span class="cm">// feishu.ts:29 · SDK 的 handler 只做去重与入队，不 await 执行</span>
+<span class="fn">.register</span>({
+  <span class="st">"im.message.receive_v1"</span>: <span class="kw">async</span> (data) =&gt; {
+    <span class="kw">const</span> message = <span class="fn">normalizeFeishuMessage</span>(data);
+    <span class="kw">if</span> (message) options.gateway.<span class="fn">accept</span>(message);  <span class="cm">// 立即返回</span>
+  }
+})
+
+<span class="cm">// gateway.ts:49 · accept() 内部 enqueue 后立即返回，实际处理进队列异步跑</span>
+<span class="fn">accept</span>(message): <span class="kw">boolean</span> {
+  <span class="kw">if</span> (!<span class="kw">this</span>.store.<span class="fn">claimEvent</span>(message.eventId)) <span class="kw">return</span> <span class="kw">false</span>;  <span class="cm">// SQLite 幂等去重</span>
+  <span class="kw">this</span>.queue.<span class="fn">enqueue</span>(<span class="kw">this</span>.store.<span class="fn">conversationKey</span>(key), <span class="kw">async</span> () =&gt; { ... });
+  <span class="kw">return</span> <span class="kw">true</span>;
+}</code></pre>
+
+    <p><strong>KeyedQueue 的语义</strong>：按 <code>(tenant, chat, thread, user)</code> 分桶串行——<strong>同一会话消息按顺序处理，不同会话可并发</strong>。见 <a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/gateway.ts#L18" target="_blank" rel="noopener"><code>gateway.ts:18</code></a>。这是给 FDE 的选型参考：<strong>Managed Agents 单个 Session 是串行的，多会话并发要靠客户端 keyed 分桶</strong>。</p>
+
+    <h3 id="sec-p-4">4.3 步骤 4：Session 复用的关键在四元组</h3>
+    <pre class="code-block"><code><span class="cm">// gateway.ts:109 · Session 归属的 key</span>
+<span class="fn">toConversationKey</span>(message) {
+  <span class="kw">return</span> {
+    tenantKey: message.tenantKey,
+    chatId: message.chatId,
+    threadId: message.threadId,
+    userOpenId: message.chatType === <span class="st">"p2p"</span> ? message.userOpenId : <span class="st">""</span>
+  };
+}</code></pre>
+
+    <p>思考：<strong>群聊里 userOpenId 置空</strong>——同一群里不同人 @Bot 会共享一个 Session（有共同上下文）；<strong>单聊里带 userOpenId</strong>——防止群里的私信被认成群消息共享上下文。<strong>threadId 独立分桶</strong>——飞书话题群里每条主帖是独立 Session。这个 key 设计客户可以照抄，只需按自己的消息平台替换字段。</p>
+
+    <h3 id="sec-p-5">4.4 步骤 5：SSE 消费与 event.id 去重</h3>
+    <pre class="code-block"><code><span class="cm">// ark.ts:164 · run() 的事件循环</span>
+<span class="kw">const</span> seen = <span class="kw">new</span> Set&lt;string&gt;();
+<span class="kw">for await</span> (<span class="kw">const</span> event <span class="kw">of</span> <span class="kw">this</span>.<span class="fn">streamEvents</span>(sessionId, controller.signal)) {
+  <span class="kw">if</span> (event.id &amp;&amp; seen.<span class="fn">has</span>(event.id)) <span class="kw">continue</span>;   <span class="cm">// 幂等</span>
+  <span class="kw">if</span> (event.id) seen.<span class="fn">add</span>(event.id);
+  <span class="kw">if</span> (event.type === <span class="st">"agent.message"</span>) messages.<span class="fn">push</span>(<span class="fn">eventText</span>(event));
+  <span class="kw">if</span> (event.type === <span class="st">"session.error"</span>) <span class="kw">return</span> { terminal: <span class="st">"failed"</span>, messages };
+  <span class="kw">if</span> (event.type === <span class="st">"session.status_idle"</span>) <span class="kw">return</span> { terminal: <span class="st">"idle"</span>, messages };
+}</code></pre>
+
+    <p>SSE 解析器 <code>drainEventBuffer</code> 手写实现（<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L234" target="_blank" rel="noopener"><code>ark.ts:234</code></a>）：按 <code>\n\n</code> 分块，每块 <code>data:</code> 行拼一起 JSON.parse。<strong>兼容 <code>\r\n</code> 归一化</strong>，对边缘半块留 <code>rest</code> 下次继续——这是标准 SSE 实现，客户 Java/Python 端可以照葫芦画瓢。</p>
+
+    <h3 id="sec-p-6">4.5 步骤 6：最后一条 agent.message 才是最终结果</h3>
+    <pre class="code-block"><code><span class="cm">// gateway.ts:118 · 关键洞察：一个 run 可能有多条 agent.message</span>
+<span class="fn">resultToReply</span>(result) {
+  <span class="cm">// 前面的通常是"让我先检查…"一类工具执行播报</span>
+  <span class="cm">// 最后一条才是面向用户的完整结果</span>
+  <span class="kw">return</span> result.messages.<span class="fn">at</span>(-<span class="kw">1</span>)!;
+}</code></pre>
+
+    <p><strong>这一条最容易被忽略</strong>——初次接入的客户经常抱怨"为什么每条工具调用前都有一段废话消息，用户端很吵"。答案：<strong>Managed Agents 的 <code>agent.message</code> 会包含 Agent 的中间思考陈述，只有最后一条才是最终交付。</strong>要么按这个项目取 <code>.at(-1)</code>；要么按 <code>agent.thinking</code> 事件切段。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-timeout"><span class="sec-num">五</span>超时兜底：AbortController + 补拉历史<a href="#sec-timeout" class="anchor">#</a></h2>
+    <p class="kicker">— SSE 断开不是终点，事件历史才是真源</p>
+
+    <p>10 分钟到点，如果 Session 恰好在最后一秒完成——SSE 流可能已经被 abort 掉了，但事件已经落库。作者的处理是：</p>
+
+    <pre class="code-block"><code><span class="cm">// ark.ts:195 · 超时后的补救</span>
+<span class="kw">private async</span> <span class="fn">recoverTimedOutRun</span>(sessionId, startedAt) {
+  <span class="kw">for</span> (<span class="kw">let</span> attempt = <span class="kw">0</span>; attempt &lt; <span class="kw">3</span>; attempt++) {
+    <span class="kw">if</span> (attempt) <span class="kw">await new</span> Promise(r =&gt; <span class="fn">setTimeout</span>(r, <span class="kw">5_000</span>));  <span class="cm">// 5s 间隔重试</span>
+    <span class="kw">const</span> response = <span class="kw">await this</span>.<span class="fn">request</span>(
+      <span class="st">`/sessions/${sessionId}/events?limit=200`</span>       <span class="cm">// GET 事件历史</span>
+    );
+    <span class="kw">const</span> events = ((<span class="kw">await</span> response.<span class="fn">json</span>()).data ?? []);
+    <span class="kw">const</span> result = <span class="fn">resultFromEvents</span>(events, startedAt);   <span class="cm">// 按 processed_at 筛本轮</span>
+    <span class="kw">if</span> (result) <span class="kw">return</span> result;
+  }
+  <span class="kw">return</span> <span class="kw">undefined</span>;                                   <span class="cm">// 真的超时了</span>
+}</code></pre>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">这个模式的 FDE 应用</div>
+      <p style="margin:.3em 0;">上一篇厂商拆解讲过"事件 API 全量留存 vs 模型窗口自动压缩"。这个项目<strong>实证了这个设计的运行时价值</strong>：SSE 是<strong>推流层</strong>，事件历史 API 是<strong>持久层</strong>；网络抖动 / 客户端超时 / 甚至进程重启后，都能通过历史 API 恢复。把这段代码抄给客户做他们的 SDK 骨架，能省很多"我的消息为什么丢了"的答疑。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-progress"><span class="sec-num">六</span>进度旁白：不刷屏的一门艺术<a href="#sec-progress" class="anchor">#</a></h2>
+    <p class="kicker">— 只转发 Agent 主动提供的描述，绝不打印 command 或参数</p>
+
+    <p>这个细节值得单独说。Agent 干活时会产生大量 <code>agent.tool_use</code> 事件——如果全部转发到聊天窗口，用户看到的就是几十条"正在调用工具：bash / 正在读取文件：xxx.md"，非常吵。</p>
+
+    <p>作者的解法（<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L254" target="_blank" rel="noopener"><code>ark.ts:254</code></a>）：</p>
+
+    <pre class="code-block"><code><span class="fn">eventProgress</span>(event) {
+  <span class="kw">if</span> (event.type === <span class="st">"agent.tool_result"</span> &amp;&amp; event.is_error === <span class="kw">true</span>)
+    <span class="kw">return</span> <span class="st">"工具执行未成功，Agent 正在尝试恢复"</span>;
+  <span class="kw">if</span> (event.type !== <span class="st">"agent.tool_use"</span>) <span class="kw">return undefined</span>;
+
+  <span class="kw">const</span> description = event.input?.description?.<span class="fn">trim</span>() ?? <span class="st">""</span>;
+  <span class="cm">// 只展示 Agent 主动提供的简短描述</span>
+  <span class="cm">// 绝不转发 command、路径或完整工具参数</span>
+  <span class="kw">return</span> description
+    ? <span class="st">`正在执行：${description.slice(0, 120)}`</span>
+    : <span class="st">`正在调用工具：${name.slice(0, 80)}`</span>;
+}</code></pre>
+
+    <p><strong>关键洞察</strong>：内置工具的 <code>bash</code> / <code>edit</code> 等都接受一个可选的 <code>description</code> 参数——这是 Anthropic 早期 Claude Code 就采纳的模式，让 Agent 用自然语言总结即将执行的动作，用于对外展示。<strong>这个字段应该出现在 FDE 的客户教程里</strong>——教客户在 system prompt 里要求 Agent 每次调工具都填 description。</p>
+
+    <p>此外，Gateway 主流程<strong>甚至不订阅 onProgress</strong>（<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/gateway.ts#L92" target="_blank" rel="noopener"><code>gateway.ts:92-94</code></a>）：</p>
+
+    <pre class="code-block"><code><span class="cm">// 过程事件仍由 ArkClient 消费，但不传 onProgress，</span>
+<span class="cm">// 避免把 tool_use/tool_result 转成"执行进度：xxx"消息刷屏。</span>
+<span class="kw">const</span> result = <span class="kw">await this</span>.ark.<span class="fn">run</span>(sessionId, message.text, timeoutMs);</code></pre>
+
+    <p>取而代之：<strong>2.5 秒延迟提示</strong>。如果 Session 复用（不是首次创建），2.5 秒内不完成才发一条"已收到，正在处理，请稍候"——低频、够用、不吵。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-insights"><span class="sec-num">七</span>10 条可直接抄给客户的工程洞察<a href="#sec-insights" class="anchor">#</a></h2>
+    <p class="kicker">— 每条都在源码里有据可查</p>
+
+    <div class="insights-grid reveal">
+      <div class="insight-card">
+        <div class="k">Session 复用</div>
+        <div class="t">四元组分桶 · 群聊 vs 单聊语义分离</div>
+        <div class="d"><code>(tenant, chat, thread, user)</code>——单聊带 user 防隔离，群聊清空 user 共享上下文。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/gateway.ts#L109" target="_blank" rel="noopener">gateway.ts:109</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">凭证保鲜</div>
+        <div class="t">距过期 5 分钟触发 refresh</div>
+        <div class="d"><code>ensureCredentialFresh</code> 在每次发消息前检查，refresh 后<strong>同步更新 Ark Vault</strong>再动本地文件。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/cli.ts#L38" target="_blank" rel="noopener">cli.ts:38</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">SSE 消费</div>
+        <div class="t">event.id seen-set 防重放</div>
+        <div class="d">流断续时依赖 <code>id</code> 幂等；服务端保证 id 唯一。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L172" target="_blank" rel="noopener">ark.ts:172</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">超时补拉</div>
+        <div class="t">AbortController + GET events × 3 次</div>
+        <div class="d">超时不代表失败——用 <code>processed_at &gt;= startedAt</code> 筛回本轮，5s 间隔重试 3 次。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L195" target="_blank" rel="noopener">ark.ts:195</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">最终结果</div>
+        <div class="t">取最后一条 agent.message</div>
+        <div class="d">中间的 agent.message 是"让我先检查…"，只发 <code>.at(-1)</code> 给用户。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/gateway.ts#L118" target="_blank" rel="noopener">gateway.ts:118</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">进度旁白</div>
+        <div class="t">只展示 input.description</div>
+        <div class="d">禁止转发 command / 路径 / 参数。让 Agent 在 system prompt 层被要求填 description。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L254" target="_blank" rel="noopener">ark.ts:254</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">环境变量命名</div>
+        <div class="t">避开 ARK_* / VOLC_* 前缀</div>
+        <div class="d">用 <code>LARKSUITE_CLI_USER_ACCESS_TOKEN</code> 这类领域前缀命名 secret_name。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L135" target="_blank" rel="noopener">ark.ts:135</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">setup_script</div>
+        <div class="t">Environment 支持完整 shell 装包</div>
+        <div class="d">除声明式 <code>packages</code>，可写 <code>set -e; npm install -g @larksuite/cli; lark-cli --version</code> 校验。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/ark.ts#L96" target="_blank" rel="noopener">ark.ts:96</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">System prompt 硬约束</div>
+        <div class="t">禁止 Agent 打印 token</div>
+        <div class="d">system 里明写「不读取、不打印、不写入任何 token、App Secret 或其他凭证」。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/init.ts#L17" target="_blank" rel="noopener">init.ts:17</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">3 秒响应</div>
+        <div class="t">Handler 只入队不 await</div>
+        <div class="d">飞书事件订阅约束——SDK handler 里 <code>gateway.accept()</code> 立即返回，KeyedQueue 异步跑。</div>
+        <div class="src"><a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/feishu.ts#L29" target="_blank" rel="noopener">feishu.ts:29</a></div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-boundary"><span class="sec-num">八</span>项目边界与不足<a href="#sec-boundary" class="anchor">#</a></h2>
+    <p class="kicker">— 抄之前先看它没做什么</p>
+
+    <div class="callout callout-con">
+      <div class="callout-tag">当前边界</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>单用户 MVP</strong>：只有 init 时授权的 open_id 能驱动 Agent，来自其他人的消息会被拒绝（<a href="https://github.com/wangjiangwen-gif/ark-agent-feishu-bot/blob/main/src/gateway.ts#L67" target="_blank" rel="noopener">gateway.ts:67</a>）</li>
+        <li><strong>不支持 Group Bot 多用户</strong>：群里只处理 @Bot 消息，且所有 @Bot 都归给 init 的 open_id——群成员各自不能带自己身份</li>
+        <li><strong>不支持图片 / 文件 / 富文本 / 卡片</strong>：只处理 text 消息类型（feishu.ts 显式过滤）</li>
+        <li><strong>没有 Multi Agent</strong>：<code>mcp_servers: []</code>, <code>skills: []</code>——纯内置工具集起 <code>lark-cli</code></li>
+        <li><strong>没有 Outcome 定义</strong>：不用自动评估 rubric 迭代</li>
+        <li><strong>没有 Memory Store</strong>：跨 Session 的项目规范 / 用户偏好靠 <code>/new</code> 手动重置来管理</li>
+        <li><strong>没有 Custom Skill 上传</strong>：完全靠 <code>lark-cli</code> 自带的 skill hub</li>
+      </ul>
+    </div>
+
+    <p>换个视角：<strong>这些"没做"的部分，恰好是客户产品化时要补的能力</strong>。可以按这个清单排优先级：多用户 → 文件消息 → Skills → Memory Store → Outcome → Multi Agent。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-fde-play"><span class="sec-num">九</span>FDE 应答剧本：怎么把这个项目用起来<a href="#sec-fde-play" class="anchor">#</a></h2>
+    <p class="kicker">— 不同客户场景的不同用法</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>客户诉求</th><th>用它做什么</th><th>要改的地方</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>「我想快速试一下 Managed Agents 能不能做我们内部 IM Bot」</td>
+            <td>直接 <code>npx --yes arkagent init</code>——半小时看到效果</td>
+            <td>无（个人试用）</td>
+          </tr>
+          <tr>
+            <td>「我们要接 XX IM（钉钉 / 企微 / 内部 IM）」</td>
+            <td>抄 <code>src/gateway.ts</code> + <code>src/store.ts</code> + <code>src/ark.ts</code> 骨架</td>
+            <td>换掉 <code>src/feishu.ts</code>；重写 <code>normalizeMessage()</code> 与 <code>sendReply()</code></td>
+          </tr>
+          <tr>
+            <td>「我们要多用户 SaaS 化」</td>
+            <td>抄事件流 + Session 复用 + 补拉逻辑</td>
+            <td>把 <code>authorizedUserOpenId</code> 单锁改成用户-Vault 映射表；给每个用户建独立 Vault + Credential</td>
+          </tr>
+          <tr>
+            <td>「我们要接自己业务系统的 MCP」</td>
+            <td>照抄骨架，OFFICE_AGENT_CONFIG 改 <code>mcp_servers</code></td>
+            <td>init 流程加 MCP Server 注册 + 对应 Vault 凭据配置</td>
+          </tr>
+          <tr>
+            <td>「我们担心 Session 状态丢」</td>
+            <td>直接给客户看 <code>recoverTimedOutRun</code> 那段——事件历史 API 是真源</td>
+            <td>无</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-annex"><span class="sec-num">十</span>附：源码结构一览<a href="#sec-annex" class="anchor">#</a></h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>文件</th><th>行数</th><th>核心职责</th></tr></thead>
+        <tbody>
+          <tr><td><code>src/ark.ts</code></td><td>287</td><td>ArkClient · Session / Vault / Credential / Environment / Agent API + SSE 消费 + 补拉</td></tr>
+          <tr><td><code>src/cli.ts</code></td><td>207</td><td>init / doctor / run 三命令入口 + 掩码密码输入 + refresh 编排</td></tr>
+          <tr><td><code>src/init.ts</code></td><td>123</td><td>OFFICE_AGENT_CONFIG 定义 + 4 步资源创建 + 写 .env</td></tr>
+          <tr><td><code>src/gateway.ts</code></td><td>124</td><td>KeyedQueue · Session 复用 · 双身份校验 · 结果聚合</td></tr>
+          <tr><td><code>src/oauth.ts</code></td><td>108</td><td>飞书 Device Flow（begin / poll / refresh / getUserOpenId）</td></tr>
+          <tr><td><code>src/store.ts</code></td><td>72</td><td>SQLite (WAL) · conversations + processed_events 双表</td></tr>
+          <tr><td><code>src/feishu.ts</code></td><td>62</td><td>WSClient 启动 · <code>im.message.receive_v1</code> 归一化</td></tr>
+          <tr><td><code>src/config.ts</code></td><td>40</td><td>环境变量读取 + 校验</td></tr>
+          <tr><td><code>src/scopes.ts</code></td><td>19</td><td>lark-cli 业务域到 OAuth scope 的映射（docs, drive）</td></tr>
+          <tr><td><code>src/paths.ts</code></td><td>17</td><td><code>~/.arkagent/</code> 目录约定</td></tr>
+          <tr><td colspan="2"><strong>合计</strong></td><td><strong>1059 行</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>另有 9 个测试文件（约 20KB），覆盖 ark / config / feishu / gateway / init / oauth / paths / scopes / store——测试覆盖率很像内部工程规范，也侧面说明作者虽然发在个人 repo，但工程质量是生产级。</p>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-07-29 初稿（源码级拆解 · 与厂商拆解配套）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="../frontier/vendors/volcengine/deep_dives/2026-07-29_ark-managed-agents.html">配套：火山方舟 Managed Agents 深度拆解</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

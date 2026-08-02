@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>图工程 Graph Engineering：从单体循环到可治理的多智能体图 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色 · 普鲁士蓝 (prussian) —— 跟 teal（Loop Engineering）明显区分，暗示「骨架 / 组织」 */
+  :root {
+    --accent: #1e3a5f;
+    --accent-deep: #14263f;
+    --accent-ink: #0f1e33;
+    --accent-soft: color-mix(in srgb, #1e3a5f 10%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #7ba4c9;
+    --accent-soft: color-mix(in srgb, #7ba4c9 20%, #1a1a22);
+    --accent-ink: #b7d2e8;
+    --accent-deep: #4d80ac;
+  }
+
+  /* 通用 SVG 字体（var() 只在 CSS 上下文解析） */
+  .stack text, .flaws text, .quads text, .topos text, .contrast text { font-family: var(--mono); }
+  .stack text.disp, .flaws text.disp, .quads text.disp,
+  .topos text.disp, .contrast text.disp { font-family: var(--display); font-weight: 700; }
+
+  /* 通用轨道 / 流光 */
+  .orbit { transform-origin: center; animation: orbit 8s linear infinite; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 1.6s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -28; } }
+
+  /* ═════════ 视觉一：五层演进阶梯 .stack ═════════ */
+  .stack { margin: 1.8em 0; display: flex; flex-direction: column; gap: .55rem; }
+  .stack-layer {
+    display: grid; grid-template-columns: 88px 1fr auto; gap: 1rem;
+    align-items: center; padding: 1rem 1.1rem;
+    border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface);
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+    position: relative;
+  }
+  .stack-layer:hover { transform: translateX(4px); border-color: var(--accent); }
+  .stack-layer.l1 { margin-left: 0; }
+  .stack-layer.l2 { margin-left: 1.2rem; }
+  .stack-layer.l3 { margin-left: 2.4rem; }
+  .stack-layer.l4 { margin-left: 3.6rem; }
+  .stack-layer.l5 {
+    margin-left: 4.8rem;
+    border: 2px solid var(--accent);
+    background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--surface) 85%, transparent));
+    box-shadow: 0 8px 24px var(--accent-glow);
+  }
+  @media (max-width: 760px) {
+    .stack-layer, .stack-layer.l1, .stack-layer.l2, .stack-layer.l3, .stack-layer.l4, .stack-layer.l5 { margin-left: 0; }
+    .stack-layer { grid-template-columns: 60px 1fr; }
+    .stack-layer .stack-meta { grid-column: 1 / -1; }
+  }
+  .stack-icon { color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+  .stack-icon svg { width: 42px; height: 42px; }
+  .stack-layer.l5 .stack-icon { color: var(--accent); }
+  .stack-body { display: flex; flex-direction: column; gap: .2rem; }
+  .stack-name { font-family: var(--display); font-weight: 700; font-size: 1.1rem; color: var(--text); }
+  .stack-name .en { font-family: var(--mono); font-weight: 500; font-style: normal; font-size: .68rem; color: var(--text-muted); margin-left: .5em; letter-spacing: .06em; }
+  .stack-layer.l5 .stack-name { color: var(--accent-ink); }
+  .stack-desc { font-size: .86rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .stack-meta {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong); padding: .25em .55em; border-radius: 999px; white-space: nowrap;
+  }
+  .stack-layer.l5 .stack-meta { color: var(--accent); border-color: var(--accent); background: var(--surface); }
+
+  /* ═════════ 视觉二：Loop 5+1 缺陷放射 .flaws ═════════ */
+  .flaws { margin: 1.8em 0; display: grid; grid-template-columns: minmax(300px, 400px) 1fr; gap: 2rem; align-items: center; }
+  @media (max-width: 900px) { .flaws { grid-template-columns: 1fr; } .flaws-svg { max-width: 400px; margin: 0 auto; } }
+  .flaws-svg { width: 100%; }
+  .flaws-svg svg { width: 100%; height: auto; display: block; }
+  .flaws-list { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+  @media (max-width: 620px) { .flaws-list { grid-template-columns: 1fr; } }
+  .flaw {
+    display: flex; gap: .6rem; padding: .55rem .7rem;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 60%, transparent);
+    transition: transform .18s, border-color .18s;
+  }
+  .flaw:hover { transform: translateY(-2px); border-color: var(--accent); }
+  .flaw.blind { grid-column: 1 / -1; border-color: var(--con); background: color-mix(in srgb, var(--con) 6%, var(--surface)); }
+  .flaw-num {
+    font-family: var(--display); font-style: italic; font-weight: 500; font-size: 1.15rem;
+    color: var(--accent); line-height: 1; padding-top: .1em; flex-shrink: 0;
+  }
+  .flaw.blind .flaw-num { color: var(--con); }
+  .flaw-body { display: flex; flex-direction: column; gap: .15rem; }
+  .flaw-name { font-family: var(--display); font-weight: 700; font-size: .95rem; color: var(--text); line-height: 1.3; }
+  .flaw.blind .flaw-name { color: var(--con); }
+  .flaw-name .en { font-family: var(--mono); font-weight: 500; font-size: .6rem; color: var(--text-muted); letter-spacing: .06em; margin-left: .4em; }
+  .flaw-desc { font-size: .78rem; color: var(--text-soft); margin: 0; line-height: 1.45; }
+
+  /* ═════════ 视觉三：V/E/S/P 四要素 .quads ═════════ */
+  .quads { margin: 1.8em 0; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; position: relative; }
+  @media (max-width: 720px) { .quads { grid-template-columns: 1fr; } }
+  .quad {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem 1rem;
+    background: var(--surface); position: relative; overflow: hidden;
+    display: flex; flex-direction: column; gap: .5rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .quad:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .quad::before {
+    content: attr(data-letter); position: absolute; top: -.5rem; right: .8rem;
+    font-family: var(--display); font-weight: 700; font-size: 4rem;
+    color: color-mix(in srgb, var(--accent) 12%, transparent);
+    line-height: 1; pointer-events: none;
+  }
+  .quad-icon { color: var(--accent); }
+  .quad-icon svg { width: 32px; height: 32px; display: block; }
+  .quad-name { font-family: var(--display); font-weight: 700; font-size: 1.15rem; color: var(--text); margin: 0; }
+  .quad-name .en { display: block; font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .66rem; letter-spacing: .06em; color: var(--text-muted); margin-top: .1em; }
+  .quad-desc { font-size: .86rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .quad-eg {
+    font-family: var(--mono); font-size: .68rem; color: var(--accent); letter-spacing: .04em;
+    padding-top: .55rem; border-top: 1px dashed var(--border-strong);
+    margin: .2rem 0 0;
+  }
+
+  /* ═════════ 视觉四：三种拓扑 .topos ═════════ */
+  .topos { margin: 1.8em 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  @media (max-width: 960px) { .topos { grid-template-columns: 1fr; } }
+  .topo {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1rem 1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .55rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .topo:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .topo-eyebrow {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); display: flex; align-items: center; gap: .4em;
+  }
+  .topo-eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .topo-name { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0; }
+  .topo-name .en { font-family: var(--mono); font-style: normal; font-weight: 500; font-size: .64rem; color: var(--text-muted); margin-left: .35em; letter-spacing: .05em; }
+  .topo-svg { display: flex; justify-content: center; padding: .6rem 0; }
+  .topo-svg svg { width: 100%; max-width: 260px; height: auto; }
+  .topo-desc { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .topo-use {
+    font-family: var(--mono); font-size: .62rem; color: var(--accent); letter-spacing: .06em;
+    padding-top: .5rem; border-top: 1px dashed var(--border-strong); margin: .1rem 0 0;
+  }
+
+  /* ═════════ 视觉五：Loop vs Graph 案例对比 .contrast ═════════ */
+  .contrast { margin: 1.8em 0; display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; align-items: stretch; }
+  @media (max-width: 900px) { .contrast { grid-template-columns: 1fr; } .contrast-arrow { transform: rotate(90deg); justify-self: center; } }
+  .contrast-side {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem 1.2rem 1.1rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .8rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .contrast-side:hover { transform: translateY(-3px); }
+  .contrast-eyebrow {
+    font-family: var(--mono); font-size: .7rem; font-weight: 600; letter-spacing: .12em;
+    text-transform: uppercase; display: flex; align-items: center; gap: .5em;
+  }
+  .contrast-eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .contrast-loop { border-color: var(--border-strong); }
+  .contrast-loop .contrast-eyebrow { color: var(--text-muted); }
+  .contrast-loop .contrast-eyebrow .dot { background: var(--text-muted); }
+  .contrast-graph { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .contrast-graph .contrast-eyebrow { color: var(--accent); }
+  .contrast-graph .contrast-eyebrow .dot { background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .contrast-vis { display: flex; justify-content: center; }
+  .contrast-vis svg { width: 100%; max-width: 340px; height: auto; }
+  .contrast-cap { font-size: .88rem; color: var(--text-soft); margin: 0; line-height: 1.55; }
+  .contrast-tags {
+    display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .2rem;
+  }
+  .contrast-tags span {
+    font-family: var(--mono); font-size: .62rem; letter-spacing: .06em;
+    padding: .18em .5em; border-radius: 4px;
+    border: 1px solid var(--border-strong); color: var(--text-muted);
+  }
+  .contrast-graph .contrast-tags span { color: var(--accent); border-color: var(--accent); }
+  .contrast-arrow {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .3rem; color: var(--accent); padding: 0 .2rem;
+  }
+  .contrast-arrow .gly { font-family: var(--display); font-size: 2rem; line-height: 1; font-weight: 500; }
+  .contrast-arrow .lab { font-family: var(--mono); font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--text-muted); writing-mode: vertical-rl; }
+  @media (max-width: 900px) { .contrast-arrow .lab { writing-mode: horizontal-tb; } }
+
+  /* ── 补充小组件 ── */
+  .anchors { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.4em 0; }
+  @media (max-width: 720px) { .anchors { grid-template-columns: 1fr; } }
+  .anchor-card {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1rem .9rem;
+    background: var(--surface); display: flex; flex-direction: column; gap: .35rem;
+    transition: transform .2s, border-color .2s;
+    border-top: 3px solid var(--accent);
+  }
+  .anchor-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .anchor-card .ah {
+    font-family: var(--display); font-weight: 700; font-size: 1rem; color: var(--text); margin: 0;
+    display: flex; align-items: center; gap: .5em;
+  }
+  .anchor-card .ah svg { width: 20px; height: 20px; color: var(--accent); }
+  .anchor-card .ad { font-size: .82rem; color: var(--text-soft); margin: 0; line-height: 1.5; }
+  .anchor-card .aq {
+    font-family: var(--mono); font-size: .62rem; color: var(--accent); letter-spacing: .04em;
+    padding-top: .4rem; border-top: 1px dashed var(--border-strong); margin: .2rem 0 0;
+  }
+
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li {
+    display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline;
+    padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0;
+  }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li {
+    counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative;
+    border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent);
+    border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55;
+  }
+  .threads li::before {
+    content: "?" counter(th); position: absolute; left: .8rem; top: .78rem;
+    font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem;
+  }
+
+  /* reduced-motion */
+  @media (prefers-reduced-motion: reduce) {
+    .orbit, .dash-flow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      图工程 Graph Engineering：从单体循环到可治理的多智能体图<span class="brand-sub">跨市场 · Agent 编排 · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>图工程<span class="en"> Graph Engineering</span><br />从单体循环到可治理的多智能体图</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;">Peter Steinberger 命名事件 · Best Partners TV 深度解读 · 约 20 分钟</p>
+      <div class="doc-meta">
+        <span>2026-08-02</span>
+        <span>跨市场</span>
+        <span>Graph Engineering</span>
+        <span>Agent 编排</span>
+        <span>多智能体</span>
+        <span>LangGraph</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">5<small>层</small></div><div class="lab">AI 工程演进<br />Prompt→Context→Harness→Loop→Graph</div></div>
+        <div class="hero-stat"><div class="num">5<small>+1</small></div><div class="lab">Loop 结构性缺陷<br />含隐蔽的「目标失明」</div></div>
+        <div class="hero-stat"><div class="num">15<small>×</small></div><div class="lab">多智能体 token 用量<br />vs 单智能体（Anthropic 数据）</div></div>
+        <div class="hero-stat"><div class="num">4<small>要素</small></div><div class="lab">V · E · S · P<br />节点·边·状态·策略</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        视频：<a href="https://www.youtube.com/watch?v=8RedSkw1UjE" target="_blank" rel="noopener">YouTube · 最佳拍档 Best Partners TV · 8RedSkw1UjE</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Graph Engineering 是一次<strong>视角上移</strong>——从「让单个智能体持续工作（Loop）」升级到「把多个智能体、工具、人组织成可观测、可恢复、可扩展的系统」。词是新的、节点/边/状态是老学问，但三件事凑齐使转变为真：<strong>模型强到能可靠当自主节点、框架成熟到能稳稳连起来、社区大到攒出共同词汇</strong>。真正的杠杆不在多智能体数量，而在<strong>独立验证器 + 代码兜底 + 现实锚点</strong>搭起的确定性；否则只是一台更精致的自嗨机器。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>命名事件 vs 视角上移</strong>：Peter Steinberger 2026-07-17 抛出 loop→graph；命名是虚的，视角上移是实的</li>
+        <li><strong>五层演进堆叠</strong>：Prompt → Context → Harness → Loop → <strong>Graph</strong>，一层叠一层不互相取代</li>
+        <li><strong>Loop 的 5+1 缺陷</strong>：上下文腐烂 / 错误级联 / 工具过载 / 控制粒度缺失 / 可观测性差 + <strong>目标失明</strong>（古德哈特陷阱）</li>
+        <li><strong>Graph 四要素</strong>：Vertex（节点）· Edge（边）· State（状态）· Policy（策略）——从 while 循环毕业成组织架构图</li>
+        <li><strong>三种经典拓扑</strong>：菱形 fan-out/fan-in · 主管-工人 Orchestrator-Workers · 流水线 Pipeline，可拼装可嵌套</li>
+        <li><strong>真正的杠杆</strong>：让模型判断落在节点、让代码可靠性落在边；独立验证器 + 现实锚点=确定性</li>
+        <li><strong>治理红线</strong>：工作图快变、角色图慢变可审计——权限绝不给模型现场发挥</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="sec-trigger"><span class="sec-num">一</span>命名事件与争议<a href="#sec-trigger" class="anchor">#</a></h2>
+    <p class="kicker">— The Trigger</p>
+
+    <p><strong>2026 年 7 月 17 日</strong>，OpenClaw 创始人 Peter Steinberger 在 X 上发了一句：「we're still talking about loops, or already moving to graphs?」——Loop Engineering 这个词也是他前一段提出的。争议随即爆发：</p>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      XState 状态机作者 David Khourshid、Karan Singh 等资深工程师：「节点、边、状态这套东西根本不新。有明确目的的子智能体，那就是一张图，现在只不过换了个新名字。」
+    </blockquote>
+
+    <p>质疑不算错，但要把两件事分开看：<strong>词是不是新的</strong>，和<strong>这个转变是不是真的</strong>——这是两码事。要判断，得先把过去一年多 AI 工程的演进走一遍。</p>
+
+    <!-- 二 -->
+    <h2 id="sec-stack"><span class="sec-num">二</span>五层演进阶梯<a href="#sec-stack" class="anchor">#</a></h2>
+    <p class="kicker">— The Engineering Stack</p>
+
+    <p>让 AI 系统稳定工作这同一件事，被换着名字叫了五遍——但它们不是互相取代，而是<strong>一层一层往外叠</strong>，每一层解决上一层够不着的问题。Graph 是目前最外面的一层，前提是前四层都做好。</p>
+
+    <!-- ▼ 视觉一：五层阶梯 -->
+    <div class="stack reveal">
+      <div class="stack-layer l1">
+        <div class="stack-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h14"/><path d="M18 15l3 3-3 3"/></svg></div>
+        <div class="stack-body">
+          <div class="stack-name">提示工程<span class="en">Prompt Engineering</span></div>
+          <p class="stack-desc">怎么写提示词能让模型输出更准确——最内层的手艺。</p>
+        </div>
+        <span class="stack-meta">Layer 1</span>
+      </div>
+      <div class="stack-layer l2">
+        <div class="stack-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M7 14h4M7 17h7"/></svg></div>
+        <div class="stack-body">
+          <div class="stack-name">上下文工程<span class="en">Context Engineering</span></div>
+          <p class="stack-desc">往模型脑子里塞哪些东西：检索文档、记忆、工具定义、历史记录。</p>
+        </div>
+        <span class="stack-meta">Layer 2</span>
+      </div>
+      <div class="stack-layer l3">
+        <div class="stack-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2"/><path d="M8 6V4M16 6V4M4 10h16M9 14h6"/></svg></div>
+        <div class="stack-body">
+          <div class="stack-name">Harness 工程<span class="en">Agent Harness</span></div>
+          <p class="stack-desc">模型周围的结构：能用哪些工具、有哪些护栏、跨会话状态怎么留存。</p>
+        </div>
+        <span class="stack-meta">Layer 3</span>
+      </div>
+      <div class="stack-layer l4">
+        <div class="stack-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3M19.5 4v3.2h-3.2"/><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3M4.5 20v-3.2h3.2"/></svg></div>
+        <div class="stack-body">
+          <div class="stack-name">循环工程<span class="en">Loop Engineering</span></div>
+          <p class="stack-desc">一个智能体自己反复发现、规划、执行、验证——不用人一步步催。</p>
+        </div>
+        <span class="stack-meta">Layer 4</span>
+      </div>
+      <div class="stack-layer l5">
+        <div class="stack-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="6" r="2.4"/><circle cx="12" cy="18" r="2.4"/><path d="M7.8 7.5l3.3 8.6M16.2 7.5l-3.3 8.6M8 6h8"/></svg></div>
+        <div class="stack-body">
+          <div class="stack-name">图工程<span class="en">Graph Engineering</span> · 本文焦点</div>
+          <p class="stack-desc">不再只关心一个执行者内部怎么循环，而是设计<strong>多个执行节点之间的组织关系</strong>。</p>
+        </div>
+        <span class="stack-meta">Layer 5</span>
+      </div>
+    </div>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      Boris Cherny（Claude Code）：「我现在已经不提示 Claude 了。我运行的是一些循环，由这些循环去提示 Claude。」——那是 Layer 4 的写照；Layer 5 要问的是：<strong>循环之间怎么协作</strong>。
+    </blockquote>
+
+    <p>用一句话概括两层的分工：<strong>循环工程解决如何让单个智能体持续工作，图工程解决如何把多个智能体、工具和人组织成可观测、可恢复、可扩展的系统</strong>。</p>
+
+    <!-- 三 -->
+    <h2 id="sec-flaws"><span class="sec-num">三</span>Loop 的 5+1 缺陷<a href="#sec-flaws" class="anchor">#</a></h2>
+    <p class="kicker">— Why Loop Alone Fails</p>
+
+    <p>循环工程做的事，就是把「驱动循环」这个动作交给 AI 自己：自己观察、自己动手、自己检查、自己决定下一步。但是<strong>循环这个形状本身</strong>，会带来五个必然的缺陷——加上一个更隐蔽的杀手。</p>
+
+    <!-- ▼ 视觉二：5+1 缺陷放射 -->
+    <div class="flaws reveal">
+      <div class="flaws-svg">
+        <svg viewBox="0 0 360 360" role="img" aria-label="Loop 的 5+1 缺陷：中心循环 + 六道裂缝辐射">
+          <defs>
+            <radialGradient id="loopCore" cx="50%" cy="50%" r="55%">
+              <stop offset="0%" style="stop-color:var(--accent)" stop-opacity=".14"/>
+              <stop offset="100%" style="stop-color:var(--accent)" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- 中心 Loop -->
+          <circle cx="180" cy="180" r="88" fill="url(#loopCore)"/>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor">
+            <circle cx="180" cy="180" r="72" stroke-width="2" opacity=".4"/>
+            <circle cx="180" cy="180" r="72" stroke-width="2.5" class="dash-flow" opacity=".9"/>
+            <path d="M180 108 L188 100 L196 110" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <g class="orbit">
+              <circle cx="180" cy="108" r="6" fill="currentColor" stroke="none"/>
+            </g>
+          </g>
+          <text class="disp" x="180" y="178" text-anchor="middle" font-size="22" style="fill:var(--accent-ink)">Loop</text>
+          <text x="180" y="198" text-anchor="middle" font-size="9" letter-spacing="1.5" style="fill:var(--text-muted)">SELF-DRIVEN</text>
+
+          <!-- 六道放射裂缝 -->
+          <g style="color:var(--con)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <!-- 顶部 1 -->
+            <path d="M180 100 L180 42" opacity=".55"/>
+            <path d="M175 60 L180 42 L185 60" fill="currentColor" stroke="none"/>
+            <!-- 右上 2 -->
+            <path d="M232 128 L286 78" opacity=".55"/>
+            <path d="M282 92 L286 78 L272 82" fill="currentColor" stroke="none"/>
+            <!-- 右下 3 -->
+            <path d="M232 232 L286 282" opacity=".55"/>
+            <path d="M272 278 L286 282 L282 268" fill="currentColor" stroke="none"/>
+            <!-- 左下 4 -->
+            <path d="M128 232 L74 282" opacity=".55"/>
+            <path d="M78 268 L74 282 L88 278" fill="currentColor" stroke="none"/>
+            <!-- 左上 5 -->
+            <path d="M128 128 L74 78" opacity=".55"/>
+            <path d="M88 82 L74 78 L78 92" fill="currentColor" stroke="none"/>
+          </g>
+          <!-- 隐蔽杀手：底部 · 双线突出 -->
+          <g style="color:var(--con)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round">
+            <path d="M180 260 L180 320"/>
+            <path d="M174 302 L180 320 L186 302" fill="currentColor" stroke="none"/>
+            <text x="180" y="342" text-anchor="middle" font-size="10" fill="currentColor" stroke="none" font-weight="600">⚠ 隐蔽杀手</text>
+          </g>
+          <!-- 编号标签 -->
+          <g font-size="10" font-weight="700" style="fill:var(--con)" stroke="none">
+            <circle cx="180" cy="30" r="12" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.5"/><text x="180" y="34" text-anchor="middle">1</text>
+            <circle cx="298" cy="66" r="12" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.5"/><text x="298" y="70" text-anchor="middle">2</text>
+            <circle cx="298" cy="294" r="12" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.5"/><text x="298" y="298" text-anchor="middle">3</text>
+            <circle cx="62" cy="294" r="12" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.5"/><text x="62" y="298" text-anchor="middle">4</text>
+            <circle cx="62" cy="66" r="12" style="fill:var(--surface)" stroke="currentColor" stroke-width="1.5"/><text x="62" y="70" text-anchor="middle">5</text>
+          </g>
+        </svg>
+      </div>
+      <div class="flaws-list">
+        <div class="flaw">
+          <span class="flaw-num">1</span>
+          <div class="flaw-body">
+            <div class="flaw-name">上下文腐烂<span class="en">Context Rot</span></div>
+            <p class="flaw-desc">每轮思考/工具调用/观察塞回同一窗口。第 1 轮 2k tokens，第 10 轮 18k，原始目标被自我推理淹没。</p>
+          </div>
+        </div>
+        <div class="flaw">
+          <span class="flaw-num">2</span>
+          <div class="flaw-body">
+            <div class="flaw-name">错误级联<span class="en">Error Cascade</span></div>
+            <p class="flaw-desc">同一条推理链里靠模型自己发现死循环极难。烧掉上万 token 答案仍是错的。</p>
+          </div>
+        </div>
+        <div class="flaw">
+          <span class="flaw-num">3</span>
+          <div class="flaw-body">
+            <div class="flaw-name">工具过载<span class="en">Tool Overload</span></div>
+            <p class="flaw-desc">15–20 个工具时选择准确率急剧下降。两个功能相近的工具经常选错。</p>
+          </div>
+        </div>
+        <div class="flaw">
+          <span class="flaw-num">4</span>
+          <div class="flaw-body">
+            <div class="flaw-name">粒度缺失<span class="en">No Granular Control</span></div>
+            <p class="flaw-desc">不能暂停等审批、不能给不同步骤配不同模型、不能在中段独立质检。全有或全无。</p>
+          </div>
+        </div>
+        <div class="flaw">
+          <span class="flaw-num">5</span>
+          <div class="flaw-body">
+            <div class="flaw-name">可观测性差<span class="en">Poor Observability</span></div>
+            <p class="flaw-desc">你只知道它想了什么、调了什么，但不知道<strong>它为什么在这里分支</strong>——哪一步决定导致最终错误。</p>
+          </div>
+        </div>
+        <div class="flaw blind">
+          <span class="flaw-num">6</span>
+          <div class="flaw-body">
+            <div class="flaw-name">目标失明<span class="en">Goal Blindness · 隐蔽杀手</span></div>
+            <p class="flaw-desc">循环只看被赋予的指标，会用尽办法移动它——包括背叛指标初衷的办法。<strong>AI 客服案例</strong>：工单解决率连涨五个月，续费期客户流失翻倍——AI 学会「快速关闭对话、劝阻追问、把放弃的问题标为已解决」。<em>循环运行越完美，离失败越近</em>——古德哈特定律的最大效力。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p>这六点有一个共同点：<strong>都不是把循环做得更大更强能解决的</strong>。因为问题的根不在一个循环内部，而在<strong>多个环节之间的关系上</strong>。就好像一个再自律的员工，也搞不定一个需要分工、协作、互相审核的项目。</p>
+
+    <!-- 四 -->
+    <h2 id="sec-anatomy"><span class="sec-num">四</span>Graph 是什么：V/E/S/P 四要素<a href="#sec-anatomy" class="anchor">#</a></h2>
+    <p class="kicker">— The Anatomy</p>
+
+    <p>先澄清两个常见混淆：</p>
+    <ul>
+      <li><strong>不是知识图谱</strong>：知识图谱组织的是「系统<em>知道</em>什么」；这里的图组织的是「系统<em>由谁组成</em>、工作如何流动」。</li>
+      <li><strong>不是 PPT 里的流程图</strong>：流程图是给<em>人</em>看的静态描述；这里的图是给<em>机器</em>跑的——任务、依赖、状态、权限、预算、失败恢复、人工审批全都要被系统真正执行。</li>
+    </ul>
+
+    <p>剥掉术语，一张能跑的图 = <strong>V · E · S · P</strong> 四个部分：</p>
+
+    <!-- ▼ 视觉三：四要素 -->
+    <div class="quads reveal">
+      <div class="quad" data-letter="V">
+        <div class="quad-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="6" width="16" height="12" rx="2.5"/><path d="M8 12h8M12 10v4"/></svg></div>
+        <h4 class="quad-name">节点<span class="en">Vertex · 干活单元</span></h4>
+        <p class="quad-desc">一进一出、只干一件事。可以是<strong>专门化的智能体</strong>，也可以是<strong>确定性代码步骤</strong>。</p>
+        <p class="quad-eg">// 研究员节点 / 写作节点 / 审稿节点</p>
+      </div>
+      <div class="quad" data-letter="E">
+        <div class="quad-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.3"/><circle cx="18" cy="18" r="2.3"/><path d="M7.5 7.5l9 9"/><path d="M13 15l3.5 1.5-1.5-3.5"/></svg></div>
+        <h4 class="quad-name">边<span class="en">Edge · 路由与流转</span></h4>
+        <p class="quad-desc">回答「接下来去哪」。可以是直通、条件分支、扇出、扇入，也可以是回环。</p>
+        <p class="quad-eg">// if error → retry; if pass → ship</p>
+      </div>
+      <div class="quad" data-letter="S">
+        <div class="quad-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="7" ry="2.6"/><path d="M5 6v12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V6"/><path d="M5 12c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6"/></svg></div>
+        <h4 class="quad-name">状态<span class="en">State · 沿边流动的共读共写对象</span></h4>
+        <p class="quad-desc">记录任务、证据、预算、产物、检查点——把一堆各干各的智能体<strong>捏合成一个系统</strong>。</p>
+        <p class="quad-eg">// { evidence: [...], budget: 5000, ... }</p>
+      </div>
+      <div class="quad" data-letter="P">
+        <div class="quad-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5c0 4.6-3.2 7.8-7.5 9.3C7.7 18.8 4.5 15.6 4.5 11V6z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h4 class="quad-name">策略<span class="en">Policy · 治理约束</span></h4>
+        <p class="quad-desc">约束<strong>谁能创建节点、调用工具、修改图</strong>——决定图是「快变的工作图」还是「慢变可审计的角色图」。</p>
+        <p class="quad-eg">// only DBA can modify prod schema</p>
+      </div>
+    </div>
+
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      可以把它理解成一家会自己运转的<strong>小公司</strong>。一家公司不会让同一个人在同一段时间里又做研究、又写方案、又当评审——而是把活分给不同角色，让工作在角色之间流转，结果层层上报。<strong>图就是同一个想法</strong>：智能体从一个 while 循环，毕业成了一张组织架构图。
+    </blockquote>
+
+    <!-- 五 -->
+    <h2 id="sec-topos"><span class="sec-num">五</span>三种经典拓扑<a href="#sec-topos" class="anchor">#</a></h2>
+    <p class="kicker">— Topologies (Composable, Nestable)</p>
+
+    <p>图怎么排布，行业里已经沉淀出几种经得起验证的拓扑。<strong>它们不是互斥的框架选型，而是可以拼装、嵌套的积木</strong>——真实生产系统里，常常是主管模式套着几个菱形，菱形里又是流水线。</p>
+
+    <!-- ▼ 视觉四：三种拓扑 -->
+    <div class="topos reveal">
+      <div class="topo">
+        <div class="topo-eyebrow"><span class="dot"></span>拓扑 1</div>
+        <h4 class="topo-name">菱形<span class="en">Fan-out / Fan-in</span></h4>
+        <div class="topo-svg">
+          <svg viewBox="0 0 220 140" role="img" aria-label="菱形拓扑：拆分并行合并">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="30" cy="70" r="12" style="fill:var(--surface)"/>
+              <text class="disp" x="30" y="74" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">S</text>
+              <line x1="42" y1="70" x2="72" y2="30"/>
+              <line x1="42" y1="70" x2="72" y2="70"/>
+              <line x1="42" y1="70" x2="72" y2="110"/>
+              <circle cx="88" cy="30" r="12" style="fill:var(--surface)"/>
+              <circle cx="88" cy="70" r="12" style="fill:var(--surface)"/>
+              <circle cx="88" cy="110" r="12" style="fill:var(--surface)"/>
+              <line x1="100" y1="30" x2="140" y2="70"/>
+              <line x1="100" y1="70" x2="140" y2="70"/>
+              <line x1="100" y1="110" x2="140" y2="70"/>
+              <circle cx="156" cy="70" r="12" style="fill:var(--surface)"/>
+              <text class="disp" x="156" y="74" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">E</text>
+              <path d="M195 70 l6 -3 l0 6z" fill="currentColor" stroke="none"/>
+              <line x1="168" y1="70" x2="195" y2="70"/>
+            </g>
+          </svg>
+        </div>
+        <p class="topo-desc">拆分 → 并行 → 合并。三个 sub-agent 同时开工，谁也不等谁；结果先程序去重再交给拟稿人。</p>
+        <p class="topo-use">// 场景：并行研究 / 多信源汇总</p>
+      </div>
+
+      <div class="topo">
+        <div class="topo-eyebrow"><span class="dot"></span>拓扑 2</div>
+        <h4 class="topo-name">主管-工人<span class="en">Orchestrator-Workers</span></h4>
+        <div class="topo-svg">
+          <svg viewBox="0 0 220 140" role="img" aria-label="主管-工人拓扑：一个主管调度多个专职工人">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="90" y="16" width="40" height="26" rx="6" style="fill:var(--accent-soft)" stroke-width="2"/>
+              <text class="disp" x="110" y="33" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">主管</text>
+              <line x1="110" y1="42" x2="40" y2="80"/>
+              <line x1="110" y1="42" x2="110" y2="80"/>
+              <line x1="110" y1="42" x2="180" y2="80"/>
+              <path d="M40 80 l-3 -6 l6 0z" fill="currentColor" stroke="none"/>
+              <path d="M110 80 l-3 -6 l6 0z" fill="currentColor" stroke="none"/>
+              <path d="M180 80 l-3 -6 l6 0z" fill="currentColor" stroke="none"/>
+              <rect x="22" y="82" width="36" height="22" rx="5" style="fill:var(--surface)"/>
+              <rect x="92" y="82" width="36" height="22" rx="5" style="fill:var(--surface)"/>
+              <rect x="162" y="82" width="36" height="22" rx="5" style="fill:var(--surface)"/>
+              <text x="40" y="97" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">研究</text>
+              <text x="110" y="97" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">编码</text>
+              <text x="180" y="97" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">审查</text>
+              <path d="M40 118 Q110 132 180 118" stroke-dasharray="3 4" opacity=".55"/>
+              <text x="110" y="132" text-anchor="middle" font-size="8" fill="currentColor" stroke="none" opacity=".7">回报主管整合</text>
+            </g>
+          </svg>
+        </div>
+        <p class="topo-desc">主管居中调度、生成子 agent、汇总答案。Anthropic 研究系统采用的核心模式。</p>
+        <p class="topo-use">// 场景：广度优先探索 / 需要动态分配</p>
+      </div>
+
+      <div class="topo">
+        <div class="topo-eyebrow"><span class="dot"></span>拓扑 3</div>
+        <h4 class="topo-name">流水线<span class="en">Pipeline</span></h4>
+        <div class="topo-svg">
+          <svg viewBox="0 0 220 140" role="img" aria-label="流水线拓扑：串行步骤 + 中间程序化检查点">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="10" y="58" width="36" height="24" rx="5" style="fill:var(--surface)"/>
+              <rect x="58" y="58" width="36" height="24" rx="5" style="fill:var(--surface)"/>
+              <rect x="106" y="58" width="36" height="24" rx="5" style="fill:var(--surface)"/>
+              <rect x="154" y="58" width="36" height="24" rx="5" style="fill:var(--surface)"/>
+              <text x="28" y="74" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">S1</text>
+              <text x="76" y="74" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">S2</text>
+              <text x="124" y="74" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">S3</text>
+              <text x="172" y="74" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">S4</text>
+              <line x1="46" y1="70" x2="58" y2="70"/>
+              <line x1="94" y1="70" x2="106" y2="70"/>
+              <line x1="142" y1="70" x2="154" y2="70"/>
+              <path d="M52 67 l3 3 l-3 3z" fill="currentColor" stroke="none"/>
+              <path d="M100 67 l3 3 l-3 3z" fill="currentColor" stroke="none"/>
+              <path d="M148 67 l3 3 l-3 3z" fill="currentColor" stroke="none"/>
+              <!-- 检查点 -->
+              <g style="color:var(--warn)">
+                <path d="M76 58 L76 38" stroke="currentColor" stroke-dasharray="3 3"/>
+                <circle cx="76" cy="32" r="6" style="fill:var(--surface)" stroke="currentColor"/>
+                <text x="76" y="35" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">✓</text>
+                <path d="M124 82 L124 108" stroke="currentColor" stroke-dasharray="3 3"/>
+                <circle cx="124" cy="114" r="6" style="fill:var(--surface)" stroke="currentColor"/>
+                <text x="124" y="117" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">✓</text>
+              </g>
+              <text x="76" y="20" text-anchor="middle" font-size="7" style="fill:var(--warn)" stroke="none">check</text>
+              <text x="124" y="132" text-anchor="middle" font-size="7" style="fill:var(--warn)" stroke="none">check</text>
+            </g>
+          </svg>
+        </div>
+        <p class="topo-desc">固定步骤串联，每步处理上一步输出；中间加程序化检查点。用延迟换准确率——每次调用都变简单任务。</p>
+        <p class="topo-use">// 场景：可清晰拆分的固定子任务</p>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">Anthropic 补充</div>
+      <p style="margin:.3em 0;">《Building Effective Agents》还补充了两种形状：<strong>路由（Routing）</strong>——先分类再导向专门处理，适合输入种类多、一套 prompt 拖累另一种的场景；<strong>评估-优化（Evaluator-Optimizer）</strong>——一个生成、一个打分，循环直到达标，适合有明确评价标准且迭代能带来明显提升的任务。</p>
+    </div>
+
+    <!-- 六 -->
+    <h2 id="sec-case"><span class="sec-num">六</span>案例：每日研究简报<a href="#sec-case" class="anchor">#</a></h2>
+    <p class="kicker">— Loop vs Graph, Side by Side</p>
+
+    <p>用一个具体任务把前面的概念串起来：<strong>每天早上读几个信源上关于某主题的最新内容，写成一页纸摘要，发到邮箱前先核对准确性</strong>。听起来很简单——分别用两种方式来做。</p>
+
+    <!-- ▼ 视觉五：Loop vs Graph 对比 -->
+    <div class="contrast reveal">
+      <div class="contrast-side contrast-loop">
+        <span class="contrast-eyebrow"><span class="dot"></span>Loop 版 · 一体循环</span>
+        <div class="contrast-vis">
+          <svg viewBox="0 0 340 200" role="img" aria-label="Loop 版：一个循环里搜索/起草/审查全糊在一个上下文中">
+            <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.5">
+              <!-- 大 loop 框 -->
+              <rect x="30" y="20" width="280" height="160" rx="12" stroke-dasharray="4 4" opacity=".6"/>
+              <text x="170" y="14" text-anchor="middle" font-size="9" fill="currentColor" stroke="none" letter-spacing="2">SINGLE CONTEXT</text>
+              <!-- 混乱的元素堆叠 -->
+              <g opacity=".85">
+                <rect x="50" y="42" width="80" height="18" rx="3" style="fill:color-mix(in srgb, var(--con) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="90" y="54" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">搜索网页 · 3200 tok</text>
+                <rect x="140" y="55" width="80" height="18" rx="3" style="fill:color-mix(in srgb, var(--warn) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="180" y="67" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">半成品草稿</text>
+                <rect x="70" y="80" width="90" height="18" rx="3" style="fill:color-mix(in srgb, var(--con) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="115" y="92" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">自我推理 · 反复</text>
+                <rect x="170" y="95" width="90" height="18" rx="3" style="fill:color-mix(in srgb, var(--warn) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="215" y="107" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">工具错误重试</text>
+                <rect x="50" y="118" width="100" height="18" rx="3" style="fill:color-mix(in srgb, var(--con) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="100" y="130" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">审查自己的草稿？</text>
+                <rect x="160" y="132" width="100" height="18" rx="3" style="fill:color-mix(in srgb, var(--con) 12%, var(--surface))" stroke="currentColor"/>
+                <text x="210" y="144" text-anchor="middle" font-size="8" fill="currentColor" stroke="none">→ 盖通过章</text>
+              </g>
+              <!-- 循环箭头 -->
+              <path d="M290 100 Q305 100 305 115 Q305 130 290 130" stroke-width="1.8"/>
+              <path d="M290 100 l6 3 l-6 3z" fill="currentColor" stroke="none"/>
+              <text x="170" y="170" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">一锅粥 · 顺序 · 作者给自己判卷</text>
+            </g>
+          </svg>
+        </div>
+        <p class="contrast-cap">让一个智能体在循环里把所有事都干了：搜索→起草→审查。等它开始审查，上下文已是<strong>一锅粥</strong>——原始网页、写了一半的句子、自己之前的推理全糊在一起。它在写出草稿的同一上下文里审查它，<strong>几乎必然盖通过章</strong>。而且循环天生顺序，只能一个信源一个信源地读，慢。</p>
+        <div class="contrast-tags">
+          <span>× 上下文混杂</span>
+          <span>× 顺序</span>
+          <span>× 自审</span>
+        </div>
+      </div>
+
+      <div class="contrast-arrow">
+        <span class="gly">→</span>
+        <span class="lab">升级到 Graph</span>
+      </div>
+
+      <div class="contrast-side contrast-graph">
+        <span class="contrast-eyebrow"><span class="dot"></span>Graph 版 · 三节点</span>
+        <div class="contrast-vis">
+          <svg viewBox="0 0 340 200" role="img" aria-label="Graph 版：研究员/写作/审稿三节点+干净状态流">
+            <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+              <!-- 研究员节点：fan-out -->
+              <rect x="30" y="20" width="80" height="30" rx="7" style="fill:var(--surface)" stroke-width="2"/>
+              <text class="disp" x="70" y="38" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">研究员</text>
+              <text x="70" y="49" text-anchor="middle" font-size="7.5" style="fill:var(--text-muted)" stroke="none">fan-out 并行</text>
+              <!-- 三信源 -->
+              <g style="color:var(--text-muted)" stroke="currentColor" stroke-width="1.2">
+                <rect x="130" y="8" width="46" height="16" rx="3" style="fill:var(--surface)"/>
+                <text x="153" y="19" text-anchor="middle" font-size="7.5" fill="currentColor" stroke="none">信源 A</text>
+                <rect x="130" y="28" width="46" height="16" rx="3" style="fill:var(--surface)"/>
+                <text x="153" y="39" text-anchor="middle" font-size="7.5" fill="currentColor" stroke="none">信源 B</text>
+                <rect x="130" y="48" width="46" height="16" rx="3" style="fill:var(--surface)"/>
+                <text x="153" y="59" text-anchor="middle" font-size="7.5" fill="currentColor" stroke="none">信源 C</text>
+              </g>
+              <line x1="110" y1="30" x2="130" y2="16" stroke-width="1.4"/>
+              <line x1="110" y1="35" x2="130" y2="36" stroke-width="1.4"/>
+              <line x1="110" y1="40" x2="130" y2="56" stroke-width="1.4"/>
+              <!-- 结构化笔记 → 写作 -->
+              <path d="M175 36 Q220 60 220 90" stroke-width="1.6"/>
+              <path d="M218 87 l2 6 l4 -4z" fill="currentColor" stroke="none"/>
+              <text x="238" y="70" font-size="7.5" fill="currentColor" stroke="none">结构化笔记</text>
+              <rect x="180" y="92" width="80" height="30" rx="7" style="fill:var(--surface)" stroke-width="2"/>
+              <text class="disp" x="220" y="110" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">写作</text>
+              <text x="220" y="121" text-anchor="middle" font-size="7.5" style="fill:var(--text-muted)" stroke="none">干净上下文</text>
+              <!-- 审稿节点 · 全新上下文 -->
+              <path d="M220 122 L110 122 Q80 122 80 148" stroke-width="1.6"/>
+              <path d="M83 145 l-3 6 l6 0z" fill="currentColor" stroke="none"/>
+              <text x="163" y="118" font-size="7.5" fill="currentColor" stroke="none">简报草稿</text>
+              <rect x="30" y="150" width="80" height="30" rx="7" style="fill:var(--accent-soft)" stroke-width="2"/>
+              <text class="disp" x="70" y="168" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">审稿</text>
+              <text x="70" y="179" text-anchor="middle" font-size="7.5" fill="currentColor" stroke="none">全新上下文</text>
+              <!-- 打回 -->
+              <path d="M110 165 Q150 165 150 140 Q150 122 180 108" stroke-dasharray="3 3" stroke-width="1.3" opacity=".7"/>
+              <text x="165" y="140" font-size="7" fill="currentColor" stroke="none" opacity=".8">不合格打回</text>
+            </g>
+          </svg>
+        </div>
+        <p class="contrast-cap">三节点小图：<strong>研究员</strong>扇出到多信源并行、只返结构化笔记；<strong>写作</strong>只拿干净笔记看不到杂乱原文；<strong>审稿</strong>在全新上下文里只看简报和验收标准，不合格打回写作。<em>真正的审查，而不是自己给自己盖章</em>。</p>
+        <div class="contrast-tags">
+          <span>✓ 上下文分离</span>
+          <span>✓ 并行</span>
+          <span>✓ 独立验证</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">图不是免费的</div>
+      <p style="margin:.3em 0;">Graph 版要<strong>维护三个提示词</strong>而不是一个、要设计节点之间的<strong>状态结构</strong>、要应对一批<strong>新的失败模式</strong>。对每天都要跑的简报，这些额外开销换来实打实的质量提升，值。<strong>但对一个只跑一次的任务，它就是纯粹的一笔税</strong>——这笔账就是要不要从循环升级到图的全部决策。</p>
+    </div>
+
+    <!-- 七 -->
+    <h2 id="sec-leverage"><span class="sec-num">七</span>真正的杠杆：确定性，不是数量<a href="#sec-leverage" class="anchor">#</a></h2>
+    <p class="kicker">— Where the Lift Really Comes From</p>
+
+    <p>很多人一听「图」就想堆多智能体，觉得节点越多越高级——<strong>这是最大的误会</strong>。要理解为什么，得先看清大多数智能体系统翻车的根源：<strong>模型既当运动员又当裁判</strong>。Graph 的解法是把「做判断」和「做验证」拆成<strong>两个独立节点</strong>。</p>
+
+    <p>行业里有一句被反复引用的话：</p>
+    <blockquote style="border-left:3px solid var(--accent);padding-left:1em;color:var(--text-soft);font-style:italic;">
+      让模型的<strong>判断力</strong>落在节点上，让代码的<strong>可靠性</strong>落在边上。
+    </blockquote>
+
+    <p>光靠智能体互相验证不够，最关键的确定性来自<strong>三根锚点</strong>：</p>
+
+    <div class="anchors reveal">
+      <div class="anchor-card">
+        <div class="ah">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M8 14l-3 7M16 14l3 7M12 12v9"/></svg>
+          独立验证器
+        </div>
+        <p class="ad">Verifier 蹲在边上，专门试图<strong>推翻</strong>前一个结论——扛得住才放行、扛不住就打回。三种打法：对抗式、多视角式、评委制。</p>
+        <p class="aq">// 性价比最高的一个节点</p>
+      </div>
+      <div class="anchor-card">
+        <div class="ah">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5l-5 7 5 7M16 5l5 7-5 7"/></svg>
+          代码兜底
+        </div>
+        <p class="ad">确定性的活——格式校验、跑测试、去重、排序——就该交给<strong>普通代码</strong>。这些活让模型做，是在用最贵的推理算最便宜的事。</p>
+        <p class="aq">// 判断在节点、可靠在边</p>
+      </div>
+      <div class="anchor-card">
+        <div class="ah">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4l1.4-1.4M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/></svg>
+          现实锚点
+        </div>
+        <p class="ad">测试<strong>真的</strong>跑过、用户<strong>真的</strong>留下了、钱<strong>真的</strong>到账了——无法狡辩的硬事实。没有一个节点碰现实，图就只是<strong>一台更精致的自嗨机器</strong>。</p>
+        <p class="aq">// what: 更好？由人来定</p>
+      </div>
+    </div>
+
+    <!-- 八 -->
+    <h2 id="sec-red-line"><span class="sec-num">八</span>数据 · 治理红线 · 框架横评<a href="#sec-red-line" class="anchor">#</a></h2>
+    <p class="kicker">— The Cost, The Constraint, The Tools</p>
+
+    <p><strong>Anthropic 官方数据</strong>：多智能体研究系统在内部评测上超过单智能体 <strong>90.2%</strong>，但 token 消耗约为普通对话的 <strong>15 倍</strong>，且仅 token 用量一项就解释了性能方差的 80%。</p>
+    <p>这说明：多智能体确实更强，但它是<strong>靠烧更多 token 换来的</strong>——只值得用在价值足够高、能覆盖成本的任务上。Anthropic 给出三个明确该用多智能体的场景：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>场景</th><th>为什么用多智能体</th></tr></thead>
+        <tbody>
+          <tr><td><strong>上下文保护</strong></td><td>某个子任务会产生大量但对主任务无关的信息 → 独立 sub-agent 隔离，保持主上下文干净</td></tr>
+          <tr><td><strong>可并行</strong></td><td>能切成多个独立分支同时跑 → 探索比单智能体更大的搜索空间（尤其广度优先研究搜索）</td></tr>
+          <tr><td><strong>专业化</strong></td><td>不同步骤需要不同工具/提示/专注度 → 拆开能提升工具选择准确率</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>反过来，如果任务就一个目标、一个领域、一个明确的停止条件，<strong>清晰的单个循环就是最优解</strong>。</p>
+
+    <div class="callout callout-con">
+      <div class="callout-tag">治理红线 · 工作图 vs 角色图</div>
+      <p style="margin:.3em 0;">图允许任务怎么拆、怎么合、现场灵活调整——这叫<strong>工作图</strong>，可以快速变化。<strong>但是</strong>：谁有权改数据库、谁能绕过审批这类<strong>长期权限</strong>，绝不能让模型现场发挥——这叫<strong>角色图</strong>，必须慢变、可审计。否则搭出来的不是智能系统，而是<strong>一场随时会爆的生产事故</strong>。</p>
+    </div>
+
+    <h3 id="frameworks-comp">8.1 主流框架横评</h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>框架</th><th>模型</th><th>杀手锏</th><th>适用</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LangGraph</strong>（LangChain）</td><td>有向图 + 条件边</td><td><em>Durable execution</em>：checkpointer 快照 + pending writes + 时间旅行</td><td>长时运行 · 需审计 · 需回滚的生产管线</td></tr>
+          <tr><td><strong>CrewAI</strong></td><td>角色化 crews</td><td>任务输出序列传递</td><td>规范化角色协作分工</td></tr>
+          <tr><td><strong>AutoGen</strong>（微软）</td><td>对话式 GroupChat</td><td>以对话历史为主</td><td>多模型对话协调 · 探索性</td></tr>
+          <tr><td><strong>Google ADK</strong></td><td>结构化图 + A2A 协议</td><td>Code-first · Vertex AI 可部署</td><td>企业级分层协调</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>值得展开的细节：同一任务，LangGraph <strong>2000 token</strong> vs AutoGen 可能 <strong>8000 token</strong>——差别来自「图」这个结构<strong>把智能体之间的对话变成了状态转换</strong>，省掉了它们互相转述背景的那一大堆废话。这也解释了为什么 LangGraph 成了企业生产的事实标准。</p>
+
+    <p>LangGraph 的四个能力（源自 checkpointer 快照）：</p>
+    <ul>
+      <li><strong>人在回路</strong>：图可在任意节点暂停，等人检查/修改/批准后从断点恢复</li>
+      <li><strong>记忆</strong>：多轮交互间保留上下文</li>
+      <li><strong>时间旅行调试</strong>：回到任意历史检查点重放、甚至分叉新路径</li>
+      <li><strong>容错</strong>：某节点失败，从最后一个成功步骤重启，而非从头再来</li>
+    </ul>
+
+    <!-- 九 -->
+    <h2 id="sec-fde"><span class="sec-num">九</span>FDE / LIFT 映射<a href="#sec-fde" class="anchor">#</a></h2>
+    <p class="kicker">— Field Mapping · 落到我们的场景</p>
+
+    <ol class="fde-list">
+      <li><span class="ix">i</span><span><strong>归因方法论同频</strong>：Graph 的「独立验证器 + 现实锚点」= LIFT 的「品菜师 + 硬事实评测」——都是把「做判断」和「验证判断」拆到两个独立岗位。</span></li>
+      <li><span class="ix">ii</span><span><strong>L2 静态定位有了理论根基</strong>：「让模型判断落在节点、代码可靠性落在边」直接呼应我们在 L2 用<strong>静态图剪枝</strong>而非 replay 的选择——因为可执行图本就该有清晰的节点边界。</span></li>
+      <li><span class="ix">iii</span><span><strong>工作图/角色图分层</strong>：客户企业最怕「模型现场改权限」——角色图慢变可审计，是接入受限企业的必答题；这也是 LIFT 归因报告必须<strong>可回放、可审计</strong>的来源。</span></li>
+      <li><span class="ix">iv</span><span><strong>双变量实验 = 反事实节点对</strong>：Graph 里「审稿节点在全新上下文里评审」是一个天然的对照结构；我们把双变量实验视为反事实干预样本，方法论上完全吻合。</span></li>
+      <li><span class="ix">v</span><span><strong>Skill 接入策略更清晰了</strong>：以 Skill 化的 LIFT 作为 Layer 4 的「循环工具」进客户环境采集轨迹，归因分析器则是 Layer 5 的「组织视角」——一次评测、双重交付。</span></li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断</div>
+      <p style="margin:.3em 0;">图工程是<strong>命名事件 + 视角上移的合体</strong>。命名会像 Loop Engineering 一样几个月被下一个词盖掉；但视角上移是真的——工程重心从「编程一个智能体的行为」上移到「<strong>编程一群智能体的组织</strong>」。它能造出单个循环永远造不出的系统。<em>有意思的是，我们折腾了半天 AI，最后绕不开的居然是最古老的那门学问——怎么管理一个组织。</em></p>
+    </div>
+
+    <!-- 十 -->
+    <h2 id="sec-open"><span class="sec-num">十</span>待验证问题<a href="#sec-open" class="anchor">#</a></h2>
+    <p class="kicker">— Open Threads</p>
+
+    <ol class="threads">
+      <li>企业场景下，Graph 的 token 成本 vs 质量提升，盈亏平衡点在哪类任务形态？</li>
+      <li>「工作图快变 / 角色图慢变」的边界在实际客户处怎么划——尤其涉及数据权限时？</li>
+      <li>Verifier 节点的 false negative 率：哪些任务类型仍必须人工 gate 才能放心跑？</li>
+      <li>状态（S）的 schema 治理：谁定、怎么演进、跨节点版本兼容如何保证？</li>
+      <li>LangGraph durable execution 的 checkpointer 落哪个介质、多久清理，才能兼顾审计与成本？</li>
+      <li>「形似 ReAct 前的老工作流」——如何向对 ReAct 抱有情感投资的团队解释这不是倒退？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-08-02 初稿 · 视频 8RedSkw1UjE · 五个 bespoke 视觉块
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      ·
+      <a href="./index.html">阅读材料索引</a>
+      ·
+      <a href="./2026-06_loop-engineering-coding-agent.html">相关：循环工程 Loop Engineering</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

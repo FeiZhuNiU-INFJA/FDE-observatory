@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-29T05:15:32.162934+00:00",
+  "generated_at": "2026-08-02T15:49:07.239094+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -232,6 +232,26 @@
     }
   ],
   "frontier_deep": [
+    {
+      "path": "frontier/vendors/volcengine/deep_dives/2026-07-29_ark-managed-agents.html",
+      "title": "火山方舟 Managed Agents · 从 SDK 到「Agent Runtime as a Service」",
+      "date": "2026-07-29",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "火山方舟",
+        "Agent Runtime",
+        "MCP",
+        "Vaults"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "volcengine",
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "frontier/vendors/anthropic/deep_dives/2026-07-06_global-workspace-j-space.html",
       "title": "Claude 有一个「意识工作台」——Anthropic 的 J-space / 全局工作空间",
@@ -478,6 +498,25 @@
   ],
   "oss": [
     {
+      "path": "opensource-analysis/2026-07_ark-agent-feishu-bot.html",
+      "title": "ark-agent-feishu-bot · Managed Agents 的最小参考实现",
+      "date": "2026-07-29",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "架构拆解",
+        "Managed Agents",
+        "飞书 Bot",
+        "Session 复用",
+        "OAuth Device Flow"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "已发生",
+        "confidence": "高"
+      }
+    },
+    {
       "path": "opensource-analysis/shadowbroker_osint_platform_2026-05.html",
       "title": "ShadowBroker：全球 OSINT 聚合平台的启示",
       "date": "2026-05-22",
@@ -511,6 +550,24 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-08_graph-engineering-loop-to-graph.html",
+      "title": "图工程 Graph Engineering从单体循环到可治理的多智能体图",
+      "date": "2026-08-02",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Graph Engineering",
+        "Agent 编排",
+        "多智能体",
+        "LangGraph"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "readings/2026-07_agent-grade-judging.html",
       "title": "Agent-Grade Judging：从\"打一个分\"到\"沿图判定\"",
