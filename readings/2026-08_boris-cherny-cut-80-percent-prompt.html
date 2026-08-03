@@ -28,7 +28,7 @@
   .cycle svg { width: 100%; height: auto; display: block; }
   .cycle text { font-family: var(--mono); }
   .cycle .big { font-family: var(--display); font-weight: 700; }
-  .cycle .orbit-dot { animation: cyc-orbit 7s linear infinite; transform-origin: 330px 205px; }
+  .cycle .orbit-dot { animation: cyc-orbit 7s linear infinite; transform-box: view-box; transform-origin: 330px 205px; }
   @keyframes cyc-orbit { to { transform: rotate(360deg); } }
   .cycle-cap { font-size: .9rem; color: var(--text-soft); margin: .6rem .3rem 0; line-height: 1.55; }
   .cycle-cap strong { color: var(--accent); }
@@ -63,7 +63,7 @@
   .rout svg { width: 100%; height: auto; display: block; }
   .rout text { font-family: var(--mono); }
   .rout .core-t { font-family: var(--display); font-weight: 700; }
-  .rout .spin { animation: rout-orbit 9s linear infinite; transform-origin: 330px 160px; }
+  .rout .spin { animation: rout-orbit 9s linear infinite; transform-box: view-box; transform-origin: 330px 160px; }
   @keyframes rout-orbit { to { transform: rotate(360deg); } }
   .rout-cap { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin: .6rem .3rem 0; font-family: var(--mono); font-size: .74rem; color: var(--text-muted); letter-spacing: .04em; }
   .rout-cap b { color: var(--accent); }
@@ -258,6 +258,17 @@
     <!-- 四 -->
     <h2 id="ttc"><span class="sec-num">四</span>Dynamic Workflows：编排 test-time compute 的「agent 代数」<a href="#ttc" class="anchor">#</a></h2>
     <p class="kicker">A New Form of Test-time Compute · 第四个旋钮的放大器</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">先搞懂这一句 · 把三个概念拆开</div>
+      <p style="margin:.3em 0;">标题里叠了三层，拆开就好懂：</p>
+      <ul style="margin:.3em 0;">
+        <li><strong>test-time compute（推理时算力）＝一个旋钮</strong>。模型变强，训练时靠「网络规模 × 数据 × FLOPs」，但这三样在模型发布那刻就<strong>固定了</strong>。第四样发生在你<strong>提问的当下</strong>——本质就是「让模型多生成 token」（推理模型答题前先想很长一段就是它）。它是唯一你能<strong>现场拧大拧小</strong>的旋钮。</li>
+        <li><strong>agent 代数（an algebra for agents）＝一套积木规则</strong>。「代数」是函数式编程黑话，意思是「一组对象 + 几个能<strong>任意嵌套组合</strong>的运算」。这里对象是 agent，运算只有两个——<strong>串行</strong>（A 做完交给 B）和<strong>并行</strong>（一批同时开工）；因为能无限嵌套，两个积木就能搭出任意复杂的「扇出→收敛→再扇出」编排树。</li>
+        <li><strong>dynamic workflow＝用后者去拧前者</strong>。Claude 收到一句 <code>use a workflow</code>，就<strong>自己</strong>按任务现场搭那棵树、起几十到几千个 agent（这就是「dynamic」）——把「多烧推理算力」这件事从「一个模型闷头自言自语」升级成「<strong>有组织、分阶段、每步能被验证</strong>」。</li>
+      </ul>
+      <p style="margin:.5em 0 .2em;"><strong>一个类比</strong>：单 agent 想很久 = 一个聪明人闷头想一整天；dynamic workflow = 一个项目经理把活拆给<strong>整个部门</strong>——一批人做初稿、一批人专门 review/汇总、再拆下一轮。同样是「投入更多脑力」，但组织结构让它能扩到几千人规模、且每步有人把关。所以后文那个「11 天整库重写」<strong>不是一个 agent 硬跑 11 天</strong>，而是一支分阶段扇出的 agent 大军。</p>
+    </div>
 
     <p>怎么一次跑「成千上万个 agent」？最简单的入口是 dynamic workflows——只要说 "use a workflow"。底层是把 Bun 当沙箱、在其中起虚拟机，让 Claude 起一批 agent 并<strong>有序编排</strong>：先扇出做第一遍，再用另一批 agent 验证/汇总，可能再扇出第三阶段。Boris 的背景是函数式编程，他把这套设计称为 <em>「an algebra for agents」</em>——有串行、有并行的 primitive，在沙箱里高效用 token 做很复杂的活。</p>
 
