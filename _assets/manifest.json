@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-02T15:49:07.239094+00:00",
+  "generated_at": "2026-08-03T07:13:01.012123+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -550,6 +550,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-08_boris-cherny-cut-80-percent-prompt.html",
+      "title": "删掉 80% 的系统提示词",
+      "date": "2026-08-03",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Claude Code",
+        "Anthropic",
+        "Ablation",
+        "Test-time Compute",
+        "Agent 工程"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-08_graph-engineering-loop-to-graph.html",
       "title": "图工程 Graph Engineering从单体循环到可治理的多智能体图",

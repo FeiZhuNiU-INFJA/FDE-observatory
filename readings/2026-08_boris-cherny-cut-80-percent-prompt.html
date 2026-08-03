@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>删掉 80% 的系统提示词：Boris Cherny 谈在加速的模型上造产品 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  /* 本页强调色（fuchsia · 「删/切」的能量）+ 暗色变体；其余令牌全部来自共享 insight.css */
+  :root {
+    --accent: #a21caf;
+    --accent-deep: #86198f;
+    --accent-ink: #701a75;
+    --accent-soft: color-mix(in srgb, #a21caf 12%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #e879f9;
+    --accent-soft: color-mix(in srgb, #a21caf 26%, #1a1a22);
+    --accent-ink: #f0abfc;
+  }
+
+  /* ═════════ 视觉一：删 → 用 → 加 · ablation 成为新常态 ═════════ */
+  .cycle { margin: 1.9em 0 1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 1.2rem 1rem .8rem; box-shadow: var(--shadow); transition: transform .2s, border-color .2s; }
+  .cycle:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .cycle svg { width: 100%; height: auto; display: block; }
+  .cycle text { font-family: var(--mono); }
+  .cycle .big { font-family: var(--display); font-weight: 700; }
+  .cycle .orbit-dot { animation: cyc-orbit 7s linear infinite; transform-origin: 330px 205px; }
+  @keyframes cyc-orbit { to { transform: rotate(360deg); } }
+  .cycle-cap { font-size: .9rem; color: var(--text-soft); margin: .6rem .3rem 0; line-height: 1.55; }
+  .cycle-cap strong { color: var(--accent); }
+
+  /* ═════════ 视觉二：test-time compute 的第四个旋钮 + 编排代数 ═════════ */
+  .ttc { margin: 1.9em 0 1em; }
+  .ttc-knobs { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1rem; }
+  @media (max-width: 760px) { .ttc-knobs { grid-template-columns: repeat(2, 1fr); } }
+  .knob {
+    border: 1px solid var(--border); border-radius: 12px; padding: .85rem .8rem; background: var(--surface);
+    display: flex; flex-direction: column; gap: .4rem; position: relative; transition: transform .2s, border-color .2s;
+  }
+  .knob:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .knob .kt { font-family: var(--mono); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); }
+  .knob .ki { color: var(--text-muted); }
+  .knob .ki svg { width: 26px; height: 26px; display: block; }
+  .knob .kn { font-family: var(--display); font-weight: 700; font-size: .95rem; color: var(--text); line-height: 1.2; }
+  .knob .kd { font-size: .74rem; color: var(--text-soft); line-height: 1.4; margin: 0; }
+  .knob.now { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .knob.now .kt, .knob.now .ki { color: var(--accent); }
+  .ttc-fan { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); padding: 1rem 1rem .7rem; box-shadow: var(--shadow); }
+  .ttc-fan svg { width: 100%; height: auto; display: block; }
+  .ttc-fan text { font-family: var(--mono); }
+  .ttc-fan .flow-dash { stroke-dasharray: 4 4; animation: ttc-dash 1.1s linear infinite; }
+  @keyframes ttc-dash { to { stroke-dashoffset: -16; } }
+  .ttc-cap { font-size: .88rem; color: var(--text-soft); margin: .55rem .3rem 0; line-height: 1.55; }
+  .ttc-cap strong { color: var(--accent); }
+
+  /* ═════════ 视觉三：让代码库自己维护自己 · daily routines 星图 ═════════ */
+  .rout { margin: 1.9em 0 1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 1.1rem 1rem .8rem; box-shadow: var(--shadow); transition: transform .2s, border-color .2s; }
+  .rout:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .rout svg { width: 100%; height: auto; display: block; }
+  .rout text { font-family: var(--mono); }
+  .rout .core-t { font-family: var(--display); font-weight: 700; }
+  .rout .spin { animation: rout-orbit 9s linear infinite; transform-origin: 330px 160px; }
+  @keyframes rout-orbit { to { transform: rotate(360deg); } }
+  .rout-cap { display: flex; flex-wrap: wrap; gap: .5rem .9rem; margin: .6rem .3rem 0; font-family: var(--mono); font-size: .74rem; color: var(--text-muted); letter-spacing: .04em; }
+  .rout-cap b { color: var(--accent); }
+
+  /* ── FDE 映射 / 待验证（沿用 gold-standard 组件） ── */
+  .fde-list { list-style: none; padding: 0; margin: 1.4em 0; display: flex; flex-direction: column; gap: .7rem; }
+  .fde-list li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: baseline; padding: .85rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: color-mix(in srgb, var(--surface) 55%, transparent); margin: 0; }
+  .fde-list .ix { font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1.1rem; }
+  .fde-list b { color: var(--text); }
+  .threads { list-style: none; padding: 0; margin: 1.4em 0; counter-reset: th; display: flex; flex-direction: column; gap: .55rem; }
+  .threads li { counter-increment: th; margin: 0; padding: .8rem 1rem .8rem 2.7rem; position: relative; border-left: 2px solid var(--rule); background: color-mix(in srgb, var(--surface) 50%, transparent); border-radius: 0 8px 8px 0; color: var(--text-soft); font-size: .92rem; line-height: 1.55; }
+  .threads li::before { content: "?" counter(th); position: absolute; left: .8rem; top: .78rem; font-family: var(--display); font-style: italic; font-weight: 500; color: var(--accent); font-size: 1rem; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cycle .orbit-dot, .rout .spin, .ttc-fan .flow-dash { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      删掉 80% 的系统提示词<span class="brand-sub">跨市场 · 阅读材料 · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>删掉 80% 的系统提示词</h1>
+      <p style="font-size:1.02rem;color:var(--text-muted);margin-top:-.2em;"><em style="background:none;padding:0;font-style:italic;color:var(--accent);">Press Delete Every Six Months</em> · Boris Cherny（Claude Code 创造者）× Diana Hu · YC Startup School 2026 · 在一条指数曲线上造产品意味着什么 · 深度解读</p>
+      <div class="doc-meta">
+        <span>2026-08-03</span>
+        <span>跨市场</span>
+        <span>Claude Code</span>
+        <span>Anthropic</span>
+        <span>Ablation</span>
+        <span>Test-time Compute</span>
+        <span>Agent 工程</span>
+        <span>对内</span>
+        <span>时机：6–12 月</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">80<small>%</small></div><div class="lab">系统提示词<br />随 Opus 5 被删掉</div></div>
+        <div class="hero-stat"><div class="num">11<small>天</small></div><div class="lab">Bun 从 Zig 重写到 Rust<br />过去 &gt;1 年工作量</div></div>
+        <div class="hero-stat"><div class="num">千<small>/天</small></div><div class="lab">自维护代码库的<br />agent 数量级</div></div>
+        <div class="hero-stat"><div class="num">3<small>层</small></div><div class="lab">Opus 5 抵御<br />prompt injection</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        源：<a href="https://www.youtube.com/watch?v=qyPCVqFUyDo" target="_blank" rel="noopener">Boris Cherny: We Cut 80% of Claude Code’s Prompt（YouTube · Y Combinator）</a> ·
+        <a href="https://www.ycrootaccess.com/p/boris-cherny-building-claude-code" target="_blank" rel="noopener">YC 官方转录</a> · 35:51 · 发布 2026-07-27
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Boris Cherny 在 YC Startup School 上把「在加速的模型上造产品」讲成了一门<strong>经验科学（empirical science）</strong>——每出一代模型，就把 harness 的 system prompt <strong>删光再逐行加回（ablation）</strong>：Opus 5 一来，Claude Code 删掉了 <strong>80%</strong> 的系统提示词，因为旧模型需要的纠正性指令新模型已经不需要。他给所有人的建议同样简单粗暴：<em>「every 6 months delete your Claude MD. Delete your skills. Delete your hooks.」</em> 更深的三条主线是——用 <strong>product overhang / unhobbling</strong> 找模型今天就能做、却没被产品释放的能力；把 <strong>dynamic workflows</strong> 当成编排 test-time compute 的「agent 代数」；用 <strong>loops &amp; routines</strong> 让代码库<strong>自己维护自己</strong>。对 FDE：这套「先删、给难任务、让它自证、别过度规约」的方法论，比任何 prompt 模板都更值得抄。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>删 80%</strong>：Opus 5 太聪明，旧模型的「纠正性 prompt」成了噪声。隐藏开关 <code>CLAUDE_CODE_SIMPLE=1</code> 连工具 prompt 一起删，模型「反而稍微更聪明」。</li>
+        <li><strong>ablation 是新常态</strong>：删光 → 用起来 → 只在<strong>反复绊倒同一处</strong>时逐行加回。每代新模型都重来一次。evals 也只活 1–3 代，饱和就扔。</li>
+        <li><strong>product overhang / unhobbling</strong>：模型今天能做的远超我们意识到的，是产品在挡路。Claude Code 的诞生＝给 Sonnet 3.5 撤掉 IDE 脚手架、丢给它整个终端。</li>
+        <li><strong>给它比你以为更难的任务 + 让它自证</strong>：verification 是「最多人做不对的一件事」。Bun 团队用自带测试套件，让 Claude 把 runtime <strong>从 Zig 一次性重写到 Rust，跑 11 天</strong>，已在生产。</li>
+        <li><strong>dynamic workflows = agent 的代数</strong>：一句 "use a workflow" 在 Bun 沙箱里编排成百上千 agent（串行/并行/扇出/收敛）——一种<strong>新形态的 test-time compute</strong>。</li>
+        <li><strong>loops &amp; routines</strong>：每天几百–几千 agent 跑「清死代码 / 抽象警察 / ship 满量实验 / 补删测试」，让 CLI·iOS·Android·Desktop <strong>自己维护自己</strong>。</li>
+        <li><strong>别学的</strong>：过度规约（把每步写死）是资深工程师最常见的失败模式；「一个诀窍走天下」不存在——<em>don't listen to the LinkedIn influencers</em>。</li>
+      </ul>
+    </div>
+
+    <!-- 一 -->
+    <h2 id="bg"><span class="sec-num">一</span>背景：为什么这场对谈值得读<a href="#bg" class="anchor">#</a></h2>
+    <p class="kicker">Why Now · 一条指数曲线上的产品观</p>
+
+    <p>录制时 Opus 5 刚发布一天，Arc-AGI-3 从「个位数 / 十几分」被拉到 30%。但真正有信息量的不是跑分，而是 Claude Code 创造者 Boris Cherny 对<strong>「模型每几个月就换一次性格，产品该怎么造」</strong>的完整方法论。他反复强调一句话：这不再是理论科学，而是<strong>经验科学</strong>——<em>「You have to take a very scientific mindset to it where you try something, you see the result, and then you iterate based on that.」</em></p>
+
+    <p>他把模型比作<strong>活物</strong>而非系统：<em>「the way to think about it is almost like a living creature… every model generation, it behaves differently. It has a slightly different personality. And you have to take the time to get to know it.」</em> 这句话是全场的锚——下面每一条战术都从它长出来。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">硬币的另一面 · prompt injection 几乎被解决</div>
+      <p style="margin:.3em 0;">聊「删提示词」之前，Boris 先抛了个更大的信号：Opus 5「不再可被 prompt injection」。这靠<strong>三层叠加</strong>——① 三年对齐研究得到的良好对齐模型；② 对<strong>全部流量</strong>跑的 prompt-injection 分类器，基于 mechanistic interpretability「直接看模型脑内被点亮的神经元」（<em>「the model won't even tell you but we can actually see those neurons」</em>）；③ auto-mode 分类器。三层叠起来「已经演示不出注入」。对做 harness / agent 的人：这会改变 harness 与产品的安全设计假设。</p>
+    </div>
+
+    <!-- 二 -->
+    <h2 id="mindset"><span class="sec-num">二</span>核心方法论：把模型当活物，用 ablation 驯化<a href="#mindset" class="anchor">#</a></h2>
+    <p class="kicker">Empirical, Not Theoretical · 删了再说</p>
+
+    <p>「删 80%」不是一次性事件，而是一套<strong>持续动作</strong>。Boris 说 Claude Code 这个产品/harness「一直在变」，每次新模型来就删一批、改一批、换工具。原因是<strong>模型差异巨大</strong>：三个月前为某个模型写的指令，到下一代可能完全不 translate。Opus 5 太聪明，很多本用来「纠正模型本该会、却没会」的行为的 prompt，现在纯属多余。</p>
+
+    <p>关键在于<strong>怎么加回来</strong>：不要猜模型需要什么指令，而是<strong>用起来、看它在哪反复栽跟头，只有反复栽在同一处才加回</strong>——因为「模型每次用都要读这条指令」，加早了就是永久税。他甚至提供了两个实验开关：<code>--system-prompt</code> 自定义、以及未公开的 <code>CLAUDE_CODE_SIMPLE=1</code>（连工具的 prompt 一起删）。团队用后者做 ablation，发现<em>「the model is actually a little bit more intelligent without these prompts」</em>——留 prompt 是为了产品行为符合人的预期，不是为了让模型更聪明。</p>
+
+    <!-- ▼ 视觉一 -->
+    <div class="cycle reveal">
+      <svg viewBox="0 0 660 320" role="img" aria-label="删-用-加循环：模型节奏轴上，每代新模型都把系统提示词冲掉重来；删除、使用观察、只在反复绊倒时加回，构成 ablation 闭环">
+        <!-- 节奏轴 -->
+        <g style="color:var(--text-muted)" fill="none" stroke="currentColor" stroke-width="1.3">
+          <text x="50" y="30" font-size="10" fill="var(--text-muted)" stroke="none" letter-spacing="1">模型节奏轴 · 每代新模型 = 把 prompt 冲掉重来</text>
+          <line x1="60" y1="66" x2="610" y2="66"/>
+          <g fill="var(--text-muted)" stroke="none">
+            <circle cx="90" cy="66" r="4"/><circle cx="255" cy="66" r="4"/><circle cx="420" cy="66" r="4"/>
+          </g>
+          <g style="color:var(--accent)"><circle cx="585" cy="66" r="5.5" fill="var(--accent)" stroke="none"/><circle cx="585" cy="66" r="9" fill="none" stroke="var(--accent)" stroke-width="1.2"/></g>
+        </g>
+        <g font-size="9.5" fill="var(--text-muted)" stroke="none" text-anchor="middle">
+          <text x="90" y="86">Sonnet 3.5</text>
+          <text x="255" y="86">Fable</text>
+          <text x="420" y="86">Opus 4.7</text>
+          <text x="585" y="86" fill="var(--accent)" font-weight="600">Opus 5</text>
+        </g>
+
+        <!-- 三节点闭环 -->
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.6">
+          <!-- 连接箭头 删→用 -->
+          <line x1="208" y1="205" x2="270" y2="205"/>
+          <path d="M270 205 l-9 -5 l0 10 z" fill="currentColor" stroke="none"/>
+          <!-- 用→加 -->
+          <line x1="392" y1="205" x2="454" y2="205"/>
+          <path d="M454 205 l-9 -5 l0 10 z" fill="currentColor" stroke="none"/>
+          <!-- 返回弧 加→删 -->
+          <path d="M512 250 C 470 312, 190 312, 152 250" stroke-dasharray="5 4"/>
+          <path d="M152 250 l0 -11 l8 6 z" fill="currentColor" stroke="none"/>
+
+          <!-- 删 -->
+          <circle cx="150" cy="205" r="52" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.8"/>
+          <g transform="translate(150,192)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M-11 -6 h22"/><path d="M-8 -6 l1.4 17 h13.2 l1.4 -17"/><path d="M-4 -6 v-3 h8 v3"/>
+          </g>
+          <!-- 用 -->
+          <circle cx="330" cy="205" r="52" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.8"/>
+          <g transform="translate(330,192)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+            <path d="M-13 0 C -8 -9, 8 -9, 13 0 C 8 9, -8 9, -13 0 Z"/><circle cx="0" cy="0" r="4"/>
+          </g>
+          <!-- 加 -->
+          <circle cx="510" cy="205" r="52" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.8"/>
+          <g transform="translate(510,192)" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" fill="none">
+            <path d="M0 -11 v22"/><path d="M-11 0 h22"/>
+          </g>
+
+          <!-- 绕行小点（动画） -->
+          <g class="orbit-dot"><circle cx="330" cy="133" r="3.5" fill="var(--accent)" stroke="none"/></g>
+        </g>
+
+        <!-- 节点文字 -->
+        <g text-anchor="middle" stroke="none">
+          <text x="150" y="232" class="big" font-size="16" fill="var(--text)">删</text>
+          <text x="150" y="278" font-size="9" fill="var(--text-muted)">DELETE · 删光重来</text>
+          <text x="330" y="232" class="big" font-size="16" fill="var(--text)">用</text>
+          <text x="330" y="278" font-size="9" fill="var(--text-muted)">USE · 用起来、观察哪里栽</text>
+          <text x="510" y="232" class="big" font-size="16" fill="var(--text)">加</text>
+          <text x="510" y="278" font-size="9" fill="var(--text-muted)">RE-ADD · 反复绊倒才加回</text>
+          <text x="330" y="308" font-size="9.5" fill="var(--accent)">↺ 新模型到达 → 回到「删」</text>
+        </g>
+      </svg>
+      <p class="cycle-cap"><strong>ablation ＝ 反向的 eval</strong>：删光系统提示词，再逐行加回，量化每一行的净影响。Boris：<em>「an ablation essentially is an eval where you delete things to figure out the impact.」</em> 对不做 harness、只用 Claude Code 的人，等价动作是——每 6 个月删掉你的 <code>CLAUDE.md</code> / skills / hooks，看模型是否还需要它们。</p>
+    </div>
+
+    <!-- 三 -->
+    <h2 id="overhang"><span class="sec-num">三</span>Product Overhang：模型能做，产品在挡路<a href="#overhang" class="anchor">#</a></h2>
+    <p class="kicker">Unhobbling · Claude Code 的出生故事</p>
+
+    <p>Boris 用一对研究术语解释「怎么发现新产品」：<strong>hobbling</strong>＝产品在挡模型的路；<strong>product overhang</strong>＝模型今天就有、却没被任何产品释放的能力。两者是一枚硬币的两面。Claude Code 本身就是 unhobbling 的样本——一年半前 Sonnet 3.5 已是最好的编码模型，但当时的产品只做单行/多行 autocomplete、只读的 chat。<em>「What if we get rid of all the scaffolding and just give the model the simplest possible harness?」</em> 撤掉 IDE 脚手架、给它整个终端，模型立刻能一次写整个文件、整个 feature。他断言今天「有大量 product overhang，我没看到创业公司抓住」。</p>
+
+    <p>怎么找？他给了两条动作：<strong>①给比你以为它能做的更难一点的任务</strong>——描述任务、护栏、退出标准，然后「let the model cook」，别把一二三四步写死；<strong>②放开手实验</strong>——内部最近爆火的是有人给 Opus 5 接上 OpenCV 让它<strong>画画</strong>（肖像、动物、风景都行），而模型从没被训练画画，纯粹是「solicitation gap」。他的假设：<em>「there's probably dozens, hundreds of opportunities like this with the models of today that no one has yet realized.」</em></p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">两个「过去要一年多」的锚点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>Bun：Zig → Rust 整库重写</strong>。Bun（Claude Code 依赖的 JS runtime）原本用 Zig 写、手动管内存。团队先让 Claude fuzz 找内存泄漏，后来 Jared 直接一句 prompt 起 dynamic workflow，靠 Bun/Node 自带的完备测试套件做 verification，<strong>跑 11 天重写 10 万+ 行、已在生产</strong>。有 steering，但「previous models just couldn't do this, even with steering」。</li>
+        <li><strong>Electron → Swift 桌面客户端重写</strong>。Boris 在 Claude Tag（Slack 里的 Claude）上一句 prompt：重写成 Swift、在 Mac 虚拟机里跑起来截图、<strong>逐像素对比 Electron 版、不到一致不许停</strong>。录制时「still running… 14、15 天」，还自发开了个 Slack 频道<strong>每几分钟贴截图 live-blog 进度</strong>。</li>
+      </ul>
+    </div>
+
+    <p>共同配方是同一句：<strong>给难任务 + 给它自证的手段</strong>。Boris 直言 <em>「verification I think is probably the single most important thing that people do not get right」</em>——不是更玄的 prompt，而是让模型能像人一样验证自己的产出、不至于卡死。</p>
+
+    <!-- 四 -->
+    <h2 id="ttc"><span class="sec-num">四</span>Dynamic Workflows：编排 test-time compute 的「agent 代数」<a href="#ttc" class="anchor">#</a></h2>
+    <p class="kicker">A New Form of Test-time Compute · 第四个旋钮的放大器</p>
+
+    <p>怎么一次跑「成千上万个 agent」？最简单的入口是 dynamic workflows——只要说 "use a workflow"。底层是把 Bun 当沙箱、在其中起虚拟机，让 Claude 起一批 agent 并<strong>有序编排</strong>：先扇出做第一遍，再用另一批 agent 验证/汇总，可能再扇出第三阶段。Boris 的背景是函数式编程，他把这套设计称为 <em>「an algebra for agents」</em>——有串行、有并行的 primitive，在沙箱里高效用 token 做很复杂的活。</p>
+
+    <p>他把它放进 scaling law 的谱系里看：历史上模型变强是<strong>神经网规模 × 训练数据 × 训练 FLOPs</strong> 的函数；近来加了 <strong>test-time compute</strong>（说白了＝生成多少 token）；而 dynamic workflows 是<strong>「编排 test-time compute 的新方式」</strong>，能把一次难任务用到的推理算力大幅拉高——<em>「a new way to orchestrate test time compute.」</em></p>
+
+    <!-- ▼ 视觉二 -->
+    <div class="ttc reveal">
+      <div class="ttc-knobs">
+        <div class="knob">
+          <span class="kt">训练时 · 旧</span>
+          <span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="6" r="2"/><circle cx="12" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="8" cy="14" r="2"/><circle cx="16" cy="14" r="2"/><path d="M5 8v2m14-2v2M12 8v2M8 16v2m8-2v2"/></svg></span>
+          <span class="kn">网络规模</span>
+          <p class="kd">参数量 · 神经网多大</p>
+        </div>
+        <div class="knob">
+          <span class="kt">训练时 · 旧</span>
+          <span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+          <span class="kn">训练数据</span>
+          <p class="kd">喂了多少 token</p>
+        </div>
+        <div class="knob">
+          <span class="kt">训练时 · 旧</span>
+          <span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg></span>
+          <span class="kn">训练 FLOPs</span>
+          <p class="kd">投入多少算力</p>
+        </div>
+        <div class="knob now">
+          <span class="kt">推理时 · 新</span>
+          <span class="ki"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
+          <span class="kn">Test-time Compute</span>
+          <p class="kd">生成多少 token · <strong style="color:var(--accent)">dynamic workflows 放大它</strong></p>
+        </div>
+      </div>
+
+      <div class="ttc-fan">
+        <svg viewBox="0 0 640 250" role="img" aria-label="dynamic workflow 扇出图：一个根 agent 扇出到多个并行 agent，再收敛到验证/汇总 agent，再扇出，构成 agent 的编排代数">
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.5">
+            <!-- 阶段标注 -->
+            <g stroke="none" fill="var(--text-muted)" font-size="9" text-anchor="middle" font-family="var(--mono)">
+              <text x="70" y="24">root</text>
+              <text x="235" y="24">扇出 · 并行</text>
+              <text x="410" y="24">收敛 · 验证/汇总</text>
+              <text x="575" y="24">再扇出</text>
+            </g>
+            <!-- 连线 root→stage1 -->
+            <path class="flow-dash" d="M96 125 L200 70"/>
+            <path class="flow-dash" d="M96 125 L200 125"/>
+            <path class="flow-dash" d="M96 125 L200 180"/>
+            <!-- stage1→stage2 -->
+            <path class="flow-dash" d="M270 70 L376 100"/>
+            <path class="flow-dash" d="M270 125 L376 100"/>
+            <path class="flow-dash" d="M270 125 L376 155"/>
+            <path class="flow-dash" d="M270 180 L376 155"/>
+            <!-- stage2→stage3 -->
+            <path class="flow-dash" d="M444 100 L546 55"/>
+            <path class="flow-dash" d="M444 100 L546 105"/>
+            <path class="flow-dash" d="M444 155 L546 155"/>
+            <path class="flow-dash" d="M444 155 L546 205"/>
+
+            <!-- root -->
+            <circle cx="70" cy="125" r="26" fill="var(--accent-soft)" stroke="var(--accent)"/>
+            <g transform="translate(70,125)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="-8" y="-7" width="16" height="14" rx="3"/><path d="M-4 -7v-3m8 3v-3M-8 -1h-3m22 0h-3"/></g>
+
+            <!-- stage1 三个并行 -->
+            <g fill="var(--surface)" stroke="var(--accent)">
+              <circle cx="235" cy="70" r="20"/><circle cx="235" cy="125" r="20"/><circle cx="235" cy="180" r="20"/>
+            </g>
+            <!-- stage2 两个验证 -->
+            <g fill="var(--surface)" stroke="var(--accent)">
+              <circle cx="410" cy="100" r="22"/><circle cx="410" cy="155" r="22"/>
+            </g>
+            <g transform="translate(410,100)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M-6 0 l4 4 l7 -8"/></g>
+            <g transform="translate(410,155)" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M-6 0 l4 4 l7 -8"/></g>
+            <!-- stage3 四个 -->
+            <g fill="var(--surface)" stroke="var(--accent)">
+              <circle cx="575" cy="55" r="17"/><circle cx="575" cy="105" r="17"/><circle cx="575" cy="155" r="17"/><circle cx="575" cy="205" r="17"/>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="ttc-cap"><strong>agent 的代数</strong>：串行 + 并行 + 扇出/收敛的 primitive，让一次难任务（整库重写、深度数据分析、跨多阶段大 feature）productively 用掉成百上千个 agent。这是把「第四个旋钮」（test-time compute）在<strong>推理侧</strong>拉满的新手段。</p>
+    </div>
+
+    <!-- 五 -->
+    <h2 id="routines"><span class="sec-num">五</span>Loops &amp; Routines：让代码库自己维护自己<a href="#routines" class="anchor">#</a></h2>
+    <p class="kicker">Self-maintaining Codebase · 每天几百到几千 agent</p>
+
+    <p>第二种放大方式是 <strong>loops &amp; routines</strong>：loop 是本地跑的 cron，routine 是云端跑的同一件事（可以关掉笔记本）。它和 dynamic workflow 的区别是——workflow 是「一个任务切成块」，routine 是「一个<strong>重复</strong>的任务，不共享上下文、但可共享记忆」，每小时/每天跑一遍。Anthropic 因此让 Claude <strong>维护它自己的代码库</strong>：一个 Slack 频道里起了一堆 routine，覆盖 CLI、iOS、Android、Desktop。</p>
+
+    <!-- ▼ 视觉三 -->
+    <div class="rout reveal">
+      <svg viewBox="0 0 660 320" role="img" aria-label="自维护代码库星图：中心是 4 个代码库，周围 5 条每日 routine——清理死代码、抽象警察、ship 满量实验、补测试覆盖、删无用测试——各自开 PR">
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.4">
+          <!-- 连线 -->
+          <line x1="330" y1="160" x2="150" y2="70"/>
+          <line x1="330" y1="160" x2="510" y2="70"/>
+          <line x1="330" y1="160" x2="120" y2="175"/>
+          <line x1="330" y1="160" x2="545" y2="175"/>
+          <line x1="330" y1="160" x2="330" y2="272"/>
+
+          <!-- 卫星 chips -->
+          <g stroke="var(--accent)">
+            <rect x="60" y="48" width="180" height="44" rx="10" fill="var(--surface)"/>
+            <rect x="420" y="48" width="200" height="44" rx="10" fill="var(--surface)"/>
+            <rect x="30" y="155" width="170" height="42" rx="10" fill="var(--surface)"/>
+            <rect x="460" y="155" width="170" height="42" rx="10" fill="var(--surface)"/>
+            <rect x="228" y="252" width="204" height="44" rx="10" fill="var(--surface)"/>
+          </g>
+
+          <!-- 核心 -->
+          <rect x="228" y="122" width="204" height="76" rx="16" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+
+          <!-- 轨道点（动画） -->
+          <g class="spin"><circle cx="330" cy="70" r="4" fill="var(--accent)" stroke="none"/></g>
+        </g>
+
+        <!-- 文字 -->
+        <g stroke="none" text-anchor="middle">
+          <text x="330" y="152" class="core-t" font-size="14" fill="var(--accent-ink)">4 个代码库</text>
+          <text x="330" y="174" font-size="10" fill="var(--text)">CLI · iOS · Android · Desktop</text>
+
+          <text x="150" y="66" font-size="10.5" fill="var(--text)" font-weight="600">清理死代码</text>
+          <text x="150" y="82" font-size="8.5" fill="var(--text-muted)">静态+动态分析 · 每天开 PR</text>
+
+          <text x="520" y="66" font-size="10.5" fill="var(--text)" font-weight="600">抽象警察</text>
+          <text x="520" y="82" font-size="8.5" fill="var(--text-muted)">合并近乎重复的抽象</text>
+
+          <text x="115" y="172" font-size="10.5" fill="var(--text)" font-weight="600">补测试覆盖</text>
+          <text x="115" y="188" font-size="8.5" fill="var(--text-muted)">给缺测的区域补</text>
+
+          <text x="545" y="172" font-size="10.5" fill="var(--text)" font-weight="600">删无用测试</text>
+          <text x="545" y="188" font-size="8.5" fill="var(--text-muted)">清旧模型留下的废测</text>
+
+          <text x="330" y="270" font-size="10.5" fill="var(--text)" font-weight="600">Ship 已到 100% 的实验</text>
+          <text x="330" y="286" font-size="8.5" fill="var(--text-muted)">删 flag、直接上线</text>
+        </g>
+      </svg>
+      <div class="rout-cap">
+        <span><b>数百–数千</b> agent / 天</span>
+        <span><b>20–30</b> 条 routine / 库</span>
+        <span>单句 prompt 触发</span>
+        <span>目标：<b>全自动维护</b> apps</span>
+      </div>
+    </div>
+
+    <p>这些 routine 大多是<strong>一句话 prompt</strong>：「清理死代码」它自己就学会了用静态+动态分析、每天开 PR；「abstraction police」每天扫全库找近乎重复的抽象并统一。Boris 的结论是——这在做「过去要几十上百个工程师才干得完」的活，于是<strong>工程师被释放去做真正想做的事</strong>：发新产品、和用户聊天。这也支撑了他那句常被引用的话 —— <em>「coding is (almost) solved」</em>，但他补了 caveat：只对他做的这类代码成立，深系统 / 分布式 / 像素级 UI 校验仍会让 Claude 栽跟头。</p>
+
+    <!-- 六 -->
+    <h2 id="fde"><span class="sec-num">六</span>FDE / 落地映射<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">What This Means For Us · 抄方法论，不抄模板</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Boris 的做法</th><th>对 FDE / Agent 工程的映射</th><th>动作</th></tr></thead>
+        <tbody>
+          <tr><td>每代模型删 80% prompt，逐行 ablation 加回</td><td>我们的 prompt / skill / hook 也在为旧模型的缺陷打补丁</td><td>换模型时先跑一次「删光→逐行加回」，量化每行净增益</td></tr>
+          <tr><td>给难任务 + 让模型自证（verification 第一）</td><td>评测里最缺的不是更强 prompt，是可验证的 exit 标准</td><td>为每个 agent 任务先设计「它怎么自己判断做完/做对」</td></tr>
+          <tr><td>dynamic workflows = 编排 TTC 的代数</td><td>依赖 Claude Code 特有 primitive，迁移别框架要自己造</td><td>把「串行/并行/扇出/收敛」抽象成我们评测框架的调度层</td></tr>
+          <tr><td>loops &amp; routines 自维护代码库</td><td>「清死代码 / 抽象警察 / 补删测试」都是可日跑的单句任务</td><td>选 1–2 条低风险 routine 在自己仓库试点，观察 PR 质量</td></tr>
+          <tr><td>evals 只活 1–3 代，饱和就扔</td><td>基准会被新模型迅速刷爆，固定 eval 会给假安全感</td><td>eval 视为易耗品：持续 append，随模型迭代主动淘汰</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 七 -->
+    <h2 id="pitfalls"><span class="sec-num">七</span>别学的：反模式清单<a href="#pitfalls" class="anchor">#</a></h2>
+    <p class="kicker">Unlearn This · 老工程师的失败模式</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险 · 会拖慢你的直觉</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>过度规约（over-specification）</strong>：把「先做一、再做二、三、四」写死，是资深工程师最常见的失败模式。现代模型要的是高层任务 + 护栏 + 退出标准，然后放手。</li>
+        <li><strong>加 prompt 太早</strong>：模型每次用都要读它。没看到「反复绊倒同一处」之前别加回——每条指令都是永久税。</li>
+        <li><strong>找「一个诀窍」</strong>：<em>「everyone's looking for the one weird trick… that doesn't exist.」</em> 方法只有经验主义：给难任务→看哪栽→用更好的 prompt / skill / MCP 补上下文。</li>
+        <li><strong>把 eval 当永久资产</strong>：它会被新模型刷爆，抱着旧 eval 会误判能力。</li>
+        <li><strong>迷信影响者</strong>：Boris 原话——<em>「don't listen to the LinkedIn influencers. Don't read Twitter.」</em>（全场鼓掌）自己动手做经验。</li>
+      </ul>
+    </div>
+
+    <p>对 CS 学生的建议同一逻辑：CS 理论仍值得学，但更该<strong>亲手保留</strong>的是把 CS 应用到真实问题的能力——设计感、商业感、数据科学、和用户对话。他自己是在 TI-83 计算器上用 BASIC 学会编程的（为了在数学考试上「作弊」），一路被更难的问题逼着学到汇编。<em>「programming has always been very practical.」</em></p>
+
+    <!-- 八 -->
+    <h2 id="questions"><span class="sec-num">八</span>待验证的问题<a href="#questions" class="anchor">#</a></h2>
+    <p class="kicker">Open Questions · 我们要盯的</p>
+
+    <ul class="threads">
+      <li>「删光再加回」在<strong>没有完备测试套件</strong>的业务代码库上还成立吗？Bun/Node 的成功高度依赖 verification 存量。</li>
+      <li>dynamic workflows 的「agent 代数」能否<strong>脱离 Claude Code / Bun 沙箱</strong>迁移到我们自己的评测框架？成本几何？</li>
+      <li>「跑 11 天 / 14 天不停」的长任务，成本与可观测性怎么算？中途 steering 的人力投入是多少？</li>
+      <li>自维护 routine 每天开几千 PR，<strong>review 与合并把关</strong>由谁做？会不会把技术债转成「PR 洪水」债？</li>
+      <li>prompt injection「三层防御」是 Anthropic 自家闭环（含 mech-interp 分类器），第三方 harness 能复制到几成？</li>
+      <li>「coding is almost solved」的 caveat（深系统/分布式/像素级 UI）恰好是很多企业客户的核心场景——这条边界什么时候移动？</li>
+    </ul>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-08-03 初稿 · 基于 YC 官方视频字幕（英文轨）逐段解读 · 视觉版（3 个 bespoke SVG）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      ·
+      <a href="index.html">阅读材料索引</a>
+      ·
+      <a href="2026-06_loop-engineering-coding-agent.html">相关：循环工程</a>
+      ·
+      <a href="2026-06_claude-code-artifacts.html">相关：Claude Code Artifacts</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>
