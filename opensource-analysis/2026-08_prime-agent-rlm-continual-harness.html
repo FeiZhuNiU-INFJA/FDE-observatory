@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Prime Agent 深度拆解 · RLM × 持续 Harness · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent: #0891b2; --accent-soft: #ecfeff; --accent-deep: #155e75; --accent-ink: #164e63; }
+  [data-theme="dark"] { --accent: #22d3ee; --accent-soft: #083344; --accent-deep: #67e8f9; --accent-ink: #cffafe; }
+
+  /* ---- 代码块（沿用站内约定）---- */
+  pre.code-block { font-size: .78rem; line-height: 1.55; overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: .9em 1em; border-radius: 8px; border: 1px solid #1e293b; }
+  [data-theme="dark"] pre.code-block { background: #020617; }
+  pre.code-block code, pre.code-block span { background: transparent !important; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code-block code { color: inherit; }
+  pre.code-block .cm { color: #64748b; font-style: italic; }
+  pre.code-block .kw { color: #f472b6; }
+  pre.code-block .st { color: #86efac; }
+  pre.code-block .fn { color: #93c5fd; }
+  pre.code-block .nb { color: #fcd34d; }
+  pre.code-block ::selection { background: rgba(148, 163, 184, .35); color: inherit; }
+
+  /* ============ Bespoke 1: 范式转移·工具即代码（.shift-tool）============ */
+  .shift-tool { display: grid; grid-template-columns: 1fr 54px 1fr; align-items: stretch; gap: 0; margin: 1.4em 0; }
+  .shift-tool .side { border: 1px solid var(--border); border-radius: 14px; padding: 1.1em 1.15em; background: var(--surface); box-shadow: var(--shadow); }
+  .shift-tool .side.old { opacity: .92; }
+  .shift-tool .side.new { border-color: var(--accent); }
+  .shift-tool .st-eyebrow { font-family: var(--mono); font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .55em; }
+  .shift-tool .side.new .st-eyebrow { color: var(--accent); }
+  .shift-tool .st-title { font-weight: 700; font-size: .98rem; margin-bottom: .7em; }
+  .shift-tool svg { width: 100%; height: auto; display: block; }
+  .shift-tool text { font-family: var(--mono); }
+  .shift-tool .tool-lab { font-size: 9.5px; fill: var(--text-muted); }
+  .shift-tool .core-lab { font-size: 11px; font-weight: 700; }
+  .shift-tool .st-note { font-size: .78rem; color: var(--text-muted); line-height: 1.5; margin-top: .7em; }
+  .shift-tool .arrow { display: flex; align-items: center; justify-content: center; color: var(--accent); font-size: 1.6rem; font-weight: 700; }
+  @media (max-width: 820px) {
+    .shift-tool { grid-template-columns: 1fr; }
+    .shift-tool .arrow { transform: rotate(90deg); padding: .35em 0; }
+  }
+
+  /* ============ Bespoke 2: 进程拓扑（.topo）============ */
+  .topo { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .topo svg { width: 100%; height: auto; max-height: 440px; display: block; }
+  .topo text { font-family: var(--sans); }
+  .topo .layer { font-size: 12px; font-weight: 700; }
+  .topo .sub { font-size: 10px; fill: var(--text-muted); }
+  .topo .wire { font-family: var(--mono); font-size: 9.5px; fill: var(--text-muted); }
+  .topo-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 3: host_request 时序（.seqh）============ */
+  .seqh { margin: 1.4em 0; padding: 1.3em 1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .seqh svg { width: 100%; height: auto; max-height: 480px; display: block; }
+  .seqh text { font-family: var(--sans); font-size: 11px; }
+  .seqh .actor { font-size: 11.5px; font-weight: 700; }
+  .seqh .msg { font-family: var(--mono); font-size: 10px; fill: var(--text); }
+  .seqh .note { font-size: 9.5px; fill: var(--text-muted); font-style: italic; }
+  .seqh .lifeline { stroke: var(--border); stroke-dasharray: 3 3; }
+  .seqh .danger { fill: var(--con); }
+
+  /* ============ Bespoke 4: /refine 双相流水线（.refine）============ */
+  .refine { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6em; margin: 1.3em 0; position: relative; }
+  .refine-step { position: relative; border: 1px solid var(--border); border-radius: 12px; padding: .9em .8em; background: var(--surface); box-shadow: var(--shadow); }
+  .refine-step.plan { border-top: 3px solid var(--info); }
+  .refine-step.apply { border-top: 3px solid var(--accent); }
+  .refine-step.rb { border-top: 3px solid var(--warn); }
+  .refine-step::after { content: "→"; position: absolute; right: -.5em; top: 50%; transform: translateY(-50%); color: var(--accent); font-weight: 700; font-size: 1.1rem; background: var(--bg); z-index: 2; padding: 0 .05em; }
+  .refine-step:last-child::after { content: ""; }
+  .refine-phase { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; margin-bottom: .35em; }
+  .refine-step.plan .refine-phase { color: var(--info); }
+  .refine-step.apply .refine-phase { color: var(--accent); }
+  .refine-step.rb .refine-phase { color: var(--warn); }
+  .refine-t { font-weight: 700; font-size: .84rem; margin-bottom: .3em; }
+  .refine-d { font-size: .72rem; color: var(--text-muted); line-height: 1.45; }
+  .refine-f { font-family: var(--mono); font-size: .64rem; color: var(--accent); margin-top: .45em; display: block; word-break: break-all; }
+  @media (max-width: 820px) {
+    .refine { grid-template-columns: 1fr 1fr; }
+    .refine-step:nth-child(2)::after { content: ""; }
+    .refine-step:nth-child(3)::before, .refine-step:nth-child(4)::before { content: "↑"; position: absolute; left: 50%; top: -.7em; transform: translateX(-50%); color: var(--accent); }
+  }
+  @media (max-width: 520px) { .refine { grid-template-columns: 1fr; } .refine-step::after { content: "↓"; right: 50%; top: auto; bottom: -.85em; transform: translateX(50%); } .refine-step:last-child::after { content: ""; } }
+
+  /* ============ Bespoke 5: Harness 四组件账本（.ledger）============ */
+  .ledger { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8em; margin: 1.3em 0; }
+  .led-card { border: 1px solid var(--border); border-radius: 14px; padding: 1em .95em; background: var(--surface); box-shadow: var(--shadow); position: relative; overflow: hidden; }
+  .led-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 3px; background: var(--accent); }
+  .led-glyph { color: var(--accent); margin-bottom: .5em; }
+  .led-sym { font-family: var(--mono); font-size: .72rem; color: var(--accent); font-weight: 700; }
+  .led-t { font-weight: 700; font-size: .92rem; margin: .2em 0 .35em; }
+  .led-d { font-size: .76rem; color: var(--text-muted); line-height: 1.5; }
+  .led-crud { font-family: var(--mono); font-size: .64rem; color: var(--text-soft); margin-top: .55em; letter-spacing: .04em; }
+  @media (max-width: 820px) { .ledger { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 480px) { .ledger { grid-template-columns: 1fr; } }
+
+  /* ---- 关键洞察卡（沿用）---- */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
+  .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .insight-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 12px 0 0 12px; }
+  .insight-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .4em; font-weight: 700; }
+  .insight-card .t { font-weight: 700; font-size: .95rem; margin-bottom: .4em; }
+  .insight-card .d { font-size: .82rem; color: var(--text-muted); line-height: 1.55; }
+  .insight-card .src { font-size: .72rem; color: var(--text-muted); margin-top: .55em; font-family: var(--mono); }
+  .insight-card .src a { color: var(--accent); }
+  @media (max-width: 760px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insight-card:hover, .refine-step:hover, .led-card:hover { transform: none; }
+    .seqh .flow, .topo .flow { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      Prime Agent<span class="brand-sub">开源拆解 · RLM × 持续 Harness · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Prime Agent · 把 <span class="en">harness</span> 变成运行期变量的编码智能体</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">从 11.6 万行 TypeScript 里拆出「唯一内置工具 = ipython」「进程分层 + host_request 桥」「/refine 持续 Harness」三件真东西</p>
+      <div class="doc-meta">
+        <span>2026-08-09</span>
+        <span>跨市场</span>
+        <span>开源拆解</span>
+        <span>RLM</span>
+        <span>持续 Harness</span>
+        <span>IPython Kernel</span>
+        <span>自我改进</span>
+        <span>Agent Runtime</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .9rem;">
+        项目：<a href="https://github.com/PrimeIntellect-ai/prime-agent" target="_blank" rel="noopener">PrimeIntellect-ai/prime-agent</a>
+        &nbsp;·&nbsp; 发布 <a href="https://www.primeintellect.ai/blog/prime-agent" target="_blank" rel="noopener">primeintellect.ai/blog/prime-agent</a>（2026-08-05）
+        <br />
+        实测版本：<code>@earendil-works/pi-coding-agent</code> v0.7.1 · bin <code>pi</code> · MIT · TypeScript 为主 + Python 运行时（<code>prime-agent-runtime</code>）
+      </p>
+    </header>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">116.6<small>K 行</small></div><div class="lab">packages/coding-agent/src TypeScript（268 文件）</div></div>
+      <div class="hero-stat"><div class="num">1<small> 个工具</small></div><div class="lab">面向模型的内置工具只有 <code>ipython</code></div></div>
+      <div class="hero-stat"><div class="num">4<small> 组件</small></div><div class="lab">持续 Harness = prompt·memory·skill·subagent</div></div>
+      <div class="hero-stat"><div class="num">3<small> 进程</small></div><div class="lab">daemon · worker · kernel 分层隔离</div></div>
+    </div>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Prime Agent 不是「又一个 Claude Code 复刻」，也不是一个新模型——它是 Prime Intellect 把开源 <code>pi</code>（<code>@earendil-works</code>）打包成的<strong>「把 harness 本身当成可编程、可自改状态」的编码智能体</strong>。它的赌注写在两处代码里：<strong>（1）面向模型只暴露一个工具 <code>ipython</code></strong>——读写文件、跑命令、调技能、派子 agent 全是在一个常驻 Python REPL 里写代码；<strong>（2）harness 的 prompt / memory / skill / subagent 被做成能 CRUD、能 <code>/refine</code> 在线改写、能回滚的持久状态</strong>。这两件事都不是 PPT，而是 11.6 万行 TS + 一个 ZeroMQ 上的 Jupyter kernel 撑起来的。<strong>对我们（LIFT）最有价值的不是它的自我改进叙事，而是它天然产出的结构化全轨迹（append-only JSONL 树 + 子 agent 用量归因），那是现成的 trace 采集面。</strong>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>它是 <code>pi</code> 的产品化发行版</strong>：<code>package.json</code> name = <code>@earendil-works/pi-coding-agent</code>，productName = <code>prime-agent</code>，bin = <code>pi</code>。看 Prime Agent 等于看 <code>pi</code> 的工程内核。</li>
+        <li><strong>RLM = 唯一工具 <code>ipython</code></strong>：<code>allToolNames = new Set(["ipython"])</code>。能力不是「加工具」，是「在 REPL 里 import 包 / <code>await rlm(...)</code>」。</li>
+        <li><strong>Python 只是 shim，权威状态全在 TS host</strong>：kernel 里 <code>await rlm(...)</code> / <code>goal.*</code> 走 Jupyter comm 目标 <code>host.request</code> 回到 TypeScript，凭证、provider 调用、落盘、调度都不进 Python。</li>
+        <li><strong>子 agent 是异步派发</strong>：<code>await rlm(...)</code> 到「admission」立刻返回一个 handle，<strong>永不返回子 agent 的答案</strong>；结果只经 <code>agent_message</code> 或文件回传。默认递归深度 = 1。</li>
+        <li><strong>持续 Harness 是 CRUD 状态账本</strong>：<code>harness_state.json</code>，四类条目（prompt/memory/skill/subagent）+ refinement 事件日志；<strong>base system prompt 硬性不可改</strong>。</li>
+        <li><strong><code>/refine</code> 是「plan / apply」两相</strong>：规划（后台 LLM 提议 JSON 编辑）与应用（原子写盘）分离，中间<strong>重读盘</strong>防并发覆盖；每条编辑存 before/after 快照可回滚；有 local / global 双 scope。</li>
+        <li><strong>不是安全沙箱</strong>：kernel 就是 <code>spawn</code> 出来的 <code>python -m ipykernel_launcher</code>，继承宿主环境与 OS 权限——README 自己写明「run untrusted code in an external sandbox」。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-what"><span class="sec-num">一</span>它到底是什么：<code>pi</code> 的产品化，不是新模型<a href="#sec-what" class="anchor">#</a></h2>
+    <p class="kicker">— 拆开 package.json 就知道该看谁</p>
+
+    <p>博客把 Prime Agent 讲成一套「自我改进的编码 harness」，但要判断它值不值得投入，先看它<strong>究竟是谁</strong>。克隆下来看 <code>packages/coding-agent/package.json</code>：</p>
+
+    <pre class="code-block"><code><span class="cm">// packages/coding-agent/package.json</span>
+<span class="st">"name"</span>: <span class="st">"@earendil-works/pi-coding-agent"</span>,   <span class="cm">// ← 内核是开源的 pi</span>
+<span class="st">"version"</span>: <span class="st">"0.7.1"</span>,
+<span class="st">"productName"</span>: <span class="st">"prime-agent"</span>,             <span class="cm">// ← Prime Intellect 的品牌壳</span>
+<span class="st">"bin"</span>: { <span class="st">"pi"</span>: <span class="st">"dist/bundle/cli.js"</span> },      <span class="cm">// ← 命令仍叫 pi</span>
+<span class="st">"dependencies"</span>: {
+  <span class="st">"@earendil-works/pi-agent-core"</span>: <span class="st">"^0.7.1"</span>,
+  <span class="st">"@earendil-works/pi-ai"</span>: <span class="st">"^0.7.1"</span>,        <span class="cm">// 多 provider 抽象层</span>
+  <span class="st">"@earendil-works/pi-tui"</span>: <span class="st">"^0.7.1"</span>,
+  <span class="st">"zeromq"</span>: <span class="st">"^6.1.2"</span>                       <span class="cm">// ← kernel 传输层</span>
+}</code></pre>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">读代码得到、博客没直说的三件事</div>
+      <ol style="margin: .3em 0;">
+        <li><strong>Prime Agent = <code>pi</code> 发行版。</strong>Prime Intellect 的增量在「产品化 + 与自家 RL/评测基建的集成叙事」，而工程内核（RLM 运行时、kernel、持续 harness）是 <code>@earendil-works/pi</code> 这套包。要学机制就直接读这个 monorepo。</li>
+        <li><strong>规模是生产级，不是 demo。</strong><a href="https://github.com/PrimeIntellect-ai/prime-agent/tree/main/packages/coding-agent/src" target="_blank" rel="noopener"><code>packages/coding-agent/src</code></a> 约 <strong>11.6 万行 TS / 268 文件</strong>，外加 38 篇 docs、240+ 测试目录。</li>
+        <li><strong>Python 是配角。</strong>真正跑 agent loop、调 provider、落盘的是 TypeScript；Python（<a href="https://github.com/PrimeIntellect-ai/prime-agent/tree/main/prime-agent-runtime/src/rlm" target="_blank" rel="noopener"><code>prime-agent-runtime</code></a>）只是模型在 REPL 里操作的「手」，官方原话：<em>"The Python side does not call providers or implement an agent loop."</em></li>
+      </ol>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-rlm"><span class="sec-num">二</span>RLM：面向模型只有一个工具 <code>ipython</code><a href="#sec-rlm" class="anchor">#</a></h2>
+    <p class="kicker">— 把「更长上下文 / 更多工具 / 多 agent」塌缩成「在持久 REPL 里写程序」</p>
+
+    <p>传统 harness 的隐含假设是「一个能力 = 一个 tool schema」：<code>read_file</code>、<code>write_file</code>、<code>bash</code>、<code>web_search</code>… 模型每一步发一个 tool_call JSON。Prime Agent 把这套推翻——它给模型的内置工具<strong>只有一个</strong>：</p>
+
+    <pre class="code-block"><code><span class="cm">// packages/coding-agent/src/core/tools/index.ts:46</span>
+<span class="kw">export type</span> ToolName = <span class="st">"ipython"</span>;
+<span class="kw">export const</span> allToolNames: Set&lt;ToolName&gt; = <span class="kw">new</span> Set([<span class="st">"ipython"</span>]);</code></pre>
+
+    <p>模型每一轮就是往一个<strong>常驻 IPython kernel</strong> 里写 Python。文件操作、跑命令（<code>%%bash</code>）、调技能、派子 agent，全都从这个 REPL 出发。下面这张图是它相对旧 harness 的范式转移：</p>
+
+    <div class="shift-tool reveal">
+      <div class="side old">
+        <div class="st-eyebrow">旧 harness · fixed schema</div>
+        <div class="st-title">N 个预定义工具</div>
+        <svg viewBox="0 0 260 150" role="img" aria-label="旧 harness：模型对着一排固定工具 schema 逐个发 tool_call">
+          <g style="color: var(--text-muted)" stroke="currentColor" fill="none" stroke-width="1.4">
+            <rect x="14" y="14" width="110" height="24" rx="6"/>
+            <rect x="14" y="46" width="110" height="24" rx="6"/>
+            <rect x="14" y="78" width="110" height="24" rx="6"/>
+            <rect x="14" y="110" width="110" height="24" rx="6"/>
+            <circle cx="210" cy="74" r="26"/>
+          </g>
+          <text x="69" y="30" text-anchor="middle" class="tool-lab">read_file</text>
+          <text x="69" y="62" text-anchor="middle" class="tool-lab">bash</text>
+          <text x="69" y="94" text-anchor="middle" class="tool-lab">web_search</text>
+          <text x="69" y="126" text-anchor="middle" class="tool-lab">edit_file …</text>
+          <text x="210" y="78" text-anchor="middle" class="tool-lab" style="fill:var(--text)">model</text>
+          <g style="color: var(--text-muted)" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3">
+            <line x1="124" y1="26" x2="184" y2="66"/>
+            <line x1="124" y1="58" x2="184" y2="70"/>
+            <line x1="124" y1="90" x2="184" y2="78"/>
+            <line x1="124" y1="122" x2="184" y2="82"/>
+          </g>
+        </svg>
+        <div class="st-note">工具集在设计期写死。加能力 = 加 schema；编排复杂度堆在 LLM 的 token 流里。</div>
+      </div>
+      <div class="arrow" aria-hidden="true">→</div>
+      <div class="side new">
+        <div class="st-eyebrow">RLM · programmatic</div>
+        <div class="st-title">1 个 <code>ipython</code> + 持久命名空间</div>
+        <svg viewBox="0 0 260 150" role="img" aria-label="RLM：模型向一个常驻 IPython kernel 写 Python，能力靠 import 包与 await rlm 展开">
+          <g style="color: var(--accent)">
+            <circle cx="50" cy="74" r="26" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.5"/>
+            <text x="50" y="78" text-anchor="middle" class="tool-lab" style="fill:var(--accent)">model</text>
+            <rect x="112" y="38" width="134" height="74" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="76" y1="74" x2="112" y2="74" stroke="currentColor" stroke-width="1.6"/>
+            <text x="118" y="74" class="tool-lab" style="fill:var(--accent)">ipython(</text>
+          </g>
+          <text x="179" y="58" text-anchor="middle" class="core-lab" style="fill:var(--text)">持久 kernel</text>
+          <text x="179" y="82" text-anchor="middle" class="tool-lab" style="fill:var(--text-muted)">vars · import · await rlm()</text>
+          <text x="179" y="98" text-anchor="middle" class="tool-lab" style="fill:var(--text-muted)">%%bash · skills(…)</text>
+        </svg>
+        <div class="st-note">能力靠代码展开：变量跨轮存活、<code>import</code> 技能包、<code>await rlm()</code> 派子 agent。编排复杂度从 token 流转移到 Python 运行时。</div>
+      </div>
+    </div>
+
+    <h3 id="sec-rlm-var">2.1 prompt-as-a-variable：上下文即 Python 状态</h3>
+    <p>Python 状态<strong>跨 tool 调用、跨 compaction 存活</strong>。这意味着「工作上下文」可以存成对象而不占 LLM 窗口：</p>
+    <pre class="code-block"><code><span class="kw">from</span> pathlib <span class="kw">import</span> Path
+config_files = <span class="nb">list</span>(Path(<span class="st">"."</span>).rglob(<span class="st">"*.toml"</span>))
+large_files = [p <span class="kw">for</span> p <span class="kw">in</span> config_files <span class="kw">if</span> p.stat().st_size &gt; <span class="nb">10_000</span>]
+<span class="cm"># 下一轮 large_files 仍在命名空间里 —— 不需要重新塞进 prompt</span></code></pre>
+
+    <h3 id="sec-rlm-sub">2.2 subagent 是原生 <code>rlm()</code> 调用，且异步</h3>
+    <p>子 agent 不是「工具」，是内核里预载的可调用对象 <code>rlm</code>。关键语义：<strong>调用到「admission（受理）」就立刻返回 handle，永远不等、也不返回子 agent 的答案。</strong></p>
+    <pre class="code-block"><code>handle = <span class="kw">await</span> rlm(<span class="st">"Review the auth flow for security issues"</span>, name=<span class="st">"auth-reviewer"</span>)
+<span class="nb">print</span>(handle.rlm_child_id, handle.name, handle.session_dir, handle.model)
+<span class="cm"># 结果只经 agent_message 或文件回传，不是返回值：</span>
+<span class="cm">#   子： await agent_message.send(msg, receiver_role="parent")</span>
+<span class="cm">#   父： await agent_message.send("补充：也看下中间件", receiver_role="child", receiver_name=handle.name)</span></code></pre>
+    <p>为什么「不返回答案」是刻意设计？因为父 agent 要<strong>保持自己的上下文干净</strong>——它只拿一个 handle，子 agent 拿到隔离的上下文去干活，答案异步回来。这就是博客说的「context 保持 focused」的工程落点。派发实现见 <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L9955" target="_blank" rel="noopener"><code>agent-session.ts:9955 runRlmChild()</code></a>，其序列：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>步骤</th><th>做什么</th><th>代码位置</th></tr></thead>
+        <tbody>
+          <tr><td>1. 深度闸</td><td><code>RLM_DEPTH &lt; RLM_MAX_DEPTH</code>，超限直接抛（默认 max=1）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L9617" target="_blank" rel="noopener">agent-session.ts:9617</a></td></tr>
+          <tr><td>2. 解析模型</td><td>用 <code>provider/model</code> 精确选型或继承父模型；<strong>选不到就失败，绝不静默回退</strong>，含 auth 预检</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L9577" target="_blank" rel="noopener">agent-session.ts:9577</a></td></tr>
+          <tr><td>3. 建子目录</td><td><code>sub-${randomUUID().slice(0,8)}</code> 挂在父 artifact 目录下</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L8884" target="_blank" rel="noopener">agent-session.ts:8884</a></td></tr>
+          <tr><td>4. 受理并返回 handle</td><td>登记进父作用域注册表，返回 <code>RLMSpawnHandle</code>（不含答案/用量）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/rlm-runtime.ts#L152" target="_blank" rel="noopener">rlm-runtime.ts:152</a></td></tr>
+          <tr><td>5. 用量归因</td><td>子 agent 的 token/成本异步折回发起它的父 assistant 轮次，写 <code>child_usage_attributed</code> 条目</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L9774" target="_blank" rel="noopener">agent-session.ts:9774</a></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-topo"><span class="sec-num">三</span>进程拓扑：client / daemon / worker / kernel 四层<a href="#sec-topo" class="anchor">#</a></h2>
+    <p class="kicker">— 奔着「跑几天不崩、断终端不停」去的隔离设计</p>
+
+    <p>这套东西的工程成色不在 prompt，而在进程边界。渲染、协调、执行、模型侧 Python、落盘被拆成互相隔离的进程：</p>
+
+    <div class="topo reveal">
+      <svg viewBox="0 0 760 360" role="img" aria-label="Prime Agent 进程拓扑：client 经本地 daemon 协议连 supervisor，supervisor 管理 worker，worker 内含 AgentSession/Scheduler 与 IPython kernel，kernel 经 ZeroMQ 上的 host.request comm 回到 session">
+        <!-- client -->
+        <g style="color: var(--text-muted)">
+          <rect x="20" y="150" width="120" height="60" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+        </g>
+        <text x="80" y="176" text-anchor="middle" class="layer" fill="var(--text)">Client</text>
+        <text x="80" y="194" text-anchor="middle" class="sub">TUI · print/json/rpc</text>
+        <text x="80" y="228" text-anchor="middle" class="sub">只管渲染 + 键盘</text>
+
+        <!-- supervisor -->
+        <g style="color: var(--info)">
+          <rect x="200" y="150" width="130" height="60" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+        </g>
+        <text x="265" y="174" text-anchor="middle" class="layer" fill="var(--info)">Daemon Supervisor</text>
+        <text x="265" y="192" text-anchor="middle" class="sub">路由 · attach · 恢复</text>
+        <text x="265" y="234" text-anchor="middle" class="sub">跨 agent 消息投递</text>
+
+        <!-- worker box -->
+        <g style="color: var(--accent)">
+          <rect x="388" y="40" width="248" height="288" rx="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-dasharray="6 4"/>
+        </g>
+        <text x="512" y="60" text-anchor="middle" class="sub" style="fill:var(--accent)">Session Worker · 一棵会话树一进程</text>
+
+        <g style="color: var(--accent)">
+          <rect x="410" y="76" width="204" height="52" rx="9" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="410" y="140" width="96" height="44" rx="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="518" y="140" width="96" height="44" rx="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+          <rect x="410" y="238" width="204" height="66" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+        </g>
+        <text x="512" y="97" text-anchor="middle" class="layer" fill="var(--accent-deep)">AgentSession</text>
+        <text x="512" y="114" text-anchor="middle" class="sub">provider 调用 · 队列 · compaction · 落盘</text>
+        <text x="458" y="166" text-anchor="middle" class="sub">Scheduler</text>
+        <text x="566" y="160" text-anchor="middle" class="sub">RLM 子</text>
+        <text x="566" y="174" text-anchor="middle" class="sub">runtimes</text>
+        <text x="512" y="264" text-anchor="middle" class="layer" fill="var(--text)">IPython kernel（独立进程）</text>
+        <text x="512" y="284" text-anchor="middle" class="sub">python -m ipykernel_launcher</text>
+        <text x="512" y="298" text-anchor="middle" class="sub">模型执行的 Python</text>
+
+        <!-- storage -->
+        <g style="color: var(--text-muted)">
+          <rect x="660" y="150" width="86" height="60" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.5"/>
+        </g>
+        <text x="703" y="176" text-anchor="middle" class="sub" style="fill:var(--text)">JSONL</text>
+        <text x="703" y="192" text-anchor="middle" class="sub">+ artifacts</text>
+
+        <!-- wires -->
+        <line x1="140" y1="180" x2="200" y2="180" stroke="var(--text-muted)" stroke-width="1.5"/>
+        <text x="170" y="172" text-anchor="middle" class="wire">daemon 协议</text>
+        <line x1="330" y1="180" x2="410" y2="102" stroke="var(--info)" stroke-width="1.5"/>
+        <text x="360" y="150" text-anchor="middle" class="wire">route</text>
+        <!-- session <-> kernel: ZeroMQ host.request -->
+        <line x1="512" y1="128" x2="512" y2="238" stroke="var(--accent)" stroke-width="1.6"/>
+        <text x="560" y="205" text-anchor="middle" class="wire" style="fill:var(--accent)">ZeroMQ · host.request</text>
+        <line x1="614" y1="270" x2="660" y2="200" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <line x1="614" y1="102" x2="660" y2="170" stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="4 3"/>
+      </svg>
+      <div class="topo-note">Client 断开不影响 worker；worker 崩溃后 supervisor 从 JSONL + kernel 快照恢复。<strong>worker/kernel 是「生命周期与故障隔离」，不是安全隔离</strong>——它们与 client 同 OS 权限运行。</div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">底层机制：为什么 kernel 要单独一个进程</div>
+      <p style="margin:.3em 0;"><code>AgentSession</code>（TS）经 <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/kernel/index.ts#L511" target="_blank" rel="noopener"><code>KernelManager</code></a> 通过 <strong>ZeroMQ 上的 Jupyter 协议（v5.3）</strong>驱动一个独立的 <code>ipykernel</code> 进程：shell / iopub / control 三通道，帧用 <strong>HMAC-SHA256 签名</strong>（<a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/kernel/index.ts#L372" target="_blank" rel="noopener"><code>kernel/index.ts:372 sign()</code></a>）。好处：kernel 跑挂/内存膨胀不拖垮 worker；持久会话可把命名空间快照进 <code>kernel-state.dill</code> 供复活。代价：多一层 IPC 复杂度——下一节的死锁规避就是这层复杂度的产物。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-bridge"><span class="sec-num">四</span>host_request 桥：Python 是手，TS 是脑<a href="#sec-bridge" class="anchor">#</a></h2>
+    <p class="kicker">— 「模型可编程的东西」与「必须由宿主守护的状态」分层，且巧妙避开死锁</p>
+
+    <p>这是全项目最见功力的一段，也是用户最该关注的「凭证校验 / 数据流转」落点。<strong>凭证、provider 执行、落盘、路由、调度全在 TypeScript host；Python 侧只能通过一个 comm 目标 <code>host.request</code> 发起「有类型的宿主请求」。</strong></p>
+
+    <pre class="code-block"><code><span class="cm"># prime-agent-runtime/src/rlm/__init__.py:24</span>
+HOST_COMM_TARGET = <span class="st">"host.request"</span>
+
+<span class="cm"># :84  Python 侧只发请求，状态转移由 TS host 校验并拥有</span>
+<span class="kw">async def</span> <span class="fn">host_request</span>(request_type, payload=<span class="kw">None</span>):
+    comm = Comm(target_name=HOST_COMM_TARGET, primary=<span class="kw">False</span>)
+    <span class="cm"># … 打开 comm、await 一个 future，等 TS host 回复 …</span>
+
+<span class="cm"># :150  rlm.run 就是一次 host_request：</span>
+payload = <span class="kw">await</span> host_request(<span class="st">"rlm.run"</span>, {<span class="st">"prompt"</span>: prompt, <span class="st">"kwargs"</span>: kwargs})</code></pre>
+
+    <p>TS 侧在 <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/kernel/index.ts#L1254" target="_blank" rel="noopener"><code>kernel/index.ts:1254 handleHostRequest()</code></a> 按 <code>type</code> 分发到各 typed handler（<code>rlm.run</code> / <code>goal.*</code> / <code>agent_message.*</code> / <code>refine.*</code> …）。<strong>关键细节：回复走的是 control 通道，不是 shell 通道——这是为了防死锁。</strong></p>
+
+    <div class="seqh reveal">
+      <svg viewBox="0 0 720 380" role="img" aria-label="host_request 时序图：模型在 execute_request 内 await rlm，若受理回复走 shell 通道会死锁，因此 admission 回复改走 control 通道">
+        <!-- actors -->
+        <g class="actor" fill="var(--text)">
+          <text x="70" y="28" text-anchor="middle">Parent model</text>
+          <text x="250" y="28" text-anchor="middle">IPython kernel</text>
+          <text x="250" y="42" text-anchor="middle" style="font-weight:400" class="note">（Python shim）</text>
+          <text x="470" y="28" text-anchor="middle">AgentSession (TS)</text>
+          <text x="650" y="28" text-anchor="middle">Child session</text>
+        </g>
+        <!-- lifelines -->
+        <line class="lifeline" x1="70" y1="52" x2="70" y2="360"/>
+        <line class="lifeline" x1="250" y1="52" x2="250" y2="360"/>
+        <line class="lifeline" x1="470" y1="52" x2="470" y2="360"/>
+        <line class="lifeline" x1="650" y1="52" x2="650" y2="360"/>
+
+        <!-- messages -->
+        <g style="color: var(--accent)" stroke="currentColor" stroke-width="1.5">
+          <line x1="70" y1="80" x2="248" y2="80" marker-end="url(#ah)"/>
+          <line x1="250" y1="120" x2="468" y2="120" marker-end="url(#ah)"/>
+        </g>
+        <text x="160" y="74" text-anchor="middle" class="msg">ipython: await rlm("…")</text>
+        <text x="360" y="114" text-anchor="middle" class="msg">comm host.request · rlm.run</text>
+
+        <!-- deadlock note -->
+        <rect x="286" y="140" width="366" height="46" rx="7" fill="var(--con-soft, rgba(220,38,38,.08))" stroke="var(--con)" stroke-width="1" stroke-dasharray="4 3"/>
+        <text x="469" y="160" text-anchor="middle" class="note danger">若受理回复走 shell 通道 →</text>
+        <text x="469" y="176" text-anchor="middle" class="note danger">execute_request 未完成，kernel 不处理该 shell 回复 = 死锁</text>
+
+        <!-- control channel reply -->
+        <g style="color: var(--info)" stroke="currentColor" stroke-width="1.7">
+          <line x1="470" y1="212" x2="252" y2="212" marker-end="url(#ah2)"/>
+        </g>
+        <text x="360" y="206" text-anchor="middle" class="msg" style="fill:var(--info)">admission 回复走 CONTROL 通道</text>
+
+        <g style="color: var(--accent)" stroke="currentColor" stroke-width="1.5">
+          <line x1="250" y1="244" x2="72" y2="244" marker-end="url(#ah)"/>
+        </g>
+        <text x="160" y="238" text-anchor="middle" class="msg">RLMSpawnHandle（仅受理，无答案）</text>
+
+        <!-- child runs async -->
+        <g style="color: var(--text-muted)" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 3">
+          <line x1="470" y1="276" x2="648" y2="276" marker-end="url(#ah3)"/>
+        </g>
+        <text x="560" y="270" text-anchor="middle" class="note">异步创建子 runtime 并跑</text>
+
+        <g style="color: var(--pro)" stroke="currentColor" stroke-width="1.5">
+          <line x1="650" y1="320" x2="72" y2="320" marker-end="url(#ah4)"/>
+        </g>
+        <text x="360" y="314" text-anchor="middle" class="msg" style="fill:var(--pro)">agent_message 回复（后续某轮才到）</text>
+
+        <defs>
+          <marker id="ah" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--accent)"/></marker>
+          <marker id="ah2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--info)"/></marker>
+          <marker id="ah3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--text-muted)"/></marker>
+          <marker id="ah4" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0,0 L7,3.5 L0,7 Z" fill="var(--pro)"/></marker>
+        </defs>
+      </svg>
+    </div>
+
+    <p><strong>为什么这段值得抄：</strong>IPython 串行处理 shell 消息。一个正在跑的 cell 里 <code>await rlm("…")</code>，如果受理回复也从 shell 通道回，那这条 <code>execute_request</code> 要等回复才能结束、而 kernel 要等它结束才处理回复——<strong>互锁</strong>。Prime Agent 的解法：把 comm 回复注册在 <strong>control 通道</strong>，用 <code>loop.call_soon_threadsafe()</code> 调度未来完成。<strong>凭证边界也在这里划定</strong>：provider 凭证由 TS host 解析，只有「有界的模型目录」作为元数据穿进 Python，完整 auth store 不进 kernel。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-harness"><span class="sec-num">五</span>持续 Harness：把脚手架做成可 CRUD 的状态账本<a href="#sec-harness" class="anchor">#</a></h2>
+    <p class="kicker">— H = prompt · memory · skill · subagent，四类条目 + refinement 日志</p>
+
+    <p>「self-improving」这个词很容易被当成营销。看代码，它的实体非常具体：一个 <code>harness_state.json</code>，四类条目，每类都有 create/read/update/delete。定义见 <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/refinement/refinement.ts#L59" target="_blank" rel="noopener"><code>refinement.ts:59 HarnessState</code></a>，Python 侧 CRUD 面见 <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/prime-agent-runtime/src/rlm/harness.py#L141" target="_blank" rel="noopener"><code>harness.py:141</code></a>。</p>
+
+    <div class="ledger reveal">
+      <div class="led-card">
+        <div class="led-glyph"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="prompt 图标"><path d="M4 5h16M4 12h10M4 19h7"/></svg></div>
+        <span class="led-sym">ρ · prompt</span>
+        <div class="led-t">补充提示词</div>
+        <div class="led-d">窄范围行为策略的增补。<strong>base system prompt 不可改</strong>，这些只是叠加层。</div>
+        <div class="led-crud">create·update·delete</div>
+      </div>
+      <div class="led-card">
+        <div class="led-glyph"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="memory 图标"><path d="M12 3a4 4 0 0 0-4 4v1a3 3 0 0 0 0 6v1a4 4 0 0 0 8 0v-1a3 3 0 0 0 0-6V7a4 4 0 0 0-4-4z"/></svg></div>
+        <span class="led-sym">M · memory</span>
+        <div class="led-t">持久事实</div>
+        <div class="led-d">决策、失败、偏好、结果等声明式事实。<code>create_memory(...)</code>。</div>
+        <div class="led-crud">local / global 双 scope</div>
+      </div>
+      <div class="led-card">
+        <div class="led-glyph"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="skill 图标"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3z"/></svg></div>
+        <span class="led-sym">K · skill</span>
+        <div class="led-t">可 import 的技能</div>
+        <div class="led-d">Python REPL 技能，编辑必须带 <code>reference{type:python}</code> + <code>arguments</code> 契约。</div>
+        <div class="led-crud">校验强制：import + 调用式</div>
+      </div>
+      <div class="led-card">
+        <div class="led-glyph"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="subagent 图标"><circle cx="12" cy="7" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 10v3M9.5 16l-2.5-1M14.5 16l2.5-1"/></svg></div>
+        <span class="led-sym">G · subagent</span>
+        <div class="led-t">可复用委派规格</div>
+        <div class="led-d">目的 + 指令 + 何时调用；用 <code>await rlm('&lt;task&gt;')</code> 展开成子 agent。</div>
+        <div class="led-crud">被渲染成任务清单菜单</div>
+      </div>
+    </div>
+
+    <h3 id="sec-refine">5.1 <code>/refine</code>：plan / apply 两相分离</h3>
+    <p>自我改进的机制核心是 <code>/refine</code>，它像「上下文压缩」的孪生——只不过它不是总结对话，而是<strong>从轨迹里提炼出对 harness 的最小 CRUD 编辑</strong>。代码把它切成两相，中间有个关键的「重读盘」动作：</p>
+
+    <div class="refine reveal">
+      <div class="refine-step plan">
+        <div class="refine-phase">Phase 1 · Plan</div>
+        <div class="refine-t">后台 LLM 提议</div>
+        <div class="refine-d">读轨迹 + 当前 harness + 历史，让模型输出<strong>纯 JSON 编辑数组</strong>，不改任何状态。</div>
+        <span class="refine-f">planRefinement() refinement.ts:863</span>
+      </div>
+      <div class="refine-step apply">
+        <div class="refine-phase">中间 · Re-read</div>
+        <div class="refine-t">重读 harness 盘</div>
+        <div class="refine-d">LLM 调用耗时数秒，期间 kernel/别的会话可能已写盘——应用前<strong>重读</strong>并按 baseline 比对，冲突的编辑<strong>拒绝</strong>。</div>
+        <span class="refine-f">"entry changed during refinement planning"</span>
+      </div>
+      <div class="refine-step apply">
+        <div class="refine-phase">Phase 2 · Apply</div>
+        <div class="refine-t">CRUD + 快照</div>
+        <div class="refine-d">逐条 create/update/delete，每条记 <code>before</code>/<code>after</code> 快照；原子 temp+rename 写盘。</div>
+        <span class="refine-f">applyRefinementProposal() refinement.ts:707</span>
+      </div>
+      <div class="refine-step rb">
+        <div class="refine-phase">可选 · Rollback</div>
+        <div class="refine-t">按快照回滚</div>
+        <div class="refine-d">逆序回放 <code>appliedEdits</code>，用存下的 before/after 反向生成编辑，撤回坏 refinement。</div>
+        <span class="refine-f">rollbackProposal() refinement.ts:804</span>
+      </div>
+    </div>
+
+    <p>几个从代码里读到、值得记下的护栏：</p>
+    <div class="callout callout-warn">
+      <div class="callout-tag">漂移防护（都在 refinement.ts 里硬编码）</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>base prompt 不可编辑</strong>：<code>validateEdit()</code> 显式拒绝 <code>id === "base_system_prompt"</code>（<a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/refinement/refinement.ts#L671" target="_blank" rel="noopener">refinement.ts:671</a>）。</li>
+        <li><strong>skill 编辑强校验</strong>：必须带 <code>reference.type==="python"</code> + import + 调用式 + <code>arguments</code>，否则整条编辑判失败。</li>
+        <li><strong>local / global 双 scope</strong>：默认写会话本地 <code>session-artifacts/&lt;id&gt;/harness/</code>；global 才写 <code>~/.prime/agent/harness/</code>。局部 refine 时 global 条目<strong>只读</strong>。</li>
+        <li><strong>坏文件降级为空</strong>：<code>loadHarnessState()</code> 遇到损坏 JSON 返回空态而非抛错（它每次建 system prompt 都跑）。</li>
+        <li><strong>auto-refine 有评审闸</strong>：turn 间隔 / compact 触发时先过一个 <code>reviewAutoRefine()</code> LLM 门，拒绝一次性噪声再决定要不要 refine。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-jsonl"><span class="sec-num">六</span>会话 JSONL：一棵 append-only 树（对 LIFT 最重要的一节）<a href="#sec-jsonl" class="anchor">#</a></h2>
+    <p class="kicker">— 全轨迹结构化落盘，天然是 trace 采集面</p>
+
+    <p>会话存成 <code>~/.prime/agent/sessions/&lt;id&gt;.jsonl</code>，<strong>每行一个带 <code>type</code> 的 JSON，靠 <code>id</code>/<code>parentId</code> 构成一棵树</strong>——分支/fork/clone 只是移动叶指针，不新建文件。写入是纯 <code>appendFileSync</code>（<a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/session-manager.ts#L1472" target="_blank" rel="noopener">session-manager.ts:1472</a>）。条目类型很全：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>type</th><th>含义</th><th>进 LLM 上下文？</th></tr></thead>
+        <tbody>
+          <tr><td><code>message</code></td><td>user / assistant / toolResult / bashExecution</td><td>是</td></tr>
+          <tr><td><code>compaction</code></td><td>压缩摘要 + <code>tokensBefore</code> + <code>firstKeptEntryId</code></td><td>摘要进，被压的原文不进</td></tr>
+          <tr><td><code>branch_summary</code></td><td>切分支时对被弃路径的 LLM 摘要</td><td>是</td></tr>
+          <tr><td><code>child_usage_attributed</code></td><td>RLM 子 agent 用量折回父轮次（daemon 记账）</td><td><strong>否</strong>（纯记账）</td></tr>
+          <tr><td><code>model_change</code> / <code>thinking_level_change</code></td><td>中途切模型 / 调推理档</td><td>否</td></tr>
+          <tr><td><code>agent_status</code> / <code>git_state</code></td><td>agents 视图状态 / 仓库快照</td><td>否</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">这对我们意味着什么</div>
+      <p style="margin:.3em 0;">LIFT 的硬约束是「归因数据仅限 Trace / Artifact / Scores / Metrics」。Prime Agent 的 JSONL 恰好是一份<strong>结构化、可增量、含因果链（<code>parentId</code> 树）+ 含用量归因的 Trace 源</strong>：每个 assistant 轮次、每个 tool 结果、每次 compaction、每个子 agent 的用量都可定位。更妙的是 <code>refinements.jsonl</code> + <code>child_usage_attributed</code> 让「同一任务不同处置（子 agent A vs B / refine 前 vs 后）」变成<strong>天然的反事实对照样本</strong>——正对我们「双变量实验 = 反事实干预」的归因方法论。<strong>行动建议：把这套 JSONL schema 评估为 LIFT 的一个 trace 采集适配层。</strong></p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-long"><span class="sec-num">七</span>长任务 & 自主模式：它真正的用途是无人值守 runtime<a href="#sec-long" class="anchor">#</a></h2>
+    <p class="kicker">— goal · heartbeat · schedule · autonomous 四个调度面</p>
+
+    <p>博客把「长程自主评测的默认 runtime」列为三大用途之一，代码印证了这一点——它有一整套让会话「跑很久、断终端不停、到点自催」的机制：</p>
+    <div class="insights-grid reveal">
+      <div class="insight-card">
+        <div class="k">Goal</div>
+        <div class="t">带 token 预算的持久目标</div>
+        <div class="d">harness 持续催 agent 直到 <code>goal.complete()</code>；记录用量/耗时/续跑次数。创建目标是显式动作，不由每个任务推断。</div>
+        <div class="src"><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/goals.ts#L13" target="_blank" rel="noopener">goals.ts:13</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">Autonomous</div>
+        <div class="t">带质量闸的有界续跑</div>
+        <div class="d"><code>--autonomous-gate "npm run check"</code> 失败就把输出丢回给 agent 重试；用 max-turns/tokens/timeout 兜底，工作区没变则不重跑同一失败闸。</div>
+        <div class="src"><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/autonomous.ts#L196" target="_blank" rel="noopener">autonomous.ts:196</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">Heartbeat</div>
+        <div class="t">cron 式自催</div>
+        <div class="d">用户 <code>/heartbeat</code>（一条可见）+ agent 用 <code>rlm_heartbeat.create()</code>（多条内部）；到期 tick 先「claim」再投递，崩溃不重放不确定 prompt。</div>
+        <div class="src"><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L2967" target="_blank" rel="noopener">agent-session.ts:2967</a></div>
+      </div>
+      <div class="insight-card">
+        <div class="k">A2A 消息</div>
+        <div class="t">家族内定向通信</div>
+        <div class="d"><code>agent_message.send(...)</code> 只在「核心家族」（父/兄弟/子）内路由；三种投递模式 auto/steer/follow_up；daemon 推导发送方身份并限流。</div>
+        <div class="src"><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/long-running-agents.md" target="_blank" rel="noopener">long-running-agents.md</a></div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-trust"><span class="sec-num">八</span>信任模型：它明说自己不是安全沙箱<a href="#sec-trust" class="anchor">#</a></h2>
+    <p class="kicker">— 抄之前必须先看清这条硬边界</p>
+
+    <p>这不是我推断的，是 README 第 66 行的原话，也是代码的事实：kernel 就是一个继承宿主环境变量与 OS 权限 <code>spawn</code> 出来的 <code>python -m ipykernel_launcher</code>（<a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/kernel/index.ts" target="_blank" rel="noopener">kernel/index.ts</a>）。</p>
+    <div class="callout callout-con">
+      <div class="callout-tag">README 原文 + 代码事实</div>
+      <p style="margin:.3em 0;"><em>"Prime Agent executes model-generated Python and project commands with your user permissions. Its worker and kernel processes improve lifecycle isolation and recovery; they are <strong>not</strong> a security sandbox. … Run untrusted code or instructions in an external sandbox or restricted environment."</em></p>
+      <p style="margin:.3em 0;">叠加上「agent 能自由写 Python」+「能自改 harness」+「能无人值守跑几天」，攻击面很大。<strong>安装的 Python 包、skills、extensions 都被当作可信代码</strong>。企业接入必须外套沙箱——这点和它「长程自主 runtime」的定位其实是一对张力。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-verdict"><span class="sec-num">九</span>判断：亮点、存疑、与我们的关系<a href="#sec-verdict" class="anchor">#</a></h2>
+    <p class="kicker">— 一句话：机制扎实，叙事需打折，trace 面可复用</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">亮点</div>
+        <p><strong>抽象塌缩很漂亮。</strong>把「长上下文/多工具/多 agent」三条扩展线统一成「在持久 REPL 里写程序」，比「MCP + 一堆工具」更彻底。host_request 分层（Python 是手、TS 是脑）+ control 通道防死锁，是成熟工程判断，不是 demo。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">存疑</div>
+        <p><strong>「self-improving」名不副实的风险。</strong>目前是提示层在线自适应（改 prompt/skill/memory），<strong>不是权重更新</strong>；天花板仍被底层 frontier model 锁死。且博客未给任何 benchmark，自改 harness 的长程漂移只有工程护栏、无数据背书。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">对 LIFT</div>
+        <p><strong>把它当 trace 数据源，不是当竞品。</strong>append-only JSONL 树 + child_usage_attributed + refinements.jsonl = 现成的结构化轨迹 + 天然反事实对照。评估做一个 JSONL→LIFT 的采集适配层。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">可直接抄的模式</div>
+        <p><strong>control 通道防死锁、plan/apply 中间重读盘、原子 temp+rename 写状态、tick 先 claim 再投递</strong>——这四个是任何长程 agent runtime 都会踩的坑，这里有现成的正解。</p>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="sec-annex"><span class="sec-num">十</span>附：源码坐标一览<a href="#sec-annex" class="anchor">#</a></h2>
+    <p class="kicker">— 想深挖时的入口地图（均已核对行号）</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>机制</th><th>文件:行</th><th>做什么</th></tr></thead>
+        <tbody>
+          <tr><td>唯一内置工具</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/tools/index.ts#L46" target="_blank" rel="noopener">tools/index.ts:46</a></td><td><code>allToolNames = Set(["ipython"])</code></td></tr>
+          <tr><td>ipython 工具定义</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/tools/ipython.ts#L619" target="_blank" rel="noopener">tools/ipython.ts:619</a></td><td>工具 schema + 懒建 kernel + 命名空间 bootstrap</td></tr>
+          <tr><td>Kernel 管理器</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/kernel/index.ts#L511" target="_blank" rel="noopener">kernel/index.ts:511</a></td><td>ZeroMQ · Jupyter 帧 · HMAC · comm 分发</td></tr>
+          <tr><td>host.request 桥（Py）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/prime-agent-runtime/src/rlm/__init__.py#L84" target="_blank" rel="noopener">rlm/__init__.py:84</a></td><td>Python shim 发起有类型宿主请求</td></tr>
+          <tr><td>RLM 运行时（TS）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/rlm-runtime.ts#L152" target="_blank" rel="noopener">rlm-runtime.ts:152</a></td><td><code>rlm.run</code> 校验 · 模型发现 · list/delete</td></tr>
+          <tr><td>子 agent 派发</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/agent-session.ts#L9955" target="_blank" rel="noopener">agent-session.ts:9955</a></td><td><code>runRlmChild()</code> 深度闸/选型/受理/归因</td></tr>
+          <tr><td>持续 Harness（TS）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/refinement/refinement.ts#L59" target="_blank" rel="noopener">refinement.ts:59</a></td><td><code>HarnessState</code> + plan/apply/rollback</td></tr>
+          <tr><td>持续 Harness（Py CRUD）</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/prime-agent-runtime/src/rlm/harness.py#L141" target="_blank" rel="noopener">harness.py:141</a></td><td><code>create_memory/skill/subagent/prompt_note</code></td></tr>
+          <tr><td>会话 JSONL</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/session-manager.ts#L1191" target="_blank" rel="noopener">session-manager.ts:1191</a></td><td>append-only 树 · <code>buildSessionContext()</code></td></tr>
+          <tr><td>Compaction</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/compaction/compaction.ts#L745" target="_blank" rel="noopener">compaction/compaction.ts:745</a></td><td>阈值触发 · 摘要旧文 · 保 kernel 态</td></tr>
+          <tr><td>自主模式</td><td><a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/src/core/autonomous.ts#L196" target="_blank" rel="noopener">autonomous.ts:196</a></td><td>续跑决策 · 质量闸 · 限额</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="font-size:.85rem;color:var(--text-muted);">
+      文档入口：<a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/rlm.md" target="_blank" rel="noopener">rlm.md</a> ·
+      <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/rlm-runtime.md" target="_blank" rel="noopener">rlm-runtime.md</a> ·
+      <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/architecture.md" target="_blank" rel="noopener">architecture.md</a> ·
+      <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/session-format.md" target="_blank" rel="noopener">session-format.md</a> ·
+      <a href="https://github.com/PrimeIntellect-ai/prime-agent/blob/main/packages/coding-agent/docs/long-running-agents.md" target="_blank" rel="noopener">long-running-agents.md</a>
+    </p>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-08-09 初稿（源码级拆解，基于 @earendil-works/pi-coding-agent v0.7.1 · 行号经克隆核对）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="index.html">开源拆解总索引</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="../readings/2026-07_lilianweng-harness-rsi.html">相关：Harness × RSI（Lilian Weng 解读）</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

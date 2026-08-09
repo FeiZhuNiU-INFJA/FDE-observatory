@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-03T08:04:40.562716+00:00",
+  "generated_at": "2026-08-09T14:05:59.327163+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -497,6 +497,26 @@
     }
   ],
   "oss": [
+    {
+      "path": "opensource-analysis/2026-08_prime-agent-rlm-continual-harness.html",
+      "title": "Prime Agent · 把 harness 变成运行期变量的编码智能体",
+      "date": "2026-08-09",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "开源拆解",
+        "RLM",
+        "持续 Harness",
+        "IPython Kernel",
+        "自我改进",
+        "Agent Runtime"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "opensource-analysis/2026-07_ark-agent-feishu-bot.html",
       "title": "ark-agent-feishu-bot · Managed Agents 的最小参考实现",
