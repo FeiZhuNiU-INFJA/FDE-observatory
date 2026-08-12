@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-09T14:05:59.327163+00:00",
+  "generated_at": "2026-08-12T09:19:40.056967+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -497,6 +497,26 @@
     }
   ],
   "oss": [
+    {
+      "path": "opensource-analysis/2026-08_agency-agents-persona-compiler.html",
+      "title": "agency-agents · 一台把 persona 分发到 16 种工具的纯 Bash 编译器",
+      "date": "2026-08-12",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "开源拆解",
+        "Agent Persona",
+        "分发管线",
+        "内容治理",
+        "OpenClaw",
+        "Prompt Library"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "opensource-analysis/2026-08_prime-agent-rlm-continual-harness.html",
       "title": "Prime Agent · 把 harness 变成运行期变量的编码智能体",

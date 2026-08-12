@@ -187,6 +187,7 @@
 | deep-terracotta | `#7c2d12` / dark `#f97316` | Org-Chart 陷阱 · 单身份 Agent（ToB 洞察） |
 | compass-indigo | `#3730a3` / dark `#a5b4fc` | Field Guide to Fable · Finding Your Unknowns（阅读材料） |
 | fuchsia | `#a21caf` / dark `#e879f9` | 删掉 80% 的系统提示词 · Boris Cherny × YC（阅读材料） |
+| brass/gold | `#a16207` / dark `#fbbf24` | agency-agents · Persona 编译器（开源拆解） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`
