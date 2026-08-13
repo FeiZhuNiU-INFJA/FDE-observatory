@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Paperclip 深度拆解 · AI 员工的公司控制平面 · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent: #0891b2; --accent-soft: #ecfeff; --accent-deep: #155e75; --accent-ink: #083344; }
+  [data-theme="dark"] { --accent: #22d3ee; --accent-soft: #0b2a33; --accent-deep: #67e8f9; --accent-ink: #cffafe; }
+
+  /* ---- 代码块（沿用站内约定）---- */
+  pre.code-block { font-size: .78rem; line-height: 1.55; overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: .9em 1em; border-radius: 8px; border: 1px solid #1e293b; }
+  [data-theme="dark"] pre.code-block { background: #020617; }
+  pre.code-block code, pre.code-block span { background: transparent !important; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code-block code { color: inherit; }
+  pre.code-block .cm { color: #64748b; font-style: italic; }
+  pre.code-block .kw { color: #f472b6; }
+  pre.code-block .st { color: #86efac; }
+  pre.code-block .fn { color: #93c5fd; }
+  pre.code-block .nb { color: #fcd34d; }
+
+  /* ============ Bespoke 1: 控制平面 vs 执行平面（.plane）============ */
+  .plane { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .plane svg { width: 100%; height: auto; display: block; }
+  .plane text { font-family: var(--sans); }
+  .plane .lab { font-size: 11px; font-weight: 700; }
+  .plane .sub { font-size: 9px; fill: var(--text-muted); }
+  .plane .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .plane-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 2: 原子签出 CAS 竞态（.cas）============ */
+  .cas { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .cas svg { width: 100%; height: auto; display: block; }
+  .cas text { font-family: var(--sans); }
+  .cas .lab { font-size: 11px; font-weight: 700; }
+  .cas .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .cas .win { fill: var(--pro); font-weight: 700; }
+  .cas .lose { fill: var(--con); font-weight: 700; }
+  .cas-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 3: 预算硬停两相回路（.budget）============ */
+  .budget { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .budget svg { width: 100%; height: auto; display: block; }
+  .budget text { font-family: var(--sans); }
+  .budget .lab { font-size: 10.5px; font-weight: 700; }
+  .budget .mono { font-family: var(--mono); font-size: 8.5px; fill: var(--text-muted); }
+  .budget .phase { font-family: var(--mono); font-size: 9px; font-weight: 700; fill: var(--accent); letter-spacing: .04em; }
+  .budget-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 4: 心跳生命周期状态机（.beat）============ */
+  .beat { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .beat svg { width: 100%; height: auto; display: block; }
+  .beat text { font-family: var(--mono); }
+  .beat .st { font-size: 10px; font-weight: 700; }
+  .beat .edge { font-family: var(--sans); font-size: 8.5px; fill: var(--text-muted); }
+  .beat .ok { fill: var(--pro); font-weight: 700; }
+  .beat .bad { fill: var(--con); font-weight: 700; }
+  .beat-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ---- 关键洞察卡（沿用）---- */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
+  .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .insight-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 12px 0 0 12px; }
+  .insight-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .4em; font-weight: 700; }
+  .insight-card .t { font-weight: 700; font-size: .95rem; margin-bottom: .4em; }
+  .insight-card .d { font-size: .82rem; color: var(--text-muted); line-height: 1.55; }
+  @media (max-width: 760px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insight-card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      Paperclip<span class="brand-sub">开源拆解 · Agent 控制平面 · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Paperclip · 给一群 AI 员工建一家「公司」的<span class="en">control plane</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">org-chart / 任务 / 预算 / 心跳执行全在控制平面；agent 在哪跑都行，唯一契约是「可被调用」——把编排与执行彻底解耦</p>
+      <div class="doc-meta">
+        <span>2026-08-12</span>
+        <span>跨市场</span>
+        <span>开源拆解</span>
+        <span>Agent Orchestration</span>
+        <span>控制平面</span>
+        <span>心跳执行</span>
+        <span>预算硬停</span>
+        <span>原子签出</span>
+        <span>Adapter</span>
+        <span>OpenClaw</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .9rem;">
+        项目：<a href="https://github.com/paperclipai/paperclip" target="_blank" rel="noopener">paperclipai/paperclip</a>
+        &nbsp;·&nbsp; 拆解基准 commit <code>67001ec</code>（master，行号已克隆核对）
+        <br />
+        形态：单进程 Node 控制平面（TypeScript + 内嵌 Postgres + Drizzle）· 定位「若 OpenClaw 是员工，Paperclip 就是公司」
+      </p>
+    </header>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">11<small> adapters</small></div><div class="lab">Claude / Codex / Cursor / Gemini / Grok / OpenClaw…</div></div>
+      <div class="hero-stat"><div class="num">0<small> 运行时</small></div><div class="lab">不跑 agent，只要求「be callable」</div></div>
+      <div class="hero-stat"><div class="num">3<small> 预算作用域</small></div><div class="lab">company / agent / project · 软 + 硬双阈值</div></div>
+      <div class="hero-stat"><div class="num">8<small> run 状态</small></div><div class="lab">queued→running→terminal 的生命周期</div></div>
+    </div>
+
+    <div class="lede">
+      <strong>核心结论：</strong>Paperclip 不是又一个 agent 框架，而是一层<strong>控制平面（control plane）</strong>——它管 org-chart、任务、预算、审批、审计和「心跳执行」，但<strong>坚决不定义 agent 怎么跑</strong>。README 一句话点题：「若 OpenClaw 是<em>员工</em>，Paperclip 就是<em>公司</em>」。真正值得抄的是它把「让一群自主 agent 长时间干活而不失控」拆成了三条硬工程约束：<strong>①原子签出</strong>——用一条 <code>UPDATE … WHERE … RETURNING</code> 的 compare-and-swap 保证一个任务只被一个 agent 拿走，赢家拿到行、输家拿到 <code>null</code> 直接判冲突；<strong>②预算硬停</strong>——「起跑前拦截 + 花超后回杀」的两相回路，一旦花销 ≥ 阈值就 pause 作用域并 <code>kill</code> 进程 + 置 <code>cancelled</code>；<strong>③活性契约</strong>——任何未完成的任务都必须有「活跃 / 等待 / 恢复」三条路之一，否则算 stalled，宁可 surface 也不静默。对我们（OpenClaw → 火山 MA 迁移、arkagent 多用户化）最有价值的，正是这套<strong>「单一 assignee 所有权 + 预算硬停 + 崩溃回收」的生产级骨架</strong>——它把我们卡点 A/B/D 的「多用户不打架、花销可控、崩了能救」全部代码化了。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>控制平面 ≠ 执行平面</strong>：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/PRODUCT.md#L81" target="_blank" rel="noopener">PRODUCT.md 原则 5</a>——「Paperclip orchestrates. Agents run wherever they run and phone home.」不绑定任何 runtime。</li>
+        <li><strong>agent 的唯一契约是「可被调用」</strong>：每个 agent = 一个 adapter type + config，<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/PRODUCT.md#L77" target="_blank" rel="noopener">「the minimum contract is just 'be callable.'」</a>仓库自带 11 个 adapter。</li>
+        <li><strong>原子签出杜绝双claim</strong>：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L7959-L8164" target="_blank" rel="noopener">issues.ts 的 <code>checkout</code></a> 用条件 UPDATE 做 CAS，guard 是 <code>status + assigneeAgentId + checkoutRunId + executionRunId</code>——注意：靠<strong>应用层 CAS</strong>，不是 DB 唯一约束。</li>
+        <li><strong>预算硬停是两相</strong>：起跑前 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L718-L864" target="_blank" rel="noopener"><code>getInvocationBlock</code></a> 拦截；花超后 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L649-L716" target="_blank" rel="noopener"><code>evaluateCostEvent</code></a> 在 <code>hardStop &amp;&amp; observed≥amount</code> 时 pause + cancel。</li>
+        <li><strong>心跳是执行引擎</strong>：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L19009-L19081" target="_blank" rel="noopener"><code>tickTimers</code></a> 按间隔唤醒 agent；<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L13091-L13286" target="_blank" rel="noopener"><code>reapOrphanedRuns</code></a> 回收「进程死了但状态还 running」的孤儿 run。</li>
+        <li><strong>活性契约（liveness contract）是灵魂</strong>：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/execution-semantics.md#L274-L291" target="_blank" rel="noopener">execution-semantics.md §8</a>——「never leave work in a state where nobody is responsible for the next move」，是可见性契约、不是自动完成契约。</li>
+        <li><strong>数据库</strong>：Postgres（本地内嵌 <code>embedded-postgres</code>）+ Drizzle ORM，生产可指向自建 PG。扩展分两类——<strong>Platform Module</strong>（可信、进程内，adapter 属此）与 <strong>Plugin</strong>（实例级、经 SDK/host 协议隔离）。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="what"><span class="sec-num">一</span>它到底是什么：控制平面，不是执行平面<a href="#what" class="anchor">#</a></h2>
+    <p class="kicker">— orchestrate here, run anywhere, phone home</p>
+
+    <p>README 的自我定义很克制：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/README.md#L29" target="_blank" rel="noopener">「Paperclip is the app people use to manage AI agents for work.」</a>底下紧跟一句极准的类比——<strong>「If OpenClaw is an <em>employee</em>, Paperclip is the <em>company</em>.」</strong>它提供的是一家「AI 公司」的运营基建：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/DESIGN.md#L13" target="_blank" rel="noopener">org charts、tasks、heartbeat runs、budgets、approvals、audit logs</a>，而<strong>不</strong>规定 agent 用什么语言、框架、runtime。</p>
+
+    <p>这条边界在 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/PRODUCT.md#L73-L81" target="_blank" rel="noopener">PRODUCT.md 的产品原则</a>里被反复钉死：原则 1「provides utility infrastructure for heartbeats. It does not mandate an agent runtime」；原则 5「Control plane, not execution plane. Paperclip orchestrates. Agents run wherever they run and phone home」。<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/SPEC.md#L511" target="_blank" rel="noopener">SPEC 的 Anti-Requirements</a> 甚至直白写「Not an Agent runtime」。这台「公司」的形态可以画成一张控制平面／执行平面的分工图：</p>
+
+    <div class="plane reveal">
+      <svg viewBox="0 0 720 320" role="img" aria-label="控制平面与执行平面分工：左侧 Paperclip Server 控制平面含 Org Chart、任务队列、预算、心跳执行、Plugins 五个模块，通过 adapter.execute() 携带 JWT 向右侧执行端点（Claude Code、Codex、CLI agent、HTTP bot）派发工作，执行端通过 phone home 回报成本与状态">
+        <!-- 控制平面容器 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.7">
+          <rect x="14" y="20" width="330" height="284" rx="14" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="30" y="44" fill="var(--accent-ink)">PAPERCLIP SERVER</text>
+        <text class="mono" x="30" y="58">控制平面 · 单进程 Node + Postgres</text>
+
+        <!-- 控制平面内五模块 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="30"  y="72"  width="140" height="46" rx="8" fill="var(--surface)"/>
+          <rect x="188" y="72"  width="140" height="46" rx="8" fill="var(--surface)"/>
+          <rect x="30"  y="128" width="140" height="46" rx="8" fill="var(--surface)"/>
+          <rect x="188" y="128" width="140" height="46" rx="8" fill="var(--surface)"/>
+          <rect x="30"  y="184" width="298" height="44" rx="8" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="lab" x="100" y="92"  text-anchor="middle">Org Chart</text>
+          <text class="sub" x="100" y="107" text-anchor="middle">分部 / 汇报 / 目标</text>
+          <text class="lab" x="258" y="92"  text-anchor="middle">任务队列 Issues</text>
+          <text class="sub" x="258" y="107" text-anchor="middle">原子签出 / 依赖</text>
+          <text class="lab" x="100" y="148" text-anchor="middle">Budgets</text>
+          <text class="sub" x="100" y="163" text-anchor="middle">软/硬阈值 · 硬停</text>
+          <text class="lab" x="258" y="148" text-anchor="middle">Heartbeat 执行</text>
+          <text class="sub" x="258" y="163" text-anchor="middle">唤醒 / 生命周期 / 回收</text>
+          <text class="lab" x="179" y="205" text-anchor="middle">Plugins · Approvals · Audit Log</text>
+          <text class="sub" x="179" y="219" text-anchor="middle">审批门 / 全量审计 / 可信扩展</text>
+        </g>
+
+        <!-- adapter 边界 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5" stroke-dasharray="5 4">
+          <line x1="360" y1="30" x2="360" y2="294"/>
+        </g>
+        <text class="mono" x="360" y="256" text-anchor="middle" fill="var(--accent)" style="font-weight:700">adapter 边界</text>
+
+        <!-- 执行平面端点 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="512" y="40"  width="190" height="40" rx="8" fill="var(--surface)"/>
+          <rect x="512" y="92"  width="190" height="40" rx="8" fill="var(--surface)"/>
+          <rect x="512" y="144" width="190" height="40" rx="8" fill="var(--surface)"/>
+          <rect x="512" y="196" width="190" height="40" rx="8" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="lab" x="607" y="64"  text-anchor="middle">Claude Code / Codex</text>
+          <text class="lab" x="607" y="116" text-anchor="middle">Cursor · Gemini · Grok</text>
+          <text class="lab" x="607" y="168" text-anchor="middle">CLI agent（本地进程）</text>
+          <text class="lab" x="607" y="220" text-anchor="middle">HTTP / Gateway bot</text>
+        </g>
+        <text class="mono" x="607" y="262" text-anchor="middle">执行平面 · 「be callable」</text>
+
+        <!-- 派发箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <line x1="360" y1="120" x2="506" y2="120"/>
+          <path d="M506 120 l-9 -4.5 v9 z"/>
+        </g>
+        <text class="mono" x="432" y="112" text-anchor="middle" fill="var(--accent-ink)" style="font-weight:700">execute() + JWT</text>
+
+        <!-- phone home 回报 -->
+        <g stroke="var(--text-muted)" stroke-width="1.4" fill="var(--text-muted)" stroke-dasharray="4 3">
+          <line x1="506" y1="156" x2="362" y2="156"/>
+          <path d="M362 156 l9 -4.5 v9 z"/>
+        </g>
+        <text class="mono" x="432" y="150" text-anchor="middle">phone home（cost/状态）</text>
+      </svg>
+      <div class="plane-note">控制平面派发 <code>adapter.execute()</code> 并注入运行期 <strong>JWT</strong>（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/adapters/process/execute.ts#L36-L37" target="_blank" rel="noopener">落到子进程 <code>PAPERCLIP_API_KEY</code></a>）；agent 干完活「phone home」回报成本与状态，控制平面据此扣预算、推进生命周期。</div>
+    </div>
+
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="k">载体</div>
+        <div class="t">TypeScript + 内嵌 Postgres</div>
+        <div class="d">单个 Node 进程即可跑起来，<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/db/package.json#L50-L53" target="_blank" rel="noopener"><code>embedded-postgres</code> + <code>drizzle-orm</code></a> 自动建库、零配置；生产可指向自建 PG。</div>
+      </div>
+      <div class="insight-card">
+        <div class="k">形态</div>
+        <div class="t">运营控制平面</div>
+        <div class="d">价值 = 组织（org-chart/目标）× 执行治理（签出/预算/心跳/活性）。agent 能力上限仍取决于底层执行端，Paperclip 只保证「不失控」。</div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="checkout"><span class="sec-num">二</span>原子签出：一个任务只被一个 agent 拿走<a href="#checkout" class="anchor">#</a></h2>
+    <p class="kicker">— compare-and-swap，赢家拿行、输家拿 null</p>
+
+    <p>多 agent 并发抢同一个任务是控制平面的头号竞态。Paperclip 的解法不是分布式锁，而是一条<strong>条件 UPDATE</strong>——<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L7959-L8164" target="_blank" rel="noopener">issues.ts 的 <code>checkout</code></a>（核心 CAS 在 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L8011-L8031" target="_blank" rel="noopener">8011–8031</a>）。它把「任务是否可被我拿」压进 <code>WHERE</code>，靠数据库的原子性裁决——谁的 <code>WHERE</code> 先匹配谁赢，输家 <code>rows[0]</code> 为 <code>null</code>，直接抛冲突：</p>
+
+    <pre class="code-block"><code><span class="cm">// issues.ts:8011 —— 一条 UPDATE 做完签出（compare-and-swap）</span>
+<span class="kw">const</span> updated = <span class="kw">await</span> db.<span class="fn">update</span>(issues)
+  .<span class="fn">set</span>({
+    assigneeAgentId: agentId, checkoutRunId,
+    executionRunId: checkoutRunId, status: <span class="st">"in_progress"</span>,
+    startedAt: now, updatedAt: now,
+  })
+  .<span class="fn">where</span>(<span class="fn">and</span>(
+    <span class="fn">eq</span>(issues.id, id),
+    <span class="fn">inArray</span>(issues.status, expectedStatuses),          <span class="cm">// ① 状态 guard</span>
+    <span class="fn">or</span>(<span class="fn">isNull</span>(issues.assigneeAgentId), sameRunAssigneeCondition), <span class="cm">// ② assignee guard</span>
+    executionLockCondition,                             <span class="cm">// ③ 执行锁 guard</span>
+  ))
+  .<span class="fn">returning</span>()
+  .<span class="fn">then</span>((rows) => rows[<span class="nb">0</span>] ?? <span class="kw">null</span>);   <span class="cm">// 输家拿到 null → throw conflict</span></code></pre>
+
+    <p>三重 guard 缺一不可：<strong>①状态</strong>必须落在调用方声明的 <code>expectedStatuses</code>；<strong>②assignee</strong> 要么当前无主，要么已经是我自己（同 run 幂等续跑）；<strong>③执行锁</strong> <code>executionRunId</code> 为空或等于本次 <code>checkoutRunId</code>。整条竞态画出来就是一条「单赢家」漏斗：</p>
+
+    <div class="cas reveal">
+      <svg viewBox="0 0 720 250" role="img" aria-label="原子签出竞态：Agent A 与 Agent B 同时对同一个 issue 发起 checkout，数据库执行一条带 status、assignee、execution-lock 三重 WHERE guard 的条件 UPDATE，只有一方的 WHERE 匹配成功拿到 RETURNING 行成为 assignee，另一方拿到 null 被判为 checkout conflict">
+        <!-- 两个 agent -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="16" y="40" width="150" height="52" rx="10" fill="var(--surface)"/>
+          <rect x="16" y="158" width="150" height="52" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="91" y="63" text-anchor="middle" fill="var(--text)">Agent A</text>
+        <text class="mono" x="91" y="80" text-anchor="middle">checkout(issue#42)</text>
+        <text class="lab" x="91" y="181" text-anchor="middle" fill="var(--text)">Agent B</text>
+        <text class="mono" x="91" y="198" text-anchor="middle">checkout(issue#42)</text>
+
+        <!-- 并发箭头汇入 -->
+        <g stroke="var(--accent)" stroke-width="1.6" fill="var(--accent)">
+          <path d="M166 66 C 240 66, 240 110, 300 118"/>
+          <path d="M300 118 l-9 -1 l6 -6 z"/>
+          <path d="M166 184 C 240 184, 240 140, 300 132"/>
+          <path d="M300 132 l-2 -9 l7 5 z"/>
+        </g>
+
+        <!-- CAS 裁决核 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.8">
+          <rect x="300" y="86" width="150" height="78" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="375" y="112" text-anchor="middle" fill="var(--accent-ink)">UPDATE … WHERE</text>
+        <text class="mono" x="375" y="128" text-anchor="middle" fill="var(--accent-ink)">status·assignee·exec-lock</text>
+        <text class="mono" x="375" y="144" text-anchor="middle" fill="var(--accent-ink)">RETURNING *</text>
+
+        <!-- 两个结局 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="560" y="40" width="150" height="52" rx="10" fill="var(--surface)"/>
+          <rect x="560" y="158" width="150" height="52" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="lab win" x="635" y="61" text-anchor="middle">✓ 拿到行</text>
+        <text class="mono" x="635" y="78" text-anchor="middle">成为 assignee · in_progress</text>
+        <text class="lab lose" x="635" y="179" text-anchor="middle">✕ rows[0] = null</text>
+        <text class="mono" x="635" y="196" text-anchor="middle">throw checkout conflict</text>
+
+        <g stroke="var(--pro)" stroke-width="1.7" fill="var(--pro)">
+          <line x1="450" y1="110" x2="556" y2="70"/>
+          <path d="M556 70 l-9 0 l5 7 z"/>
+        </g>
+        <g stroke="var(--con)" stroke-width="1.7" fill="var(--con)" stroke-dasharray="4 3">
+          <line x1="450" y1="140" x2="556" y2="180"/>
+          <path d="M556 180 l-9 0 l5 -7 z"/>
+        </g>
+      </svg>
+      <div class="cas-note">单一 assignee 靠<strong>应用层 CAS</strong> 保证——不是 DB 唯一约束。<code>assignee_agent_id</code> / <code>checkout_run_id</code> 上只有<strong>普通索引</strong>，无 partial-unique；接管孤儿/陈旧签出时再叠 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L5050-L5149" target="_blank" rel="noopener"><code>SELECT … FOR UPDATE</code> 事务</a>兜底。</div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">对 arkagent 多用户化（卡点 A/B）</div>
+      <p style="margin:.3em 0;">这正是你把 <code>arkagent</code> 从「单用户骨架」改成多用户生产时需要的所有权模型：<strong>用一条带 guard 的条件写把「谁拥有这条任务/会话」原子化</strong>，而不是先 <code>SELECT</code> 再 <code>UPDATE</code>（TOCTOU 竞态）。你的 <code>userOpenId</code>/<code>vaultId</code> 绑定表可以直接借这套「无主或本人才可写」的 <code>WHERE</code> 幂等模式。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="budget"><span class="sec-num">三</span>预算硬停：起跑前拦截 + 花超后回杀<a href="#budget" class="anchor">#</a></h2>
+    <p class="kicker">— two-phase enforcement，一相都不能少</p>
+
+    <p>自主 agent 最危险的是「烧钱不自知」。Paperclip 的预算硬停是<strong>两相</strong>回路，缺任一相都会漏——因为「起跑前额度够、跑到一半才超」是常态。作用域只有三个：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/shared/src/constants.ts#L818-L819" target="_blank" rel="noopener"><code>company / agent / project</code></a>，各带 <code>soft</code>（告警）/ <code>hard</code>（硬停）双阈值。</p>
+
+    <div class="budget reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="预算硬停两相回路：相 A 起跑前 getInvocationBlock 检查作用域是否已因预算暂停或已超额，若命中则在启动前 cancelRunInternal；相 B 运行中每个 cost 事件经 costs.ts 调用 evaluateCostEvent，当 hardStop 且累计花销大于等于阈值时 pauseAndCancelScopeForBudget，先暂停作用域再回调 heartbeat 的 cancelWorkForScope，最终 setRunStatus 置 cancelled 并 kill 进程">
+        <!-- 相 A -->
+        <text class="phase" x="20" y="30">相 A · 起跑前拦截</text>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="20" y="42" width="300" height="70" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="36" y="66" fill="var(--accent-ink)">getInvocationBlock()</text>
+        <text class="mono" x="36" y="84">作用域是否 paused(budget) / observed≥amount</text>
+        <text class="mono" x="36" y="100">命中 → 启动前 cancelRunInternal(reason)</text>
+
+        <!-- gate -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="360" y="42" width="150" height="70" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="435" y="72" text-anchor="middle" fill="var(--text)">run 启动闸</text>
+        <text class="mono" x="435" y="90" text-anchor="middle">block? → 不启动</text>
+
+        <g stroke="var(--accent)" stroke-width="1.6" fill="var(--accent)">
+          <line x1="320" y1="77" x2="356" y2="77"/><path d="M356 77 l-9 -4 v8 z"/>
+        </g>
+
+        <!-- run 运行 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.7">
+          <rect x="550" y="42" width="150" height="70" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="625" y="72" text-anchor="middle" fill="var(--text)">run: running</text>
+        <text class="mono" x="625" y="90" text-anchor="middle">adapter.execute()</text>
+        <g stroke="var(--pro)" stroke-width="1.6" fill="var(--pro)">
+          <line x1="510" y1="77" x2="546" y2="77"/><path d="M546 77 l-9 -4 v8 z"/>
+        </g>
+
+        <!-- 相 B -->
+        <text class="phase" x="20" y="168">相 B · 花超后回杀</text>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="550" y="180" width="150" height="56" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="625" y="204" text-anchor="middle" fill="var(--text)">cost event</text>
+        <text class="mono" x="625" y="221" text-anchor="middle">costs.ts createEvent</text>
+
+        <!-- 回杀链 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="300" y="176" width="230" height="64" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="415" y="200" text-anchor="middle" fill="var(--accent-ink)">evaluateCostEvent()</text>
+        <text class="mono" x="415" y="217" text-anchor="middle" fill="var(--accent-ink)">hardStop &amp;&amp; observed ≥ amount</text>
+        <text class="mono" x="415" y="231" text-anchor="middle" fill="var(--accent-ink)">→ pauseAndCancelScopeForBudget</text>
+
+        <g style="color: var(--con)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="20" y="176" width="255" height="64" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="147" y="200" text-anchor="middle" fill="var(--con)">cancelRunInternal()</text>
+        <text class="mono" x="147" y="217" text-anchor="middle">setRunStatus("cancelled")</text>
+        <text class="mono" x="147" y="231" text-anchor="middle">+ terminateHeartbeatRunProcess(kill)</text>
+
+        <!-- 箭头链 相B -->
+        <g stroke="var(--con)" stroke-width="1.6" fill="var(--con)">
+          <line x1="548" y1="208" x2="534" y2="208"/><path d="M534 208 l9 -4 v8 z"/>
+          <line x1="298" y1="208" x2="279" y2="208"/><path d="M279 208 l9 -4 v8 z"/>
+        </g>
+        <!-- running → cost event 竖线 -->
+        <g stroke="var(--text-muted)" stroke-width="1.4" fill="var(--text-muted)" stroke-dasharray="4 3">
+          <line x1="625" y1="112" x2="625" y2="176"/><path d="M625 176 l-4 -9 h8 z"/>
+        </g>
+      </svg>
+      <div class="budget-note">相 A（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L718-L864" target="_blank" rel="noopener">budgets.ts:718</a>）读作用域的 <code>paused(budget)</code> 态并做实时复核；相 B（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L649-L716" target="_blank" rel="noopener">budgets.ts:649</a>）由每笔 cost 触发，硬停时 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L18670-L18695" target="_blank" rel="noopener">回调 heartbeat 的 <code>cancelWorkForScope</code></a>——先 pause 作用域（防重启）再 <code>cancelRunInternal</code>：<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L18529-L18553" target="_blank" rel="noopener">既 <code>kill</code> 进程也置 <code>cancelled</code></a>。</div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">设计取舍：为什么必须两相</div>
+      <p style="margin:.3em 0;">只做相 A（起跑前查）会漏「跑到一半才超」；只做相 B（花超回杀）会漏「已经超了还准新 run 起跑」。两相之间靠<strong>作用域的 <code>paused(budget)</code> 状态位</strong>串起来——相 B 把 agent/project/company 置 <code>paused</code>，相 A 下次起跑前正好读到它并拦截。这是把「预算」做成一个<strong>带记忆的状态机</strong>，而不是两处独立的 if。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="heartbeat"><span class="sec-num">四</span>心跳执行环：生命周期与崩溃回收<a href="#heartbeat" class="anchor">#</a></h2>
+    <p class="kicker">— 唤醒 → 认领 → 执行 → 回收孤儿</p>
+
+    <p>心跳（heartbeat）是这台控制平面的执行引擎。<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L19009-L19081" target="_blank" rel="noopener"><code>tickTimers</code></a> 每 tick 扫一遍活跃公司里的可唤醒 agent，比较距上次 <code>lastHeartbeatAt</code> 是否已过 <code>intervalSec</code>，到点就 <code>enqueueWakeup(source:"timer")</code>。run 的生命周期是一个 8 态机（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/shared/src/constants.ts#L862-L872" target="_blank" rel="noopener"><code>HEARTBEAT_RUN_STATUSES</code></a>）：</p>
+
+    <div class="beat reveal">
+      <svg viewBox="0 0 720 260" role="img" aria-label="心跳 run 生命周期状态机：queued 经 claimQueuedRun 的条件 UPDATE 原子转 running；running 可到达五个终态 succeeded、interrupted、failed、cancelled、timed_out；失败可经 scheduled_retry 回到 queued；reapOrphanedRuns 回收状态仍是 running 但进程已死且超过 staleThreshold 的孤儿 run，置为 failed(process_lost) 并至多重试一次">
+        <!-- queued -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="24" y="104" width="120" height="52" rx="10" fill="var(--accent-soft)"/>
+        </g>
+        <text class="st" x="84" y="126" text-anchor="middle" fill="var(--accent-ink)">queued</text>
+        <text class="edge" x="84" y="143" text-anchor="middle">入队待认领</text>
+
+        <!-- running -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.8">
+          <rect x="248" y="104" width="130" height="52" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="st" x="313" y="126" text-anchor="middle" fill="var(--text)">running</text>
+        <text class="edge" x="313" y="143" text-anchor="middle">adapter 执行中</text>
+
+        <!-- claimQueuedRun 箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <line x1="144" y1="130" x2="244" y2="130"/><path d="M244 130 l-9 -4 v8 z"/>
+        </g>
+        <text class="edge" x="194" y="120" text-anchor="middle" fill="var(--accent)">claimQueuedRun</text>
+        <text class="edge" x="194" y="152" text-anchor="middle">CAS: WHERE status=queued</text>
+
+        <!-- 终态列 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="520" y="14"  width="180" height="34" rx="8" fill="var(--surface)"/>
+          <rect x="520" y="58"  width="180" height="34" rx="8" fill="var(--surface)"/>
+          <rect x="520" y="102" width="180" height="34" rx="8" fill="var(--surface)"/>
+          <rect x="520" y="146" width="180" height="34" rx="8" fill="var(--surface)"/>
+          <rect x="520" y="190" width="180" height="34" rx="8" fill="var(--surface)"/>
+        </g>
+        <text class="st ok"  x="536" y="36">succeeded</text>
+        <text class="st"     x="536" y="80" fill="var(--text)">interrupted</text>
+        <text class="st bad" x="536" y="124">failed</text>
+        <text class="st bad" x="536" y="168">cancelled</text>
+        <text class="st bad" x="536" y="212">timed_out</text>
+
+        <!-- running → 终态 分流 -->
+        <g stroke="var(--text-muted)" stroke-width="1.3" fill="none" opacity="0.8">
+          <path d="M378 118 C 450 118, 450 31,  518 31"/>
+          <path d="M378 122 C 450 122, 450 75,  518 75"/>
+          <path d="M378 130 L 518 119"/>
+          <path d="M378 138 C 450 138, 450 163, 518 163"/>
+          <path d="M378 142 C 450 142, 450 207, 518 207"/>
+        </g>
+
+        <!-- scheduled_retry 回环 -->
+        <g stroke="var(--warn)" stroke-width="1.4" fill="none" stroke-dasharray="5 3">
+          <path d="M600 180 C 600 244, 84 250, 84 158"/>
+        </g>
+        <g fill="var(--warn)"><path d="M84 158 l-4 10 h8 z"/></g>
+        <text class="edge" x="330" y="243" text-anchor="middle" fill="var(--warn)">scheduled_retry → 回 queued（有界重试）</text>
+
+        <!-- reap 孤儿 -->
+        <g style="color: var(--con)" stroke="currentColor" fill="none" stroke-width="1.4" stroke-dasharray="4 3">
+          <rect x="216" y="18" width="196" height="52" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="st bad" x="314" y="40" text-anchor="middle">reapOrphanedRuns</text>
+        <text class="edge" x="314" y="57" text-anchor="middle">running 但进程已死 → process_lost</text>
+        <g stroke="var(--con)" stroke-width="1.4" fill="var(--con)">
+          <line x1="313" y1="104" x2="313" y2="72"/><path d="M313 72 l-4 9 h8 z"/>
+        </g>
+      </svg>
+      <div class="beat-note"><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L12376-L12532" target="_blank" rel="noopener"><code>claimQueuedRun</code></a> 用 <code>WHERE status="queued"</code> 的条件 UPDATE 原子占位（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L12472-L12483" target="_blank" rel="noopener">12472–12483</a>）；<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L13091-L13286" target="_blank" rel="noopener"><code>reapOrphanedRuns</code></a> 靠「无内存句柄 + 本地 pid/pgid 已死 + 超 <code>staleThreshold</code>（周期 5min）」判定孤儿，置 <code>failed(process_lost)</code> 并至多补一次重试。</div>
+    </div>
+
+    <p>关键工程细节：<strong>崩溃回收不靠 DB 租约到期、也不靠 run 上的 <code>lastHeartbeatAt</code> 列</strong>，而是「行状态还是 <code>running</code>，但进程内已无句柄、且（本地 adapter）OS pid/pgid 已死、且超过陈旧阈值」三条同时成立才判孤儿。仍活着的 detached 进程会被标记而<strong>不</strong>误杀。终态写入统一走 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L8799-L8824" target="_blank" rel="noopener"><code>setRunStatus</code></a>，另有 CAS 版本 <code>setRunStatusFromLive</code>（只在当前状态属于允许集合时转，抢输了报 <code>updated:false</code>）防状态回退。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="liveness"><span class="sec-num">五</span>活性契约：不静默、不假完成<a href="#liveness" class="anchor">#</a></h2>
+    <p class="kicker">— 每个未完成任务都得有下一步</p>
+
+    <p>前三节都是「机制」，这一节是把它们串起来的「灵魂法则」。<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/execution-semantics.md#L274-L291" target="_blank" rel="noopener">execution-semantics.md §8 · Non-Terminal Issue Liveness Contract</a> 给整套执行语义定了一条不可违反的可见性契约：</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Liveness Contract（原文摘引）</div>
+      <p style="margin:.3em 0;">「For agent-owned, non-terminal issues, Paperclip should never leave work in a state where <strong>nobody is responsible for the next move and nothing will wake or surface it</strong>.」</p>
+      <p style="margin:.3em 0;">「This is a <strong>visibility contract, not an auto-completion contract</strong>. … It <strong>must not silently mark work done from prose comments</strong> or guess that a dependency is complete.」</p>
+      <p style="margin:.3em 0;">「An issue is <strong>stalled</strong> when it is non-terminal but has <strong>no live execution path, no explicit waiting path, and no recovery path</strong>.」</p>
+    </div>
+
+    <p>换成工程语言：任何「未完成」的任务，必须至少命中八条合法「下一步路径」之一——活跃 run、排队中的唤醒/续跑、类型化的执行策略参与者、待交互/待审批、一次性 monitor、人类 owner、一等公民的 blocker 链，或一条显式的 recovery action。<strong>否则它就是 stalled，系统宁可 surface（blocked 态 / 可见通知 / 显式恢复动作）也不会静默地放着或从散文里猜「大概做完了」。</strong>第四节的 <code>reapOrphanedRuns</code> 就是这条契约的一个执行器——它保证「进程死了」不会变成「任务永远卡在 running 没人管」。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="adapter"><span class="sec-num">六</span>Adapter 契约：唯一要求是「可被调用」<a href="#adapter" class="anchor">#</a></h2>
+    <p class="kicker">— execute(ctx) → result，控制平面注入运行期上下文</p>
+
+    <p>「agent 在哪跑都行」落到代码，就是一个极薄的接口：一个 adapter 只需实现 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/adapter-utils/src/types.ts#L421" target="_blank" rel="noopener"><code>execute(ctx: AdapterExecutionContext): Promise&lt;AdapterExecutionResult&gt;</code></a>（+ <code>testEnvironment</code>）。控制平面把一次运行需要的一切打进 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/adapter-utils/src/types.ts#L170-L200" target="_blank" rel="noopener"><code>AdapterExecutionContext</code></a>：</p>
+
+    <pre class="code-block"><code><span class="cm">// adapter-utils/src/types.ts:170 —— 控制平面 → adapter 的执行上下文</span>
+<span class="kw">export interface</span> <span class="fn">AdapterExecutionContext</span> {
+  runId: <span class="nb">string</span>;              <span class="cm">// 本次 run 身份（也进 JWT 的 run_id claim）</span>
+  agent: AdapterAgent;          <span class="cm">// id / companyId / adapterType / adapterConfig</span>
+  runtime: AdapterRuntime;      <span class="cm">// session 参数 / taskKey</span>
+  config: <span class="nb">Record</span>&lt;<span class="nb">string</span>, <span class="nb">unknown</span>&gt;; <span class="cm">// env / cwd 等经 config 下发</span>
+  context: <span class="nb">Record</span>&lt;<span class="nb">string</span>, <span class="nb">unknown</span>&gt;;
+  onLog / onMeta / onEvent / onRuntimeProgress / onSpawn; <span class="cm">// 回流管道</span>
+  authToken?: <span class="nb">string</span>;         <span class="cm">// 运行期 JWT，落子进程 PAPERCLIP_API_KEY</span>
+}</code></pre>
+
+    <p>注意契约的边界感：<strong>环境变量、工作目录不是接口的顶层字段</strong>，而是塞进 <code>config</code>（<code>config.env</code> / <code>config.cwd</code>）下发；真正把它们拼成子进程环境的是各 adapter 自己的 <code>execute</code>——例如 <a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/adapters/process/execute.ts#L17-L37" target="_blank" rel="noopener">process adapter</a> 在第 37 行 <code>if (authToken) env.PAPERCLIP_API_KEY = authToken</code>，且注释明确「<code>PAPERCLIP_API_KEY</code> 永远不接受来自 config——harness 铸造的 run token 是唯一来源」。这条「JWT 只能来自控制平面、agent 用它反向鉴权 API」的单向信任，是多租户安全的关键。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">Adapter vs Plugin（别混）</div>
+      <p style="margin:.3em 0;">仓库自带 11 个 adapter。<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/plugins/PLUGIN_SPEC.md" target="_blank" rel="noopener">PLUGIN_SPEC.md</a> 把扩展分两类：<strong>Platform Module</strong>——「a trusted in-process extension loaded directly by Paperclip core」（adapter 属此，通过 <code>registerAgentAdapter()</code> 注册）；<strong>Plugin</strong>——「an installable instance-wide extension package loaded through the Paperclip plugin runtime」，经稳定 SDK + host 协议与 core 隔离、能力受门控。简言之：<strong>adapter 决定「怎么调 agent」（可信、进程内），plugin 是「实例级加装的能力」（隔离、可选）。</strong></p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="fde-map"><span class="sec-num">七</span>对我们的映射（MA 迁移 / arkagent）<a href="#fde-map" class="anchor">#</a></h2>
+    <p class="kicker">— 能直接抄的四个生产级范式</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>它的做法</th><th>对应我们的问题</th><th>可复用点</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>原子签出 CAS（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L8011-L8031" target="_blank" rel="noopener">issues.ts:8011</a>）</td>
+            <td>arkagent 多用户化：<code>userOpenId</code>/<code>vaultId</code> 绑定与任务归属（卡点 A/B）</td>
+            <td>「无主或本人才可写」的条件 UPDATE 幂等模式，取代 SELECT-then-UPDATE 的 TOCTOU 竞态</td>
+          </tr>
+          <tr>
+            <td>预算硬停两相（<a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L649-L716" target="_blank" rel="noopener">budgets.ts</a>）</td>
+            <td>Creao 大规模视频生成的花销失控风险</td>
+            <td>「起跑前拦截 + 花超回杀 + 作用域 paused 状态位」的带记忆预算机；company/agent/project 三级作用域直接对标团队/岗位/项目</td>
+          </tr>
+          <tr>
+            <td>心跳生命周期 + reapOrphanedRuns</td>
+            <td>MA 侧长程任务的崩溃回收与状态一致性（卡点 D）</td>
+            <td>「进程死 ≠ 任务卡死」：无内存句柄 + OS 进程已死 + 陈旧阈值三判定 + 有界重试，是可直接移植的孤儿回收判据</td>
+          </tr>
+          <tr>
+            <td>Adapter 「be callable」契约 + JWT 单向注入</td>
+            <td>OpenClaw → 火山 MA：如何把执行端解耦、又保证多租户鉴权安全</td>
+            <td><code>execute(ctx)</code> 极薄接口 + 「run token 只能由 harness 铸造、不接受 config 注入」的单向信任边界</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="tradeoff"><span class="sec-num">八</span>取舍与陷阱<a href="#tradeoff" class="anchor">#</a></h2>
+    <p class="kicker">— 一句话：执行治理很硬核，代价是控制平面自身很重</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">亮点</div>
+        <p><strong>执行治理是真·生产级。</strong>原子签出、两相预算、崩溃回收、活性契约——都不是 demo 级 if，而是围绕「一群 agent 长跑不失控」写死的不变量，且文档（execution-semantics.md）把契约讲清楚了。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">亮点</div>
+        <p><strong>边界感极强。</strong>坚决不做 agent runtime，只做控制平面；adapter 契约薄到「be callable」，JWT 单向注入——解耦与安全都靠架构而非纪律。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">存疑</div>
+        <p><strong>单一 assignee 靠应用层 CAS，不是 DB 约束。</strong>正确性依赖「所有写路径都走 checkout 系列函数」这条纪律；一旦有旁路直接 UPDATE，DB 层没有 partial-unique 兜底。规模化时值得再加约束。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">存疑</div>
+        <p><strong>控制平面很重、心跳服务巨大。</strong>heartbeat.ts 单文件近两万行，run 生命周期、回收、预算回调、租约全挤在里面——功能强但认知与维护成本高，二次开发前得先啃透状态机。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">用它时的陷阱</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>别指望它提升 agent 能力</strong>：它管「不失控」，不管「更聪明」。执行质量上限仍是你接的 adapter 端模型。</li>
+        <li><strong>预算作用域没有 run 级</strong>：只有 company/agent/project 三级 + calendar_month/lifetime 两种窗口。想按单次 run 卡额度得自己在 adapter 侧加。</li>
+        <li><strong>内嵌 Postgres 只适合本地/单机</strong>：生产必须指向自建 PG，否则单进程内嵌库既是数据库也是单点。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="annex"><span class="sec-num">九</span>附：源码坐标一览<a href="#annex" class="anchor">#</a></h2>
+    <p class="kicker">— 想深挖时的入口地图（基准 commit 67001ec，行号已核对）</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>机制</th><th>文件:行</th><th>做什么</th></tr></thead>
+        <tbody>
+          <tr><td>项目定位</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/PRODUCT.md#L73-L81" target="_blank" rel="noopener">PRODUCT.md:73-81</a></td><td>控制平面 5 条产品原则（含「control plane, not execution plane」）</td></tr>
+          <tr><td>原子签出 CAS</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L7959-L8164" target="_blank" rel="noopener">issues.ts:7959-8164</a></td><td><code>checkout</code>：UPDATE…WHERE(status+assignee+exec-lock)…RETURNING</td></tr>
+          <tr><td>接管孤儿/陈旧签出</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/issues.ts#L5050-L5196" target="_blank" rel="noopener">issues.ts:5050-5196</a></td><td><code>adoptStaleCheckoutRun</code>（SELECT…FOR UPDATE）/ <code>adoptUnownedCheckoutRun</code></td></tr>
+          <tr><td>预算 · 起跑前拦截</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L718-L864" target="_blank" rel="noopener">budgets.ts:718-864</a></td><td><code>getInvocationBlock</code>：读 paused(budget) + 实时复核</td></tr>
+          <tr><td>预算 · 花超回杀</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/budgets.ts#L649-L716" target="_blank" rel="noopener">budgets.ts:649-716</a></td><td><code>evaluateCostEvent</code>：hardStop &amp;&amp; observed≥amount → pause+cancel</td></tr>
+          <tr><td>预算作用域</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/shared/src/constants.ts#L818-L828" target="_blank" rel="noopener">constants.ts:818-828</a></td><td>company/agent/project · soft/hard · month/lifetime</td></tr>
+          <tr><td>预算 → 回杀桥</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L18670-L18695" target="_blank" rel="noopener">heartbeat.ts:18670-18695</a></td><td><code>cancelBudgetScopeWork</code>：按作用域取消活跃 run</td></tr>
+          <tr><td>取消一个 run</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L18529-L18553" target="_blank" rel="noopener">heartbeat.ts:18529-18553</a></td><td><code>cancelRunInternal</code>：kill 进程 + setRunStatus("cancelled")</td></tr>
+          <tr><td>心跳 tick</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L19009-L19081" target="_blank" rel="noopener">heartbeat.ts:19009-19081</a></td><td><code>tickTimers</code>：按 intervalSec 唤醒到点 agent</td></tr>
+          <tr><td>认领 queued run</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L12376-L12532" target="_blank" rel="noopener">heartbeat.ts:12376-12532</a></td><td><code>claimQueuedRun</code>：WHERE status=queued 的 CAS → running</td></tr>
+          <tr><td>孤儿 run 回收</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/services/heartbeat.ts#L13091-L13286" target="_blank" rel="noopener">heartbeat.ts:13091-13286</a></td><td><code>reapOrphanedRuns</code>：进程死+陈旧→failed(process_lost)+有界重试</td></tr>
+          <tr><td>run 状态集</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/shared/src/constants.ts#L862-L872" target="_blank" rel="noopener">constants.ts:862-872</a></td><td>8 态 <code>HEARTBEAT_RUN_STATUSES</code></td></tr>
+          <tr><td>活性契约</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/doc/execution-semantics.md#L274-L291" target="_blank" rel="noopener">execution-semantics.md:274-291</a></td><td>§8 Non-Terminal Issue Liveness Contract</td></tr>
+          <tr><td>Adapter 上下文</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/packages/adapter-utils/src/types.ts#L170-L200" target="_blank" rel="noopener">types.ts:170-200</a></td><td><code>AdapterExecutionContext</code>（runId/agent/runtime/authToken…）</td></tr>
+          <tr><td>JWT 注入子进程</td><td><a href="https://github.com/paperclipai/paperclip/blob/67001ec6eb96ae601aa27bc91d9b2415d665334a/server/src/adapters/process/execute.ts#L17-L37" target="_blank" rel="noopener">process/execute.ts:17-37</a></td><td>authToken → <code>PAPERCLIP_API_KEY</code>（不接受 config 注入）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-08-12 初稿（源码级拆解，基于 paperclipai/paperclip commit 67001ec · master · 行号经克隆核对）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="index.html">开源拆解总索引</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_agency-agents-persona-compiler.html">相关：agency-agents · Persona 编译器</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_prime-agent-rlm-continual-harness.html">相关：Prime Agent · RLM × 持续 Harness</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+
+<!-- reduced-motion 兜底：本页动画一律关掉 -->
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .insight-card:hover { transform: none !important; }
+  }
+</style>
+</body>
+</html>

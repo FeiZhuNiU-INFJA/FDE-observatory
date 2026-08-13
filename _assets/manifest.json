@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-12T09:19:40.056967+00:00",
+  "generated_at": "2026-08-12T16:11:45.316705+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -510,6 +510,28 @@
         "内容治理",
         "OpenClaw",
         "Prompt Library"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
+      "path": "opensource-analysis/2026-08_paperclip-agent-control-plane.html",
+      "title": "Paperclip · 给一群 AI 员工建一家「公司」的control plane",
+      "date": "2026-08-12",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "开源拆解",
+        "Agent Orchestration",
+        "控制平面",
+        "心跳执行",
+        "预算硬停",
+        "原子签出",
+        "Adapter",
+        "OpenClaw"
       ],
       "category": "oss",
       "extra": {
