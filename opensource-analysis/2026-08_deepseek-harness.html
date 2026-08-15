@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>DeepSeek Harness 深度拆解 · Cordis 内核 × 可逆效果 × 事件溯源 · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent: #7c3aed; --accent-soft: #f4f0ff; --accent-deep: #5b21b6; --accent-ink: #4c1d95; }
+  [data-theme="dark"] { --accent: #a78bfa; --accent-soft: #241748; --accent-deep: #c4b5fd; --accent-ink: #ede9fe; }
+
+  /* ---- 代码块（沿用站内约定）---- */
+  pre.code-block { font-size: .78rem; line-height: 1.55; overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: .9em 1em; border-radius: 8px; border: 1px solid #1e293b; }
+  [data-theme="dark"] pre.code-block { background: #020617; }
+  pre.code-block code, pre.code-block span { background: transparent !important; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code-block code { color: inherit; }
+  pre.code-block .cm { color: #64748b; font-style: italic; }
+  pre.code-block .kw { color: #f472b6; }
+  pre.code-block .st { color: #86efac; }
+  pre.code-block .fn { color: #93c5fd; }
+  pre.code-block .nb { color: #fcd34d; }
+  pre.code-block ::selection { background: rgba(148, 163, 184, .35); color: inherit; }
+
+  /* ============ Bespoke 1: 可逆 effect 生命周期（.rgraph）============ */
+  .rgraph { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .rgraph svg { width: 100%; height: auto; display: block; }
+  .rgraph text { font-family: var(--sans); }
+  .rgraph .lab { font-size: 11px; font-weight: 700; }
+  .rgraph .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .rgraph .phase { font-family: var(--mono); font-size: 9.5px; font-weight: 700; fill: var(--accent); letter-spacing: .06em; }
+  .rgraph-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 2: 事件溯源日志投影（.elog）============ */
+  .elog { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .elog svg { width: 100%; height: auto; display: block; }
+  .elog text { font-family: var(--mono); }
+  .elog .ev { font-size: 9.5px; }
+  .elog .lab { font-family: var(--sans); font-size: 11px; font-weight: 700; }
+  .elog .sub { font-family: var(--sans); font-size: 9px; fill: var(--text-muted); }
+  .elog-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 3: 能力接缝三角色（.seam3）============ */
+  .seam3 { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .seam3 svg { width: 100%; height: auto; display: block; }
+  .seam3 text { font-family: var(--sans); }
+  .seam3 .role { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .seam3 .lab { font-size: 11px; font-weight: 700; }
+  .seam3 .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .seam3-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 4: 守卫式工具流水线（.twf）============ */
+  .twf { margin: 1.4em 0; padding: 1.3em 1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .twf svg { width: 100%; height: auto; display: block; }
+  .twf text { font-family: var(--sans); }
+  .twf .lab { font-size: 10px; font-weight: 700; }
+  .twf .mono { font-family: var(--mono); font-size: 8.5px; fill: var(--text-muted); }
+  .twf .stg { font-family: var(--mono); font-size: 8px; letter-spacing: .04em; fill: var(--accent); font-weight: 700; }
+  .twf-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ---- 关键洞察卡（沿用）---- */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
+  .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .insight-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 12px 0 0 12px; }
+  .insight-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .4em; font-weight: 700; }
+  .insight-card .t { font-weight: 700; font-size: .95rem; margin-bottom: .4em; }
+  .insight-card .d { font-size: .82rem; color: var(--text-muted); line-height: 1.55; }
+  @media (max-width: 760px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insight-card:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      DeepSeek Harness<span class="brand-sub">开源拆解 · Cordis 内核 · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>DeepSeek Harness · 把 agent 拆成一棵<span class="en">可插拔、可回滚</span>的插件树</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">「everything is a plugin」不是口号——真正的内核是 Cordis：一张以服务依赖排序、用可逆 effect 挂载、把每一次模型可见输入都写进事件溯源日志的响应式依赖图</p>
+      <div class="doc-meta">
+        <span>2026-08-15</span>
+        <span>跨市场</span>
+        <span>开源拆解</span>
+        <span>Agent Harness</span>
+        <span>Cordis</span>
+        <span>可逆效果</span>
+        <span>事件溯源</span>
+        <span>能力接缝</span>
+        <span>Code Mode</span>
+        <span>DeepSeek</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+      <p style="color: var(--text-soft); font-size: .9rem;">
+        项目：<a href="https://github.com/deepseek-ai/deepseek-harness" target="_blank" rel="noopener">deepseek-ai/deepseek-harness</a>（<code>dsh</code>）
+        &nbsp;·&nbsp; 拆解基准 commit <code>47f9438</code>（master，行号已克隆核对）
+        <br />
+        形态：TypeScript monorepo · 226 个叶子包 · 内核 <a href="https://github.com/cordiverse/cordis" target="_blank" rel="noopener">Cordis</a>（vendored）· developer preview（作者明说「会有破坏性变更」）
+      </p>
+    </header>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">226<small> 包</small></div><div class="lab">每个部件都是插件——含模型适配器、工具、会话日志、agent loop 自身</div></div>
+      <div class="hero-stat"><div class="num">56<small> 服务/接缝</small></div><div class="lab"><code>ctx.*</code> 键：core 脊柱 · 可换 seam · 组合点</div></div>
+      <div class="hero-stat"><div class="num">4<small> 派发模式</small></div><div class="lab">emit · waterfall · parallel · serial</div></div>
+      <div class="hero-stat"><div class="num">6<small> 子代理后端</small></div><div class="lab">同一 <code>ctx.subagents</code> 接缝下并存的 provider</div></div>
+    </div>
+
+    <div class="lede">
+      <strong>核心结论：</strong>DeepSeek Harness 值得抄的不是「又一个 agent loop」，而是它把整套产品架在一个<strong>响应式插件内核 Cordis</strong> 上，逼出了三条别人很少写死的工程不变量：<strong>①没有特权内核可打补丁</strong>——模型适配器、工具注册表、会话日志、连 agent loop 本身都是插件，一切「扩展」都是把插件挂到别的插件旁边，注册即 <em>可逆 effect</em>，插件卸载时按 LIFO 自动 unwind；<strong>②模型可见即已落日志（model-visible means logged）</strong>——任何进入模型请求的东西都必须能从 append-only 的 <code>SessionEvent</code> 日志重建，且有运行时不变量断言它，模型历史是<em>投影</em>出来的、不是另存的；<strong>③能力接缝三角色</strong>——每个可换能力都由 Service Definition / Provider / Consumer 三者构成，换一个 provider 就能让整条产品线（文件系统、Bash、PTY、LSP）一起搬到远程沙箱，无需分叉。对我们（OpenClaw → 火山 MA 迁移、arkagent 多用户化）最有价值的，正是这套<strong>「用依赖排序代替启动时序、用可逆 effect 代替手写清理、用事件日志代替可变状态」的可组合骨架</strong>——它把我们卡点 A/B/C/D 里「凭证热更、角色注入、崩溃回收、多用户隔离」都变成了「往接缝上挂一个插件」。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>Cordis 是真内核</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/README.md#L7" target="_blank" rel="noopener">README</a>——「everything is a plugin, powered by Cordis」，其设计论文 <a href="https://github.com/cordiverse/paper" target="_blank" rel="noopener"><em>A Programming Paradigm for Spatiotemporal Composability</em></a>（时空可组合性的编程范式）把动态组合拆成 temporal / spatial 两维（见<a href="#cordis">第二节</a>原文定义）。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L11-L13" target="_blank" rel="noopener">architecture.md</a>：「没有特权 core 可打补丁；注册是 effect，插件卸载时会 unwind」。</li>
+        <li><strong>五个观念</strong>：插件即 Service · Context 是服务仓库 · 用 <code>inject</code> 声明依赖（<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L7-L13" target="_blank" rel="noopener">载入顺序由依赖表达，非手写时序</a>）· 类型化事件通信 · 注册是可逆 effect。</li>
+        <li><strong>Profile / Bundle 分层组合</strong>：<code>dsh-base</code> 是每个 profile 的第一层；<code>web</code> / <code>headless</code> 是模板；一条 <code>--patch</code> 就能按 id 替换任意配置行——<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L15-L37" target="_blank" rel="noopener">「你打印出的任何一行都能被你自己的 patch 替换」</a>。</li>
+        <li><strong>会话是 append-only 事件日志</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/packages/core/session/src/index.ts#L604" target="_blank" rel="noopener"><code>append()</code></a> 写入，<code>deriveMessages()</code> 投影出模型历史；<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L96" target="_blank" rel="noopener">新的模型可见输入 ⇒ 必须新增一个 session event</a>。</li>
+        <li><strong>工具流水线是「可扩展 waterfall + 单调守卫」</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L170-L172" target="_blank" rel="noopener">pre-execute → guards → execute → post-execute → finalizeContent → result</a>；守卫<strong>只能减权、不能授权</strong>，所以监听器顺序无法把一次拒绝翻回允许。</li>
+        <li><strong>Code Mode 是一个可选能力，不是脊柱</strong>：<code>ctx.codeRuntime</code> 把「一段模型写的程序」当传输层跑，<code>mode:'code'</code> 时只发 <code>run_code</code> + 生成的 SDK，原生工具只能作为 <code>run_code</code> 的子派发被调用。</li>
+        <li><strong>凭证只存引用</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/credentials.md" target="_blank" rel="noopener">配置里放的是环境变量名，provider 才持有值</a>；消费者每次操作重新 resolve，所以轮换后的凭证下一个请求就生效、无需重启。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="what"><span class="sec-num">一</span>它到底是什么：没有特权内核的插件树<a href="#what" class="anchor">#</a></h2>
+    <p class="kicker">— everything is a plugin，连 agent loop 也是</p>
+
+    <p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/README.md#L5-L7" target="_blank" rel="noopener">README 的自我定义</a>只有两句：「DeepSeek Harness（<code>dsh</code>）是一个开源 agent harness」，「它用一种<strong>『一切皆插件』</strong>的架构，由 Cordis 驱动」。关键不在「插件化」这个词本身——很多框架都自称插件化——而在 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L11-L13" target="_blank" rel="noopener">architecture.md 的这句</a>：</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">architecture.md · 原文摘引</div>
+      <p style="margin:.3em 0;">「Every part of the product is a plugin, including the model adapter, the tool registry, the session log, and the <strong>agent loop itself</strong>, so every part is replaceable from configuration.」</p>
+      <p style="margin:.3em 0;">「<strong>There is no privileged core to patch</strong>: you extend dsh by mounting a plugin beside the others, and registrations are <strong>effects that unwind when their plugin unloads</strong>.」</p>
+    </div>
+
+    <p>这句话是整个项目的地基。它意味着：<strong>没有一个「主程序」调度所有模块</strong>——一个运行中的 <code>dsh</code> 是一棵<strong>在启动时由有序分层组合出来的插件树</strong>。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L15-L37" target="_blank" rel="noopener">Profile 与 Bundle</a> 是这棵树的组合语言：<strong>profile</strong> 是一份命名的组合（列出它堆叠哪些 bundle），<strong>bundle</strong> 是 Cordis 配置行 + 其挂载代码的分发格式。<code>dsh-base</code> 永远是每个 profile 的第一层（模型适配器、工具、持久化、沙箱与审批策略、设置、凭证、遥测），<code>dsh-web-app</code> 加浏览器应用，<code>dsh-headless</code> 加一个无服务器的一次性 runner。分层按顺序叠加，最后一条 <code>--patch</code> 覆盖层可以<strong>按 id 替换任意一行的整段配置</strong>：</p>
+
+    <pre class="code-block"><code><span class="cm"># 看你这台机器实际启动的插件树，任何一行都能被你的 patch 替换</span>
+dsh --profile web --dump-config</code></pre>
+
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="k">载体</div>
+        <div class="t">TypeScript monorepo · 226 包</div>
+        <div class="d">pnpm workspace，按能力域切成两百多个叶子包；Cordis 以 <code>vendor/</code> 形式内嵌（vendored + 同步流程），不是普通 npm 依赖。</div>
+      </div>
+      <div class="insight-card">
+        <div class="k">形态</div>
+        <div class="t">可插拔 agent 内核</div>
+        <div class="d">价值 = 内核（Cordis 的依赖图 + 可逆 effect）× 事件溯源（会话日志作单一事实源）× 能力接缝（一次 provider swap 换整条产品线）。</div>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="cordis"><span class="sec-num">二</span>Cordis 内核：可逆 effect 与依赖排序<a href="#cordis" class="anchor">#</a></h2>
+    <p class="kicker">— 用服务依赖代替启动时序，用 disposer 代替手写清理</p>
+
+    <p>要读懂 <code>dsh</code>，先读懂 Cordis。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L7-L13" target="_blank" rel="noopener">primer 把它压缩成五个观念</a>：<strong>①插件就是一个实现 <code>Service</code> 的对象</strong>（一个带可选 <code>inject</code> / <code>apply(ctx)</code> 的函数，或一个 <code>Service</code> 子类）；<strong>②Context 是服务仓库</strong>——服务占一个稳定的 <code>ctx.&lt;key&gt;</code>（如 <code>ctx.tools</code> / <code>ctx.llm</code> / <code>ctx.sessions</code>），别的插件<strong>按 key 找服务，而不是 import 具体实现</strong>；<strong>③用 <code>inject</code> 声明服务依赖</strong>——命名了所需服务的插件会一直等到那些服务存在，于是<strong>载入顺序由依赖需求表达，而非手写启动时序</strong>；<strong>④类型化事件通信</strong>——服务通过 TS 声明合并声明事件名，再按 <code>emit</code> / <code>waterfall</code> / <code>parallel</code> / <code>serial</code> 派发；<strong>⑤注册是可逆 effect</strong>——prompt 段、工具 schema、适配器、provider、监听器都经 <code>ctx.effect()</code> 或 <code>ctx.on()</code> 安装，重载与拆卸会可预测地 unwind。</p>
+
+    <p>这五点不是随手总结——它们的<strong>形式化地基</strong>写在 Cordis 那篇设计论文里。README 只说「powered by Cordis」，但论文（<a href="https://github.com/cordiverse/paper" target="_blank" rel="noopener"><em>A Programming Paradigm for Spatiotemporal Composability</em></a>，2026-08-13 preprint 草稿）把「一切皆插件」为什么能成立讲清楚了：它把动态组合拆成<strong>两个正交维度</strong>，并给出精确定义——</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Cordis 论文 · 原文定义（摘引）</div>
+      <p style="margin:.3em 0;">「We identify two orthogonal dimensions of the problem: <strong>temporal composability</strong>, <em>the ability to completely revert a component's side effects upon removal</em>, and <strong>spatial composability</strong>, <em>the ability to declare and reactively manage inter-component dependencies</em>.」</p>
+      <p style="margin:.3em 0;">论文把这两维分别落到两个运行时机制上：<strong>revertible effects</strong>——「every context transformation carries an inverse that the runtime tracks」（每次上下文变换都携带一个由运行时追踪的逆操作）；<strong>reactive coeffects</strong>——「each change of the context notifies a component against its coeffect specification」（上下文每次变化都按组件声明的 coeffect 规格通知它）。两者被统一进单一 <em>context type</em>，这就构成了那个编程范式；Cordis 自称「a meta-framework of spatiotemporal composability」。</p>
+    </div>
+
+    <p>把论文的词表贴回这一节：<strong>时间可组合性（temporal）= 上面第⑤点的「注册是可逆 effect」</strong>——组件被移除时其副作用能被完全撤销，也就是下面这张图；<strong>空间可组合性（spatial）= 第③点的 <code>inject</code> 依赖声明</strong>——用响应式的依赖管理代替手写启动时序。换句话说，<code>dsh</code> 的「无特权内核 + 可卸载插件」不是工程巧劲，而是这套 effect / coeffect 演算的直接落地。<span style="color:var(--text-muted)">（论文为 preprint、仍在修订，此处仅摘其定义句作权威锚点。）</span></p>
+
+    <p>第五点是这套架构最反直觉、也最值钱的地方。把它画出来就是一条「挂载 → 累积 disposer → 卸载时 LIFO 反向 unwind」的可逆生命周期：</p>
+
+    <div class="rgraph reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="可逆 effect 生命周期：插件 apply(ctx) 阶段先经 inject 等待所依赖的服务就绪，然后按顺序注册若干 effect——注册工具 schema、注册 LLM 适配器、挂事件监听器、提供服务，每次注册都返回一个 disposer 压入栈；插件卸载时，运行时按后进先出的顺序反向调用这些 disposer，把所有副作用干净地 unwind，因此没有需要手写的清理代码，也没有特权内核需要打补丁">
+        <!-- 相 A: 挂载 -->
+        <text class="phase" x="20" y="26">apply(ctx) · 挂载</text>
+        <!-- inject gate -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="20" y="40" width="150" height="66" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="95" y="66" text-anchor="middle" fill="var(--accent-ink)">inject 等待</text>
+        <text class="mono" x="95" y="84" text-anchor="middle">依赖服务就绪前不激活</text>
+        <text class="mono" x="95" y="98" text-anchor="middle">载入顺序 = 依赖顺序</text>
+
+        <!-- 注册序列 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="210" y="34" width="230" height="30" rx="7" fill="var(--surface)"/>
+          <rect x="210" y="70" width="230" height="30" rx="7" fill="var(--surface)"/>
+          <rect x="210" y="106" width="230" height="30" rx="7" fill="var(--surface)"/>
+          <rect x="210" y="142" width="230" height="30" rx="7" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="mono" x="224" y="53" fill="var(--text)">ctx.tools.register(schema) → dispose₁</text>
+          <text class="mono" x="224" y="89" fill="var(--text)">ctx.llm.register(adapter) → dispose₂</text>
+          <text class="mono" x="224" y="125" fill="var(--text)">ctx.on('tools/pre-execute') → dispose₃</text>
+          <text class="mono" x="224" y="161" fill="var(--text)">ctx.effect(() =&gt; provide) → dispose₄</text>
+        </g>
+        <g stroke="var(--accent)" stroke-width="1.5" fill="var(--accent)">
+          <line x1="170" y1="73" x2="206" y2="49"/><path d="M206 49 l-9 0 l4 7 z"/>
+          <line x1="170" y1="73" x2="206" y2="85"/><path d="M206 85 l-9 -1 l3 -7 z"/>
+        </g>
+
+        <!-- disposer 栈 -->
+        <text class="phase" x="500" y="26">disposer 栈</text>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="500" y="34" width="200" height="138" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <g fill="var(--accent-ink)">
+          <text class="mono" x="516" y="56" fill="var(--accent-ink)">▸ dispose₄  ← 栈顶（后进）</text>
+          <text class="mono" x="516" y="78" fill="var(--accent-ink)">▸ dispose₃</text>
+          <text class="mono" x="516" y="100" fill="var(--accent-ink)">▸ dispose₂</text>
+          <text class="mono" x="516" y="122" fill="var(--accent-ink)">▸ dispose₁  ← 栈底（先进）</text>
+        </g>
+        <text class="mono" x="600" y="150" text-anchor="middle" fill="var(--accent-ink)">每次注册压一个 disposer</text>
+        <g stroke="var(--accent)" stroke-width="1.4" fill="var(--accent)" stroke-dasharray="4 3">
+          <line x1="440" y1="49" x2="496" y2="70"/>
+          <line x1="440" y1="121" x2="496" y2="118"/>
+        </g>
+
+        <!-- 相 B: 卸载 unwind -->
+        <text class="phase" x="20" y="216">plugin unload · 反向 unwind（LIFO）</text>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="20" y="228" width="680" height="52" rx="12" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="mono" x="42" y="250" fill="var(--text)">dispose₄()</text>
+          <text class="mono" x="212" y="250" fill="var(--text)">dispose₃()</text>
+          <text class="mono" x="382" y="250" fill="var(--text)">dispose₂()</text>
+          <text class="mono" x="552" y="250" fill="var(--text)">dispose₁()</text>
+          <text class="sub" x="42" y="268">摘监听器</text>
+          <text class="sub" x="212" y="268">撤适配器</text>
+          <text class="sub" x="382" y="268">撤适配器</text>
+          <text class="sub" x="552" y="268">撤工具 schema</text>
+        </g>
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <line x1="150" y1="254" x2="204" y2="254"/><path d="M204 254 l-9 -4 v8 z"/>
+          <line x1="320" y1="254" x2="374" y2="254"/><path d="M374 254 l-9 -4 v8 z"/>
+          <line x1="490" y1="254" x2="544" y2="254"/><path d="M544 254 l-9 -4 v8 z"/>
+        </g>
+        <!-- 栈 → unwind 竖线 -->
+        <g stroke="var(--text-muted)" stroke-width="1.4" fill="var(--text-muted)" stroke-dasharray="4 3">
+          <line x1="600" y1="172" x2="600" y2="222"/><path d="M600 222 l-4 -9 h8 z"/>
+        </g>
+      </svg>
+      <div class="rgraph-note">「注册即 effect」把清理从<strong>纪律</strong>变成<strong>结构</strong>：disposer 由 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/fiber.ts#L69-L110" target="_blank" rel="noopener"><code>ctx.effect()</code></a> 累积、卸载时按 LIFO 反向执行。这正是论文说的 <strong>revertible effects</strong>——「每次上下文变换都携带一个由运行时追踪的逆操作」，也就是 <strong>temporal composability</strong> 的运行时形态：重载 / HMR / 拆卸都是同一条 unwind 路径，没有手写的 teardown 会漏。</div>
+    </div>
+
+    <p>事件的<strong>派发模式是公开契约的一部分</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L16-L26" target="_blank" rel="noopener">primer 的四模式表</a>——<code>emit</code>（观察、不等待、无返回）、<code>waterfall</code>（有返回、around-中间件）、<code>parallel</code>（并行、等待、无返回）、<code>serial</code>（顺序、等待、有返回）。其中 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/events.ts#L234" target="_blank" rel="noopener"><code>waterfall</code></a> 最关键：监听器收到 <code>(...args, next)</code>，调 <code>next()</code> 把（可能被包裹过的）结果委托给下一个服务，<strong>不调 <code>next()</code> 就短路</strong>。「单决策」事件里短路即设计——策略监听器可以在它拥有决定权时直接返回，只做标注的监听器则必须委托。这正是工具流水线（第五节）和 agent 请求拦截的底层机制。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">对 arkagent（卡点 C：角色/系统消息注入）</div>
+      <p style="margin:.3em 0;">你想在 <code>sendMessage</code> 里注入 <code>system.message</code>、做角色缓存，本质就是一个 <strong>waterfall 监听器</strong>：在 <code>agent/pre-step</code>（决定模型看到什么）上挂一个 effect，改写被 claim 的消息再 <code>next()</code>。好处是——它是<strong>可逆</strong>的：切换角色 = 卸载旧 effect、挂新 effect，无需在主循环里塞 <code>if (role) …</code> 的分支泥团。这比你现在改 <code>ark.ts</code> 主流程更符合「不动特权内核」的原则。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="session"><span class="sec-num">三</span>事件溯源会话：模型可见即已落日志<a href="#session" class="anchor">#</a></h2>
+    <p class="kicker">— append-only 日志是单一事实源，模型历史是投影</p>
+
+    <p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/session.md" target="_blank" rel="noopener"><code>dsh-session</code></a> 把一次会话建模成<strong>一条 append-only 的类型化 <code>SessionEvent</code> 日志</strong>——它是 agent 整段交互历史的唯一事实源。<strong>LLM 消息历史是从日志 <em>投影</em>出来的，从不单独存储</strong>；重放就是从同一批事件重新推导。这条设计钉在 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L92-L96" target="_blank" rel="noopener">architecture.md 的一句不变量</a>上：</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Model-visible means logged（原文摘引）</div>
+      <p style="margin:.3em 0;">「Anything that reaches a model request must be reconstructable from the log, and a <strong>runtime invariant asserts it</strong>. This is why a new model-visible input requires a new session event: extend <code>SessionEventMap</code> and render from the log.」</p>
+    </div>
+
+    <p>一个 turn 的日志长这样（<code>turn/*</code> / <code>step/*</code> / <code>user/message</code> / <code>assistant/*</code> / <code>tool/*</code> 都是<strong>持久事件</strong>，其余是活的扩展点）。注意 <code>assistant/chunk</code>——原始流 chunk 也进日志，为的是保住 token 级重放与 UI 保真：</p>
+
+    <div class="elog reveal">
+      <svg viewBox="0 0 720 320" role="img" aria-label="事件溯源会话日志投影：左侧是一条自上而下的 append-only SessionEvent 日志，依次为 turn/start、user/message、assistant/chunk 多条、assistant/message、tool/call、tool/result、turn/end；中间 deriveMessages() 从日志投影出右上的模型历史（模型下一步只看到投影结果），另一条投影路径产出右下的 UI 与重放视图；底部标注运行时不变量：任何模型可见输入都必须能从日志重建，否则就不是合法输入">
+        <!-- 日志列 -->
+        <text class="lab" x="20" y="24" fill="var(--accent-ink)">append-only SessionEvent 日志</text>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="20" y="34" width="250" height="266" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.1">
+          <rect x="34" y="46"  width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="78"  width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="110" width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="142" width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="174" width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="206" width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="238" width="222" height="26" rx="6" fill="var(--surface)"/>
+          <rect x="34" y="270" width="222" height="24" rx="6" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="ev" x="46" y="63">turn/start { turn }</text>
+          <text class="ev" x="46" y="95">user/message  (source: prompt|inject)</text>
+          <text class="ev" x="46" y="127">assistant/chunk × N  (原始流)</text>
+          <text class="ev" x="46" y="159">assistant/message  (+ usage)</text>
+          <text class="ev" x="46" y="191">tool/call { callId, name, args }</text>
+          <text class="ev" x="46" y="223">tool/result { callId, content }</text>
+          <text class="ev" x="46" y="255">step/end</text>
+          <text class="ev" x="46" y="287">turn/end { reason }</text>
+        </g>
+
+        <!-- deriveMessages 投影 -->
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <path d="M270 120 C 340 120, 340 78, 430 78"/>
+          <path d="M430 78 l-9 -1 l5 -6 z"/>
+        </g>
+        <text class="mono" x="352" y="94" text-anchor="middle" fill="var(--accent)" style="font-weight:700">deriveMessages()</text>
+
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="430" y="50" width="270" height="66" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="565" y="76" text-anchor="middle" fill="var(--text)">模型历史（投影）</text>
+        <text class="sub" x="565" y="96" text-anchor="middle">模型下一步只看到这一份 · 非另存</text>
+
+        <!-- UI/replay 投影 -->
+        <g stroke="var(--text-muted)" stroke-width="1.5" fill="var(--text-muted)" stroke-dasharray="4 3">
+          <path d="M270 210 C 340 210, 340 244, 430 244"/>
+          <path d="M430 244 l-9 -1 l5 -6 z"/>
+        </g>
+        <text class="mono" x="352" y="238" text-anchor="middle">投影 / replay</text>
+
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="430" y="216" width="270" height="60" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="565" y="240" text-anchor="middle" fill="var(--text)">UI · transcript · 遥测 · fork</text>
+        <text class="sub" x="565" y="259" text-anchor="middle">全部从同一条流派生，chunk 保住保真</text>
+
+        <!-- 不变量 -->
+        <text class="mono" x="565" y="300" text-anchor="middle" fill="var(--accent-ink)" style="font-weight:700">runtime invariant：可见 ⟺ 可从日志重建</text>
+      </svg>
+      <div class="elog-note"><code>SessionEventMap</code> 是<strong>合并可扩展</strong>的：compaction 加 <code>compaction/*</code>、hook 桥加 log-only 的 <code>hook/invoked</code> / <code>hook/result</code>——加持久状态 = 扩 <code>SessionEventMap</code> 再从日志渲染。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/packages/core/session/src/index.ts#L604" target="_blank" rel="noopener"><code>append()</code></a> 是唯一写入口；「怎么持久化」是 <code>ctx.sessionPersistence</code> 接缝的兄弟问题（jsonl / sqlite 两个后端并存）。</div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">对 MA 迁移（卡点 D：崩溃回收 / 状态一致性）</div>
+      <p style="margin:.3em 0;">这套「事件日志是事实源、内存态是投影」的模型，正好解决你担心的<strong>长程任务崩溃回收</strong>：崩了之后不需要「恢复内存状态」，只需<strong>重放日志重新投影</strong>。你的 MA 侧会话若也把「模型看到的每一条」都落成可重建事件，fork / resume / 审计就全是免费的副产品——而不是各写一套。代价见第九节：写入路径的纪律（一切模型可见输入都必须走 append）。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="seam"><span class="sec-num">四</span>能力接缝：一次 provider swap 换整条产品线<a href="#seam" class="anchor">#</a></h2>
+    <p class="kicker">— Definition / Provider / Consumer 三角色，缺一不成接缝</p>
+
+    <p>「一切皆插件」落到可维护性上，靠的是 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L98-L102" target="_blank" rel="noopener">capability seam（能力接缝）</a>这个规矩。一个 seam 是一项<strong>可换能力</strong>，由三个角色构成：<strong>Service Definition</strong>（声明接口）、<strong>Service Provider</strong>（实现它）、<strong>Consumer</strong>（用它，通常是一个模型可见的工具）。一个包可以兼任多角色，但<strong>单一角色不成接缝</strong>——加一项能力意味着把三者都设计出来。以文件系统接缝 <code>ctx.fs</code> 为例：</p>
+
+    <div class="seam3 reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="能力接缝三角色拓扑：中心是 Service Definition ctx.fs 声明文件系统接口；下方三个可互换的 Service Provider——fs-local 本地、fs-sandbox 沙箱围栏、fs-e2b 远程 E2B Linux 运行时——都实现同一接口；上方 Consumer tool-fs 通过接口执行 read/write/edit，只依赖接口不依赖具体实现；右侧标注：因为文件系统与子进程 provider 共享同一执行世界，把它们指向远程沙箱时，Bash、PTY、LSP 会一起搬过去，无需分叉 provider">
+        <!-- Consumer -->
+        <text class="role" x="360" y="24" text-anchor="middle" fill="var(--accent)">CONSUMER</text>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.4">
+          <rect x="270" y="32" width="180" height="46" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="360" y="52" text-anchor="middle" fill="var(--text)">tool-fs</text>
+        <text class="mono" x="360" y="68" text-anchor="middle">read / write / edit（模型可见）</text>
+
+        <!-- Definition -->
+        <text class="role" x="360" y="118" text-anchor="middle" fill="var(--accent)">SERVICE DEFINITION</text>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.9">
+          <rect x="250" y="126" width="220" height="52" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="360" y="150" text-anchor="middle" fill="var(--accent-ink)">ctx.fs</text>
+        <text class="mono" x="360" y="167" text-anchor="middle" fill="var(--accent-ink)">文件系统 provider 接缝（接口）</text>
+
+        <!-- 三个 provider -->
+        <text class="role" x="360" y="216" text-anchor="middle" fill="var(--accent)">SERVICE PROVIDER（可互换）</text>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="70"  y="226" width="180" height="52" rx="10" fill="var(--surface)"/>
+          <rect x="270" y="226" width="180" height="52" rx="10" fill="var(--surface)"/>
+          <rect x="470" y="226" width="180" height="52" rx="10" fill="var(--surface)"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="lab" x="160" y="248" text-anchor="middle">fs-local</text>
+          <text class="mono" x="160" y="266" text-anchor="middle">本地磁盘</text>
+          <text class="lab" x="360" y="248" text-anchor="middle">fs-sandbox</text>
+          <text class="mono" x="360" y="266" text-anchor="middle">按 sandbox mode 围栏</text>
+          <text class="lab" x="560" y="248" text-anchor="middle">fs-e2b</text>
+          <text class="mono" x="560" y="266" text-anchor="middle">远程 E2B Linux</text>
+        </g>
+
+        <!-- 连线 -->
+        <g stroke="var(--accent)" stroke-width="1.6" fill="none">
+          <line x1="360" y1="78" x2="360" y2="124"/>
+        </g>
+        <g stroke="var(--accent)" stroke-width="1.4" fill="none" stroke-dasharray="5 3">
+          <path d="M360 178 C 360 200, 160 202, 160 224"/>
+          <line x1="360" y1="178" x2="360" y2="224"/>
+          <path d="M360 178 C 360 200, 560 202, 560 224"/>
+        </g>
+        <text class="mono" x="360" y="100" text-anchor="middle">按接口调用，不 import 实现</text>
+      </svg>
+      <div class="seam3-note">「换一个 provider 就换整条产品线」：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L100-L102" target="_blank" rel="noopener">architecture.md</a>——文件系统与子进程 provider 共享同一执行世界，把它们指向远程沙箱，<strong>Bash / PTY / LSP 一起搬过去，没有 provider 分叉</strong>。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/capability-seams.md" target="_blank" rel="noopener">capability-seams.md 的图谱</a>枚举了全部 56 个 <code>ctx.*</code> 服务及其角色分类。</div>
+    </div>
+
+    <p>接缝的威力在<strong>组合</strong>：LLM 适配器接缝 <code>ctx.llm</code> 下并存 <code>llm-deepseek</code> / <code>llm-pi-ai</code> / <code>llm-replay</code>（其中 replay 是测试用的确定性回放）；子代理接缝 <code>ctx.subagents</code> 下并存 6 个 provider（进程内 spawn / fork、跨进程 ACP / Codex / Claude Code、以及 dsh-sdk）——它是少数几个<strong>允许多实现按名并存</strong>的接缝，其余多数（如 bash 执行器）只允许一个。而「加一个模型 provider = 在 <code>ctx.llm</code> 上注册它的适配器」「加一个模型可见能力 = 在 <code>ctx.tools</code> 上注册、其 schema 自动进 prompt 组装」这类<strong>「新行为该往哪挂」</strong>的对照，被 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L104-L128" target="_blank" rel="noopener">architecture.md 的一张表</a>钉死了。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="loop"><span class="sec-num">五</span>Turn 循环与守卫式工具流水线<a href="#loop" class="anchor">#</a></h2>
+    <p class="kicker">— waterfall 可扩展，但守卫只能减权</p>
+
+    <p>一个 <strong>step</strong> 是「一次模型请求 + 它调用的工具」；一个 <strong>turn</strong> 是零或多个 step。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L63-L90" target="_blank" rel="noopener">turn flow</a> 的骨架是：<code>turn/start</code> → 认领输入 → 组装 prompt 段 + 工具 schema → <code>agent/pre-step</code>（可改写或拒绝）→ <code>step/start</code> → <code>agent/request → llm/stream → assistant/chunk* → assistant/message</code> → <code>tool/call* → tools/pre-execute → tools/execute → tools/post-execute → tool/result*</code> → <code>step/end</code>。其中 <code>agent/pre-step</code>、<code>agent/request</code>、<code>llm/stream</code> 和三个 <code>tools/*</code> 都是 <strong>waterfall</strong>（监听器必须调 <code>next()</code> 委托）。</p>
+
+    <p>工具执行是全项目最见功力的一段。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L170-L172" target="_blank" rel="noopener"><code>ctx.tools.execute()</code></a> 把一次调用串过一条五段流水线，每段职责不同、且有一条<strong>不可翻转的单调性</strong>：</p>
+
+    <div class="twf reveal">
+      <svg viewBox="0 0 720 250" role="img" aria-label="守卫式工具执行流水线：一次工具调用依次经过五段——pre-execute 可扩展 waterfall 返回 allow/deny/ask 决策，monotonic guards 单调守卫只能减权返回拒绝理由、无法授权，execute around-dispatch 环绕包裹可做超时重试度量、只能替换信号不能移除，post-execute waterfall 可接受替换内容或值或 block，finalizeContent 定义方最后一公里改写内容，最终 tools/result 冻结不可变的权威结果供观察；下方强调守卫的单调性：任何守卫都能拒绝，但没有守卫能把别的守卫的拒绝翻回允许">
+        <!-- 五段 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="12"  y="60" width="118" height="70" rx="11" fill="var(--accent-soft)"/>
+          <rect x="152" y="60" width="118" height="70" rx="11" fill="var(--surface)"/>
+          <rect x="292" y="60" width="118" height="70" rx="11" fill="var(--accent-soft)"/>
+          <rect x="432" y="60" width="118" height="70" rx="11" fill="var(--surface)"/>
+          <rect x="572" y="60" width="136" height="70" rx="11" fill="var(--accent-soft)"/>
+        </g>
+        <g>
+          <text class="stg" x="71"  y="80" text-anchor="middle">WATERFALL</text>
+          <text class="stg" x="211" y="80" text-anchor="middle">GUARD · 单调</text>
+          <text class="stg" x="351" y="80" text-anchor="middle">WATERFALL</text>
+          <text class="stg" x="491" y="80" text-anchor="middle">WATERFALL</text>
+          <text class="stg" x="640" y="80" text-anchor="middle">EMIT · frozen</text>
+        </g>
+        <g fill="var(--text)">
+          <text class="lab" x="71"  y="102" text-anchor="middle">pre-execute</text>
+          <text class="lab" x="211" y="102" text-anchor="middle">guards</text>
+          <text class="lab" x="351" y="102" text-anchor="middle">execute</text>
+          <text class="lab" x="491" y="102" text-anchor="middle">post-execute</text>
+          <text class="lab" x="640" y="102" text-anchor="middle">tools/result</text>
+        </g>
+        <g>
+          <text class="mono" x="71"  y="120" text-anchor="middle">allow/deny/ask</text>
+          <text class="mono" x="211" y="120" text-anchor="middle">只减权</text>
+          <text class="mono" x="351" y="120" text-anchor="middle">around · 换 signal</text>
+          <text class="mono" x="491" y="120" text-anchor="middle">accept/replace/block</text>
+          <text class="mono" x="640" y="120" text-anchor="middle">冻结 · 不可改</text>
+        </g>
+
+        <!-- 段间箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <line x1="130" y1="95" x2="150" y2="95"/><path d="M150 95 l-9 -4 v8 z"/>
+          <line x1="270" y1="95" x2="290" y2="95"/><path d="M290 95 l-9 -4 v8 z"/>
+          <line x1="410" y1="95" x2="430" y2="95"/><path d="M430 95 l-9 -4 v8 z"/>
+          <line x1="550" y1="95" x2="570" y2="95"/><path d="M570 95 l-9 -4 v8 z"/>
+        </g>
+        <!-- finalizeContent 小注 -->
+        <text class="mono" x="491" y="150" text-anchor="middle">→ finalizeContent（定义方最后一公里）</text>
+
+        <!-- 单调性强调 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.4" stroke-dasharray="4 3">
+          <rect x="60" y="182" width="600" height="46" rx="11" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="360" y="205" text-anchor="middle" fill="var(--accent-ink)">单调守卫：任何守卫都能「拒绝」，但没有守卫能「授权」</text>
+        <text class="mono" x="360" y="221" text-anchor="middle">⇒ 监听器注册顺序无法把一次拒绝翻回允许（返回类型里根本没有 allow）</text>
+      </svg>
+      <div class="twf-note">参数在进策略前<strong>一次性物化为无损 JSON 并冻结</strong>——因为「历史 / 审计 / UI / 执行必须一致」，所以 <strong>pre-execute 不许改写参数</strong>，只能 allow / deny / ask（且只有审批返回 <code>allowed-once</code> 才真的放行）。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L313-L324" target="_blank" rel="noopener">守卫 <code>ToolGuard</code> 的返回类型故意没有 allow 分支</a>：<code>undefined</code> 保持不变，返回理由即拒绝——这是把「安全只能收紧」编进了类型。</div>
+    </div>
+
+    <p>结果类型也贯彻同一克制：成功结果里的规范 <code>value</code> 是<strong>执行局部</strong>的、故意不进持久事件（日志只存 <code>content</code> / <code>error</code> / <code>meta</code>）——<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L370" target="_blank" rel="noopener">「重放能复现呈现，但无法重建中间的规范值」</a>。未知工具和抛异常的工具都变成结构化错误（<code>UNKNOWN_TOOL</code>），<strong>调用失败但不结束 turn</strong>。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="codemode"><span class="sec-num">六</span>Code Mode：把「模型写的程序」当传输层<a href="#codemode" class="anchor">#</a></h2>
+    <p class="kicker">— 一个可选能力，不是 agent loop 的脊柱</p>
+
+    <p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/code-runtime.md" target="_blank" rel="noopener">代码执行接缝 <code>ctx.codeRuntime</code></a> 的定位很清醒：<strong>「Code execution is one optional capability, not part of the agent-loop spine.」</strong>它把「一段模型写的程序」跑在宿主提供的异步绑定之上，报告它打印了什么、返回了什么。程序作为一个 async 函数体运行——顶层 <code>await</code> 和 <code>return</code> 可用，完成值成为 <code>CodeRunResult.value</code>；<strong>错误是结果上的一个字段，而不是 <code>run()</code> 的 reject</strong>（和 <code>ShellExecutor.run</code> 的「失败也 resolve」契约一致）。</p>
+
+    <p>它跟工具流水线的接法很精巧：呈现模式 <code>ToolPresentationMode</code> 有 <code>native</code> / <code>code</code> / <code>both</code> 三种；<code>mode:'code'</code> 时<strong>只给模型发一个 <code>run_code</code> 工具 + 一份生成的 SDK</strong>，原生工具名只能作为 <code>run_code</code> 程序内部的<strong>子派发</strong>被调用——<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L200-L209" target="_blank" rel="noopener">一个「模型直呼」（无 parent）的原生工具名会在进策略前就被判 <code>UNKNOWN_TOOL</code></a>。而且这是<strong>按 agent scope</strong> 设定的（<code>ctx.tools.presentAs(mode)</code>），所以一个 preset 可以让 Code Mode agent 与原生 agent 在同一进程里并存。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">这对「工具即代码」范式意味着什么</div>
+      <p style="margin:.3em 0;">这和我们之前拆过的「工具即代码」（Prime Agent 的 RLM）是同一股潮流，但 <code>dsh</code> 的处理更「接缝化」：它<strong>没有</strong>把代码执行升格为唯一入口，而是让它作为一个可换 provider（worker-thread 后端）挂在 <code>ctx.codeRuntime</code> 上，工具注册表作为 Consumer 消费它。好处是——你可以在同一部署里，给需要精细审批的 agent 用 native 模式、给批量自动化的 agent 用 code 模式，切换只是改一个 scope 的呈现声明，不动任何工具实现。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="security"><span class="sec-num">七</span>安全边界：沙箱 · 审批 · 凭证只存引用<a href="#security" class="anchor">#</a></h2>
+    <p class="kicker">— 三条边界都做成接缝，fail closed 是默认</p>
+
+    <p>多用户 / 生产化最关心的三条边界，<code>dsh</code> 都做成了接缝，且默认「关死」：</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">审批 · ctx.approval</div>
+        <p>一次性权限决定，经 <code>approval/request</code> waterfall 派发；<strong>回答者是监听器</strong>（如 ACP 桥为它自己的 agent 应答）。关键：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/capability-seams.md" target="_blank" rel="noopener">「absence fails closed to <code>unavailable</code>」</a>——没有审批服务时，<code>ask</code> 直接变拒绝，而不是默默放行。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">沙箱 · ctx.sandbox / sandboxPolicy</div>
+        <p>消费者把「即将 spawn 的确切 argv」交给同世界后端包裹后再执行。<code>sandboxPolicy</code> 是部署默认模式 + workspace root 的<strong>唯一家</strong>——bash 与 fs 两族都读它，<strong>所以两者不可能围栏到不同的 root</strong>。<code>permissionPresets</code> 把 <code>workspace-write</code> / <code>danger-full-access</code> 打包成一键切换。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">凭证 · ctx.credentials</div>
+        <p>配置里只放<strong>引用</strong>（环境变量名），provider 才持有值；消费者<strong>每次操作重新 resolve、从不跨操作缓存</strong>——LLM 适配器每次模型请求都 resolve 一次，<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/credentials.md" target="_blank" rel="noopener">于是轮换后的凭证下一个请求就生效、无需重启</a>。web 网关只暴露「无值视图」和只写存储。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">遥测 · ctx.sessionTelemetry</div>
+        <p>接缝<strong>捕获、脱敏、再</strong>把会话记录交给唯一后端；其输出离开进程，<strong>进程内没有别的东西消费它</strong>。这条「脱敏在接缝、不在调用点」的设计，是把「敏感数据不外泄」编进拓扑而非纪律。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">对 arkagent 多用户化（卡点 A/B：Static Bearer / OAuth）</div>
+      <p style="margin:.3em 0;">你要做的 <code>static_bearer</code> 与 <code>createOAuthCredential</code>，本质就是<strong>给 <code>ctx.credentials</code> 接缝写一个新的 Provider</strong>——把 <code>userOpenId</code> → 凭证值的解析收进 provider，消费者（LLM 适配器 / MCP toolset）照旧「每次操作 resolve」。这样你的多用户绑定表不必侵入主流程，凭证热更（轮换 / 过期重取）也天然成立。「配置只存引用、值归 provider」这条，正是你把硬编码校验从 <code>gateway.ts</code> 里挖出来后应该落到的形态。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="fde-map"><span class="sec-num">八</span>对我们的映射（MA 迁移 / arkagent）<a href="#fde-map" class="anchor">#</a></h2>
+    <p class="kicker">— 能直接借鉴的四个可组合范式</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>它的做法</th><th>对应我们的问题</th><th>可复用点</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>可逆 effect + waterfall 拦截（<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L28-L35" target="_blank" rel="noopener">cordis-primer</a>）</td>
+            <td>arkagent 角色/系统消息注入（卡点 C）</td>
+            <td>把「注入 <code>system.message</code>」做成挂在 <code>agent/pre-step</code> 上的可逆监听器——切角色 = 卸旧挂新，取代在 <code>ark.ts</code> 主流程塞 <code>if</code></td>
+          </tr>
+          <tr>
+            <td>凭证接缝「配置存引用、值归 provider、每操作 resolve」</td>
+            <td>Static Bearer / OAuth 凭证与热更（卡点 A/B）</td>
+            <td>给 <code>ctx.credentials</code> 写新 Provider，把 <code>userOpenId</code>→凭证解析收进去；轮换 / 过期重取天然成立，主流程不感知</td>
+          </tr>
+          <tr>
+            <td>事件溯源会话日志 + deriveMessages 投影</td>
+            <td>MA 长程任务崩溃回收与状态一致性（卡点 D）</td>
+            <td>「日志是事实源、内存是投影」——崩溃后重放日志即恢复；fork / resume / 审计是免费副产品，无需各写一套</td>
+          </tr>
+          <tr>
+            <td>能力接缝三角色 + provider swap（<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L98-L102" target="_blank" rel="noopener">architecture</a>）</td>
+            <td>OpenClaw → 火山 MA：执行端解耦、本地/远程沙箱切换</td>
+            <td>把 fs / subprocess / shell 做成共享执行世界的接缝：一次把 provider 指向远程，Bash/PTY/LSP 一起搬，无 provider 分叉</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="tradeoff"><span class="sec-num">九</span>取舍与陷阱<a href="#tradeoff" class="anchor">#</a></h2>
+    <p class="kicker">— 一句话：架构纯度极高，代价是心智门槛与 preview 状态</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">亮点</div>
+        <p><strong>架构纯度是真·彻底。</strong>「没有特权内核」不是宣传——连 agent loop 都是 <code>ctx.agentLoop</code> 上唯一的具体插件，扩展包只依赖 <code>dsh-agent</code> 的事件与服务、不依赖它。这让「换任意部件」成为配置动作。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">亮点</div>
+        <p><strong>不变量写进类型与运行时。</strong>「模型可见即已落日志」有运行时断言；守卫「只能减权」编进返回类型；凭证「只存引用」是接缝级铁律——安全与一致性靠结构而非纪律。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">存疑</div>
+        <p><strong>心智门槛陡。</strong>文档第一句就是「改 <code>packages/</code> 前先懂 Cordis」，并建议「用一个 agent 去探索代码库」。226 个包 + 声明合并的类型化事件 + 依赖排序的隐式载入顺序——二次开发前得先啃透 Cordis 的心智模型。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">存疑</div>
+        <p><strong>developer preview，明说会破坏兼容。</strong>README 大写强调「THERE WILL BE COMPATIBILITY-BREAKING CHANGES」。现在把它当生产依赖有风险；更稳的姿势是<strong>借鉴它的接缝设计</strong>，而非直接 fork 整棵树。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">用它/借它时的陷阱</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>「一切模型可见输入都必须走 append」是硬纪律</strong>：想给模型多喂一句上下文，不能直接塞进内存历史，得新增一个 <code>SessionEventMap</code> 成员再从日志渲染——省了 fork/replay 的代价是写入路径不能走捷径。</li>
+        <li><strong>接缝三角色缺一不可</strong>：只写一个 Provider 不算加了能力；不设计 Definition 和 Consumer，别的插件就无法按 key 找到并替换它。加能力的成本被前移到「设计三者」。</li>
+        <li><strong>依赖排序是隐式的</strong>：载入顺序由 <code>inject</code> 表达，不是你写的顺序。漏声明一个依赖，插件可能在服务就绪前激活——排障时要往「谁 inject 了谁」看，而不是往「谁先 import」看。</li>
+      </ul>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="annex"><span class="sec-num">十</span>附：源码坐标一览<a href="#annex" class="anchor">#</a></h2>
+    <p class="kicker">— 想深挖时的入口地图（基准 commit 47f9438，行号已核对）</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>主题</th><th>文件</th><th>看什么</th></tr></thead>
+        <tbody>
+          <tr><td>项目定位</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/README.md#L5-L11" target="_blank" rel="noopener">README.md:5-11</a></td><td>everything is a plugin · powered by Cordis · developer preview 警告</td></tr>
+          <tr><td>理论地基（Cordis 论文）</td><td><a href="https://github.com/cordiverse/paper" target="_blank" rel="noopener">cordiverse/paper</a>（<em>Spatiotemporal Composability</em> · 2026-08-13 preprint）</td><td>temporal / spatial 两维原文定义 · revertible effects & reactive coeffects · 统一 context type</td></tr>
+          <tr><td>架构总纲</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L9-L37" target="_blank" rel="noopener">architecture.md:9-37</a></td><td>Cordis / 无特权内核 / Profile 与 Bundle 分层组合</td></tr>
+          <tr><td>turn flow</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L63-L90" target="_blank" rel="noopener">architecture.md:63-90</a></td><td>turn/step 骨架 + 哪些事件是 waterfall</td></tr>
+          <tr><td>「模型可见即已落日志」</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L92-L96" target="_blank" rel="noopener">architecture.md:92-96</a></td><td>会话日志作事实源 + 运行时不变量</td></tr>
+          <tr><td>新行为该往哪挂</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L104-L128" target="_blank" rel="noopener">architecture.md:104-128</a></td><td>目标 → 机制 的对照表（加 provider / tool / 命令 / 后台任务…）</td></tr>
+          <tr><td>Cordis 五观念 + 四模式</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L7-L35" target="_blank" rel="noopener">cordis-primer.md:7-35</a></td><td>插件/Context/inject/事件/可逆 effect + waterfall 语义</td></tr>
+          <tr><td>可逆 effect / disposer</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/fiber.ts#L69-L110" target="_blank" rel="noopener">vendor/cordis/fiber.ts:69-110</a></td><td><code>ctx.effect()</code> 的 disposer 契约与嵌套 unwind</td></tr>
+          <tr><td>waterfall 实现</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/events.ts#L234" target="_blank" rel="noopener">vendor/cordis/events.ts:234</a></td><td>around-中间件式派发（<code>next()</code> 委托 / 短路）</td></tr>
+          <tr><td>能力接缝图谱</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/capability-seams.md" target="_blank" rel="noopener">capability-seams.md</a></td><td>56 个 <code>ctx.*</code> 服务 · 角色分类 · Definition/Provider/Consumer</td></tr>
+          <tr><td>会话日志 append</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/packages/core/session/src/index.ts#L604" target="_blank" rel="noopener">session/src/index.ts:604</a></td><td>唯一写入口 <code>append()</code>；<code>SessionEventMap</code> 合并可扩展</td></tr>
+          <tr><td>工具流水线</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L170-L172" target="_blank" rel="noopener">tools.md:170-172</a></td><td>pre-execute → guards → execute → post-execute → finalize → result</td></tr>
+          <tr><td>单调守卫</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L313-L324" target="_blank" rel="noopener">tools.md:313-324</a></td><td><code>ToolGuard</code> 返回类型无 allow 分支——只能减权</td></tr>
+          <tr><td>ctx.tools.execute()</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/packages/core/tools/src/index.ts#L787" target="_blank" rel="noopener">tools/src/index.ts:787</a></td><td>整条执行流水线的实现入口</td></tr>
+          <tr><td>Code Mode 接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/code-runtime.md" target="_blank" rel="noopener">code-runtime.md</a></td><td><code>ctx.codeRuntime</code>：程序即传输层、错误是字段非异常</td></tr>
+          <tr><td>子代理接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/subagent.md" target="_blank" rel="noopener">subagent.md</a></td><td>6 provider 并存 · 一次性 vs 可续 · lineage/depth</td></tr>
+          <tr><td>凭证接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/credentials.md" target="_blank" rel="noopener">credentials.md</a></td><td>配置存引用 · 每操作 resolve · 轮换即时生效</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-08-15 初稿（源码级拆解，基于 deepseek-ai/deepseek-harness commit 47f9438 · master · 行号经克隆核对）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="index.html">开源拆解总索引</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_paperclip-agent-control-plane.html">相关：Paperclip · Agent 控制平面</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_prime-agent-rlm-continual-harness.html">相关：Prime Agent · RLM × 持续 Harness</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+
+<!-- reduced-motion 兜底：本页动画一律关掉 -->
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .insight-card:hover { transform: none !important; }
+  }
+</style>
+</body>
+</html>
