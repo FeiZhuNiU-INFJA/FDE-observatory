@@ -131,7 +131,7 @@
     </div>
 
     <div class="lede">
-      <strong>核心结论：</strong>DeepSeek Harness 值得抄的不是「又一个 agent loop」，而是它把整套产品架在一个<strong>响应式插件内核 Cordis</strong> 上，逼出了三条别人很少写死的工程不变量：<strong>①没有特权内核可打补丁</strong>——模型适配器、工具注册表、会话日志、连 agent loop 本身都是插件，一切「扩展」都是把插件挂到别的插件旁边，注册即 <em>可逆 effect</em>，插件卸载时按 LIFO 自动 unwind；<strong>②模型可见即已落日志（model-visible means logged）</strong>——任何进入模型请求的东西都必须能从 append-only 的 <code>SessionEvent</code> 日志重建，且有运行时不变量断言它，模型历史是<em>投影</em>出来的、不是另存的；<strong>③能力接缝三角色</strong>——每个可换能力都由 Service Definition / Provider / Consumer 三者构成，换一个 provider 就能让整条产品线（文件系统、Bash、PTY、LSP）一起搬到远程沙箱，无需分叉。对我们（OpenClaw → 火山 MA 迁移、arkagent 多用户化）最有价值的，正是这套<strong>「用依赖排序代替启动时序、用可逆 effect 代替手写清理、用事件日志代替可变状态」的可组合骨架</strong>——它把我们卡点 A/B/C/D 里「凭证热更、角色注入、崩溃回收、多用户隔离」都变成了「往接缝上挂一个插件」。
+      <strong>核心结论：</strong>DeepSeek Harness 值得抄的不是「又一个 agent loop」，而是它把整套产品架在一个<strong>响应式插件内核 Cordis</strong> 上，逼出了三条别人很少写死的工程不变量：<strong>①没有特权内核可打补丁</strong>——模型适配器、工具注册表、会话日志、连 agent loop 本身都是插件，一切「扩展」都是把插件挂到别的插件旁边，注册即 <em>可逆 effect</em>，插件卸载时按 LIFO 自动 unwind；<strong>②模型可见即已落日志（model-visible means logged）</strong>——任何进入模型请求的东西都必须能从 append-only 的 <code>SessionEvent</code> 日志重建，且有运行时不变量断言它，模型历史是<em>投影</em>出来的、不是另存的；<strong>③能力接缝三角色</strong>——每个可换能力都由 Service Definition / Provider / Consumer 三者构成，换一个 provider 就能让整条产品线（文件系统、Bash、PTY、LSP）一起搬到远程沙箱，无需分叉。对任何要做<strong>多用户化、凭证热更、角色/系统消息注入、长程任务崩溃回收</strong>的 agent 平台，最值得借鉴的正是这套<strong>「用依赖排序代替启动时序、用可逆 effect 代替手写清理、用事件日志代替可变状态」的可组合骨架</strong>——它把上面这些通常要写死进主循环的需求，都变成了「往接缝上挂一个插件」。
     </div>
 
     <div class="callout callout-accent">
@@ -273,8 +273,8 @@ dsh --profile web --dump-config</code></pre>
     <p>事件的<strong>派发模式是公开契约的一部分</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L16-L26" target="_blank" rel="noopener">primer 的四模式表</a>——<code>emit</code>（观察、不等待、无返回）、<code>waterfall</code>（有返回、around-中间件）、<code>parallel</code>（并行、等待、无返回）、<code>serial</code>（顺序、等待、有返回）。其中 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/events.ts#L234" target="_blank" rel="noopener"><code>waterfall</code></a> 最关键：监听器收到 <code>(...args, next)</code>，调 <code>next()</code> 把（可能被包裹过的）结果委托给下一个服务，<strong>不调 <code>next()</code> 就短路</strong>。「单决策」事件里短路即设计——策略监听器可以在它拥有决定权时直接返回，只做标注的监听器则必须委托。这正是工具流水线（第五节）和 agent 请求拦截的底层机制。</p>
 
     <div class="callout callout-info">
-      <div class="callout-tag">对 arkagent（卡点 C：角色/系统消息注入）</div>
-      <p style="margin:.3em 0;">你想在 <code>sendMessage</code> 里注入 <code>system.message</code>、做角色缓存，本质就是一个 <strong>waterfall 监听器</strong>：在 <code>agent/pre-step</code>（决定模型看到什么）上挂一个 effect，改写被 claim 的消息再 <code>next()</code>。好处是——它是<strong>可逆</strong>的：切换角色 = 卸载旧 effect、挂新 effect，无需在主循环里塞 <code>if (role) …</code> 的分支泥团。这比你现在改 <code>ark.ts</code> 主流程更符合「不动特权内核」的原则。</p>
+      <div class="callout-tag">落地视角：角色 / 系统消息注入</div>
+      <p style="margin:.3em 0;">要在发给模型的消息里注入 <code>system.message</code>、做角色缓存，在这套架构里本质就是一个 <strong>waterfall 监听器</strong>：在 <code>agent/pre-step</code>（决定模型看到什么）上挂一个 effect，改写被 claim 的消息再 <code>next()</code>。好处是——它是<strong>可逆</strong>的：切换角色 = 卸载旧 effect、挂新 effect，无需在主循环里塞 <code>if (role) …</code> 的分支泥团。这比改主流程更符合「不动特权内核」的原则。</p>
     </div>
 
     <!-- ============================================================ -->
@@ -351,8 +351,8 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <div class="callout callout-info">
-      <div class="callout-tag">对 MA 迁移（卡点 D：崩溃回收 / 状态一致性）</div>
-      <p style="margin:.3em 0;">这套「事件日志是事实源、内存态是投影」的模型，正好解决你担心的<strong>长程任务崩溃回收</strong>：崩了之后不需要「恢复内存状态」，只需<strong>重放日志重新投影</strong>。你的 MA 侧会话若也把「模型看到的每一条」都落成可重建事件，fork / resume / 审计就全是免费的副产品——而不是各写一套。代价见第九节：写入路径的纪律（一切模型可见输入都必须走 append）。</p>
+      <div class="callout-tag">落地视角：崩溃回收 / 状态一致性</div>
+      <p style="margin:.3em 0;">这套「事件日志是事实源、内存态是投影」的模型，正好解决<strong>长程任务的崩溃回收</strong>：崩了之后不需要「恢复内存状态」，只需<strong>重放日志重新投影</strong>。任何会话只要把「模型看到的每一条」都落成可重建事件，fork / resume / 审计就全是免费的副产品——而不是各写一套。代价见第九节：写入路径的纪律（一切模型可见输入都必须走 append）。</p>
     </div>
 
     <!-- ============================================================ -->
@@ -512,36 +512,36 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <div class="callout callout-info">
-      <div class="callout-tag">对 arkagent 多用户化（卡点 A/B：Static Bearer / OAuth）</div>
-      <p style="margin:.3em 0;">你要做的 <code>static_bearer</code> 与 <code>createOAuthCredential</code>，本质就是<strong>给 <code>ctx.credentials</code> 接缝写一个新的 Provider</strong>——把 <code>userOpenId</code> → 凭证值的解析收进 provider，消费者（LLM 适配器 / MCP toolset）照旧「每次操作 resolve」。这样你的多用户绑定表不必侵入主流程，凭证热更（轮换 / 过期重取）也天然成立。「配置只存引用、值归 provider」这条，正是你把硬编码校验从 <code>gateway.ts</code> 里挖出来后应该落到的形态。</p>
+      <div class="callout-tag">落地视角：多用户凭证 / 热更</div>
+      <p style="margin:.3em 0;">要支持「每用户不同凭证 + 静态 bearer / OAuth 并存」，在这套架构里本质就是<strong>给 <code>ctx.credentials</code> 接缝写一个新的 Provider</strong>——把「用户身份 → 凭证值」的解析收进 provider，消费者（LLM 适配器 / MCP toolset）照旧「每次操作 resolve」。这样多用户绑定表不必侵入主流程，凭证热更（轮换 / 过期重取）也天然成立。「配置只存引用、值归 provider」这条，正是把硬编码校验从网关层挖出来后应该落到的形态。</p>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="fde-map"><span class="sec-num">八</span>对我们的映射（MA 迁移 / arkagent）<a href="#fde-map" class="anchor">#</a></h2>
-    <p class="kicker">— 能直接借鉴的四个可组合范式</p>
+    <h2 id="reuse-map"><span class="sec-num">八</span>可复用范式：四个能直接借鉴的接缝<a href="#reuse-map" class="anchor">#</a></h2>
+    <p class="kicker">— 从 dsh 的做法反推「同类需求该往哪个接缝挂」</p>
 
     <div class="table-wrap">
       <table>
-        <thead><tr><th>它的做法</th><th>对应我们的问题</th><th>可复用点</th></tr></thead>
+        <thead><tr><th>dsh 的做法</th><th>它解决的通用问题</th><th>可复用点</th></tr></thead>
         <tbody>
           <tr>
             <td>可逆 effect + waterfall 拦截（<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L28-L35" target="_blank" rel="noopener">cordis-primer</a>）</td>
-            <td>arkagent 角色/系统消息注入（卡点 C）</td>
-            <td>把「注入 <code>system.message</code>」做成挂在 <code>agent/pre-step</code> 上的可逆监听器——切角色 = 卸旧挂新，取代在 <code>ark.ts</code> 主流程塞 <code>if</code></td>
+            <td>角色 / 系统消息注入</td>
+            <td>把「注入 <code>system.message</code>」做成挂在 <code>agent/pre-step</code> 上的可逆监听器——切角色 = 卸旧挂新，取代在主流程里塞 <code>if</code></td>
           </tr>
           <tr>
             <td>凭证接缝「配置存引用、值归 provider、每操作 resolve」</td>
-            <td>Static Bearer / OAuth 凭证与热更（卡点 A/B）</td>
-            <td>给 <code>ctx.credentials</code> 写新 Provider，把 <code>userOpenId</code>→凭证解析收进去；轮换 / 过期重取天然成立，主流程不感知</td>
+            <td>多用户凭证与热更（静态 bearer / OAuth 并存）</td>
+            <td>给 <code>ctx.credentials</code> 写新 Provider，把「用户身份 → 凭证」解析收进去；轮换 / 过期重取天然成立，主流程不感知</td>
           </tr>
           <tr>
             <td>事件溯源会话日志 + deriveMessages 投影</td>
-            <td>MA 长程任务崩溃回收与状态一致性（卡点 D）</td>
+            <td>长程任务崩溃回收与状态一致性</td>
             <td>「日志是事实源、内存是投影」——崩溃后重放日志即恢复；fork / resume / 审计是免费副产品，无需各写一套</td>
           </tr>
           <tr>
             <td>能力接缝三角色 + provider swap（<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L98-L102" target="_blank" rel="noopener">architecture</a>）</td>
-            <td>OpenClaw → 火山 MA：执行端解耦、本地/远程沙箱切换</td>
+            <td>执行端解耦、本地 / 远程沙箱切换</td>
             <td>把 fs / subprocess / shell 做成共享执行世界的接缝：一次把 provider 指向远程，Bash/PTY/LSP 一起搬，无 provider 分叉</td>
           </tr>
         </tbody>
