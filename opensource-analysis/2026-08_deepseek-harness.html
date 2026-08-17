@@ -60,6 +60,15 @@
   .twf .stg { font-family: var(--mono); font-size: 8px; letter-spacing: .04em; fill: var(--accent); font-weight: 700; }
   .twf-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
 
+  /* ============ Bespoke 5: 自进化循环 × 时空双维（.evo）============ */
+  .evo { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .evo svg { width: 100%; height: auto; display: block; }
+  .evo text { font-family: var(--sans); }
+  .evo .lab { font-size: 11px; font-weight: 700; }
+  .evo .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .evo .phase { font-family: var(--mono); font-size: 9.5px; font-weight: 700; fill: var(--accent); letter-spacing: .06em; }
+  .evo-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
   /* ---- 关键洞察卡（沿用）---- */
   .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
   .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
@@ -107,6 +116,7 @@
         <span>Agent Harness</span>
         <span>Cordis</span>
         <span>可逆效果</span>
+        <span>自进化</span>
         <span>事件溯源</span>
         <span>能力接缝</span>
         <span>Code Mode</span>
@@ -270,7 +280,7 @@ dsh --profile web --dump-config</code></pre>
       <div class="rgraph-note">「注册即 effect」把清理从<strong>纪律</strong>变成<strong>结构</strong>：disposer 由 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/fiber.ts#L69-L110" target="_blank" rel="noopener"><code>ctx.effect()</code></a> 累积、卸载时按 LIFO 反向执行。这正是论文说的 <strong>revertible effects</strong>——「每次上下文变换都携带一个由运行时追踪的逆操作」，也就是 <strong>temporal composability</strong> 的运行时形态：重载 / HMR / 拆卸都是同一条 unwind 路径，没有手写的 teardown 会漏。</div>
     </div>
 
-    <p>事件的<strong>派发模式是公开契约的一部分</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L16-L26" target="_blank" rel="noopener">primer 的四模式表</a>——<code>emit</code>（观察、不等待、无返回）、<code>waterfall</code>（有返回、around-中间件）、<code>parallel</code>（并行、等待、无返回）、<code>serial</code>（顺序、等待、有返回）。其中 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/events.ts#L234" target="_blank" rel="noopener"><code>waterfall</code></a> 最关键：监听器收到 <code>(...args, next)</code>，调 <code>next()</code> 把（可能被包裹过的）结果委托给下一个服务，<strong>不调 <code>next()</code> 就短路</strong>。「单决策」事件里短路即设计——策略监听器可以在它拥有决定权时直接返回，只做标注的监听器则必须委托。这正是工具流水线（第五节）和 agent 请求拦截的底层机制。</p>
+    <p>事件的<strong>派发模式是公开契约的一部分</strong>：<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/cordis-primer.md#L16-L26" target="_blank" rel="noopener">primer 的四模式表</a>——<code>emit</code>（观察、不等待、无返回）、<code>waterfall</code>（有返回、around-中间件）、<code>parallel</code>（并行、等待、无返回）、<code>serial</code>（顺序、等待、有返回）。其中 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/vendor/cordis/src/events.ts#L234" target="_blank" rel="noopener"><code>waterfall</code></a> 最关键：监听器收到 <code>(...args, next)</code>，调 <code>next()</code> 把（可能被包裹过的）结果委托给下一个服务，<strong>不调 <code>next()</code> 就短路</strong>。「单决策」事件里短路即设计——策略监听器可以在它拥有决定权时直接返回，只做标注的监听器则必须委托。这正是工具流水线（第六节）和 agent 请求拦截的底层机制。</p>
 
     <div class="callout callout-info">
       <div class="callout-tag">落地视角：角色 / 系统消息注入</div>
@@ -278,7 +288,95 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="session"><span class="sec-num">三</span>事件溯源会话：模型可见即已落日志<a href="#session" class="anchor">#</a></h2>
+    <h2 id="why"><span class="sec-num">三</span>为什么是这套架构：为「自进化 AI」造的底板<a href="#why" class="anchor">#</a></h2>
+    <p class="kicker">— 论文自己的切入点不是「又一个 agent 框架」，而是自进化的底层基础设施</p>
+
+    <p>前两节讲的都是「怎么做的」。但有个更根本的问题值得先回答：<strong>为什么要把一个 agent harness 架在「可逆 effect + 反应式依赖」这么重的内核上？</strong>直接写死一个主循环不是更简单？答案不在源码里，在那篇论文的<strong>立意</strong>里——而这一层，恰好是一支第三方解读讲得最清楚的。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">来源 · 第三方视频解读（非源码事实，转述论文立意）</div>
+      <p style="margin:.3em 0;">本节的「立意」层面主要综合自 B 站/YouTube 频道<strong>「最佳拍档」</strong>对该论文的解读视频（<a href="https://www.youtube.com/watch?v=C6lJClhhpdA" target="_blank" rel="noopener"><em>Cordis——DeepSeek Harness 的乐高底板</em></a>，2026-08-15，13:28），它指出这篇论文是 DeepSeek 与<strong>北京大学</strong>合作、篇幅约 <strong>88 页</strong>。以下凡标「论文/解读称」的判断属于<strong>论文立意的转述</strong>，与本页其余「源码级事实」区分开——立意可以有解读空间，事实（commit <code>47f9438</code> 的行为）不会。</p>
+    </div>
+
+    <p><strong>论文切入的角度就是「自进化 AI」。</strong>解读转述的论文设想是这样一条链：未来的 agent 会<em>根据任务自己生成一个工具、把工具装进运行时、发现有问题再把它替换掉</em>。一旦你认真对待这个设想，一个平时无关痛痒的工程缺陷就会被放大成致命问题——</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">论文的问题起点：插件「插上去拔不下来」</div>
+      <p style="margin:.3em 0;">解读引论文的一个具体数据：截至 <strong>2026-06-09</strong>，VSCode Marketplace 排名前 100 的扩展里有 <strong>87 个</strong>含可执行代码，一旦激活就<strong>无法在运行时单独卸载</strong>——禁用/删除后必须重启整个扩展宿主才生效。这不是 VSCode 一家的毛病，是几乎所有主流插件架构的通病。放在普通软件里，重启一下就忍了；<strong>放在 agent 语境里则是量级不同的问题</strong>：一个 agent 塞满了工具集、执行环境、权限、沙箱、会话状态、记忆系统，如果「模型自己改一行、就得重启整个进程」，那之前<strong>积累的上下文缓存会全部崩掉</strong>——更糟的是「一不留神 agent 可能把自己给改没了」。</p>
+    </div>
+
+    <p>论文把这个困境拆成正交的两半，正好对应<a href="#cordis">第二节</a>那两个原文定义，而这张图把它们和「自进化」这个动机接上——中间是模型驱动的自我改造循环，两侧是让这个循环<strong>安全</strong>的两道保障：</p>
+
+    <div class="evo reveal">
+      <svg viewBox="0 0 760 350" role="img" aria-label="自进化循环与时空双维保障：中央是一条闭环——模型根据任务生成新工具，把工具挂载进运行时，运行中发现问题，然后可逆回滚，回到生成的起点，循环往复。左侧标注「时间可组合性」由可逆效应保障：每次挂载都记录逆操作，回滚时按后进先出精确撤销，上下文缓存不丢失、其他插件不受影响。右侧标注「空间可组合性」由反应式余效应保障：新工具声明它需要的依赖，依赖齐了自动激活，依赖撤走则先停用再卸载，整个依赖拓扑自动推导，不会出现循环依赖或启动顺序错误。底部结论：Cordis 是让自进化循环可以安全跑起来的底层基础设施。">
+        <!-- 中央自进化闭环 -->
+        <text class="phase" x="380" y="30" text-anchor="middle">模型驱动的自进化循环</text>
+
+        <!-- 四个节点 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="300" y="52" width="160" height="40" rx="10" fill="var(--accent-soft)"/>
+          <rect x="512" y="140" width="150" height="40" rx="10" fill="var(--accent-soft)"/>
+          <rect x="300" y="228" width="160" height="40" rx="10" fill="var(--accent-soft)"/>
+          <rect x="98" y="140" width="150" height="40" rx="10" fill="var(--accent-soft)"/>
+        </g>
+        <g fill="var(--accent-ink)">
+          <text class="lab" x="380" y="76" text-anchor="middle">① 生成新工具</text>
+          <text class="lab" x="587" y="164" text-anchor="middle">② 挂载进运行时</text>
+          <text class="lab" x="380" y="252" text-anchor="middle">③ 运行中发现问题</text>
+          <text class="lab" x="173" y="164" text-anchor="middle">④ 可逆回滚</text>
+        </g>
+
+        <!-- 顺时针箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.8" fill="none" marker-end="url(#evoArrow)">
+          <path d="M462 74 C520 82 560 108 575 138"/>
+          <path d="M578 182 C560 214 520 240 462 248"/>
+          <path d="M298 250 C238 242 200 214 185 182"/>
+          <path d="M170 138 C188 106 232 82 298 74"/>
+        </g>
+        <defs>
+          <marker id="evoArrow" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+            <path d="M0 0 L7 3 L0 6 z" fill="var(--accent)"/>
+          </marker>
+        </defs>
+        <text class="mono" x="380" y="164" text-anchor="middle" fill="var(--text-muted)" style="font-style:italic">「自己写工具、</text>
+        <text class="mono" x="380" y="180" text-anchor="middle" fill="var(--text-muted)" style="font-style:italic">自己装、自己换」</text>
+
+        <!-- 左侧：时间维 -->
+        <g style="color: var(--text-soft)" stroke="currentColor" stroke-dasharray="4 3" fill="none" stroke-width="1.2">
+          <rect x="20" y="196" width="216" height="128" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="30" y="218" fill="var(--pro)">时间可组合性 · 可逆效应</text>
+        <text class="mono" x="30" y="240">每次挂载都记录逆操作</text>
+        <text class="mono" x="30" y="258">回滚按 LIFO 精确撤销</text>
+        <text class="mono" x="30" y="276">→ 上下文缓存不丢</text>
+        <text class="mono" x="30" y="294">→ 其他插件不受影响</text>
+        <text class="mono" x="30" y="312">= 「插错了拔下来就是了」</text>
+
+        <!-- 右侧：空间维 -->
+        <g style="color: var(--text-soft)" stroke="currentColor" stroke-dasharray="4 3" fill="none" stroke-width="1.2">
+          <rect x="524" y="196" width="216" height="128" rx="10" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="534" y="218" fill="var(--info)">空间可组合性 · 反应式余效应</text>
+        <text class="mono" x="534" y="240">新工具声明所需依赖</text>
+        <text class="mono" x="534" y="258">依赖齐 → 自动激活</text>
+        <text class="mono" x="534" y="276">依赖撤 → 先停用再卸载</text>
+        <text class="mono" x="534" y="294">→ 拓扑自动推导</text>
+        <text class="mono" x="534" y="312">= 无循环依赖 / 顺序错</text>
+      </svg>
+      <div class="evo-note">Cordis 不生产「进化」本身——它是让上面这条<strong>模型自我改造循环能安全跑起来</strong>的底层基础设施：进化的<em>决定</em>在模型，进化的<em>安全</em>由内核兜底。</div>
+    </div>
+
+    <p>这也直接回答了「这跟 LangChain / LlamaIndex / AutoGPT 有什么区别」——解读把这层说得很利落：<strong>大多数 agent 框架解决的是「怎么把 agent <em>搭</em>起来」</strong>（给你工具、抽象、现成组件，快速拼出一个能用的 agent）；<strong>Cordis 想解决的是「agent 如何<em>自己进化</em>」的底层基础设施问题</strong>。二者不在一层：前者是「搭 agent 的乐高积木」，后者是「能热插拔的乐高<em>底板</em>」。要落到自我进化，模型得能自己写工具、自己装、自己升级，而这个过程<strong>不能动不动重启、不能一升级就丢上下文、不能依赖一乱就整体崩</strong>——这些恰是现有插件系统与 agent 框架「从根上没解决」的问题。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">它不是实验室玩具：四年 · 4000+ 插件的生产验证</div>
+      <p style="margin:.3em 0;">这套设计并非新造的概念，而是从聊天机器人框架 <a href="https://github.com/koishijs/koishi" target="_blank" rel="noopener">Koishi</a> 里<strong>长了四年</strong>的东西——已在真实生产环境跑过 <strong>4000+ 社区插件</strong>。关键细节：这四千多个插件由<strong>互不相识的不同作者</strong>独立开发，彼此唯一的协调机制就是反应式余效应——这说明这套动态组合规则能在<strong>开放生态</strong>里成立，而非只在单一团队的受控代码里。解读也如实转述了论文自陈的局限：<strong>目前只有 Koishi 一个生态、TypeScript 一门语言的验证，且缺乏与替代架构的直接对比</strong>。源起也有迹可循：一作施一凡（北大 + DeepSeek，Koishi 作者）早在 2023 年就为 Koishi 写过一篇《可逆的插件系统》设计文，几乎是本论文的雏形；<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/README.md#L7" target="_blank" rel="noopener">README</a> 说的「powered by Cordis」，本质就是 Koishi 的 Cordis 升级版。</p>
+    </div>
+
+    <p><strong>把这层接回你读这篇拆解的收益</strong>：本页后面所有「源码级事实」——可逆 effect 的 disposer 栈（<a href="#cordis">第二节</a>）、事件溯源日志（<a href="#session">下一节</a>）、能力接缝的 provider swap（<a href="#seam">第五节</a>）——都是<strong>这块「自进化底板」的具体承重构件</strong>。你不必相信「自进化」这个宏大叙事也能用它：哪怕只是要做多用户化、凭证热更、崩溃回收，你要的其实是同一种东西——<strong>能安全地在运行时改造自己的系统</strong>。这正是<a href="#reuse-map">第九节</a>那张复用表的立足点。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="session"><span class="sec-num">四</span>事件溯源会话：模型可见即已落日志<a href="#session" class="anchor">#</a></h2>
     <p class="kicker">— append-only 日志是单一事实源，模型历史是投影</p>
 
     <p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/session.md" target="_blank" rel="noopener"><code>dsh-session</code></a> 把一次会话建模成<strong>一条 append-only 的类型化 <code>SessionEvent</code> 日志</strong>——它是 agent 整段交互历史的唯一事实源。<strong>LLM 消息历史是从日志 <em>投影</em>出来的，从不单独存储</strong>；重放就是从同一批事件重新推导。这条设计钉在 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L92-L96" target="_blank" rel="noopener">architecture.md 的一句不变量</a>上：</p>
@@ -352,11 +450,11 @@ dsh --profile web --dump-config</code></pre>
 
     <div class="callout callout-info">
       <div class="callout-tag">落地视角：崩溃回收 / 状态一致性</div>
-      <p style="margin:.3em 0;">这套「事件日志是事实源、内存态是投影」的模型，正好解决<strong>长程任务的崩溃回收</strong>：崩了之后不需要「恢复内存状态」，只需<strong>重放日志重新投影</strong>。任何会话只要把「模型看到的每一条」都落成可重建事件，fork / resume / 审计就全是免费的副产品——而不是各写一套。代价见第九节：写入路径的纪律（一切模型可见输入都必须走 append）。</p>
+      <p style="margin:.3em 0;">这套「事件日志是事实源、内存态是投影」的模型，正好解决<strong>长程任务的崩溃回收</strong>：崩了之后不需要「恢复内存状态」，只需<strong>重放日志重新投影</strong>。任何会话只要把「模型看到的每一条」都落成可重建事件，fork / resume / 审计就全是免费的副产品——而不是各写一套。代价见第十节：写入路径的纪律（一切模型可见输入都必须走 append）。</p>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="seam"><span class="sec-num">四</span>能力接缝：一次 provider swap 换整条产品线<a href="#seam" class="anchor">#</a></h2>
+    <h2 id="seam"><span class="sec-num">五</span>能力接缝：一次 provider swap 换整条产品线<a href="#seam" class="anchor">#</a></h2>
     <p class="kicker">— Definition / Provider / Consumer 三角色，缺一不成接缝</p>
 
     <p>「一切皆插件」落到可维护性上，靠的是 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L98-L102" target="_blank" rel="noopener">capability seam（能力接缝）</a>这个规矩。一个 seam 是一项<strong>可换能力</strong>，由三个角色构成：<strong>Service Definition</strong>（声明接口）、<strong>Service Provider</strong>（实现它）、<strong>Consumer</strong>（用它，通常是一个模型可见的工具）。一个包可以兼任多角色，但<strong>单一角色不成接缝</strong>——加一项能力意味着把三者都设计出来。以文件系统接缝 <code>ctx.fs</code> 为例：</p>
@@ -412,7 +510,7 @@ dsh --profile web --dump-config</code></pre>
     <p>接缝的威力在<strong>组合</strong>：LLM 适配器接缝 <code>ctx.llm</code> 下并存 <code>llm-deepseek</code> / <code>llm-pi-ai</code> / <code>llm-replay</code>（其中 replay 是测试用的确定性回放）；子代理接缝 <code>ctx.subagents</code> 下并存 6 个 provider（进程内 spawn / fork、跨进程 ACP / Codex / Claude Code、以及 dsh-sdk）——它是少数几个<strong>允许多实现按名并存</strong>的接缝，其余多数（如 bash 执行器）只允许一个。而「加一个模型 provider = 在 <code>ctx.llm</code> 上注册它的适配器」「加一个模型可见能力 = 在 <code>ctx.tools</code> 上注册、其 schema 自动进 prompt 组装」这类<strong>「新行为该往哪挂」</strong>的对照，被 <a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L104-L128" target="_blank" rel="noopener">architecture.md 的一张表</a>钉死了。</p>
 
     <!-- ============================================================ -->
-    <h2 id="loop"><span class="sec-num">五</span>Turn 循环与守卫式工具流水线<a href="#loop" class="anchor">#</a></h2>
+    <h2 id="loop"><span class="sec-num">六</span>Turn 循环与守卫式工具流水线<a href="#loop" class="anchor">#</a></h2>
     <p class="kicker">— waterfall 可扩展，但守卫只能减权</p>
 
     <p>一个 <strong>step</strong> 是「一次模型请求 + 它调用的工具」；一个 <strong>turn</strong> 是零或多个 step。<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/architecture.md#L63-L90" target="_blank" rel="noopener">turn flow</a> 的骨架是：<code>turn/start</code> → 认领输入 → 组装 prompt 段 + 工具 schema → <code>agent/pre-step</code>（可改写或拒绝）→ <code>step/start</code> → <code>agent/request → llm/stream → assistant/chunk* → assistant/message</code> → <code>tool/call* → tools/pre-execute → tools/execute → tools/post-execute → tool/result*</code> → <code>step/end</code>。其中 <code>agent/pre-step</code>、<code>agent/request</code>、<code>llm/stream</code> 和三个 <code>tools/*</code> 都是 <strong>waterfall</strong>（监听器必须调 <code>next()</code> 委托）。</p>
@@ -474,7 +572,7 @@ dsh --profile web --dump-config</code></pre>
     <p>结果类型也贯彻同一克制：成功结果里的规范 <code>value</code> 是<strong>执行局部</strong>的、故意不进持久事件（日志只存 <code>content</code> / <code>error</code> / <code>meta</code>）——<a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/tools.md#L370" target="_blank" rel="noopener">「重放能复现呈现，但无法重建中间的规范值」</a>。未知工具和抛异常的工具都变成结构化错误（<code>UNKNOWN_TOOL</code>），<strong>调用失败但不结束 turn</strong>。</p>
 
     <!-- ============================================================ -->
-    <h2 id="codemode"><span class="sec-num">六</span>Code Mode：把「模型写的程序」当传输层<a href="#codemode" class="anchor">#</a></h2>
+    <h2 id="codemode"><span class="sec-num">七</span>Code Mode：把「模型写的程序」当传输层<a href="#codemode" class="anchor">#</a></h2>
     <p class="kicker">— 一个可选能力，不是 agent loop 的脊柱</p>
 
     <p><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/code-runtime.md" target="_blank" rel="noopener">代码执行接缝 <code>ctx.codeRuntime</code></a> 的定位很清醒：<strong>「Code execution is one optional capability, not part of the agent-loop spine.」</strong>它把「一段模型写的程序」跑在宿主提供的异步绑定之上，报告它打印了什么、返回了什么。程序作为一个 async 函数体运行——顶层 <code>await</code> 和 <code>return</code> 可用，完成值成为 <code>CodeRunResult.value</code>；<strong>错误是结果上的一个字段，而不是 <code>run()</code> 的 reject</strong>（和 <code>ShellExecutor.run</code> 的「失败也 resolve」契约一致）。</p>
@@ -487,7 +585,7 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="security"><span class="sec-num">七</span>安全边界：沙箱 · 审批 · 凭证只存引用<a href="#security" class="anchor">#</a></h2>
+    <h2 id="security"><span class="sec-num">八</span>安全边界：沙箱 · 审批 · 凭证只存引用<a href="#security" class="anchor">#</a></h2>
     <p class="kicker">— 三条边界都做成接缝，fail closed 是默认</p>
 
     <p>多用户 / 生产化最关心的三条边界，<code>dsh</code> 都做成了接缝，且默认「关死」：</p>
@@ -517,7 +615,7 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="reuse-map"><span class="sec-num">八</span>可复用范式：四个能直接借鉴的接缝<a href="#reuse-map" class="anchor">#</a></h2>
+    <h2 id="reuse-map"><span class="sec-num">九</span>可复用范式：四个能直接借鉴的接缝<a href="#reuse-map" class="anchor">#</a></h2>
     <p class="kicker">— 从 dsh 的做法反推「同类需求该往哪个接缝挂」</p>
 
     <div class="table-wrap">
@@ -549,7 +647,7 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="tradeoff"><span class="sec-num">九</span>取舍与陷阱<a href="#tradeoff" class="anchor">#</a></h2>
+    <h2 id="tradeoff"><span class="sec-num">十</span>取舍与陷阱<a href="#tradeoff" class="anchor">#</a></h2>
     <p class="kicker">— 一句话：架构纯度极高，代价是心智门槛与 preview 状态</p>
 
     <div class="card-grid">
@@ -581,7 +679,7 @@ dsh --profile web --dump-config</code></pre>
     </div>
 
     <!-- ============================================================ -->
-    <h2 id="annex"><span class="sec-num">十</span>附：源码坐标一览<a href="#annex" class="anchor">#</a></h2>
+    <h2 id="annex"><span class="sec-num">十一</span>附：源码坐标一览<a href="#annex" class="anchor">#</a></h2>
     <p class="kicker">— 想深挖时的入口地图（基准 commit 47f9438，行号已核对）</p>
 
     <div class="table-wrap">
@@ -605,13 +703,15 @@ dsh --profile web --dump-config</code></pre>
           <tr><td>Code Mode 接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/code-runtime.md" target="_blank" rel="noopener">code-runtime.md</a></td><td><code>ctx.codeRuntime</code>：程序即传输层、错误是字段非异常</td></tr>
           <tr><td>子代理接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/subagent.md" target="_blank" rel="noopener">subagent.md</a></td><td>6 provider 并存 · 一次性 vs 可续 · lineage/depth</td></tr>
           <tr><td>凭证接缝</td><td><a href="https://github.com/deepseek-ai/deepseek-harness/blob/47f943859bef60e4160492346772ded9b24f765a/docs/subsystems/credentials.md" target="_blank" rel="noopener">credentials.md</a></td><td>配置存引用 · 每操作 resolve · 轮换即时生效</td></tr>
+          <tr><td>立意来源（第三节）</td><td><a href="https://www.youtube.com/watch?v=C6lJClhhpdA" target="_blank" rel="noopener">「最佳拍档」视频解读</a> + <a href="https://github.com/cordiverse/paper" target="_blank" rel="noopener">cordiverse/paper</a></td><td>自进化切入点 · VSCode 87/100 数据 · Koishi 四年 4000+ 插件 · 作者背景（转述，非源码事实）</td></tr>
         </tbody>
       </table>
     </div>
 
     <hr />
     <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
-      修订记录：2026-08-15 初稿（源码级拆解，基于 deepseek-ai/deepseek-harness commit 47f9438 · master · 行号经克隆核对）
+      修订记录：2026-08-15 初稿（源码级拆解，基于 deepseek-ai/deepseek-harness commit 47f9438 · master · 行号经克隆核对）<br />
+      2026-08-17 补录第二节 Cordis 论文原文定义；新增第三节「为自进化 AI 造的底板」（含第 5 张 bespoke SVG），立意层综合自「最佳拍档」视频解读（<a href="https://www.youtube.com/watch?v=C6lJClhhpdA" target="_blank" rel="noopener">C6lJClhhpdA</a>）转述的论文观点，与源码事实分层标注
     </p>
 
     <div class="doc-footer">

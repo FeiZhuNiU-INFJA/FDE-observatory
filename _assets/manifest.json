@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-16T13:59:44.746200+00:00",
+  "generated_at": "2026-08-17T06:26:03.878374+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -508,6 +508,7 @@
         "Agent Harness",
         "Cordis",
         "可逆效果",
+        "自进化",
         "事件溯源",
         "能力接缝",
         "Code Mode",
