@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-17T06:26:03.878374+00:00",
+  "generated_at": "2026-08-21T09:05:38.400732+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -498,6 +498,21 @@
   ],
   "oss": [
     {
+      "path": "opensource-analysis/2026-08_deepseek-harness-tutorial.html",
+      "title": "DeepSeek Harness 源码导读",
+      "date": "2026-08-21",
+      "audience": null,
+      "status": "对内",
+      "tags": [
+        "受众：技术团队"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
       "path": "opensource-analysis/2026-08_deepseek-harness.html",
       "title": "DeepSeek Harness · 把 agent 拆成一棵可插拔、可回滚的插件树",
       "date": "2026-08-15",
@@ -635,6 +650,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-08_anthropic-risk-report.html",
+      "title": "安全档案的自曝时刻Anthropic Risk Report · August 2026",
+      "date": "2026-08-21",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Anthropic",
+        "RSP",
+        "AI 安全",
+        "对齐",
+        "风险评估"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "readings/2026-08_boris-cherny-cut-80-percent-prompt.html",
       "title": "删掉 80% 的系统提示词",
