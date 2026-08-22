@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-21T09:05:38.400732+00:00",
+  "generated_at": "2026-08-22T11:54:56.577474+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -232,6 +232,26 @@
     }
   ],
   "frontier_deep": [
+    {
+      "path": "frontier/vendors/cursor/deep_dives/2026-08-22_origin-code-hosting.html",
+      "title": "Cursor Origin · AI 原生代码托管，战火从「写代码」烧向「管代码」",
+      "date": "2026-08-22",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商深度",
+        "Cursor",
+        "GitHub",
+        "代码托管",
+        "AI Agent"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "cursor",
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
+    },
     {
       "path": "frontier/vendors/volcengine/deep_dives/2026-07-29_ark-managed-agents.html",
       "title": "火山方舟 Managed Agents · 从 SDK 到「Agent Runtime as a Service」",
