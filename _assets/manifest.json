@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-22T11:54:56.577474+00:00",
+  "generated_at": "2026-08-25T04:11:34.369232+00:00",
   "insights": [
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
@@ -517,6 +517,27 @@
     }
   ],
   "oss": [
+    {
+      "path": "opensource-analysis/2026-08_codex-harness.html",
+      "title": "Codex Harness · 把 agent loop 做成一层可被产品嵌入的生产宿主",
+      "date": "2026-08-24",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "开源拆解",
+        "Agent Harness",
+        "Codex",
+        "OpenAI",
+        "App Server",
+        "Agent Loop",
+        "Responses API"
+      ],
+      "category": "oss",
+      "extra": {
+        "timing": "已发生",
+        "confidence": "中"
+      }
+    },
     {
       "path": "opensource-analysis/2026-08_deepseek-harness-tutorial.html",
       "title": "DeepSeek Harness 源码导读",

@@ -1,0 +1,582 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Codex Harness 深度解析 · Agent Loop × App Server 协议 × 无状态请求 · 附与 dsh 对比 · 开源分析</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent: #2b5797; --accent-soft: #e9eff7; --accent-deep: #1e3d6b; --accent-ink: #16304f; }
+  [data-theme="dark"] { --accent: #8ab0e0; --accent-soft: #14243b; --accent-deep: #6a94cf; --accent-ink: #cfe0f5; }
+
+  /* ---- 代码块（沿用站内约定）---- */
+  pre.code-block { font-size: .78rem; line-height: 1.55; overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: .9em 1em; border-radius: 8px; border: 1px solid #1e293b; }
+  [data-theme="dark"] pre.code-block { background: #020617; }
+  pre.code-block code, pre.code-block span { background: transparent !important; padding: 0; border-radius: 0; font-size: inherit; }
+  pre.code-block code { color: inherit; }
+  pre.code-block .cm { color: #64748b; font-style: italic; }
+  pre.code-block .kw { color: #f472b6; }
+  pre.code-block .st { color: #86efac; }
+  pre.code-block .fn { color: #93c5fd; }
+  pre.code-block .nb { color: #fcd34d; }
+
+  /* ============ Bespoke 1: 无状态请求 × prompt 前缀缓存（.pfx）============ */
+  .pfx { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); transition: transform .18s ease, border-color .18s ease; }
+  .pfx:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .pfx svg { width: 100%; height: auto; display: block; }
+  .pfx text { font-family: var(--sans); }
+  .pfx .lab { font-size: 11px; font-weight: 700; }
+  .pfx .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .pfx .phase { font-family: var(--mono); font-size: 9.5px; font-weight: 700; fill: var(--accent); letter-spacing: .06em; }
+  .pfx-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 2: App Server 协议双向通道（.proto）============ */
+  .proto { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); transition: transform .18s ease, border-color .18s ease; }
+  .proto:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .proto svg { width: 100%; height: auto; display: block; }
+  .proto text { font-family: var(--sans); }
+  .proto .lab { font-size: 11px; font-weight: 700; }
+  .proto .mono { font-family: var(--mono); font-size: 8.5px; fill: var(--text-muted); }
+  .proto .role { font-family: var(--mono); font-size: 8.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; fill: var(--accent); }
+  .proto-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 3: harness 设计的杠杆（.arc）============ */
+  .arc { margin: 1.4em 0; padding: 1.3em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); transition: transform .18s ease, border-color .18s ease; }
+  .arc:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .arc svg { width: 100%; height: auto; display: block; }
+  .arc text { font-family: var(--sans); }
+  .arc .lab { font-size: 11px; font-weight: 700; }
+  .arc .mono { font-family: var(--mono); font-size: 9px; fill: var(--text-muted); }
+  .arc .num { font-family: var(--display); font-weight: 700; font-size: 30px; }
+  .arc-note { font-size: .8rem; color: var(--text-muted); text-align: center; margin-top: .8em; line-height: 1.5; }
+
+  /* ============ Bespoke 4: 两种「可演化性」哲学（.vs）============ */
+  .vs { margin: 1.5em 0; display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; align-items: stretch; }
+  .vs-card { border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); padding: 1.15em 1.15em 1.25em; }
+  .vs-card.left { border-radius: 16px 0 0 16px; }
+  .vs-card.right { border-radius: 0 16px 16px 0; }
+  .vs-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 700; margin-bottom: .5em; }
+  .vs-card.left .k { color: var(--accent); }
+  .vs-card.right .k { color: #7c3aed; }
+  [data-theme="dark"] .vs-card.right .k { color: #a78bfa; }
+  .vs-card h4 { margin: .1em 0 .7em; font-size: 1rem; }
+  .vs-card ul { margin: 0; padding-left: 1.1em; }
+  .vs-card li { font-size: .84rem; color: var(--text-muted); line-height: 1.6; margin: .3em 0; }
+  .vs-card li strong { color: var(--text); }
+  .vs-mid { display: flex; align-items: center; justify-content: center; padding: 0 .2em; }
+  .vs-mid span { font-family: var(--display); font-style: italic; font-weight: 700; font-size: 1.3rem; color: var(--text-muted); background: var(--bg); border: 1px solid var(--border); border-radius: 999px; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; }
+  @media (max-width: 760px) {
+    .vs { grid-template-columns: 1fr; }
+    .vs-card.left { border-radius: 16px 16px 0 0; }
+    .vs-card.right { border-radius: 0 0 16px 16px; border-top: none; }
+    .vs-mid { padding: .4em 0; }
+    .vs-mid span { transform: rotate(90deg); }
+  }
+
+  /* ---- 关键洞察卡（沿用）---- */
+  .insights-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1em; margin: 1.2em 0 1.5em; }
+  .insight-card { border: 1px solid var(--border); border-radius: 12px; padding: 1em 1.15em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .insight-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); border-radius: 12px 0 0 12px; }
+  .insight-card .k { font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin-bottom: .4em; font-weight: 700; }
+  .insight-card .t { font-weight: 700; font-size: .95rem; margin-bottom: .4em; }
+  .insight-card .d { font-size: .82rem; color: var(--text-muted); line-height: 1.55; }
+  @media (max-width: 760px) { .insights-grid { grid-template-columns: 1fr; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .insight-card:hover, .pfx:hover, .proto:hover, .arc:hover { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      Codex Harness<span class="brand-sub">开源拆解 · openai/codex · 2026-08</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Codex Harness · 把 agent loop 做成一层<span class="en">可被产品嵌入</span>的生产宿主</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">OpenAI 开源的不是模型，也不是 Codex 产品，而是驱动 App / CLI / IDE / web 全部界面的那层执行框架——它的可演化性押在「一条稳定、向后兼容的客户端协议边界」上，而不是插件内核上</p>
+      <div class="doc-meta">
+        <span>2026-08-24</span>
+        <span>跨市场</span>
+        <span>开源拆解</span>
+        <span>Agent Harness</span>
+        <span>Codex</span>
+        <span>OpenAI</span>
+        <span>App Server</span>
+        <span>Agent Loop</span>
+        <span>Responses API</span>
+        <span>可对外</span>
+        <span>时机：已发生</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">Rust<small>codex-rs</small></div><div class="lab">载体：生产级单体，不是插件树</div></div>
+        <div class="hero-stat"><div class="num">Apache<small>-2.0</small></div><div class="lab">可自由修改 / 嵌入 / 商用</div></div>
+        <div class="hero-stat"><div class="num">3<small>层</small></div><div class="lab">集成面：exec · SDK · app-server</div></div>
+        <div class="hero-stat"><div class="num">6<small>×</small></div><div class="lab">token 削减（ARC-AGI-3 13.3→38.3%）</div></div>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem;">
+        源：<a href="https://developers.openai.com/blog/codex-as-a-platform" target="_blank" rel="noopener">Codex as a platform（2026-08-19）</a> ·
+        <a href="https://openai.com/index/unrolling-the-codex-agent-loop/" target="_blank" rel="noopener">深入解析 Codex 智能体循环</a> ·
+        <a href="https://openai.com/index/unlocking-the-codex-harness/" target="_blank" rel="noopener">如何构建 App Server</a> ·
+        <a href="https://github.com/openai/codex" target="_blank" rel="noopener">github.com/openai/codex</a>
+      </p>
+    </header>
+
+    <div class="lede"><strong>核心论点：</strong>Codex Harness 和 dsh 都在解同一道题——「怎么让 agent 的执行层能被无痛改造、又能承接长程任务」。但它们的答案在<strong>相反的方向</strong>：dsh 把可演化性押在「无特权内核 + 可逆 effect」的<strong>内部组合</strong>上；Codex 把它押在「一条稳定、向后兼容的客户端协议（app-server）」这个<strong>外部边界</strong>上。前者是「一切皆插件」的架构纯度，后者是「一切皆协议客户端」的产品化契约。</div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul>
+        <li><strong>开源的是执行层，不是模型。</strong>Apache-2.0 下放出 <code>codex exec</code>（CLI 一次性作业）、Codex SDK（TS/Python）、<code>app-server</code>（产品嵌入用的协议服务）三层集成面；模型访问与托管服务仍独立。</li>
+        <li><strong>Agent Loop 的骨架很「经典」：</strong>prompt 是一个带 <code>role</code> 的 item 列表，发给 Responses API，拿到 SSE 流；模型要么给最终消息、要么发 <code>function_call</code>，工具输出 append 回 input，循环到不再调工具为止。一次「输入→响应」= 一个 <strong>turn</strong>，多个 turn 组成一个 <strong>thread</strong>。</li>
+        <li><strong>状态模型是它最反直觉的取舍：</strong>默认 HTTP/SSE 路径每次请求<strong>完全无状态</strong>（<code>store: false</code>、不带 <code>previous_response_id</code>、始终发 <code>prompt_cache_key</code>）——旧 prompt 是新 prompt 的<em>精确前缀</em>，靠 prompt caching 省成本、靠 <code>encrypted_content</code> 兼容 ZDR；另有一条 WebSocket 路径会<strong>复用 <code>previous_response_id</code></strong> 只发增量 item，两条路并存。</li>
+        <li><strong>可演化性靠协议边界兜底：</strong>app-server 是「JSON-RPC lite」（去掉 <code>"jsonrpc":"2.0"</code> 头、JSONL over stdio），围绕 <strong>Item / Turn / Thread</strong> 三原语，双向、可发审批请求、<strong>向后兼容</strong>——老客户端能安全对接新服务端。</li>
+        <li><strong>Harness 设计本身就是杠杆：</strong>仅靠「保留推理 + 上下文压缩」两项调整，GPT-5.6 Sol 在 ARC-AGI-3 从 13.3% 升到 38.3%，输出 token 少 6 倍。</li>
+        <li><strong>与 dsh 对照：</strong>Rust 生产单体 vs TS 226 包插件树；协议契约解耦 vs 内核组合解耦；无状态 prompt 前缀 vs 事件溯源日志；「已驱动真实产品线」vs「developer preview、明说会破坏兼容」。</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">这篇的证据分层（先说清楚）</div>
+      <p style="margin:.3em 0;">本页对 Codex 的机制描述，结合 <strong>OpenAI 官方工程博客系列</strong>（agent loop / app-server）与 <a href="https://github.com/openai/codex" target="_blank" rel="noopener">openai/codex</a> 仓库<strong>源码核对</strong>（对照到 <code>main</code> 分支近期快照，commit <code>3a469a2</code>）。凡引「源码坐标」处均已在仓库里核到实际文件路径（如 <code>codex-rs/app-server</code>、<code>codex-rs/core/src/tools/handlers/shell_spec.rs</code>、<code>codex-rs/core/gpt-5.2-codex_prompt.md</code>），可点击直达；行为描述以源码为准，个别与博客口径不一致处以源码修正（见「状态模型」一节的传输路径）。为可读性不逐行标行号，但结论与源码一致。dsh 侧沿用本站已核对拆解。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="what"><span class="sec-num">一</span>它到底是什么：驱动所有界面的那层执行框架<a href="#what" class="anchor">#</a></h2>
+    <p class="kicker">— 开源的是 harness，不是模型，也不是 Codex 产品</p>
+
+    <p>大多数人通过 <strong>App / CLI / IDE 扩展</strong>认识 Codex。但按 OpenAI 的说法，这些只是「同一个底层系统」的几种界面。这个底层系统就是 <strong>Codex Harness</strong>——「模型与真实世界之间的那层脚手架」：它帮模型收集上下文、推理、调工具、在配置的边界内运作、请求审批、把工作跨轮次推进。2026-08-19，OpenAI 把它<strong>作为平台开源</strong>，落在 <a href="https://github.com/openai/codex" target="_blank" rel="noopener">github.com/openai/codex</a>，Apache-2.0。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">Codex as a platform · 原文摘引</div>
+      <p style="margin:.3em 0;">「The <strong>open-source Codex harness</strong> is what powers all these experiences. It helps models gather context, reason through tasks, use tools, operate within configured boundaries, request approval, and carry work forward.」</p>
+      <p style="margin:.3em 0;">「The open-source layer is <strong>the harness and integration surface</strong>; model access and managed services remain separate.」</p>
+    </div>
+
+    <p>官方把「开发者接入」切成<strong>三个层级</strong>，覆盖从 CI 脚本到产品级嵌入的全场景——这三层就是本次开源的主体：</p>
+
+    <div class="insights-grid">
+      <div class="insight-card">
+        <div class="k">最轻 · codex exec</div>
+        <div class="t">一次性、非交互作业</div>
+        <div class="d">一条 CLI 命令跑一个有边界的 agent 工作流、返回结构化输出。适合 CI/CD、批量脚本、后台任务，无需管理会话。</div>
+      </div>
+      <div class="insight-card">
+        <div class="k">程序化 · Codex SDK</div>
+        <div class="t">TypeScript / Python</div>
+        <div class="d">在应用代码里启动 / 恢复 / 流式传输 Codex 任务的编程接口；源码在 <a href="https://github.com/openai/codex/tree/main/sdk" target="_blank" rel="noopener"><code>openai/codex/sdk</code></a>，是常见程序化工作流的低摩擦入口。</div>
+      </div>
+      <div class="insight-card">
+        <div class="k">产品级 · app-server</div>
+        <div class="t">长驻进程 + 文档化协议</div>
+        <div class="d">当 agent 是产品本身的一部分时用它：应用连到本地 Codex 进程，开线程、流事件、中断、暴露工具、回应审批。源码在 <a href="https://github.com/openai/codex/tree/main/codex-rs/app-server" target="_blank" rel="noopener"><code>codex-rs/app-server</code></a>（Rust）。</div>
+      </div>
+      <div class="insight-card">
+        <div class="k">载体</div>
+        <div class="t">Rust 单体 · codex-rs 工作区</div>
+        <div class="d">仓库 96%+ 是 Rust；<code>codex-rs</code> 是一个 Rust workspace，CLI/exec/app-server 等都在其中。另有 <a href="https://github.com/openai/skills" target="_blank" rel="noopener"><code>openai/skills</code></a>、<a href="https://github.com/openai/codex-universal" target="_blank" rel="noopener"><code>codex-universal</code></a> 两个配套仓库。</div>
+      </div>
+    </div>
+
+    <p>注意这里和 dsh 的第一处根本差异已经浮现：dsh 的 README 第一句是「everything is a plugin」，连 agent loop 都是插件；Codex 的自我定义是「<strong>the harness and integration surface</strong>」——它不承诺「内部一切可换」，而承诺「<strong>接入面（integration surface）稳定可依赖</strong>」。前者是内向的架构宣言，后者是外向的产品契约。这条线索会贯穿全文。</p>
+
+    <!-- ============================================================ -->
+    <h2 id="loop"><span class="sec-num">二</span>Agent Loop：prompt 作为 item 列表 · turn / thread<a href="#loop" class="anchor">#</a></h2>
+    <p class="kicker">— 骨架很经典，值钱的是「怎么组 prompt、怎么续 prompt」</p>
+
+    <p>Codex 官方那篇 <a href="https://openai.com/index/unrolling-the-codex-agent-loop/" target="_blank" rel="noopener">《深入解析 Codex 智能体循环》</a>把 loop 拆得很干净：agent 接收<strong>用户输入</strong> → 组成<strong>prompt</strong> → 发给模型<strong>推理</strong> → 模型要么给<strong>最终响应</strong>、要么发<strong>工具调用请求</strong>（如「运行 <code>ls</code>」）；若是后者，agent 执行工具、把输出 append 回 prompt，再次推理，循环往复，直到模型不再调工具、转而生成一条面向用户的 <strong>assistant message</strong>。从「用户输入」到「agent 响应」的完整过程叫一个 <strong>turn</strong>（Codex 里也叫一个对话 thread）。</p>
+
+    <p>骨架不稀奇，稀奇的是 <strong>prompt 的构造</strong>。Codex 走 <a href="https://platform.openai.com/docs/api-reference/responses" target="_blank" rel="noopener">Responses API</a>：prompt 是一个 <strong>item 列表</strong>，每个 item 带一个决定优先级的 <code>role</code>（降序：<code>system</code> &gt; <code>developer</code> &gt; <code>user</code> &gt; <code>assistant</code>）。用户消息之前，Codex 先注入几条固定 item：</p>
+
+    <pre class="code-block"><code><span class="cm"># Responses API 的 input 列表（用户消息之前的固定前缀）</span>
+<span class="kw">1.</span> role=developer  <span class="cm"># 描述 shell 工具的沙箱权限：可写目录 / 网络 / 何时该问用户</span>
+<span class="kw">2.</span> role=developer  <span class="cm"># （可选）config.toml 里的 developer_instructions</span>
+<span class="kw">3.</span> role=user       <span class="cm"># （可选）聚合的 user instructions：AGENTS.md / AGENTS.override.md / skills 元数据…</span>
+<span class="kw">4.</span> role=user       <span class="cm"># &lt;environment_context&gt; cwd + shell &lt;/environment_context&gt;</span>
+<span class="cm"># —— 之后才 append 用户真正的消息 ——</span></code></pre>
+
+    <p>而 <code>instructions</code>（系统/开发者基指令）读自模型自带的 <a href="https://github.com/openai/codex/blob/main/codex-rs/core" target="_blank" rel="noopener"><code>base_instructions</code></a>（如 <code>codex-rs/core/gpt-5.2-codex_prompt.md</code>），<code>tools</code> 里则塞进内置工具（<code>shell</code>、<code>update_plan</code>）、Responses API 工具（<code>web_search</code>）和用户经 MCP 提供的工具（<code>mcp__weather__get-forecast</code>）。<strong>把静态内容（系统指令、工具定义）放在 prompt 前部</strong>——这是刻意的，为的是下一节要讲的缓存。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">与 dsh 对照：谁决定「模型看到什么」</div>
+      <p style="margin:.3em 0;">在 dsh 里，「注入 <code>system.message</code> / 改写模型可见消息」是挂在 <code>agent/pre-step</code> 上的一个 <strong>waterfall 可逆监听器</strong>——切角色 = 卸旧挂新。在 Codex 里，这件事是<strong>组 prompt 的固定装配流程</strong>（读 AGENTS.md、拼 developer 消息、附 environment_context）。dsh 把「可变」做成运行时的 effect 组合；Codex 把它做成一条清晰但相对固定的装配线。灵活度 vs 可预测性，各取一端。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="stateless"><span class="sec-num">三</span>无状态请求 × prompt 前缀缓存 × ZDR<a href="#stateless" class="anchor">#</a></h2>
+    <p class="kicker">— 长程状态的第一种答案：把它留在 prompt 前缀 + 服务端缓存里</p>
+
+    <p>这是 Codex 最值得单拎出来的工程取舍。随着 loop 迭代和 turn 累积，prompt 会越来越长；Responses API 提供了 <code>previous_response_id</code> 来避免每次重传全量历史。Codex 的<strong>默认 HTTP/SSE 路径明确不走这条</strong>：请求里写死 <code>store: false</code>、不带 <code>previous_response_id</code>、每次都带上 <code>prompt_cache_key</code>——目的是让每个请求<strong>完全无状态（stateless）</strong>，从而干净地支持 <strong>Zero Data Retention（ZDR）</strong>。代价是整段 JSON 会随对话<strong>二次增长（quadratic）</strong>，但这个代价被两件事对冲掉：</p>
+
+    <div class="pfx reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="Codex 无状态请求与 prompt 前缀缓存示意：第一次请求的 prompt 由固定前缀（系统指令、工具定义、开发者消息）加上用户消息组成；随着工具调用和轮次推进，新 prompt 在旧 prompt 后面不断追加 reasoning、function_call、function_call_output、assistant 消息，旧 prompt 始终是新 prompt 的精确前缀；因为前缀不变，服务端 prompt caching 可以命中已缓存的前缀，只对新增部分计费；ZDR 客户仍能通过 encrypted_content 携带上一轮的推理，无需服务端存储状态">
+        <text class="phase" x="20" y="24">turn N 的 prompt = turn N-1 的精确前缀 + 新增</text>
+
+        <!-- 前缀块（不变） -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="20" y="40" width="205" height="220" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="role" x="34" y="60">STABLE PREFIX · 缓存命中</text>
+        <g fill="var(--accent-ink)">
+          <text class="mono" x="34" y="82" fill="var(--accent-ink)">system message（服务端定）</text>
+          <text class="mono" x="34" y="104" fill="var(--accent-ink)">tools[] 工具定义</text>
+          <text class="mono" x="34" y="126" fill="var(--accent-ink)">instructions（base prompt）</text>
+          <text class="mono" x="34" y="148" fill="var(--accent-ink)">dev: sandbox 权限</text>
+          <text class="mono" x="34" y="170" fill="var(--accent-ink)">user: AGENTS.md 聚合</text>
+          <text class="mono" x="34" y="192" fill="var(--accent-ink)">environment_context</text>
+          <text class="mono" x="34" y="214" fill="var(--accent-ink)">user: 第一条消息</text>
+          <text class="mono" x="34" y="236" fill="var(--accent-ink)">…历史 turn 全量…</text>
+        </g>
+
+        <!-- 追加块（新增，计费） -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="245" y="40" width="215" height="220" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="role" x="259" y="60" style="fill:var(--text-muted)">APPEND · 只对新增计费</text>
+        <g fill="var(--text)">
+          <text class="mono" x="259" y="86" fill="var(--text)">+ reasoning</text>
+          <text class="mono" x="259" y="112" fill="var(--text)">&nbsp;&nbsp;(encrypted_content)</text>
+          <text class="mono" x="259" y="138" fill="var(--text)">+ function_call</text>
+          <text class="mono" x="259" y="164" fill="var(--text)">+ function_call_output</text>
+          <text class="mono" x="259" y="196" fill="var(--text)">+ assistant message</text>
+          <text class="mono" x="259" y="222" fill="var(--text)">+ 下一条 user message</text>
+        </g>
+        <!-- 前缀→追加 箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.6" fill="var(--accent)">
+          <line x1="225" y1="150" x2="241" y2="150"/><path d="M241 150 l-8 -4 v8 z"/>
+        </g>
+
+        <!-- 服务端缓存 -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.5">
+          <rect x="490" y="70" width="210" height="70" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="595" y="98" text-anchor="middle" fill="var(--accent-ink)">Responses API 服务端</text>
+        <text class="mono" x="595" y="118" text-anchor="middle" fill="var(--accent-ink)">prompt caching 命中前缀</text>
+        <g stroke="var(--accent)" stroke-width="1.5" fill="var(--accent)" stroke-dasharray="4 3">
+          <line x1="460" y1="105" x2="486" y2="105"/><path d="M486 105 l-8 -4 v8 z"/>
+        </g>
+
+        <!-- 无状态标注 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="490" y="165" width="210" height="95" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="595" y="188" text-anchor="middle" fill="var(--text)">默认路径：store:false</text>
+        <g fill="var(--text-muted)">
+          <text class="mono" x="504" y="210" fill="var(--text-muted)">→ 不带 previous_response_id</text>
+          <text class="mono" x="504" y="230" fill="var(--text-muted)">→ 请求 stateless，天然支持 ZDR</text>
+          <text class="mono" x="504" y="250" fill="var(--text-muted)">→ reasoning 靠 encrypted_content</text>
+        </g>
+      </svg>
+      <div class="pfx-note"><strong>「旧 prompt 是新 prompt 的精确前缀」</strong>是刻意设计：它让服务端 prompt caching 能命中不变的前缀、只对新增部分算钱，从而把「全量重传」的成本压下来；同时「不依赖服务端存储」换来 stateless + ZDR。这是 Codex 对「长程状态往哪放」的回答——<strong>放进 prompt 前缀，靠缓存兜成本</strong>。</div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">一个容易被博客口径带偏的细节：还有第二条传输路径</div>
+      <p style="margin:.3em 0;">「不用 <code>previous_response_id</code>」是<strong>默认 HTTP/SSE 路径</strong>的取舍，不是全局绝对。源码里 <code>core</code> 客户端还实现了一条 <strong>WebSocket 传输</strong>：它会先做一次 <code>generate=false</code> 的连接预热，随后<strong>复用同一连接的 <code>previous_response_id</code></strong>、只把<strong>增量 item</strong>（而非全量历史）打进 <code>response.create</code>。也就是说，「无状态 + 前缀缓存」是省 token 的一种策略，「有状态 + 增量发送」是省带宽/延迟的另一种策略——两条路在 <code>codex-rs/core/src/client.rs</code> 里并存，按连接方式择一。本页图示描述的是默认路径。</p>
+    </div>
+
+    <p>这一取舍和 dsh 形成漂亮的对照。dsh 的答案是<strong>事件溯源</strong>：一切模型可见输入都必须走 <code>append()</code> 落进会话日志，内存里的消息只是日志的<em>投影（deriveMessages）</em>；崩溃后重放日志即恢复，fork / resume / 审计是免费副产品。两者都在解「长程任务的状态一致性」，但——</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>维度</th><th>Codex（源码核对）</th><th>dsh（已核对）</th></tr></thead>
+        <tbody>
+          <tr><td>状态的「家」</td><td>prompt 前缀（每次全量重发）</td><td>append-only 会话日志（单一事实源）</td></tr>
+          <tr><td>成本对策</td><td>服务端 prompt caching 命中前缀</td><td>内存投影 + 压缩，避免重放全量</td></tr>
+          <tr><td>恢复 / fork</td><td>靠客户端 / thread 持久化重建 input</td><td>重放日志天然得到，fork/resume 免费</td></tr>
+          <tr><td>隐私姿态</td><td>stateless + ZDR + <code>encrypted_content</code></td><td>遥测接缝「捕获→脱敏→单后端」</td></tr>
+          <tr><td>本质</td><td>把历史留在<strong>线上（prompt）</strong></td><td>把历史留在<strong>本地日志</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="appserver"><span class="sec-num">四</span>App Server：把可演化性押在协议边界上<a href="#appserver" class="anchor">#</a></h2>
+    <p class="kicker">— JSON-RPC lite · Item / Turn / Thread · 双向 · 向后兼容</p>
+
+    <p>如果说 dsh 的「可演化性」来自内核（换任意插件是配置动作），那 Codex 的「可演化性」来自<strong>协议</strong>。<a href="https://openai.com/index/unlocking-the-codex-harness/" target="_blank" rel="noopener">App Server</a> 是所有 Codex 界面（CLI / IDE / web / macOS App）共享的那条底层通道：一个<strong>双向、客户端友好</strong>的 JSON-RPC API。它刻意用了「<strong>JSON-RPC lite</strong>」——保留 request/response/notification 三种形态，但<strong>去掉 <code>"jsonrpc":"2.0"</code> 头</strong>、用 <strong>JSONL over stdio</strong> 而非严格 JSON-RPC 2.0，好让各语言客户端更容易绑定。</p>
+
+    <p>进程内部分四块：<strong>stdio reader</strong>（读客户端）、<strong>Codex message processor</strong>（把客户端请求翻译成 core 操作、把内部事件翻译成稳定的 UI-ready 通知）、<strong>thread manager</strong>（线程生命周期）、<strong>core thread</strong>（跑核心 agent loop + 持久化）。对外则围绕三个原语：</p>
+
+    <div class="proto reveal">
+      <svg viewBox="0 0 720 320" role="img" aria-label="Codex App Server 协议双向通道示意：左侧是客户端（VS Code 扩展、macOS App、CLI、web worker），右侧是 App Server 进程；客户端发起 initialize、thread/start、turn/start 等请求，服务端回流 thread/started、turn/started、item/started、item 的 delta 增量、item/completed、turn/completed 等通知；当需要执行高风险操作时，服务端反向发起 approval 请求并暂停这一 turn，直到客户端回应 permit 或 deny；协议围绕 Item、Turn、Thread 三个原语，Thread 可创建、恢复、fork、归档，并向后兼容">
+        <!-- 客户端 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.4">
+          <rect x="20" y="60" width="150" height="200" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="95" y="84" text-anchor="middle" fill="var(--text)">客户端</text>
+        <g fill="var(--text-muted)">
+          <text class="mono" x="95" y="110" text-anchor="middle" fill="var(--text-muted)">VS Code 扩展</text>
+          <text class="mono" x="95" y="132" text-anchor="middle" fill="var(--text-muted)">macOS App</text>
+          <text class="mono" x="95" y="154" text-anchor="middle" fill="var(--text-muted)">TUI / CLI</text>
+          <text class="mono" x="95" y="176" text-anchor="middle" fill="var(--text-muted)">web worker</text>
+          <text class="mono" x="95" y="206" text-anchor="middle" fill="var(--text-muted)">— 你自己的产品 —</text>
+          <text class="mono" x="95" y="228" text-anchor="middle" fill="var(--text-muted)">（同一条协议）</text>
+        </g>
+
+        <!-- App Server -->
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="540" y="60" width="160" height="200" rx="12" fill="var(--accent-soft)"/>
+        </g>
+        <text class="lab" x="620" y="84" text-anchor="middle" fill="var(--accent-ink)">app-server</text>
+        <g fill="var(--accent-ink)">
+          <text class="mono" x="620" y="110" text-anchor="middle" fill="var(--accent-ink)">stdio reader</text>
+          <text class="mono" x="620" y="132" text-anchor="middle" fill="var(--accent-ink)">message processor</text>
+          <text class="mono" x="620" y="154" text-anchor="middle" fill="var(--accent-ink)">thread manager</text>
+          <text class="mono" x="620" y="176" text-anchor="middle" fill="var(--accent-ink)">core thread</text>
+          <text class="mono" x="620" y="206" text-anchor="middle" fill="var(--accent-ink)">= agent loop</text>
+          <text class="mono" x="620" y="228" text-anchor="middle" fill="var(--accent-ink)">+ 持久化</text>
+        </g>
+
+        <!-- 请求 → -->
+        <text class="role" x="200" y="98">CLIENT → SERVER · 请求</text>
+        <g stroke="var(--accent)" stroke-width="1.7" fill="var(--accent)">
+          <line x1="175" y1="112" x2="533" y2="112"/><path d="M533 112 l-9 -4 v8 z"/>
+        </g>
+        <g fill="var(--text)">
+          <text class="mono" x="200" y="130" fill="var(--text)">initialize · thread/start · turn/start · 回应 approval</text>
+        </g>
+
+        <!-- 通知 ← -->
+        <text class="role" x="200" y="168" style="fill:var(--text-muted)">SERVER → CLIENT · 通知流</text>
+        <g stroke="var(--text-muted)" stroke-width="1.5" fill="var(--text-muted)">
+          <line x1="533" y1="182" x2="177" y2="182"/><path d="M177 182 l9 -4 v8 z"/>
+        </g>
+        <g fill="var(--text-muted)">
+          <text class="mono" x="200" y="200" fill="var(--text-muted)">thread/started · turn/started · item/started</text>
+          <text class="mono" x="200" y="218" fill="var(--text-muted)">item/*/delta（流式）· item/completed · turn/completed</text>
+        </g>
+
+        <!-- 反向 approval -->
+        <text class="role" x="200" y="256" style="fill:#b45309">SERVER → CLIENT · 反向审批（暂停 turn）</text>
+        <g stroke="#b45309" stroke-width="1.7" fill="#b45309" stroke-dasharray="5 3">
+          <line x1="533" y1="270" x2="177" y2="270"/><path d="M177 270 l9 -4 v8 z"/>
+        </g>
+        <g fill="#b45309">
+          <text class="mono" x="200" y="288" fill="#b45309" style="font-size:8.5px">approval request → 等客户端 permit / deny → 才继续</text>
+        </g>
+      </svg>
+      <div class="proto-note"><strong>Item / Turn / Thread</strong>：Item 是输入输出的基本单元（用户消息 / agent 消息 / 工具执行 / 审批请求 / diff），带 <code>item/started</code> → <code>item/*/delta</code> → <code>item/completed</code> 生命周期；Turn 是一次用户输入触发的工作单元；Thread 是可<strong>创建 / 恢复 / fork / 归档</strong>的持久会话容器。协议<strong>双向</strong>——服务端能反向发 approval 请求并<strong>暂停这一 turn</strong>；且<strong>向后兼容</strong>，老客户端能安全对接新服务端。</div>
+    </div>
+
+    <p>「向后兼容的协议」这四个字，是 Codex 可演化性的<strong>真正落点</strong>。它意味着：OpenAI 可以在服务端持续优化 harness、修 bug、换实现，而<strong>不要求客户端跟着升级</strong>；你基于今天的 app-server 建的产品，明天还能跑。为此它甚至提供了从 Rust 协议定义生成客户端类型的工具：<code>codex app-server generate-ts</code>（TS）与 <code>generate-json-schema</code>（其他语言）。这是一种<strong>「契约优先」的演化</strong>——把稳定性焊在边界上，而不是焊在内核纯度上。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">还有一条更轻的接入：codex mcp-server（已标记 deprecated）</div>
+      <p style="margin:.3em 0;">如果你已有 MCP 工作流，Codex 也能作为 <strong>MCP server</strong>（<code>codex mcp-server</code>）被当成一个可调用工具——但要注意：<strong>源码里这条子命令已打上 deprecation warning</strong>（「will be removed in a future release」），官方方向是收敛到 app-server。它只暴露 MCP 定义的内容，拿不到 app-server 那样更丰富的 Codex 专属交互（如 diff 更新）。另有一个独立的 <code>codex mcp</code> 子命令，用途相反——是<strong>管理 <code>config.toml</code> 里配置的外部 MCP server 启动器</strong>，别和 <code>mcp-server</code> 混淆。<strong>要深度嵌入用 app-server，要轻量互操作可暂用 mcp-server</strong>——这与 dsh「把 MCP toolset 作为 <code>ctx.tools</code> 的一个 Consumer 挂上去」是两种接法：Codex 把 MCP 当成对外的一个可选门面，dsh 把它当成内部接缝的一个消费者。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="lever"><span class="sec-num">五</span>Harness 设计本身就是杠杆：一组数据<a href="#lever" class="anchor">#</a></h2>
+    <p class="kicker">— 同一个模型，只改 harness，成绩接近翻三倍、token 省六倍</p>
+
+    <p>OpenAI 用一组数据来论证「为什么值得在 harness 上下重注」：在难度极高的 <a href="https://openai.com/index/how-two-settings-tripled-our-arc-agi-3-scores/" target="_blank" rel="noopener">ARC-AGI-3</a> 上，仅对 harness 做两项调整——<strong>保留推理（retained reasoning）</strong>与<strong>上下文压缩（context compaction）</strong>——GPT-5.6 Sol 的得分就从 <strong>13.3%</strong> 升到 <strong>38.3%</strong>，同时<strong>输出 token 少了约 6 倍</strong>。</p>
+
+    <div class="arc reveal">
+      <svg viewBox="0 0 720 240" role="img" aria-label="Harness 优化对 ARC-AGI-3 成绩的影响：朴素 agent 循环下 GPT-5.6 Sol 得分 13.3%，加入保留推理与上下文压缩两项 harness 优化后升到 38.3%，接近三倍；同时输出 token 数量减少约六倍，成本大幅下降">
+        <!-- 朴素 -->
+        <text class="lab" x="60" y="30" fill="var(--text-muted)">朴素 agent loop</text>
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="60" y="45" width="120" height="150" rx="10" fill="var(--surface)"/>
+        </g>
+        <!-- 朴素 bar：13.3% 高度按比例 -->
+        <rect x="80" y="143" width="80" height="42" rx="4" style="fill:var(--text-muted)" opacity="0.5"/>
+        <text class="num" x="120" y="130" text-anchor="middle" style="fill:var(--text-muted)">13.3<tspan style="font-size:14px">%</tspan></text>
+        <text class="mono" x="120" y="212" text-anchor="middle">baseline token</text>
+
+        <!-- 箭头 -->
+        <g stroke="var(--accent)" stroke-width="1.8" fill="var(--accent)">
+          <line x1="200" y1="120" x2="248" y2="120"/><path d="M248 120 l-10 -5 v10 z"/>
+        </g>
+        <text class="mono" x="224" y="108" text-anchor="middle" style="fill:var(--accent)">+2 项优化</text>
+
+        <!-- 优化后 -->
+        <text class="lab" x="285" y="30" fill="var(--accent-ink)">+ 保留推理 + 上下文压缩</text>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <rect x="285" y="45" width="120" height="150" rx="10" fill="var(--accent-soft)"/>
+        </g>
+        <rect x="305" y="65" width="80" height="120" rx="4" style="fill:var(--accent)"/>
+        <text class="num" x="345" y="105" text-anchor="middle" fill="#fff">38.3<tspan style="font-size:14px">%</tspan></text>
+        <text class="mono" x="345" y="212" text-anchor="middle" style="fill:var(--accent-ink)">token ÷ 6</text>
+
+        <!-- 右侧说明 -->
+        <g style="color: var(--border)" stroke="currentColor" fill="none" stroke-width="1.3">
+          <rect x="450" y="55" width="250" height="130" rx="12" fill="var(--surface)"/>
+        </g>
+        <text class="lab" x="470" y="82" fill="var(--text)">同一个模型，只换 harness</text>
+        <g fill="var(--text-muted)">
+          <text class="mono" x="470" y="106" fill="var(--text-muted)">· 得分 ≈ ×2.9</text>
+          <text class="mono" x="470" y="128" fill="var(--text-muted)">· 输出 token ≈ ÷6（更省）</text>
+          <text class="mono" x="470" y="150" fill="var(--text-muted)">· 结论：管理模型的方式</text>
+          <text class="mono" x="470" y="168" fill="var(--text-muted)">&nbsp;&nbsp;= agent 表现的关键变量</text>
+        </g>
+      </svg>
+      <div class="arc-note">「保留推理」= 跨轮次带上模型的推理内容（对应前面 <code>reasoning</code> / <code>encrypted_content</code> 那一环）；「上下文压缩」= 上下文窗口填满时把历史编码成更小的表示，而非简单文本摘要。这两项都是 <strong>harness 层</strong>的活，模型本身没变——这正是 OpenAI 把 harness 开源当「平台级」动作的底气。</div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="boundary"><span class="sec-num">六</span>安全边界：沙箱只管 shell，审批走策略模板<a href="#boundary" class="anchor">#</a></h2>
+    <p class="kicker">— 边界清晰，但覆盖面与 dsh 的「三接缝全 fail-closed」不同</p>
+
+    <p>Codex 的边界机制诚实而克制。<strong>沙箱只作用于 Codex 自带的 <code>shell</code> 工具</strong>：初始 prompt 里那条 <code>role=developer</code> 消息描述了文件权限、网络访问、以及「何时该向用户请求权限」。<strong>其他工具（如 MCP server 提供的）不受 Codex 沙箱约束</strong>，得自己负责安全。审批则由策略模板驱动（如 <a href="https://github.com/openai/codex/blob/main/codex-rs/prompts/templates/permissions/approval_policy/on_request.md" target="_blank" rel="noopener"><code>prompts/templates/permissions/approval_policy/on_request.md</code></a>，同目录还有 <code>never.md</code> / <code>unless_trusted.md</code>），在 app-server 层则表现为「服务端反向发 approval 请求 + 暂停 turn」。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">对照：dsh 把三条边界都做成 fail-closed 接缝</div>
+      <p style="margin:.3em 0;">dsh 的做法更「拓扑化」：审批（<code>ctx.approval</code>）「没有审批服务时 <code>ask</code> 直接变拒绝」；沙箱（<code>ctx.sandbox</code>）「bash 与 fs 共读同一个 <code>sandboxPolicy</code>，不可能围栏到不同 root」；凭证（<code>ctx.credentials</code>）「配置只存引用、值归 provider、每操作重新 resolve」。它把「不外泄 / 只减权 / 默认关死」编进<strong>结构与类型</strong>。Codex 的边界更贴合「一个跑在你机器上的编程 agent」这个具体场景——沙箱聚焦 shell、审批面向命令执行——覆盖面窄但意图明确。<strong>要把 Codex 嵌进多用户生产系统，沙箱只管 shell 这条得自己补齐 MCP 工具侧的隔离。</strong></p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="versus"><span class="sec-num">七</span>Codex Harness vs dsh：两种「可演化性」哲学<a href="#versus" class="anchor">#</a></h2>
+    <p class="kicker">— 同一道题，两个相反方向的答案</p>
+
+    <p>把前面所有线索收束成一句话：<strong>它们对「让执行层可被无痛改造」这件事，押注在相反的位置。</strong></p>
+
+    <div class="vs reveal">
+      <div class="vs-card left">
+        <div class="k">Codex Harness</div>
+        <h4>一切皆协议客户端</h4>
+        <ul>
+          <li><strong>可演化性来自边界</strong>：向后兼容的 app-server 协议，服务端随便进化、客户端不必跟。</li>
+          <li><strong>Rust 生产单体</strong>：一个经过真实产品线（App/CLI/IDE/web）打磨的 harness。</li>
+          <li><strong>状态留在 prompt 前缀</strong>：无状态请求 + prompt caching + ZDR + <code>encrypted_content</code>。</li>
+          <li><strong>扩展靠外挂</strong>：MCP、skills、SDK、app-server 客户端——从外面接。</li>
+          <li><strong>边界贴场景</strong>：沙箱只管 shell，审批面向命令。</li>
+          <li><strong>成熟度</strong>：已驱动真实产品，协议承诺向后兼容。</li>
+        </ul>
+      </div>
+      <div class="vs-mid"><span>vs</span></div>
+      <div class="vs-card right">
+        <div class="k">DeepSeek Harness</div>
+        <h4>一切皆插件</h4>
+        <ul>
+          <li><strong>可演化性来自内核</strong>：无特权内核 + 可逆 effect + 依赖图，换任意部件是配置动作。</li>
+          <li><strong>TS 226 包插件树</strong>：Cordis 响应式内核，连 agent loop 都是一个插件。</li>
+          <li><strong>状态留在事件日志</strong>：append-only 会话日志作单一事实源，内存是投影。</li>
+          <li><strong>扩展靠挂接缝</strong>：把插件挂到 56 个 <code>ctx.*</code> 服务上——从里面长。</li>
+          <li><strong>边界成接缝</strong>：沙箱/审批/凭证三条全 fail-closed。</li>
+          <li><strong>成熟度</strong>：developer preview，明说「会破坏兼容」。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p>这不是「谁更好」，是<strong>两种关于「稳定性锚点放哪」的世界观</strong>：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>对比维度</th><th>Codex Harness（源码核对）</th><th>dsh（已核对）</th></tr></thead>
+        <tbody>
+          <tr><td>稳定性锚点</td><td><strong>外部协议边界</strong>（app-server 向后兼容）</td><td><strong>内部组合契约</strong>（Cordis effect/coeffect）</td></tr>
+          <tr><td>载体 / 语言</td><td>Rust · codex-rs 单体工作区</td><td>TypeScript · 226 包 pnpm monorepo</td></tr>
+          <tr><td>「换部件」的成本</td><td>换客户端 / 换 MCP 工具 / 改 config；核心是黑盒</td><td>写一组 Definition/Provider/Consumer 接缝；核心可换</td></tr>
+          <tr><td>长程状态</td><td>prompt 前缀 + 服务端缓存（无状态请求）</td><td>事件溯源日志 + 内存投影（本地事实源）</td></tr>
+          <tr><td>上下文管理</td><td>保留推理 + 上下文压缩（harness 层）</td><td>日志投影 + 压缩，避免重放全量</td></tr>
+          <tr><td>扩展方向</td><td>从<strong>外</strong>接（协议 / MCP / SDK）</td><td>从<strong>内</strong>长（挂 <code>ctx.*</code> 接缝）</td></tr>
+          <tr><td>心智门槛</td><td>低：会连协议 / 会写 MCP 工具即可上手</td><td>高：改包前先啃透 Cordis 心智模型</td></tr>
+          <tr><td>生产就绪度</td><td>高：真实产品线在跑、协议保兼容</td><td>低：preview、明说会破坏兼容</td></tr>
+          <tr><td>最适合的姿势</td><td><strong>直接嵌入产品</strong>，把 agent 带进你的看板/工作流</td><td><strong>借鉴接缝设计</strong>，而非直接 fork 整棵树</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一句话记忆</div>
+      <p style="margin:.3em 0;">Codex 说「<strong>别动我的内核，照着我的协议接就行，我保证不改坏你</strong>」；dsh 说「<strong>没有内核可动，你把插件挂上来，卸载时我保证清理干净</strong>」。一个把信任建立在<em>接口的稳定</em>上，一个把信任建立在<em>副作用的可逆</em>上。对 FDE 而言：要<strong>快速把 agent 嵌进现成产品</strong>，Codex 的协议边界是更短的路；要<strong>造一个能被深度改造的自有 harness 底板</strong>，dsh 的接缝设计是更值得抄的作业。</p>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="reuse"><span class="sec-num">八</span>可借鉴点与取舍<a href="#reuse" class="anchor">#</a></h2>
+    <p class="kicker">— 从 Codex 能直接搬走什么</p>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-eyebrow">可借鉴 · 协议优先</div>
+        <p>「用一条<strong>向后兼容的进程间协议</strong>把 agent loop 和界面解耦」是极强的产品化范式：一个长驻进程 + JSONL over stdio + Item/Turn/Thread 三原语，就能让 CLI/IDE/web/自研产品共享同一个 agent 核。自建 harness 时，这比「大家各调一套内部 API」稳得多。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">可借鉴 · 前缀即缓存</div>
+        <p>「让新 prompt 是旧 prompt 的<strong>精确前缀</strong>」是把 prompt caching 吃满的前提。把系统指令 / 工具定义 / 静态上下文钉在最前面、只在尾部 append，是任何走 LLM API 的 agent 都能立刻抄的省钱技巧。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">取舍 · 二次增长</div>
+        <p>默认 HTTP/SSE 路径不带 <code>previous_response_id</code>，换来 stateless + ZDR，代价是请求 JSON 随对话<strong>二次增长</strong>。长会话下这对带宽和序列化是实打实的负担——不需要 ZDR 就未必照搬（源码另有 WebSocket 增量路径可缓解带宽）。</p>
+      </div>
+      <div class="card">
+        <div class="card-eyebrow">取舍 · 边界覆盖面</div>
+        <p>沙箱只管 <code>shell</code>、MCP 工具自负其责。嵌进多用户生产系统时，工具侧隔离、凭证多租户、审批审计得自己补——Codex 给的是「编程 agent」的边界，不是「企业平台」的边界。</p>
+      </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <h2 id="annex"><span class="sec-num">九</span>附：源码 / 文档坐标一览<a href="#annex" class="anchor">#</a></h2>
+    <p class="kicker">— 想深挖时的入口地图（路径已对照 openai/codex 仓库源码核到实际文件）</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>主题</th><th>入口</th><th>看什么</th></tr></thead>
+        <tbody>
+          <tr><td>平台定位 / 三层集成</td><td><a href="https://developers.openai.com/blog/codex-as-a-platform" target="_blank" rel="noopener">Codex as a platform</a></td><td>「harness and integration surface」· exec / SDK / app-server 分层</td></tr>
+          <tr><td>Agent Loop 全解</td><td><a href="https://openai.com/index/unrolling-the-codex-agent-loop/" target="_blank" rel="noopener">Unrolling the Codex agent loop</a></td><td>prompt=item 列表 · Responses API · turn/thread · 前缀缓存 · 默认路径无 previous_response_id + ZDR</td></tr>
+          <tr><td>App Server 架构</td><td><a href="https://openai.com/index/unlocking-the-codex-harness/" target="_blank" rel="noopener">Unlocking the Codex harness</a></td><td>JSON-RPC lite · Item/Turn/Thread · 双向 + 反向审批 · 向后兼容 · generate-ts</td></tr>
+          <tr><td>开源组件清单</td><td><a href="https://developers.openai.com/codex/open-source" target="_blank" rel="noopener">Open-source components</a></td><td>各组件在仓库里的位置（codex-rs/app-server · sdk · skills · codex-universal）</td></tr>
+          <tr><td>Harness 优化数据</td><td><a href="https://openai.com/index/how-two-settings-tripled-our-arc-agi-3-scores/" target="_blank" rel="noopener">Two settings tripled ARC-AGI-3</a></td><td>保留推理 + 上下文压缩：13.3%→38.3% · token ÷6</td></tr>
+          <tr><td>仓库主体</td><td><a href="https://github.com/openai/codex" target="_blank" rel="noopener">github.com/openai/codex</a></td><td>Apache-2.0 · codex-rs（Rust workspace）· sdk · codex-cli · docs</td></tr>
+          <tr><td>app-server 源码</td><td><a href="https://github.com/openai/codex/tree/main/codex-rs/app-server" target="_blank" rel="noopener">codex-rs/app-server</a></td><td>协议实现（Rust）· 可生成 TS / JSON schema 客户端定义</td></tr>
+          <tr><td>基指令 / prompt</td><td><a href="https://github.com/openai/codex/tree/main/codex-rs/core" target="_blank" rel="noopener">codex-rs/core</a></td><td>各模型的 <code>*_prompt.md</code> base_instructions（如 <code>gpt-5.2-codex_prompt.md</code>）</td></tr>
+          <tr><td>shell 工具 spec</td><td><a href="https://github.com/openai/codex/blob/main/codex-rs/core/src/tools/handlers/shell_spec.rs" target="_blank" rel="noopener">core/src/tools/handlers/shell_spec.rs</a></td><td>内置 <code>shell</code> 工具定义 · 沙箱/审批约束（<code>codex mcp-server</code> 子命令已 deprecated）</td></tr>
+          <tr><td>配套仓库</td><td><a href="https://github.com/openai/skills" target="_blank" rel="noopener">openai/skills</a> · <a href="https://github.com/openai/codex-universal" target="_blank" rel="noopener">codex-universal</a></td><td>可复用 skills · 云端通用环境</td></tr>
+          <tr><td>对照拆解（本站）</td><td><a href="2026-08_deepseek-harness.html">DeepSeek Harness 深度拆解</a></td><td>Cordis 内核 · 可逆 effect · 事件溯源 · 能力接缝（逐行核对版）</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-08-24 初稿（Codex Harness 架构解析 + 与 dsh 对比）。2026-08-25 对照 <a href="https://github.com/openai/codex" target="_blank" rel="noopener">openai/codex</a> 仓库源码核对（<code>main</code> 分支近期快照，commit <code>3a469a2</code>）：修正状态模型为「默认 HTTP/SSE 无状态路径 + WebSocket <code>previous_response_id</code> 增量路径」双路并存、shell 工具 spec 与 permissions 模板的实际文件路径、<code>codex mcp-server</code> 已 deprecated 等；结论与源码一致（不逐行标行号）。dsh 侧沿用本站 <a href="2026-08_deepseek-harness.html">已核对拆解</a>（commit 47f9438）。
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="index.html">开源拆解总索引</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_deepseek-harness.html">对照：DeepSeek Harness 深度拆解</a>
+      <span style="margin: 0 .8em; color: var(--text-muted);">|</span>
+      <a href="2026-08_prime-agent-rlm-continual-harness.html">相关：Prime Agent · RLM × 持续 Harness</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+
+<!-- reduced-motion 兜底：本页动画一律关掉 -->
+<style>
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .insight-card:hover, .pfx:hover, .proto:hover, .arc:hover { transform: none !important; }
+  }
+</style>
+</body>
+</html>
