@@ -1,6 +1,42 @@
 {
-  "generated_at": "2026-08-25T04:11:34.369232+00:00",
+  "generated_at": "2026-09-10T07:05:25.021237+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-09_agent-sandbox-supervisor-convergence.html",
+      "title": "隔离沙箱 × 监工 × 人工确认 · The Acting-Agent Safety Stack",
+      "date": "2026-09-10",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Agent 落地",
+        "OpenAI",
+        "Meta",
+        "安全架构"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
+      "path": "insights/cross/2026-09_capability-control-same-curve.html",
+      "title": "能力与失控，同在一条曲线上 · Same Curve",
+      "date": "2026-09-10",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "AI 安全",
+        "OpenAI",
+        "Anthropic",
+        "治理"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/tob/2026-07_agent-badcase-attribution-survey.html",
       "title": "Agent Badcase 归因 · 方法论调研",
