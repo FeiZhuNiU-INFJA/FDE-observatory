@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Agent 运行时被商品化：当会话、编排、沙箱变成 OpenAI 的一个 API · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：等离子靛 (Plasma Indigo) ═════════ */
+  :root {
+    --accent: #4f46e5;
+    --accent-deep: #4338ca;
+    --accent-ink: #312e81;
+    --accent-soft: color-mix(in srgb, #4f46e5 12%, white);
+    --accent-glow: color-mix(in srgb, #4f46e5 22%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #9aa8ff;
+    --accent-soft: color-mix(in srgb, #4f46e5 30%, #0f1020);
+    --accent-ink: #dbe0ff;
+    --accent-deep: #7d8bf5;
+    --accent-glow: color-mix(in srgb, #4f46e5 34%, transparent);
+  }
+
+  /* SVG 内文字统一走 CSS */
+  .stack text, .pipe text, .squeeze text, .gate text { font-family: var(--mono); }
+  .stack .disp, .pipe .disp, .squeeze .disp, .gate .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 共享动画（受 prefers-reduced-motion 兜底） */
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 2.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -56; } }
+  .absorb-pulse { animation: absorbpulse 2.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes absorbpulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+  .draw-line { stroke-dasharray: 900; stroke-dashoffset: 900; animation: drawline 2.6s ease forwards; }
+  @keyframes drawline { to { stroke-dashoffset: 0; } }
+
+  /* ═════════════════════════════════════════════════
+     视觉一（Hero）：自建栈 → 托管运行时（中间层被吸走）
+     ═════════════════════════════════════════════════ */
+  .stack {
+    position: relative; margin: 2rem 0 2.4rem;
+    border-radius: 20px; padding: 1.6rem 1.4rem 1.2rem;
+    background: radial-gradient(120% 100% at 50% 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--surface)) 0%, var(--surface) 60%);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 18px 44px var(--accent-glow), inset 0 0 0 1px var(--accent-soft);
+    overflow: hidden;
+  }
+  .stack-eyebrow { display: flex; align-items: center; gap: .6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: .5rem; }
+  .stack-eyebrow .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: absorbpulse 2s ease-in-out infinite; }
+  .stack-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; margin: 0 0 .3em; color: var(--text); letter-spacing: -.005em; }
+  .stack-title .en { font-style: italic; font-weight: 500; color: var(--accent); margin-left: .35em; font-size: .85em; }
+  .stack-sub { font-size: .92rem; color: var(--text-soft); margin: 0 0 1rem; max-width: 64ch; }
+  .stack-vis svg { display: block; width: 100%; height: auto; max-width: 880px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉二：托管运行时的五段流水线
+     ═════════════════════════════════════════════════ */
+  .pipe { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .pipe-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .pipe-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .pipe-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .pipe-vis svg { display: block; width: 100%; height: auto; max-width: 880px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉三：中间层被挤压，价值向上下迁移
+     ═════════════════════════════════════════════════ */
+  .squeeze { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .squeeze-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .squeeze-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .squeeze-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .squeeze-vis svg { display: block; width: 100%; height: auto; max-width: 720px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉四：build vs buy 决策门
+     ═════════════════════════════════════════════════ */
+  .gate { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.8em 0; }
+  @media (max-width: 720px) { .gate { grid-template-columns: 1fr; } }
+  .gate-card { border: 1.5px solid var(--border); border-radius: 16px; padding: 1.2rem 1.1rem; background: var(--surface); transition: transform .2s, border-color .2s; }
+  .gate-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .gate-buy { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .gate-eyebrow { font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .5rem; display: flex; align-items: center; gap: .5em; }
+  .gate-buy .gate-eyebrow { color: var(--accent); }
+  .gate-build .gate-eyebrow { color: var(--text-muted); }
+  .gate-card h4 { font-family: var(--display); font-size: 1rem; margin: 0 0 .5em; color: var(--text); }
+  .gate-card ul { margin: 0; padding-left: 1.1em; }
+  .gate-card li { font-size: .84rem; color: var(--text-soft); line-height: 1.55; margin: .25em 0; }
+  .gate-card .ic { width: 22px; height: 22px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .absorb-pulse, .draw-line, .stack-eyebrow .lamp { animation: none !important; }
+    .draw-line { stroke-dashoffset: 0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      Agent 运行时被商品化<span class="brand-sub">跨市场 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Agent 运行时被商品化<span class="en"> · Runtime as a Utility</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        当会话状态、编排、子代理、沙箱、上下文压缩都变成 OpenAI Agents API 的托管原语，我们过去一年半手搓的那层「Agent 框架」正在变成水电煤。
+      </p>
+      <div class="doc-meta">
+        <span>2026-09-11</span>
+        <span>跨市场</span>
+        <span>Agent OS</span>
+        <span>OpenAI</span>
+        <span>运行时架构</span>
+        <span>可对外</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">5<small>原语</small></div>
+          <div class="lab">托管运行时收编的<br/>核心构件</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">~18<small>月</small></div>
+          <div class="lab">这层能力从「自研壁垒」<br/>到「平台默认」的窗口</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">2<small>头</small></div>
+          <div class="lab">价值被挤到栈的<br/>上端与下端</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">0<small>行</small></div>
+          <div class="lab">重新造会话/沙箱轮子<br/>能带来的差异化</div>
+        </div>
+      </div>
+
+      <p style="font-size: .82rem; color: var(--text-muted); margin: 1.2em 0 0;">
+        <strong>信源</strong>：
+        <a href="https://openai.com/index/agents-api" target="_blank" rel="noopener">OpenAI · Agents API</a> ·
+        <a href="https://platform.openai.com/docs/guides/agents" target="_blank" rel="noopener">OpenAI Platform · Agents 文档</a> ·
+        本站每日前沿扫描（2026-09-11）
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>OpenAI 把 <b style="color:var(--accent)">会话状态、编排、子代理、沙箱、上下文压缩</b> 这五件事打包成一个托管 <b>Agents API</b> 的那一刻，「Agent 运行时」就从一件<em>要自己造的差异化壁垒</em>，变成了一件<em>按量租用的基础设施</em>。这不是又一个 SDK，而是一次<b>价值形态的下沉</b>：过去一年半，无数团队把工程精力投在「怎么管住一个会跑很久的 agent」——续接会话、并发子任务、隔离执行、把爆掉的上下文压回窗口内。<b>现在这层被平台一次性收编，中间层被抽空，护城河被迫向两端迁移：向上是领域逻辑 / 评测 / 数据与信任，向下是自有模型。</b><b>预判：进行中——12 个月内，「我们自研了 agent 框架」将不再是卖点，而「我们把运行时选型和退出策略想清楚了」才是。</b>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><b>被商品化的是「运行时」，不是「Agent」</b>：会话管理、编排、subagents、sandbox、context compaction——这五件苦活，正是过去大家自研框架里最费人的部分，如今成了平台默认原语。</li>
+        <li><b>中间层被抽空</b>：你自建栈里「模型之上、业务之下」的那层运行时，价值被平台吸走；差异化被迫向<em>上端（领域逻辑 / 评测 / 上下文数据 / 信任与合规）</em>和<em>下端（自有 / 微调模型）</em>迁移。</li>
+        <li><b>「造轮子」的边际收益归零</b>：再花三个月写一套会话恢复 + 沙箱隔离，换不来任何客户能感知的差异——那层已经是水电煤。</li>
+        <li><b>但商品化 ≠ 免费的午餐</b>：托管运行时带来<em>供应商锁定、黑盒可观测性、数据出域、定价随规模上涨</em>四个新账单，采购与交付要把它们写进合同与架构。</li>
+        <li><b>Agent OS 之战开打</b>：谁定义运行时原语，谁就定义生态的默认形状——这和当年云厂商用托管数据库/队列收编中间件是同一个剧本。</li>
+        <li><b>对 FDE 的意义</b>：停止在运行时层「秀肌肉」，把工程预算移到<b>评测归因、领域上下文、可控性与退出成本</b>；对客户的技术尽调，新增一条「运行时依赖与迁移成本」评估。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 一、被商品化的到底是什么 ═════════ -->
+    <h2 id="whatnow"><span class="sec-num">一</span>被商品化的，是「运行时」这层苦活<a href="#whatnow" class="anchor">#</a></h2>
+    <p class="kicker">— WHY NOW · 平台把最费人的中间层收编了</p>
+
+    <p>过去一年半，凡是认真做过长任务 agent 的团队都踩过同一批坑：一个会话跑了二十分钟、上下文要续接怎么办？主 agent 想并发拆三个子任务、结果怎么汇总？让模型执行代码，怎么关进沙箱不祸害宿主？上下文快爆窗口了，怎么压缩还不丢关键信息？<b>这些不是业务逻辑，而是「运行时」——模型之上、业务之下的那层管道。</b>大家各自造了一遍，还都以为这是自己的壁垒。</p>
+
+    <p>OpenAI 的 <a href="https://openai.com/index/agents-api" target="_blank" rel="noopener">Agents API</a> 把这五件苦活一次性做成了托管原语。它没有让 agent「更聪明」，而是让<em>运行 agent 这件事</em>不再需要你自己搭台子。这就是「商品化（commoditization）」的定义：一件曾经稀缺、要自研、能区分高下的东西，变成随处可得、按量计费、彼此无差别的基础设施——像机房时代的自建 IDC 变成了云上的一行 API。</p>
+
+    <!-- ═════════ 视觉一：自建栈 → 托管运行时 ═════════ -->
+    <figure class="stack reveal">
+      <div class="stack-eyebrow"><span class="lamp"></span>Hero · The middle layer gets absorbed</div>
+      <div class="stack-title">自建栈 → 托管运行时：中间那层被吸走<span class="en">Build-your-own → Rent-the-runtime</span></div>
+      <p class="stack-sub">左边是过去：从模型到业务，每一层都你自己扛，运行时是你亲手搭的台子。右边是现在：平台把运行时那层整块收编成 API，你只剩上下两端——领域逻辑和（可选的）自有模型。</p>
+      <div class="stack-vis">
+        <svg viewBox="0 0 880 400" role="img" aria-label="双态对照：左侧自建栈从上到下为业务逻辑、自建运行时、模型，运行时层由自己维护；右侧托管栈中运行时层被平台吸走并标为 Agents API，中间用箭头表示中间层被抽空" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="absorbFill" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="var(--accent)" stop-opacity=".05"/>
+              <stop offset="100%" stop-color="var(--accent)" stop-opacity=".28"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 左：自建栈 -->
+          <text x="185" y="34" text-anchor="middle" font-size="12" class="disp" fill="var(--text-muted)">过去 · 自建栈</text>
+          <g>
+            <rect x="70" y="52" width="230" height="60" rx="10" fill="var(--surface)" stroke="var(--border-strong)" stroke-width="1.4"/>
+            <text x="185" y="78" text-anchor="middle" font-size="12" fill="var(--text)">业务 / 领域逻辑</text>
+            <text x="185" y="96" text-anchor="middle" font-size="9" fill="var(--text-muted)">你的护城河</text>
+          </g>
+          <g>
+            <rect x="70" y="124" width="230" height="128" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="185" y="150" text-anchor="middle" font-size="12" class="disp" fill="var(--accent-ink)">自建运行时</text>
+            <text x="185" y="172" text-anchor="middle" font-size="9" fill="var(--text-soft)">会话 · 编排 · 子代理</text>
+            <text x="185" y="188" text-anchor="middle" font-size="9" fill="var(--text-soft)">沙箱 · 上下文压缩</text>
+            <text x="185" y="214" text-anchor="middle" font-size="9" fill="var(--text-muted)">最费人的一层</text>
+            <text x="185" y="232" text-anchor="middle" font-size="9" fill="var(--text-muted)">（以为是壁垒）</text>
+          </g>
+          <g>
+            <rect x="70" y="264" width="230" height="56" rx="10" fill="var(--surface)" stroke="var(--border-strong)" stroke-width="1.4"/>
+            <text x="185" y="296" text-anchor="middle" font-size="12" fill="var(--text)">基础模型（第三方）</text>
+          </g>
+
+          <!-- 中间：吸走箭头 -->
+          <g class="absorb-pulse">
+            <path d="M 320 188 C 400 188, 440 188, 470 130" fill="none" stroke="var(--accent)" stroke-width="2.4" class="dash-flow"/>
+            <path d="M 470 130 l -12 -2 l 6 11 z" fill="var(--accent)"/>
+          </g>
+          <text x="400" y="170" text-anchor="middle" font-size="10" fill="var(--accent-ink)">被平台收编</text>
+
+          <!-- 右：托管栈 -->
+          <text x="695" y="34" text-anchor="middle" font-size="12" class="disp" fill="var(--accent)">现在 · 托管运行时</text>
+          <g>
+            <rect x="580" y="52" width="230" height="72" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="695" y="80" text-anchor="middle" font-size="12" fill="var(--text)">业务 / 领域逻辑 + 评测</text>
+            <text x="695" y="100" text-anchor="middle" font-size="9" fill="var(--text-muted)">护城河向上迁移 ↑</text>
+          </g>
+          <g>
+            <rect x="580" y="136" width="230" height="104" rx="10" fill="url(#absorbFill)" stroke="var(--accent)" stroke-width="1.8" stroke-dasharray="6 5"/>
+            <text x="695" y="170" text-anchor="middle" font-size="13" class="disp" fill="var(--accent-ink)">Agents API</text>
+            <text x="695" y="192" text-anchor="middle" font-size="9" fill="var(--text-soft)">托管运行时 · 按量计费</text>
+            <text x="695" y="212" text-anchor="middle" font-size="9" fill="var(--text-muted)">你不再拥有这层</text>
+          </g>
+          <g>
+            <rect x="580" y="252" width="230" height="68" rx="10" fill="var(--surface)" stroke="var(--border-strong)" stroke-width="1.4"/>
+            <text x="695" y="282" text-anchor="middle" font-size="12" fill="var(--text)">基础 / 自有模型</text>
+            <text x="695" y="302" text-anchor="middle" font-size="9" fill="var(--text-muted)">护城河向下迁移 ↓</text>
+          </g>
+
+          <text x="440" y="384" text-anchor="middle" font-size="10" fill="var(--text-muted)" letter-spacing="1">示意图：表达「中间运行时层被平台吸走、价值向两端迁移」的结构关系</text>
+        </svg>
+      </div>
+    </figure>
+
+    <!-- ═════════ 二、托管运行时里到底装了什么 ═════════ -->
+    <h2 id="inside"><span class="sec-num">二</span>拆开托管运行时：五段流水线<a href="#inside" class="anchor">#</a></h2>
+    <p class="kicker">— 平台默认原语，逐段对齐你曾经手搓的东西</p>
+
+    <p>把「运行时」这个抽象词落到地上，它其实就是一条流水线：一个请求进来，要<b>开会话、编排步骤、按需拆子代理、在沙箱里执行、把上下文压回窗口</b>，再进入下一轮。下面这条流水线的每一段，都对应你过去可能自己写过的一个模块——现在它们都是平台的一行配置。</p>
+
+    <!-- ═════════ 视觉二：五段流水线 ═════════ -->
+    <div class="pipe reveal">
+      <div class="pipe-head">托管运行时的五段流水线<span class="en">The Managed Runtime Pipeline</span></div>
+      <p class="pipe-sub">每一段旁边标注的是「你以前自己造的对应物」。流水线末端回注，代表长任务的多轮循环——这正是自研时最难稳住的部分。</p>
+      <div class="pipe-vis">
+        <svg viewBox="0 0 880 260" role="img" aria-label="五段流水线：会话状态、编排、子代理、沙箱、上下文压缩，步间有流动箭头，末端有回注循环箭头表示多轮长任务" xmlns="http://www.w3.org/2000/svg">
+          <!-- 连接主线 -->
+          <line x1="60" y1="110" x2="820" y2="110" stroke="var(--border-strong)" stroke-width="1.4" stroke-dasharray="4 6"/>
+
+          <!-- 五个节点 -->
+          <!-- 1 会话 -->
+          <g style="color:var(--accent)">
+            <rect x="52" y="74" width="132" height="72" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="70" y="86" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </g>
+          <text x="118" y="122" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">会话状态</text>
+          <text x="118" y="138" text-anchor="middle" font-size="8" fill="var(--text-muted)">自研：会话续接/恢复</text>
+
+          <!-- 2 编排 -->
+          <g style="color:var(--accent)">
+            <rect x="204" y="74" width="132" height="72" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="222" y="86" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </g>
+          <text x="270" y="122" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">编排</text>
+          <text x="270" y="138" text-anchor="middle" font-size="8" fill="var(--text-muted)">自研：状态机/DAG</text>
+
+          <!-- 3 子代理 -->
+          <g style="color:var(--accent)">
+            <rect x="356" y="74" width="132" height="72" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="374" y="86" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3"/><circle cx="5" cy="18" r="2.5"/><circle cx="19" cy="18" r="2.5"/><path d="M12 10v3M12 13l-6 3M12 13l6 3"/></svg>
+          </g>
+          <text x="422" y="122" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">子代理</text>
+          <text x="422" y="138" text-anchor="middle" font-size="8" fill="var(--text-muted)">自研：并发/结果汇总</text>
+
+          <!-- 4 沙箱 -->
+          <g style="color:var(--accent)">
+            <rect x="508" y="74" width="132" height="72" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="526" y="86" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 9h6v6H9z"/></svg>
+          </g>
+          <text x="574" y="122" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">沙箱执行</text>
+          <text x="574" y="138" text-anchor="middle" font-size="8" fill="var(--text-muted)">自研：隔离/资源限额</text>
+
+          <!-- 5 上下文压缩 -->
+          <g style="color:var(--accent)">
+            <rect x="660" y="74" width="132" height="72" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="678" y="86" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><path d="M9 12h6"/></svg>
+          </g>
+          <text x="726" y="122" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">上下文压缩</text>
+          <text x="726" y="138" text-anchor="middle" font-size="8" fill="var(--text-muted)">自研：摘要/裁剪窗口</text>
+
+          <!-- 步间流动箭头 -->
+          <g fill="none" stroke="var(--accent)" stroke-width="2">
+            <path d="M 184 110 h 20" class="dash-flow"/>
+            <path d="M 336 110 h 20" class="dash-flow" style="animation-delay:-.6s"/>
+            <path d="M 488 110 h 20" class="dash-flow" style="animation-delay:-1.2s"/>
+            <path d="M 640 110 h 20" class="dash-flow" style="animation-delay:-1.8s"/>
+          </g>
+
+          <!-- 回注循环 -->
+          <path d="M 726 146 C 726 210, 118 210, 118 148" fill="none" stroke="var(--accent-deep)" stroke-width="1.8" stroke-dasharray="5 6" class="dash-flow"/>
+          <path d="M 118 152 l -4 -11 l 9 4 z" fill="var(--accent-deep)"/>
+          <text x="422" y="230" text-anchor="middle" font-size="10" fill="var(--text-muted)">多轮循环 · 长任务不断回注（自研时最难稳住的一环）</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">注意分辨</div>
+      <p style="margin:.2em 0;">被商品化的是<b>运行这条流水线的能力</b>，不是<em>你在流水线里跑的东西</em>。同一条托管运行时，喂进去的领域工具、系统提示、评测标准不同，产出天差地别。<b>平台抹平的是「台子」，抹不平的是「戏」。</b>——这也是护城河为什么向两端跑，而不是消失。</p>
+    </div>
+
+    <!-- ═════════ 三、护城河去哪了 ═════════ -->
+    <h2 id="moat"><span class="sec-num">三</span>中间被挤空，护城河往两端跑<a href="#moat" class="anchor">#</a></h2>
+    <p class="kicker">— So what · 差异化的迁移方向</p>
+
+    <p>商品化最直接的后果，是<b>价值的重新分布</b>。当中间那层谁都能一行 API 拿到，靠它拉不开差距，利润和差异化就被挤到栈的两端：<b>向上</b>是越贴近客户、越难被平台标准化的东西——领域逻辑、私有上下文数据、评测与归因、可控性与合规信任；<b>向下</b>是模型本身——自研或深度微调的权重，是平台给不了你的。夹在中间、只会「组装标准运行时」的团队，最先被抹平。</p>
+
+    <!-- ═════════ 视觉三：挤压 ═════════ -->
+    <div class="squeeze reveal">
+      <div class="squeeze-head">价值被挤向两端<span class="en">Value Migrates to the Edges</span></div>
+      <p class="squeeze-sub">中间的托管运行时被压成一条薄带（商品化区）；上下两端的色块变厚，代表可防御价值往那里聚集。只做中间层的团队，站在最薄的地方。</p>
+      <div class="squeeze-vis">
+        <svg viewBox="0 0 720 360" role="img" aria-label="纵向三层：上端为领域逻辑与评测信任（厚，可防御），中间为托管运行时（薄，商品化），下端为自有模型（厚，可防御），两侧箭头指向上下端表示价值迁移" xmlns="http://www.w3.org/2000/svg">
+          <!-- 上端：厚 -->
+          <g>
+            <rect x="150" y="30" width="420" height="96" rx="12" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="360" y="66" text-anchor="middle" font-size="14" class="disp" fill="var(--accent-ink)">向上：领域逻辑 · 评测归因 · 上下文数据 · 信任合规</text>
+            <text x="360" y="90" text-anchor="middle" font-size="10" fill="var(--text-soft)">越贴客户、越难被平台标准化 → 可防御</text>
+            <text x="360" y="110" text-anchor="middle" font-size="9" fill="var(--text-muted)">护城河越做越厚</text>
+          </g>
+
+          <!-- 中间：薄（商品化） -->
+          <g>
+            <rect x="150" y="152" width="420" height="40" rx="8" fill="var(--bg-soft, var(--surface))" stroke="var(--border-strong)" stroke-width="1.4" stroke-dasharray="6 5"/>
+            <text x="360" y="170" text-anchor="middle" font-size="11" class="disp" fill="var(--text-muted)">托管运行时（会话/编排/子代理/沙箱/压缩）</text>
+            <text x="360" y="185" text-anchor="middle" font-size="9" fill="var(--con)">商品化区 · 无差异化 · 被压薄</text>
+          </g>
+
+          <!-- 下端：厚 -->
+          <g>
+            <rect x="150" y="218" width="420" height="96" rx="12" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.8"/>
+            <text x="360" y="256" text-anchor="middle" font-size="14" class="disp" fill="var(--accent-ink)">向下：自研 / 深度微调模型</text>
+            <text x="360" y="280" text-anchor="middle" font-size="10" fill="var(--text-soft)">平台给不了你的权重 → 可防御</text>
+            <text x="360" y="300" text-anchor="middle" font-size="9" fill="var(--text-muted)">护城河越做越厚</text>
+          </g>
+
+          <!-- 两侧迁移箭头 -->
+          <g class="absorb-pulse" stroke="var(--accent)" stroke-width="2.2" fill="none">
+            <path d="M 90 172 C 60 172, 60 90, 100 78" class="dash-flow"/>
+            <path d="M 100 78 l -11 0 l 5 -9 z" fill="var(--accent)" stroke="none"/>
+            <path d="M 90 172 C 60 172, 60 254, 100 266" class="dash-flow" style="animation-delay:-1s"/>
+            <path d="M 100 266 l -11 0 l 5 9 z" fill="var(--accent)" stroke="none"/>
+          </g>
+          <text x="628" y="176" text-anchor="middle" font-size="10" fill="var(--text-muted)">价值</text>
+          <text x="628" y="190" text-anchor="middle" font-size="10" fill="var(--text-muted)">外逃 ↕</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>栈的层</th><th>商品化后的处境</th><th>该不该投工程</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>领域逻辑 / 工作流</td><td>越贴客户越难被标准化，护城河</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>评测 / 归因体系</td><td>平台不做、也做不了你的口径</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>上下文 / 私有数据</td><td>你的独占资产，喂进任何运行时都增值</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>运行时（会话/编排/沙箱/压缩）</td><td>已商品化，自研边际收益趋零</td><td><b style="color:var(--con)">停止自研</b>，改选型</td></tr>
+          <tr><td>基础模型</td><td>要么租平台、要么自研微调</td><td>视资源，<b>要么向下深挖</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ═════════ 四、商品化的新账单 ═════════ -->
+    <h2 id="bill"><span class="sec-num">四</span>商品化不是免费午餐：四张新账单<a href="#bill" class="anchor">#</a></h2>
+    <p class="kicker">— 租来的运行时，代价写在别处</p>
+
+    <p>「不用自己造了」听起来全是好处，但把运行时交给平台，等于把一批风险从<em>工程账</em>转成了<em>依赖账</em>。这四张账单，采购和架构评审时必须提前算清楚——否则省下的三个月工时，会在退出成本上加倍还回去。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">四张新账单</div>
+      <ul style="margin:.3em 0;">
+        <li><b>供应商锁定</b>：运行时原语一旦成为你架构的地基，换平台等于重做地基。会话格式、编排语义、sandbox 行为都是私有的，没有可移植标准。</li>
+        <li><b>可观测性变黑盒</b>：agent 为什么这么决策、上下文被压缩时丢了什么——托管层的内部状态你未必看得全，而这恰恰是<b>评测归因</b>最需要的证据。</li>
+        <li><b>数据出域</b>：会话状态、中间产物、上下文都过平台。金融 / 医疗 / 政务客户的合规红线，可能直接卡在这一条。</li>
+        <li><b>定价随规模上涨</b>：托管运行时按量计费，长任务 agent 的调用量是复利级的。规模化后，「租」的总成本可能反超「自建 + 摊薄」。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 五、build vs buy ═════════ -->
+    <h2 id="decision"><span class="sec-num">五</span>那到底还要不要自己造<a href="#decision" class="anchor">#</a></h2>
+    <p class="kicker">— build vs buy 的新分界线</p>
+
+    <p>商品化不等于「一律买」。分界线变了：<b>默认买托管运行时，除非你有一条具体、可说清的理由必须自建。</b>下面两张卡把这条线画出来——大多数团队会落在左边，只有少数带硬约束的场景才该往右。</p>
+
+    <div class="gate reveal">
+      <div class="gate-card gate-buy">
+        <div class="gate-eyebrow">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="对勾"><path d="M20 6 9 17l-5-5"/></svg></span>
+          默认 · 买（租托管运行时）
+        </div>
+        <h4>大多数团队该站这边</h4>
+        <ul>
+          <li>你的差异化在<b>领域逻辑 / 数据 / 评测</b>，不在运行时</li>
+          <li>规模还没大到「按量计费反超自建」的拐点</li>
+          <li>没有强数据出域 / 合规红线</li>
+          <li>想把工程预算集中到能被客户感知的地方</li>
+        </ul>
+      </div>
+      <div class="gate-card gate-build">
+        <div class="gate-eyebrow">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="扳手"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.8-.7-.7-2.8z"/></svg></span>
+          例外 · 自建（要有硬理由）
+        </div>
+        <h4>只有带硬约束才往这边</h4>
+        <ul>
+          <li>合规要求<b>数据不出域</b>、运行时必须自持</li>
+          <li>规模巨大，自建摊薄后单位成本显著更低</li>
+          <li>需要平台不提供的<b>特殊编排 / 隔离</b>语义</li>
+          <li>把「运行时本身」当作对外售卖的产品</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ═════════ 六、给 FDE ═════════ -->
+    <h2 id="fde"><span class="sec-num">六</span>对 FDE 的意义<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">— 把预算从「造台子」挪到「演好戏」</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">下一步（1–2 周）</div>
+      <ul style="margin:.3em 0;">
+        <li><b>盘点自研运行时</b>：列出团队里「会话/编排/子代理/沙箱/压缩」相关的自研代码，标注哪些能被托管原语替代——大概率能砍掉一大块维护负担。</li>
+        <li><b>停止在运行时层秀肌肉</b>：对客户的技术方案，别再把「我们自研了 agent 框架」当卖点；改讲领域逻辑、评测归因、可控性。</li>
+        <li><b>新增一条尽调项</b>：客户 / 合作方的技术评估里，加「运行时依赖与迁移成本」——问清楚一旦要换平台，地基要重做多少。</li>
+        <li><b>把工程预算上移</b>：把省下的运行时工时，投到<b>评测归因体系、私有上下文数据、可控性与合规</b>——这些是平台抹不平的护城河。</li>
+        <li><b>算清四张新账单</b>：锁定、可观测性、数据出域、规模定价，写进采购合同与架构评审 checklist。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 七、待验证 ═════════ -->
+    <h2 id="open-questions"><span class="sec-num">七</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>托管运行时的可观测性能做到多深？能不能吐出评测归因需要的中间证据（上下文压缩前后、子代理决策）？</li>
+      <li>规模定价的真实拐点在哪——什么样的调用量下，「租」会反超「自建 + 摊薄」？</li>
+      <li>会不会出现<b>可移植的运行时标准</b>（跨平台的会话/编排格式），把锁定风险降下来？还是各家继续各搞私有原语？</li>
+      <li>Anthropic / Google 会跟进同款托管运行时吗？如果三家原语不兼容，多云 agent 架构怎么落地？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-09-11 初稿（基于每日前沿扫描 + OpenAI Agents API 官方页综合分析，抓取 2026-09-11）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_agent-sandbox-supervisor-convergence.html">相关：会动的 Agent 的安全底座</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_benchmark-inflation-eval-attribution.html">相关：跑分通胀与评测归因</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

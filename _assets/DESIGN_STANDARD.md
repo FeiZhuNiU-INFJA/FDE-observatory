@@ -189,6 +189,10 @@
 | fuchsia | `#a21caf` / dark `#e879f9` | 删掉 80% 的系统提示词 · Boris Cherny × YC（阅读材料） |
 | brass/gold | `#a16207` / dark `#fbbf24` | agency-agents · Persona 编译器（开源拆解） |
 | cyan/sky | `#0891b2` / dark `#22d3ee` | Cursor Origin · AI 原生代码托管（厂商深度） |
+| alarm-crimson | `#c81e4a` / dark `#ff8fa8` | 能力与失控同曲线（跨市场洞察） |
+| harbor-blue | `#1e6091` / dark `#7cc4e8` | Agent 安全底座收敛（跨市场洞察） |
+| plasma-indigo | `#4f46e5` / dark `#9aa8ff` | Agent 运行时被商品化（跨市场洞察） |
+| molten-orange | `#c2410c` / dark `#fdba74` | 跑分通胀与评测归因（跨市场洞察） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`

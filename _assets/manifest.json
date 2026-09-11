@@ -1,6 +1,40 @@
 {
-  "generated_at": "2026-09-10T07:05:25.021237+00:00",
+  "generated_at": "2026-09-11T15:38:57.244929+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-09_benchmark-inflation-eval-attribution.html",
+      "title": "跑分通胀与评测归因 · Benchmarks Are Inflating",
+      "date": "2026-09-11",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "评测",
+        "归因",
+        "Cognition"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
+    {
+      "path": "insights/cross/2026-09_agent-runtime-commoditized.html",
+      "title": "Agent 运行时被商品化 · Runtime as a Utility",
+      "date": "2026-09-11",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Agent OS",
+        "OpenAI",
+        "运行时架构"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "insights/cross/2026-09_agent-sandbox-supervisor-convergence.html",
       "title": "隔离沙箱 × 监工 × 人工确认 · The Acting-Agent Safety Stack",

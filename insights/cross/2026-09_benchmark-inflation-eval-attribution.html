@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>跑分通胀与评测归因：当 SWE-2 刷爆旧榜、却输掉新榜 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：熔金橙 (Molten Orange) ═════════ */
+  :root {
+    --accent: #c2410c;
+    --accent-deep: #9a3412;
+    --accent-ink: #7c2d12;
+    --accent-soft: color-mix(in srgb, #c2410c 12%, white);
+    --accent-glow: color-mix(in srgb, #c2410c 22%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #fdba74;
+    --accent-soft: color-mix(in srgb, #c2410c 30%, #1c1410);
+    --accent-ink: #ffe0c2;
+    --accent-deep: #fb923c;
+    --accent-glow: color-mix(in srgb, #c2410c 34%, transparent);
+  }
+
+  /* SVG 内文字统一走 CSS */
+  .gap text, .drift text, .attr text, .decay text { font-family: var(--mono); }
+  .gap .disp, .drift .disp, .attr .disp, .decay .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 共享动画（受 prefers-reduced-motion 兜底） */
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 2.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -56; } }
+  .heat-pulse { animation: heatpulse 2.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes heatpulse { 0%,100% { opacity:.35; } 50% { opacity:1; } }
+  .draw-line { stroke-dasharray: 900; stroke-dashoffset: 900; animation: drawline 2.6s ease forwards; }
+  @keyframes drawline { to { stroke-dashoffset: 0; } }
+
+  /* ═════════════════════════════════════════════════
+     视觉一（Hero）：同一个模型，旧榜爆表、新榜垫底
+     ═════════════════════════════════════════════════ */
+  .gap {
+    position: relative; margin: 2rem 0 2.4rem;
+    border-radius: 20px; padding: 1.6rem 1.4rem 1.2rem;
+    background: radial-gradient(120% 100% at 50% 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--surface)) 0%, var(--surface) 60%);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 18px 44px var(--accent-glow), inset 0 0 0 1px var(--accent-soft);
+    overflow: hidden;
+  }
+  .gap-eyebrow { display: flex; align-items: center; gap: .6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: .5rem; }
+  .gap-eyebrow .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: heatpulse 2s ease-in-out infinite; }
+  .gap-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; margin: 0 0 .3em; color: var(--text); letter-spacing: -.005em; }
+  .gap-title .en { font-style: italic; font-weight: 500; color: var(--accent); margin-left: .35em; font-size: .85em; }
+  .gap-sub { font-size: .92rem; color: var(--text-soft); margin: 0 0 1rem; max-width: 64ch; }
+  .gap-vis svg { display: block; width: 100%; height: auto; max-width: 860px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉二：分数是怎么被通胀出来的（漂移链）
+     ═════════════════════════════════════════════════ */
+  .drift { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .drift-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .drift-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .drift-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .drift-vis svg { display: block; width: 100%; height: auto; max-width: 860px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉三：从「一个分数」到「一条归因链」
+     ═════════════════════════════════════════════════ */
+  .attr { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1rem; margin: 1.8em 0; align-items: stretch; }
+  @media (max-width: 860px) { .attr { grid-template-columns: 1fr; } .attr-arrow { transform: rotate(90deg); justify-self: center; } }
+  .attr-side { border: 1.5px solid var(--border); border-radius: 16px; padding: 1.2rem 1.1rem; background: var(--surface); }
+  .attr-old { border-color: var(--border-strong); }
+  .attr-new { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .attr-eyebrow { font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .6rem; }
+  .attr-old .attr-eyebrow { color: var(--text-muted); }
+  .attr-new .attr-eyebrow { color: var(--accent); }
+  .attr-row { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem 0; border-bottom: 1px dashed var(--border); }
+  .attr-row:last-child { border-bottom: none; }
+  .attr-row .ic { flex-shrink: 0; width: 24px; height: 24px; color: var(--accent); }
+  .attr-old .attr-row .ic { color: var(--text-muted); }
+  .attr-row b { font-family: var(--display); font-size: .9rem; color: var(--text); }
+  .attr-row span { display: block; font-size: .8rem; color: var(--text-soft); line-height: 1.5; margin-top: .1em; }
+  .attr-arrow { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .3rem; color: var(--accent); }
+  .attr-arrow .gly { font-family: var(--display); font-size: 2rem; line-height: 1; }
+  .attr-arrow .lab { font-family: var(--mono); font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); text-align: center; }
+
+  /* ═════════════════════════════════════════════════
+     视觉四：Benchmark 半衰期
+     ═════════════════════════════════════════════════ */
+  .decay { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .decay-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .decay-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .decay-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .decay-vis svg { display: block; width: 100%; height: auto; max-width: 720px; margin: 0 auto; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .heat-pulse, .draw-line, .gap-eyebrow .lamp { animation: none !important; }
+    .draw-line { stroke-dashoffset: 0 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      跑分通胀与评测归因<span class="brand-sub">跨市场 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>跑分通胀与评测归因<span class="en"> · Benchmarks Are Inflating</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        SWE-2 在旧榜刷出新高、却在新榜垫底——一个分数已经不能告诉你模型好不好，只能告诉你它被优化去讨好哪张榜。
+      </p>
+      <div class="doc-meta">
+        <span>2026-09-11</span>
+        <span>跨市场</span>
+        <span>评测</span>
+        <span>归因</span>
+        <span>Cognition</span>
+        <span>可对外</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">1<small>个数</small></div>
+          <div class="lab">再也不够<br/>用来做选型决策</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">2<small>张榜</small></div>
+          <div class="lab">旧榜爆表 vs 新榜垫底<br/>同一个模型两幅面孔</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">↓<small>半衰</small></div>
+          <div class="lab">Benchmark 从可信到失真<br/>的窗口越来越短</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">4<small>问</small></div>
+          <div class="lab">看到跑分先追问的<br/>归因四问</div>
+        </div>
+      </div>
+
+      <p style="font-size: .82rem; color: var(--text-muted); margin: 1.2em 0 0;">
+        <strong>信源</strong>：
+        <a href="https://cognition.ai/blog/swe-2" target="_blank" rel="noopener">Cognition · SWE-2 发布</a> ·
+        <a href="https://www.tbench.ai/" target="_blank" rel="noopener">Terminal-Bench</a> ·
+        本站每日前沿扫描（2026-09-11）
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>Cognition 发布 <b style="color:var(--accent)">SWE-2</b>，在 <b>Terminal-Bench 2.1</b> 上刷出漂亮新高——但在更新、更贴近真实工作的 <b>Terminal-Bench 4.0</b> 上却明显落后。这不是造假，而是<em>跑分通胀（benchmark inflation）</em>的典型病征：<b>当一个基准变成营销目标，模型就会被优化去讨好这张榜，而不是变得真的更强。</b>分数于是脱离了它本应代表的能力——就像被印多了的钞票脱离了它本应代表的价值。<b>解药不是「再找一张更好的榜」，而是把「一个分数」升级成「一条归因链」：这个分测的是什么任务、在什么条件下、被谁判定、和我的场景差多远。</b><b>预判：进行中——12 个月内，「可归因的评测」将取代「排行榜名次」，成为技术选型和对外信任的硬通货。</b>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><b>同一个模型，两幅面孔</b>：SWE-2 在旧榜（Terminal-Bench 2.1）领先、在新榜（4.0）落后。你信哪个数，取决于你先看到哪张榜——这本身就是警报。</li>
+        <li><b>通胀的机制是「优化目标错位」</b>：当榜单成为发布 KPI，团队会（有意或无意地）朝榜面拟合——刷的是分数，不是能力。这就是古德哈特定律的 AI 版：<em>指标一旦成为目标，就不再是好指标</em>。</li>
+        <li><b>Benchmark 有半衰期</b>：任何公开榜发布即开始「被拟合」，可信度随时间衰减；越老、越流行的榜，越可能已经通胀。</li>
+        <li><b>一个分数是「无归因的结论」</b>：它把「测什么/什么条件/谁判定/离我多远」全压成一个数字，丢掉了做决策真正需要的因果链。</li>
+        <li><b>解药是评测归因</b>：把分数拆回可追问的四要素——任务分布、评测条件、判定口径、与自身场景的距离——评测和归因是同一个动作的两半。</li>
+        <li><b>自建私有评测集才是护城河</b>：用你真实业务的任务分布做评测，别人没法针对它「刷分」，也最能预测线上表现。</li>
+        <li><b>对 FDE 的意义</b>：给客户做选型时，别拿排行榜名次交差；交付一条<b>可归因、可复现、贴合客户场景</b>的评测结论——这正是我们和「跑分搬运工」的分水岭。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 一、两幅面孔 ═════════ -->
+    <h2 id="twofaces"><span class="sec-num">一</span>同一个模型，两张榜两幅面孔<a href="#twofaces" class="anchor">#</a></h2>
+    <p class="kicker">— WHY NOW · 一个分数已经自相矛盾</p>
+
+    <p>SWE-2 发布时，最扎眼的不是它多强，而是它<b>同时又强又弱</b>：在 <a href="https://www.tbench.ai/" target="_blank" rel="noopener">Terminal-Bench</a> 的旧版本（2.1）上刷出领先成绩，在更新、更贴近真实终端工作的 4.0 上却明显落后。同一个模型，在两张本应测同一件事的榜上，给出了相反的结论。<b>当一个分数开始自相矛盾，它就不再是「能力的度量」，而变成了「拟合对象的度量」——它告诉你的不是模型多强，而是它被调去讨好哪张榜。</b></p>
+
+    <!-- ═════════ 视觉一：旧榜爆表 vs 新榜垫底 ═════════ -->
+    <figure class="gap reveal">
+      <div class="gap-eyebrow"><span class="lamp"></span>Hero · Same model, opposite verdicts</div>
+      <div class="gap-title">旧榜刷高、新榜落后：分数脱钩了<span class="en">Score ≠ Capability</span></div>
+      <p class="gap-sub">左边柱子（旧榜 Terminal-Bench 2.1）里 SWE-2 高高领先；右边柱子（新榜 4.0）里同一个模型垫底。两组结论互相打脸——这正是「跑分通胀」的可视化：分数与真实能力之间裂开了缝。</p>
+      <div class="gap-vis">
+        <svg viewBox="0 0 860 380" role="img" aria-label="双组柱状对比：左组为旧榜 Terminal-Bench 2.1，SWE-2 柱最高领先；右组为新榜 4.0，同一 SWE-2 柱最低垫底，中间用裂缝符号标注分数与能力脱钩" xmlns="http://www.w3.org/2000/svg">
+          <!-- 轴 -->
+          <g stroke="var(--border-strong)" stroke-width="1.2" fill="none">
+            <line x1="70" y1="40" x2="70" y2="300"/>
+            <line x1="70" y1="300" x2="810" y2="300"/>
+          </g>
+          <text x="40" y="170" text-anchor="middle" font-size="10" fill="var(--text-muted)" transform="rotate(-90 40 170)" letter-spacing="2">得分</text>
+
+          <!-- 左组：旧榜 -->
+          <text x="210" y="332" text-anchor="middle" font-size="12" class="disp" fill="var(--text-muted)">旧榜 · Terminal-Bench 2.1</text>
+          <text x="210" y="348" text-anchor="middle" font-size="9" fill="var(--text-muted)">（越老越可能被拟合）</text>
+          <!-- 对手柱 -->
+          <rect x="120" y="180" width="52" height="120" rx="4" fill="var(--border-strong)"/>
+          <text x="146" y="172" text-anchor="middle" font-size="9" fill="var(--text-muted)">对手 A</text>
+          <rect x="184" y="160" width="52" height="140" rx="4" fill="var(--border-strong)"/>
+          <text x="210" y="152" text-anchor="middle" font-size="9" fill="var(--text-muted)">对手 B</text>
+          <!-- SWE-2 领先柱 -->
+          <rect x="248" y="90" width="52" height="210" rx="4" fill="var(--accent)" class="draw-line" style="stroke-dashoffset:0"/>
+          <text x="274" y="82" text-anchor="middle" font-size="10" class="disp" fill="var(--accent-ink)">SWE-2 ★</text>
+          <text x="274" y="322" text-anchor="middle" font-size="9" fill="var(--accent-ink)">领先</text>
+
+          <!-- 中间裂缝 -->
+          <g class="heat-pulse">
+            <path d="M 430 70 l -10 60 l 14 20 l -12 60 l 14 20 l -10 50" fill="none" stroke="var(--accent)" stroke-width="2.4"/>
+          </g>
+          <text x="430" y="60" text-anchor="middle" font-size="10" fill="var(--accent-ink)">脱钩</text>
+          <text x="430" y="322" text-anchor="middle" font-size="9" fill="var(--text-muted)">同一模型</text>
+
+          <!-- 右组：新榜 -->
+          <text x="650" y="332" text-anchor="middle" font-size="12" class="disp" fill="var(--accent)">新榜 · Terminal-Bench 4.0</text>
+          <text x="650" y="348" text-anchor="middle" font-size="9" fill="var(--text-muted)">（更贴真实工作）</text>
+          <rect x="560" y="120" width="52" height="180" rx="4" fill="var(--border-strong)"/>
+          <text x="586" y="112" text-anchor="middle" font-size="9" fill="var(--text-muted)">对手 A</text>
+          <rect x="624" y="100" width="52" height="200" rx="4" fill="var(--border-strong)"/>
+          <text x="650" y="92" text-anchor="middle" font-size="9" fill="var(--text-muted)">对手 B</text>
+          <!-- SWE-2 垫底柱 -->
+          <rect x="688" y="220" width="52" height="80" rx="4" fill="var(--accent)" opacity=".55"/>
+          <text x="714" y="212" text-anchor="middle" font-size="10" class="disp" fill="var(--accent-ink)">SWE-2</text>
+          <text x="714" y="322" text-anchor="middle" font-size="9" fill="var(--con)">垫底</text>
+
+          <text x="440" y="372" text-anchor="middle" font-size="10" fill="var(--text-muted)" letter-spacing="1">示意图：相对位置为表达「同模型跨榜结论相反」，非精确实测数值</text>
+        </svg>
+      </div>
+    </figure>
+
+    <!-- ═════════ 二、通胀是怎么发生的 ═════════ -->
+    <h2 id="howinflate"><span class="sec-num">二</span>分数是怎么被通胀出来的<a href="#howinflate" class="anchor">#</a></h2>
+    <p class="kicker">— 古德哈特定律的 AI 版</p>
+
+    <p>没人需要「作弊」，通胀也会自然发生。机制是<b>古德哈特定律</b>：<em>当一个度量变成目标，它就不再是好的度量</em>。一张榜刚出来时，它和真实能力高度相关；可一旦它成了发布会 PPT 上的 KPI，整个行业就会朝它优化——调数据配比、对齐题型、甚至无意中让训练集沾了榜的分布。<b>刷上去的是分数，涨的却不一定是能力。</b>下面这条链，就是「一张好榜」如何一步步通胀成「一个空数」的过程。</p>
+
+    <!-- ═════════ 视觉二：通胀漂移链 ═════════ -->
+    <div class="drift reveal">
+      <div class="drift-head">跑分通胀的四步漂移<span class="en">How a Benchmark Inflates</span></div>
+      <p class="drift-sub">从「可信指标」到「被拟合的空数」，中间只隔四步。越流行的榜，走得越快。</p>
+      <div class="drift-vis">
+        <svg viewBox="0 0 860 220" role="img" aria-label="四步流水线：新榜可信、成为营销KPI、行业朝榜优化、分数与能力脱钩，步间箭头，底部标注可信度逐步下降" xmlns="http://www.w3.org/2000/svg">
+          <!-- 主线 -->
+          <line x1="60" y1="90" x2="820" y2="90" stroke="var(--border-strong)" stroke-width="1.4" stroke-dasharray="4 6"/>
+
+          <!-- 步 1 -->
+          <g style="color:var(--pro)">
+            <rect x="52" y="56" width="150" height="68" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="68" y="68" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          </g>
+          <text x="127" y="102" text-anchor="middle" font-size="11" class="disp" fill="var(--text)">① 新榜可信</text>
+          <text x="127" y="140" text-anchor="middle" font-size="8" fill="var(--pro)">与真实能力高相关</text>
+
+          <!-- 步 2 -->
+          <g style="color:var(--accent)">
+            <rect x="238" y="56" width="150" height="68" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="254" y="68" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          </g>
+          <text x="313" y="102" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">② 成为 KPI</text>
+          <text x="313" y="140" text-anchor="middle" font-size="8" fill="var(--text-muted)">上了发布会 PPT</text>
+
+          <!-- 步 3 -->
+          <g style="color:var(--accent)">
+            <rect x="424" y="56" width="150" height="68" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="440" y="68" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-6"/></svg>
+          </g>
+          <text x="499" y="102" text-anchor="middle" font-size="11" class="disp" fill="var(--accent-ink)">③ 朝榜优化</text>
+          <text x="499" y="140" text-anchor="middle" font-size="8" fill="var(--text-muted)">拟合题型/数据配比</text>
+
+          <!-- 步 4 -->
+          <g style="color:var(--con)">
+            <rect x="610" y="56" width="150" height="68" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+            <svg x="626" y="68" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </g>
+          <text x="685" y="102" text-anchor="middle" font-size="11" class="disp" fill="var(--con)">④ 分数脱钩</text>
+          <text x="685" y="140" text-anchor="middle" font-size="8" fill="var(--con)">刷分 ≠ 涨能力</text>
+
+          <!-- 步间箭头 -->
+          <g fill="none" stroke="var(--accent)" stroke-width="2">
+            <path d="M 202 90 h 28" class="dash-flow"/>
+            <path d="M 388 90 h 28" class="dash-flow" style="animation-delay:-.7s"/>
+            <path d="M 574 90 h 28" class="dash-flow" style="animation-delay:-1.4s"/>
+          </g>
+
+          <!-- 可信度下降底注 -->
+          <path d="M 60 190 C 260 190, 500 200, 820 205" fill="none" stroke="var(--con)" stroke-width="1.6" stroke-dasharray="5 5"/>
+          <text x="440" y="182" text-anchor="middle" font-size="9" fill="var(--text-muted)">可信度沿这条链持续下降 ↘</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">要分清</div>
+      <p style="margin:.2em 0;">通胀<b>不等于</b>造假。大多数时候没有人污染测试集，团队只是理性地朝「会被拿去比较的那张榜」使劲——这恰恰让它更隐蔽、更普遍。<b>所以正确的姿态不是「抓谁作弊」，而是「默认任何单一公开分数都已部分通胀」，再用归因把水分挤出来。</b></p>
+    </div>
+
+    <!-- ═════════ 三、从一个分数到一条归因链 ═════════ -->
+    <h2 id="attribution"><span class="sec-num">三</span>解药：把「一个分数」升级成「一条归因链」<a href="#attribution" class="anchor">#</a></h2>
+    <p class="kicker">— 评测与归因是同一个动作的两半</p>
+
+    <p>一个分数是<b>「无归因的结论」</b>——它把「测的什么任务、在什么条件下、被谁判定、离我的场景多远」全压成一个数字，然后要你照单相信。而做决策真正需要的，是这些被压掉的东西。<b>评测的价值不在给出一个数，而在于让这个数可以被追问、被拆解、被映射到你自己的场景。评测和归因，本就是同一个动作的两半。</b></p>
+
+    <!-- ═════════ 视觉三：一个数 → 一条链 ═════════ -->
+    <div class="attr reveal">
+      <div class="attr-side attr-old">
+        <div class="attr-eyebrow">旧姿势 · 一个分数</div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="奖杯"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M5 4H3v2a3 3 0 0 0 3 3M19 4h2v2a3 3 0 0 1-3 3"/></svg></span>
+          <div><b>「SWE-2 拿了榜首」</b><span>一个数字、一个名次，直接当结论。你无法追问它到底强在哪。</span></div>
+        </div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="问号"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3M12 17h.01"/></svg></span>
+          <div><b>无法映射到自己</b><span>它在别人的任务分布上第一，不代表在你的场景第一。</span></div>
+        </div>
+      </div>
+
+      <div class="attr-arrow">
+        <span class="gly">→</span>
+        <span class="lab">归因<br/>拆解</span>
+      </div>
+
+      <div class="attr-side attr-new">
+        <div class="attr-eyebrow">新姿势 · 一条归因链</div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="列表"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span>
+          <div><b>测的是什么任务</b><span>任务分布、难度、样本量——它到底覆盖了哪一片能力。</span></div>
+        </div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="齿轮"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/></svg></span>
+          <div><b>在什么条件下</b><span>工具、上下文、重试、温度——同一模型换条件分数就变。</span></div>
+        </div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="法槌"><path d="M14 13l-7.5 7.5a2 2 0 0 1-3-3L11 10M12 6l6 6M9 9l6 6M16 3l5 5"/></svg></span>
+          <div><b>被谁判定</b><span>人工 / 自动 / LLM 裁判？判定口径决定分数含义。</span></div>
+        </div>
+        <div class="attr-row">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="定位"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg></span>
+          <div><b>离我的场景多远</b><span>榜的任务分布和你的真实业务重合多少——这才是决策依据。</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>看到跑分先追问</th><th>要拆出的东西</th><th>拆不出时的默认判断</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>测的什么任务？</td><td>任务分布、样本量、发布时间</td><td>越老越流行 → 假定已通胀</td></tr>
+          <tr><td>什么条件下跑的？</td><td>工具/上下文/重试/温度设置</td><td>条件不透明 → 分数不可比</td></tr>
+          <tr><td>被谁判定？</td><td>人工 / 自动脚本 / LLM 裁判</td><td>裁判不明 → 结论打折</td></tr>
+          <tr><td>离我多远？</td><td>与自身任务分布的重合度</td><td>重合度低 → 名次对我无意义</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ═════════ 四、半衰期 ═════════ -->
+    <h2 id="halflife"><span class="sec-num">四</span>每张榜都有半衰期<a href="#halflife" class="anchor">#</a></h2>
+    <p class="kicker">— 为什么「换一张新榜」治不了本</p>
+
+    <p>有人会说：那就用最新的 Terminal-Bench 4.0 好了。但这只是把时钟拨回起点——<b>任何公开榜，发布即开始被拟合，可信度随时间衰减</b>。4.0 今天可信，是因为它还新、还没被大规模优化；等它成了下一个发布会 KPI，它也会通胀。这就是 benchmark 的「半衰期」：越流行、越老，水分越大。<b>所以真正的解不是追新榜，而是拥有一张别人刷不到的私有榜。</b></p>
+
+    <!-- ═════════ 视觉四：半衰期曲线 ═════════ -->
+    <div class="decay reveal">
+      <div class="decay-head">Benchmark 半衰期<span class="en">Benchmarks Decay After Release</span></div>
+      <p class="decay-sub">纵轴是「分数对真实能力的可信度」。公开榜发布时最高，随被拟合而衰减；私有评测集因为别人刷不到，可信度保持平稳。</p>
+      <div class="decay-vis">
+        <svg viewBox="0 0 720 340" role="img" aria-label="折线图：公开榜可信度从发布点开始随时间衰减的下降曲线，私有评测集为一条基本平稳的高位横线，二者对比" xmlns="http://www.w3.org/2000/svg">
+          <!-- 轴 -->
+          <g stroke="var(--border-strong)" stroke-width="1.2" fill="none">
+            <line x1="70" y1="30" x2="70" y2="280"/>
+            <line x1="70" y1="280" x2="680" y2="280"/>
+          </g>
+          <text x="40" y="155" text-anchor="middle" font-size="10" fill="var(--text-muted)" transform="rotate(-90 40 155)" letter-spacing="1">可信度</text>
+          <text x="680" y="300" text-anchor="end" font-size="10" fill="var(--text-muted)" letter-spacing="1">时间 / 流行度 →</text>
+
+          <!-- 公开榜衰减曲线 -->
+          <path d="M 70 60 C 220 65, 360 150, 680 250" fill="none" stroke="var(--accent)" stroke-width="3" class="draw-line"/>
+          <circle cx="70" cy="60" r="5" fill="var(--accent)"/>
+          <text x="86" y="52" font-size="11" class="disp" fill="var(--accent-ink)">公开榜</text>
+          <text x="86" y="68" font-size="9" fill="var(--text-muted)">发布即开始被拟合</text>
+          <circle cx="680" cy="250" r="5" fill="var(--accent)" opacity=".6"/>
+          <text x="666" y="242" text-anchor="end" font-size="9" fill="var(--con)">已通胀</text>
+
+          <!-- 私有评测集平稳线 -->
+          <path d="M 70 100 L 680 108" fill="none" stroke="var(--pro)" stroke-width="2.6" stroke-dasharray="8 5"/>
+          <circle cx="680" cy="108" r="5" fill="var(--pro)"/>
+          <text x="500" y="96" font-size="11" class="disp" fill="var(--pro)">私有评测集</text>
+          <text x="500" y="128" font-size="9" fill="var(--text-muted)">别人刷不到 → 保持可信</text>
+
+          <!-- 交叉后差距标注 -->
+          <g class="heat-pulse">
+            <line x1="560" y1="120" x2="560" y2="215" stroke="var(--accent)" stroke-width="1.3" stroke-dasharray="4 4"/>
+            <circle cx="560" cy="167" r="4" fill="var(--accent)"/>
+          </g>
+          <text x="574" y="150" font-size="9" fill="var(--accent-ink)">信任差</text>
+          <text x="574" y="164" font-size="8" fill="var(--text-muted)">越拖越大</text>
+
+          <text x="375" y="322" text-anchor="middle" font-size="10" fill="var(--text-muted)" letter-spacing="1">示意图：表达「公开榜衰减、私有集平稳」的结构关系</text>
+        </svg>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">别踩的坑</div>
+      <p style="margin:.2em 0;">看到「我们在 XX 榜刷新 SOTA」就下单，等于用一个可能已经通胀的数字替客户做决策。<b>更稳的姿势：把候选模型放到你自己的任务分布上重测一遍</b>——哪怕只有几十条真实样本，也比一个陌生榜的名次更能预测线上表现。</p>
+    </div>
+
+    <!-- ═════════ 五、给 FDE ═════════ -->
+    <h2 id="fde"><span class="sec-num">五</span>对 FDE 的意义<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">— 不做跑分搬运工，做评测归因的人</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">下一步（1–2 周）</div>
+      <ul style="margin:.3em 0;">
+        <li><b>建一张私有评测集</b>：从客户真实业务里抽 30–100 条代表性任务，定义清楚判定口径——这是刷不到、也最能预测线上的护城河。</li>
+        <li><b>选型别交名次</b>：给客户的选型结论，附上「归因四问」的拆解（测什么/什么条件/谁判定/离你多远），而不是一张排行榜截图。</li>
+        <li><b>把厂商跑分默认打折</b>：读发布博客里的 SOTA 时，先查这张榜多老、多流行——越老越流行，折扣越大。</li>
+        <li><b>让评测可复现</b>：记录评测的工具/上下文/重试/温度等条件，确保结论能被客户和自己复跑——可复现是可信的前提。</li>
+        <li><b>把这条能力产品化</b>：「可归因、可复现、贴合场景的评测」本身就是 FDE 能对外收信任溢价的差异化，和 LIFT 的评测归因一体化方向一致。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 六、待验证 ═════════ -->
+    <h2 id="open-questions"><span class="sec-num">六</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>SWE-2 在两榜的分差，有多少来自「拟合旧榜」、多少来自 4.0 本身更难 / 口径不同？需要拿到两榜的任务分布对比才能定论。</li>
+      <li>私有评测集的样本量下限是多少——几十条真的够预测线上，还是会因样本偏差误导？</li>
+      <li>LLM 裁判（LLM-as-judge）本身会不会也被通胀 / 被讨好？判定层的可信度怎么保证？</li>
+      <li>会不会出现「可信度可标注」的评测标准（给每个分数附归因元数据），让跑分不再是裸数字？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-09-11 初稿（基于每日前沿扫描 + Cognition SWE-2 发布 / Terminal-Bench 资料综合分析，抓取 2026-09-11）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_agent-runtime-commoditized.html">相关：Agent 运行时被商品化</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_capability-control-same-curve.html">相关：能力与失控，同在一条曲线上</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
