@@ -193,6 +193,7 @@
 | harbor-blue | `#1e6091` / dark `#7cc4e8` | Agent 安全底座收敛（跨市场洞察） |
 | plasma-indigo | `#4f46e5` / dark `#9aa8ff` | Agent 运行时被商品化（跨市场洞察） |
 | molten-orange | `#c2410c` / dark `#fdba74` | 跑分通胀与评测归因（跨市场洞察） |
+| grok-plum | `#7d2e68` / dark `#e29ac9` | Grok Bot · xAI 常驻 AI 同事进企业（厂商动态） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`

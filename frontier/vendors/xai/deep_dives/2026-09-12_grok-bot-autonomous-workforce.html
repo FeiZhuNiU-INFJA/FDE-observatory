@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grok Bot · xAI 的「常驻 AI 同事」进企业 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #7d2e68;
+    --accent-soft: #f6ebf3;
+    --accent-deep: #5e2050;
+    --accent-ink: #4a1a3f;
+  }
+  [data-theme="dark"] {
+    --accent: #e29ac9;
+    --accent-soft: #2e1528;
+    --accent-deep: #f0b8dc;
+    --accent-ink: #f5cfe4;
+  }
+
+  /* ==================================================
+     Bespoke 1: Grok ≠ Grok Bot · 同名不同物双卡（.duo）
+     ================================================== */
+  .duo { display: grid; grid-template-columns: 1fr auto 1fr; gap: 1.2em; align-items: stretch; margin: 1.6em 0 2em; }
+  .duo-card { border: 1px solid var(--border); border-radius: 14px; padding: 1.3em 1.2em; background: var(--surface); box-shadow: var(--shadow); position: relative; }
+  .duo-card.doer { border-top: 3px solid var(--accent); }
+  .duo-card.talker { border-top: 3px solid var(--text-muted); }
+  .duo-ico { width: 34px; height: 34px; margin-bottom: .55em; }
+  .duo-card.doer .duo-ico { color: var(--accent); }
+  .duo-card.talker .duo-ico { color: var(--text-muted); }
+  .duo-name { font-weight: 700; font-size: 1.05rem; margin-bottom: .1em; }
+  .duo-tag { font-family: var(--mono); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: .7em; }
+  .duo-card.doer .duo-tag { color: var(--accent); }
+  .duo-row { display: flex; gap: .5em; align-items: flex-start; font-size: .86rem; margin-bottom: .45em; line-height: 1.5; }
+  .duo-row .dot { flex-shrink: 0; width: .5em; height: .5em; border-radius: 50%; margin-top: .5em; background: currentColor; opacity: .5; }
+  .duo-vs { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: .8rem; color: var(--accent); }
+  @media (max-width: 760px) {
+    .duo { grid-template-columns: 1fr; }
+    .duo-vs { padding: .2em 0; }
+  }
+
+  /* ==================================================
+     Bespoke 2: 工作方式 · 四步流水线（.flow）
+     ================================================== */
+  .flow { margin: 1.6em 0 2em; padding: 1.6em 1.2em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .flow svg { width: 100%; height: auto; display: block; }
+  .flow text { font-family: var(--sans); }
+  .flow .step-n { font-family: var(--mono); font-weight: 600; font-size: 11px; }
+  .flow .step-t { font-size: 12.5px; font-weight: 700; }
+  .flow .step-s { font-size: 10px; }
+  .flow-cap { font-size: .82rem; color: var(--text-muted); text-align: center; margin-top: .7em; }
+
+  /* ==================================================
+     Bespoke 3: 参谋长模型 · 中心枢纽 + 专职 Bot（.staff）
+     ================================================== */
+  .staff { margin: 1.6em 0 2em; padding: 1.4em 1.2em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .staff svg { width: 100%; height: auto; display: block; }
+  .staff text { font-family: var(--sans); }
+  .staff .hub-t { font-size: 12px; font-weight: 700; }
+  .staff .spec-t { font-size: 11px; font-weight: 600; }
+  .staff .spec-s { font-size: 9px; }
+  .staff-cap { font-size: .82rem; color: var(--text-muted); text-align: center; margin-top: .6em; }
+
+  /* ==================================================
+     Bespoke 4: 安全边界与那道裂缝（.wall）
+     ================================================== */
+  .wall { margin: 1.6em 0 2em; padding: 1.5em 1.2em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .wall svg { width: 100%; height: auto; display: block; }
+  .wall text { font-family: var(--sans); }
+  .wall .u-lab { font-size: 11px; font-weight: 700; }
+  .wall .b-lab { font-size: 9.5px; font-weight: 600; }
+  .wall .note { font-size: 10px; font-weight: 600; }
+  .wall-legend { display: flex; flex-wrap: wrap; gap: 1.2em; justify-content: center; margin-top: .9em; font-size: .78rem; color: var(--text-muted); }
+  .wall-legend span { display: inline-flex; align-items: center; gap: .4em; }
+  .wall-legend .sw { width: 1.1em; height: .55em; border-radius: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../../../index.html">← 首页</a></span>
+      Grok Bot<span class="brand-sub">xAI · 自主智能体 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Grok <span class="en">Bot</span> · xAI 的「常驻 AI 同事」进了企业门</h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">8 月 11 日 Beta 上线、9 月 3 日转企业版：每个 Bot 一台独立云电脑，登录你的真实工具端到端干活。xAI 从「生成文字」正式迈向「完成工作」。</p>
+      <div class="doc-meta">
+        <span>2026-09-12</span>
+        <span>跨市场</span>
+        <span>厂商动态</span>
+        <span>xAI</span>
+        <span>Grok Bot</span>
+        <span>自主智能体</span>
+        <span>企业治理</span>
+        <span>Agent 安全</span>
+        <span>对内</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">08-11<small>Beta</small></div>
+          <div class="lab">Grok Bot 上线（企业版 09-03）</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">数千<small>家</small></div>
+          <div class="lab">已采用组织（Legora / Supermicro / ServiceTitan）</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">$100K<small>+</small></div>
+          <div class="lab">采购 Bot 单次审计挖出的直接节省</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">2<small>周</small></div>
+          <div class="lab">Grok / Cursor 企业客户免费试用窗口</div>
+        </div>
+      </div>
+      <p style="color: var(--text-soft); font-size: .95rem;">
+        源：<a href="https://x.ai/news/grok-bot-for-enterprise" target="_blank" rel="noopener">xAI · Grok Bot for Enterprise</a> ·
+        <a href="https://x.ai/news/designing-grok-bot" target="_blank" rel="noopener">Designing Grok Bot</a> ·
+        <a href="https://cursor.com/docs/grok-bot/security" target="_blank" rel="noopener">Cursor Docs · Grok Bot Security</a> ·
+        <a href="https://www.technobezz.com/news/xai-adds-enterprise-controls-grok-bot" target="_blank" rel="noopener">Technobezz</a> ·
+        <a href="https://netalith.com/blogs/ai-tools/what-is-grok-bot" target="_blank" rel="noopener">Netalith 解析</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>Grok Bot 不是「新版聊天 Grok」，而是 xAI 从「回答问题的框」切向「接手干活的同事」的第一个正式产品。9 月 3 日转企业版补齐了访问 / 网络 / 审计三层治理，把它从单用户玩具变成可全组织铺开的「AI 劳动力」。真正值得记录的不是它能做什么——那和竞品趋同——而是它的安全边界只画在<strong>用户与用户之间</strong>，同一个用户的多个 Bot 仍共享一台云电脑；加上一切隔离宣称皆为 xAI 自述、无第三方审计，这决定了企业该以什么姿态试它。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>是什么：</strong>一队「永远在线的 AI 同事」。每个 Bot 有自己的云电脑（浏览器 / 文件 / 登录态持续保留），登录你的真实工具端到端干活，只在需要拍板时回来找你审批。</li>
+        <li><strong>Grok ≠ Grok Bot：</strong>Grok 是聊天 / 模型（现跑 Grok 4.6，4.7 今日发布），Grok Bot 是独立的智能体产品。一句话——<strong>Grok 负责说，Grok Bot 负责干</strong>。</li>
+        <li><strong>参谋长模型：</strong>可同时跑多个 Bot，指定一个当 chief of staff 管理专职 Bot（销售 / 招聘 / 采购 / 工程），Bot 之间直接互发消息、共享上下文，你只监督不传话。</li>
+        <li><strong>转企业（09-03）：</strong>补齐访问控制（默认拒绝）、网络控制（allowlist）、审计日志（可 OTel 导出）；Grok / Cursor 企业客户免费 2 周、可邀请全组织。</li>
+        <li><strong>分发捷径：</strong>下载与 onboarding 走 Cursor 域名——SpaceX 收购 Cursor、合体为 SpaceXAI 后的第一个联合产品，白送 Cursor 企业席位是 OpenAI / Anthropic 没有的渠道优势。</li>
+        <li><strong>那道裂缝：</strong>隔离只在用户之间；同一用户的所有 Bot 共享一台云电脑，登录态 / 文件可能被该用户的其他 Bot 拿到。网络默认放行、动作录制默认关闭。责任归属未定义，无第三方审计。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、背景与触发 ========== -->
+    <h2 id="context"><span class="sec-num">一</span>背景与触发<a href="#context" class="anchor">#</a></h2>
+    <p class="kicker">— WHY NOW</p>
+
+    <p>过去一个月，xAI 把 Grok 从「个人聊天机器人」一路推成「企业 AI 平台」。节奏很快：</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">时间线锚点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>08-11</strong>：Grok Bot 上线 Beta，最初只对 SuperGrok Heavy / Cursor Ultra / Teams Premium 开放。</li>
+        <li><strong>08-12</strong>：Grok 4.6 发布（500K 上下文、新增 xhigh 推理档），AA 指数追平 GPT-5.6 Sol，仅次 Claude Opus 5 与 Fable 5 Max。</li>
+        <li><strong>08-21</strong>：Grok Bot 准入扩到 SuperGrok Plus / Cursor Pro+，随后进一步开到<strong>所有 SuperGrok 档位（含基础版）</strong>与 Cursor Pro，并重置所有人的周额度。</li>
+        <li><strong>09-03</strong>：<strong>Grok Bot 转企业版</strong>，加入访问 / 网络 / 审计控制，企业客户免费 2 周、可邀请全组织。xAI 称已有「数千家组织」采用（点名 Legora、Supermicro、ServiceTitan）。</li>
+        <li><strong>09-12（今日）</strong>：Grok 4.7 发布，据称 2.1 万亿参数（+40%）、Token 效率显著提升——Grok Bot 的自主执行能力预计随之升级。</li>
+      </ul>
+    </div>
+
+    <p>为什么此刻要认真记录它？因为这条曲线背后是 xAI 的商业压力——基础设施开销高于营收，企业合同是补缺口的路。Grok Bot 就是 xAI 拿去和 GitHub Copilot、Microsoft 365 Copilot 抢「工作现场」的那张牌。而它选择的产品形态（常驻、自主、持凭证操作真实账号），正好踩在整个行业都在纠结的那个点上：<strong>当 Agent 真的能替你动手，隔离和权限该怎么画？</strong></p>
+
+    <!-- ========== 二、Grok ≠ Grok Bot ========== -->
+    <h2 id="not-grok"><span class="sec-num">二</span>先厘清：Grok ≠ Grok Bot<a href="#not-grok" class="anchor">#</a></h2>
+    <p class="kicker">— TALK VS DO</p>
+
+    <p>这是最高频的混淆点。Grok 自 2023 年起就是 xAI 内嵌在 X 里的生成式聊天机器人——你问、它答。Grok Bot 是一个<strong>独立的智能体产品</strong>：它在你的工具里执行动作、把活干完，而不只是在对话框里产出文字。</p>
+
+    <!-- Bespoke 1: 同名不同物双卡 -->
+    <div class="duo reveal">
+      <div class="duo-card talker">
+        <svg class="duo-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="对话气泡图标">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <div class="duo-name">Grok</div>
+        <div class="duo-tag">CHAT · 说</div>
+        <div class="duo-row"><span class="dot"></span>生成式聊天 / 模型（现跑 Grok 4.6，4.7 今日发布）</div>
+        <div class="duo-row"><span class="dot"></span>内嵌 X，实时拉取平台数据</div>
+        <div class="duo-row"><span class="dot"></span>你问，它答；对话结束即止</div>
+        <div class="duo-row"><span class="dot"></span>竞品：ChatGPT / Claude / Gemini</div>
+      </div>
+      <div class="duo-vs">VS</div>
+      <div class="duo-card doer">
+        <svg class="duo-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="齿轮与光标图标">
+          <rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8"/><path d="M12 16v4"/>
+          <circle cx="12" cy="10" r="2.2"/>
+        </svg>
+        <div class="duo-name">Grok Bot</div>
+        <div class="duo-tag">AGENT · 干</div>
+        <div class="duo-row"><span class="dot"></span>独立智能体产品，各有一台云电脑</div>
+        <div class="duo-row"><span class="dot"></span>登录真实工具（邮箱 / Slack / 仓库…）操作账号</div>
+        <div class="duo-row"><span class="dot"></span>端到端跑任务，7×24，需拍板才回来</div>
+        <div class="duo-row"><span class="dot"></span>竞品：Copilot / M365 Copilot / 各类 Agent</div>
+      </div>
+    </div>
+
+    <p>一句话记忆：<strong>Grok 负责说，Grok Bot 负责干。</strong>后者把 AI 的活动范围从「生成文字」扩到了「实际操作账号、修改工作成果」——这也正是它风险陡增的地方。</p>
+
+    <!-- ========== 三、它怎么干活 ========== -->
+    <h2 id="how"><span class="sec-num">三</span>它怎么干活：像委派给同事<a href="#how" class="anchor">#</a></h2>
+    <p class="kicker">— THE DELEGATION LOOP</p>
+
+    <p>Grok Bot 的核心设计是「委派」而非「提示」。你像给同事派活一样用自然语言描述任务，剩下的它自己扛。关键在于<strong>它有自己的环境</strong>：跑在专属云电脑上而不是你的设备，合上笔记本它照样干。</p>
+
+    <!-- Bespoke 2: 四步流水线 -->
+    <div class="flow reveal">
+      <svg viewBox="0 0 760 190" role="img" aria-label="Grok Bot 工作流水线四步：交派任务、独立云电脑、端到端自主运行、需决策才回来审批">
+        <g style="color:var(--accent)">
+          <!-- 连接线 -->
+          <g stroke="currentColor" stroke-width="1.6" fill="none" opacity=".5">
+            <line x1="176" y1="80" x2="204" y2="80" stroke-dasharray="4 3"/>
+            <line x1="360" y1="80" x2="388" y2="80" stroke-dasharray="4 3"/>
+            <line x1="544" y1="80" x2="572" y2="80" stroke-dasharray="4 3"/>
+          </g>
+          <!-- 步骤 1 -->
+          <g transform="translate(20,30)">
+            <rect x="0" y="0" width="156" height="100" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <text x="16" y="26" class="step-n" fill="currentColor">01</text>
+            <svg x="112" y="12" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <text x="16" y="58" class="step-t" fill="var(--text)">交派任务</text>
+            <text x="16" y="76" class="step-s" fill="var(--text-muted)">桌面 / 手机自然语言</text>
+            <text x="16" y="90" class="step-s" fill="var(--text-muted)">无需搭工作流</text>
+          </g>
+          <!-- 步骤 2 -->
+          <g transform="translate(204,30)">
+            <rect x="0" y="0" width="156" height="100" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <text x="16" y="26" class="step-n" fill="currentColor">02</text>
+            <svg x="112" y="12" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 18v3"/></svg>
+            <text x="16" y="58" class="step-t" fill="var(--text)">独立云电脑</text>
+            <text x="16" y="76" class="step-s" fill="var(--text-muted)">登录你的真实工具</text>
+            <text x="16" y="90" class="step-s" fill="var(--text-muted)">登录态 / 文件持续保留</text>
+          </g>
+          <!-- 步骤 3 -->
+          <g transform="translate(388,30)">
+            <rect x="0" y="0" width="156" height="100" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <text x="16" y="26" class="step-n" fill="currentColor">03</text>
+            <svg x="112" y="12" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/><polyline points="21 3 21 9 15 9"/></svg>
+            <text x="16" y="58" class="step-t" fill="var(--text)">端到端自主跑</text>
+            <text x="16" y="76" class="step-s" fill="var(--text-muted)">串起多步、7×24</text>
+            <text x="16" y="90" class="step-s" fill="var(--text-muted)">看一遍就存成 routine</text>
+          </g>
+          <!-- 步骤 4 -->
+          <g transform="translate(572,30)">
+            <rect x="0" y="0" width="168" height="100" rx="12" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.8"/>
+            <text x="16" y="26" class="step-n" fill="currentColor">04</text>
+            <svg x="122" y="12" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <text x="16" y="58" class="step-t" fill="var(--accent-ink)">需决策才回来</text>
+            <text x="16" y="76" class="step-s" fill="var(--text-muted)">要人判断则暂停请示</text>
+            <text x="16" y="90" class="step-s" fill="var(--text-muted)">否则干完再汇报</text>
+          </g>
+        </g>
+      </svg>
+      <div class="flow-cap">▲ 「教一次 → 纠错 → 存成可复用 routine → 分享为模板」是它区别于一次性会话的关键——记忆会随时间积累。</div>
+    </div>
+
+    <!-- ========== 四、参谋长模型 ========== -->
+    <h2 id="staff"><span class="sec-num">四</span>参谋长模型：你监督一支小团队<a href="#staff" class="anchor">#</a></h2>
+    <p class="kicker">— THE CHIEF-OF-STAFF PATTERN</p>
+
+    <p>Grok Bot 最值得留意的架构点是多智能体分工。你可以同时跑多个 Bot，指定一个当「参谋长（chief of staff）」去管理专职 Bot。它们能<strong>直接互发消息、共享上下文、在群聊里协作</strong>——你不用在它们之间当传话筒。定位是「你监督一支小团队」，而不是「你微管理一个助手」。</p>
+
+    <!-- Bespoke 3: 参谋长中心枢纽 -->
+    <div class="staff reveal">
+      <svg viewBox="0 0 720 300" role="img" aria-label="参谋长模型：中心参谋长 Bot 管理销售、招聘、采购、工程四个专职 Bot，专职 Bot 之间也可互相传递上下文">
+        <g style="color:var(--accent)">
+          <!-- 中心到四角的连线 -->
+          <g stroke="currentColor" stroke-width="1.6" fill="none" opacity=".55">
+            <line x1="360" y1="150" x2="150" y2="70"/>
+            <line x1="360" y1="150" x2="570" y2="70"/>
+            <line x1="360" y1="150" x2="150" y2="234"/>
+            <line x1="360" y1="150" x2="570" y2="234"/>
+          </g>
+          <!-- 专职 Bot 之间的横向协作线（虚线） -->
+          <g stroke="currentColor" stroke-width="1.2" fill="none" opacity=".3" stroke-dasharray="3 4">
+            <line x1="150" y1="70" x2="570" y2="70"/>
+            <line x1="150" y1="234" x2="570" y2="234"/>
+            <line x1="150" y1="70" x2="150" y2="234"/>
+            <line x1="570" y1="70" x2="570" y2="234"/>
+          </g>
+          <!-- 中心参谋长 -->
+          <g transform="translate(360,150)">
+            <circle cx="0" cy="0" r="52" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/>
+            <svg x="-14" y="-30" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>
+            <text x="0" y="12" text-anchor="middle" class="hub-t" fill="var(--accent-ink)">参谋长 Bot</text>
+            <text x="0" y="28" text-anchor="middle" class="spec-s" fill="var(--text-muted)">chief of staff</text>
+          </g>
+        </g>
+        <!-- 四个专职 Bot -->
+        <g>
+          <g transform="translate(150,70)">
+            <rect x="-74" y="-30" width="148" height="60" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="1.4"/>
+            <text x="0" y="-4" text-anchor="middle" class="spec-t" fill="var(--text)">销售 Bot</text>
+            <text x="0" y="14" text-anchor="middle" class="spec-s" fill="var(--text-muted)">连夜做客户触达草稿</text>
+          </g>
+          <g transform="translate(570,70)">
+            <rect x="-74" y="-30" width="148" height="60" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="1.4"/>
+            <text x="0" y="-4" text-anchor="middle" class="spec-t" fill="var(--text)">招聘 Bot</text>
+            <text x="0" y="14" text-anchor="middle" class="spec-s" fill="var(--text-muted)">通宵拉候选人 shortlist</text>
+          </g>
+          <g transform="translate(150,234)">
+            <rect x="-74" y="-30" width="148" height="60" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="1.4"/>
+            <text x="0" y="-4" text-anchor="middle" class="spec-t" fill="var(--text)">采购 Bot</text>
+            <text x="0" y="14" text-anchor="middle" class="spec-s" fill="var(--text-muted)">审计席位挖 $10 万+ 节省</text>
+          </g>
+          <g transform="translate(570,234)">
+            <rect x="-74" y="-30" width="148" height="60" rx="12" fill="var(--surface)" stroke="var(--border)" stroke-width="1.4"/>
+            <text x="0" y="-4" text-anchor="middle" class="spec-t" fill="var(--text)">工程 Bot</text>
+            <text x="0" y="14" text-anchor="middle" class="spec-s" fill="var(--text-muted)">盯 PR / 复现 Bug 再交修</text>
+          </g>
+        </g>
+      </svg>
+      <div class="staff-cap">▲ 实线＝参谋长指派；虚线＝专职 Bot 之间直接传递上下文。xAI 说最重的用量其实在工程之外（销售 / 招聘 / 采购 / 市场）。</div>
+    </div>
+
+    <p>xAI 内部的「Haggle Bot（采购砍价 Bot）」是最实的案例：给它 Slack / Notion / Drive / Gmail / Hex / Ramp 的访问，它盘出约 125 家在用供应商，找出某产品 43 个 90 天零活跃的付费席位（$14,220）、另一产品 $85,662/年 的闲置 SKU，还把一单 $14,629 的办公采购比价砍到 $6,143（-58%）。xAI 甚至<strong>公开了这个 Bot 的完整系统提示词</strong>——对中小团队来说，那份 prompt 本身就是一份可抄的自动化规格书。</p>
+
+    <!-- ========== 五、转企业：补上治理层 ========== -->
+    <h2 id="enterprise"><span class="sec-num">五</span>转企业：补上的三层治理<a href="#enterprise" class="anchor">#</a></h2>
+    <p class="kicker">— WHAT SHIPPED ON SEP 3</p>
+
+    <p>8 月的 Beta 缺的正是「治理」。9 月 3 日的企业版把这块补上，让 Grok Bot 从单用户助手变成可全组织铺开的劳动力产品。核心能力如下：</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>能力</th><th>细节</th><th>默认姿态（值得警惕）</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>访问控制</strong></td><td>默认拒绝（default-deny）：Bot 初始零权限，只能碰被显式登录的账号；RBAC 角色管理</td><td>✅ 默认安全</td></tr>
+          <tr><td><strong>网络控制</strong></td><td>仅企业版；管理员可设目的地 allowlist</td><td>⚠ 无策略时<strong>默认放行所有目的地</strong></td></tr>
+          <tr><td><strong>审计日志</strong></td><td>全动作日志，可 OpenTelemetry 导出到 SIEM</td><td>⚠ <strong>动作录制默认关闭</strong>，且其事件不进 dashboard 审计日志</td></tr>
+          <tr><td><strong>隔离</strong></td><td>每个用户的工作跑在独立云环境，与其他用户隔离</td><td>⚠ 隔离只在<strong>用户之间</strong>（见第六节）</td></tr>
+          <tr><td><strong>连接器 / 插件</strong></td><td>可按策略屏蔽插件</td><td>⚠ 屏蔽插件≠屏蔽其对应网站（两套策略独立）</td></tr>
+          <tr><td><strong>商业条款</strong></td><td>Grok / Cursor 企业客户免费 2 周、可邀请全组织（含无席位者）</td><td>企业版价格未公布</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p><strong>定价（企业版以下）：</strong>Cursor Pro $20/月、SuperGrok $30/月、Cursor Teams $40/席/月均已含 Grok Bot；企业版联系销售。下载与 onboarding 都<strong>走 Cursor 域名</strong>——这是 SpaceX 收购 Cursor、xAI/Cursor/SpaceX 合体为「SpaceXAI」后的第一个联合产品，白送 Cursor 企业席位是 OpenAI / Anthropic 通过各自编程工具伙伴拿不到的分发捷径。</p>
+
+    <!-- ========== 六、安全边界与那道裂缝 ========== -->
+    <h2 id="boundary"><span class="sec-num">六</span>安全边界，与那道裂缝<a href="#boundary" class="anchor">#</a></h2>
+    <p class="kicker">— WHERE THE WALL IS (AND ISN'T)</p>
+
+    <p>这是本篇最该记录的一点，也和我们此前沉淀的「隔离沙箱 / 监工 / 人工确认」三要素范式直接对撞。xAI 反复强调「secure by default」：每个用户的会话跑在与他人隔离的环境里，Bot 在被登录前碰不到任何账号。<strong>但这道墙只砌在用户与用户之间。</strong></p>
+
+    <!-- Bespoke 4: 安全边界示意 -->
+    <div class="wall reveal">
+      <svg viewBox="0 0 720 260" role="img" aria-label="安全边界示意：用户 A 与用户 B 之间有隔离墙，但用户 A 名下的多个 Bot 共享同一台云电脑，登录态与文件可能互通">
+        <!-- 用户 A 区块 -->
+        <g style="color:var(--accent)">
+          <rect x="24" y="40" width="300" height="190" rx="14" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.8"/>
+          <text x="174" y="66" text-anchor="middle" class="u-lab" fill="var(--accent-ink)">用户 A</text>
+          <!-- 共享的一台云电脑 -->
+          <rect x="60" y="150" width="228" height="60" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.6" stroke-dasharray="5 3"/>
+          <text x="174" y="186" text-anchor="middle" class="note" fill="currentColor">同一台云电脑（登录态 / 文件共享）</text>
+          <!-- 三个 Bot -->
+          <g stroke="currentColor" stroke-width="1.4" fill="none" opacity=".6">
+            <line x1="100" y1="120" x2="100" y2="150"/>
+            <line x1="174" y1="120" x2="174" y2="150"/>
+            <line x1="248" y1="120" x2="248" y2="150"/>
+          </g>
+          <g>
+            <circle cx="100" cy="104" r="18" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="100" y="108" text-anchor="middle" class="b-lab" fill="var(--text)">Bot 1</text>
+            <circle cx="174" cy="104" r="18" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="174" y="108" text-anchor="middle" class="b-lab" fill="var(--text)">Bot 2</text>
+            <circle cx="248" cy="104" r="18" fill="var(--surface)" stroke="var(--accent)" stroke-width="1.6"/>
+            <text x="248" y="108" text-anchor="middle" class="b-lab" fill="var(--text)">Bot 3</text>
+          </g>
+        </g>
+        <!-- 隔离墙 -->
+        <g>
+          <line x1="360" y1="30" x2="360" y2="240" stroke="var(--pro)" stroke-width="3"/>
+          <rect x="344" y="120" width="32" height="30" rx="5" fill="var(--pro)"/>
+          <path d="M352 120 v-7 a8 8 0 0 1 16 0 v7" fill="none" stroke="var(--pro)" stroke-width="2.4"/>
+          <text x="360" y="256" text-anchor="middle" class="note" fill="var(--pro)">用户间：强隔离</text>
+        </g>
+        <!-- 用户 B 区块 -->
+        <g>
+          <rect x="396" y="40" width="300" height="190" rx="14" fill="var(--surface)" stroke="var(--border)" stroke-width="1.6"/>
+          <text x="546" y="66" text-anchor="middle" class="u-lab" fill="var(--text-muted)">用户 B</text>
+          <rect x="432" y="150" width="228" height="60" rx="10" fill="var(--surface)" stroke="var(--border)" stroke-width="1.4" stroke-dasharray="5 3"/>
+          <text x="546" y="186" text-anchor="middle" class="note" fill="var(--text-muted)">另一台云电脑</text>
+          <g stroke="var(--border)" stroke-width="1.4" fill="none">
+            <line x1="510" y1="120" x2="510" y2="150"/>
+            <line x1="582" y1="120" x2="582" y2="150"/>
+          </g>
+          <circle cx="510" cy="104" r="18" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.6"/>
+          <text x="510" y="108" text-anchor="middle" class="b-lab" fill="var(--text-muted)">Bot 1</text>
+          <circle cx="582" cy="104" r="18" fill="var(--surface)" stroke="var(--text-muted)" stroke-width="1.6"/>
+          <text x="582" y="108" text-anchor="middle" class="b-lab" fill="var(--text-muted)">Bot 2</text>
+        </g>
+      </svg>
+      <div class="wall-legend">
+        <span><span class="sw" style="background:var(--pro)"></span>用户间：有隔离墙</span>
+        <span><span class="sw" style="background:var(--accent)"></span>用户内：多 Bot 共享一台电脑（无墙）</span>
+      </div>
+    </div>
+
+    <p>据 Cursor 文档，<strong>同一个用户名下的所有 Bot 共享该用户的这台云电脑</strong>——一个 Bot 在上面产生的登录态或文件，可能被该用户的其他 Bot 拿到。要更强的隔离，得换用户 + 换机器。换句话说：xAI 给的是「租户级隔离」，不是「任务级隔离」。当你让一个高权限 Bot 和一个跑不可信输入的 Bot 挂在同一身份下，边界就消失了。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险清单</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>同用户 Bot 共享电脑。</strong>隔离粒度是用户而非任务；高权限 Bot 与处理不可信数据的 Bot 同处一机 = 横向渗透面。</li>
+        <li><strong>默认姿态偏松。</strong>网络默认放行所有目的地、动作录制默认关闭且不进审计日志——「高效上手」的另一面是「合规盲区」。</li>
+        <li><strong>责任归属未定义。</strong>Bot 发错邮件、批错供应商续约，锅算 Agent、部署它的人、还是造它的公司？官方公告只说技术权限是 scoped 的，回避了 liability。</li>
+        <li><strong>全是自述，无第三方审计。</strong>所有隔离宣称都来自 xAI 自己的发布博客，无署名安全研究员、无独立审计；「隔离」「默认拒绝」不是新词，能否在真实企业负载 + Bot 互相消息 + 继承部署者会话下扛住，外部无人验证过。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 七、判断与 FDE 映射 ========== -->
+    <h2 id="judgment"><span class="sec-num">七</span>判断与 FDE 映射<a href="#judgment" class="anchor">#</a></h2>
+    <p class="kicker">— WHAT THIS MEANS FOR US</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>维度</th><th>信号</th><th>对我们的意义</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>战略方向</td><td>xAI 从「生成文字」切「完成工作」，直接对标 Copilot 系</td><td>「常驻自主 Agent」已是头部厂商共识路线，不再是实验室概念</td></tr>
+          <tr><td>分发模式</td><td>白送 Cursor 企业席位，走 Cursor 域名 onboarding</td><td>渠道并购正转化为产品分发红利；评估竞品要连带看它的收购版图</td></tr>
+          <tr><td>安全范式</td><td>租户级隔离 + 默认拒绝，但任务级无墙</td><td>印证「隔离沙箱」是必答题，但「隔离粒度」才是真正的分水岭——可写进我们的安全底座篇</td></tr>
+          <tr><td>治理成熟度</td><td>审计 / 网络控制齐了，但默认关 / 默认放行</td><td>企业接入 Agent 的门槛正在从「有没有」转向「默认配置对不对」</td></tr>
+          <tr><td>可信度</td><td>全为厂商自述，无第三方审计</td><td>信心只能给「中」；采购前应索要审计日志与访问控制文档，别只信发布博客</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">核心判断</div>
+      <p style="margin: .3em 0; font-size: .9rem;"><strong>Grok Bot 的产品能力与竞品趋同，真正的差异化在「分发」和「治理默认值」，而它最大的软肋是隔离只到用户级。</strong>对企业而言，两周免费窗口是低成本验证「自主性宣称 vs 访问控制实际」的好机会——但别在敏感系统上首日全铺。先从低风险、可回滚的任务起步，凡涉及钱 / 客户 / 生产系统的一律保留人在环。它是一个很好的「反例样本」：证明了 Agent 安全的关键不是喊「有沙箱」，而是沙箱的粒度画在哪。</p>
+    </div>
+
+    <!-- ========== 八、待验证问题 ========== -->
+    <h2 id="open-questions"><span class="sec-num">八</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <p class="kicker">— WHAT TO WATCH</p>
+
+    <ol>
+      <li><strong>任务级隔离何时补上？</strong>「同用户多 Bot 共享一台电脑」是当前最大隐患。关注 xAI/Cursor 是否推出「每 Bot 独立环境」或「最小权限身份」。</li>
+      <li><strong>默认值会不会收紧？</strong>网络默认放行、录制默认关闭——企业采购压力下，这些默认姿态是否会翻转为「默认安全」？</li>
+      <li><strong>责任与审计能否第三方化？</strong>是否会出现独立安全审计、SOC2 / ISO 报告，以及 Agent 误操作的 liability 条款？</li>
+      <li><strong>Grok 4.7 加持后自主性到哪？</strong>2.1 万亿参数、Token 效率提升，Grok Bot 的长任务成功率与「误操作率」会怎么变？</li>
+      <li><strong>企业版真实定价？</strong>两周免费之后的价格，决定它相对 Copilot 系的性价比与采用门槛。</li>
+      <li><strong>国内可及性？</strong>数据在 xAI/Azure 境外处理，涉个人信息触 152-ФЗ / 数据出境合规——国内团队实际能用到什么程度？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-09-12 初稿 · 综合 xAI 官方发布（Grok Bot for Enterprise / Designing Grok Bot / 采购 Bot 系统提示词）、Cursor 安全文档、Technobezz / AI Insiders / Netalith / imisofts 等报道
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../../../index.html">← 首页</a>
+      ·
+      <a href="../../../index.html">厂商动态总索引</a>
+      ·
+      <a href="../../../../insights/cross/2026-09_agent-sandbox-supervisor-convergence.html">相关洞察：Agent 安全底座收敛</a>
+      ·
+      <a href="https://x.ai/news/grok-bot-for-enterprise" target="_blank" rel="noopener">xAI 官方公告</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../../../_assets/insight.js"></script>
+</body>
+</html>

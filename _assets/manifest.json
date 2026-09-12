@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-11T15:38:57.244929+00:00",
+  "generated_at": "2026-09-12T15:03:54.425635+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-09_benchmark-inflation-eval-attribution.html",
@@ -302,6 +302,26 @@
     }
   ],
   "frontier_deep": [
+    {
+      "path": "frontier/vendors/xai/deep_dives/2026-09-12_grok-bot-autonomous-workforce.html",
+      "title": "Grok Bot · xAI 的「常驻 AI 同事」进了企业门",
+      "date": "2026-09-12",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "厂商动态",
+        "xAI",
+        "Grok Bot",
+        "自主智能体",
+        "Agent 安全"
+      ],
+      "category": "frontier-deep",
+      "extra": {
+        "vendor": "xai",
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "frontier/vendors/cursor/deep_dives/2026-08-22_origin-code-hosting.html",
       "title": "Cursor Origin · AI 原生代码托管，战火从「写代码」烧向「管代码」",
