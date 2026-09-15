@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>模型接入被商品化：当自研旗舰厂都放员工用对手的模型 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* ═════════ 本页 accent：紫水晶 (Amethyst) —— 编排/路由主题色 ═════════ */
+  :root {
+    --accent: #8b2fb0;
+    --accent-deep: #6f2490;
+    --accent-ink: #4e1a66;
+    --accent-soft: color-mix(in srgb, #8b2fb0 12%, white);
+    --accent-glow: color-mix(in srgb, #8b2fb0 22%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #dd9cf0;
+    --accent-soft: color-mix(in srgb, #8b2fb0 30%, #140a1a);
+    --accent-ink: #f0d6fb;
+    --accent-deep: #c77fe4;
+    --accent-glow: color-mix(in srgb, #8b2fb0 34%, transparent);
+  }
+
+  /* SVG 内文字统一走 CSS（不在 SVG 属性里写 var()） */
+  .shelf text, .router text, .votes text, .forks text { font-family: var(--mono); }
+  .shelf .disp, .router .disp, .votes .disp, .forks .disp { font-family: var(--display); font-weight: 700; }
+
+  /* 共享动画（受 prefers-reduced-motion 兜底） */
+  .dash-flow { stroke-dasharray: 6 8; animation: dashflow 2.4s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -56; } }
+  .soft-pulse { animation: softpulse 2.6s ease-in-out infinite; transform-origin: center; }
+  @keyframes softpulse { 0%,100% { opacity:.4; } 50% { opacity:1; } }
+
+  /* ═════════════════════════════════════════════════
+     视觉一（Hero）：模型即产品 → 模型即货架
+     ═════════════════════════════════════════════════ */
+  .shelf {
+    position: relative; margin: 2rem 0 2.4rem;
+    border-radius: 20px; padding: 1.6rem 1.4rem 1.2rem;
+    background: radial-gradient(120% 100% at 50% 0%,
+      color-mix(in srgb, var(--accent) 12%, var(--surface)) 0%, var(--surface) 60%);
+    border: 1.5px solid var(--accent);
+    box-shadow: 0 18px 44px var(--accent-glow), inset 0 0 0 1px var(--accent-soft);
+    overflow: hidden;
+  }
+  .shelf-eyebrow { display: flex; align-items: center; gap: .6em; font-family: var(--mono); font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--accent); margin-bottom: .5rem; }
+  .shelf-eyebrow .lamp { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: softpulse 2s ease-in-out infinite; }
+  .shelf-title { font-family: var(--display); font-weight: 700; font-size: 1.35rem; margin: 0 0 .3em; color: var(--text); letter-spacing: -.005em; }
+  .shelf-title .en { font-style: italic; font-weight: 500; color: var(--accent); margin-left: .35em; font-size: .85em; }
+  .shelf-sub { font-size: .92rem; color: var(--text-soft); margin: 0 0 1rem; max-width: 66ch; }
+  .shelf-vis svg { display: block; width: 100%; height: auto; max-width: 880px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉二：请求 → 路由 / 治理关卡 → 按任务挑模型
+     ═════════════════════════════════════════════════ */
+  .router { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .router-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .router-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .router-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .router-vis svg { display: block; width: 100%; height: auto; max-width: 880px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉三：用脚投票 —— 三家巨头的证据卡
+     ═════════════════════════════════════════════════ */
+  .votes { margin: 1.8em 0; border: 1.5px solid var(--border); border-radius: 16px; padding: 1.3rem 1.2rem; background: var(--surface); }
+  .votes-head { font-family: var(--display); font-weight: 700; font-size: 1.05rem; color: var(--text); margin: 0 0 .2em; }
+  .votes-head .en { font-family: var(--mono); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); margin-left: .5em; }
+  .votes-sub { font-size: .86rem; color: var(--text-soft); margin: 0 0 .9rem; }
+  .votes-vis svg { display: block; width: 100%; height: auto; max-width: 880px; margin: 0 auto; }
+
+  /* ═════════════════════════════════════════════════
+     视觉四：护城河两端跑 —— 下沉能力事实 / 上移治理路由
+     ═════════════════════════════════════════════════ */
+  .forks { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1.8em 0; }
+  @media (max-width: 720px) { .forks { grid-template-columns: 1fr; } }
+  .fork-card { border: 1.5px solid var(--border); border-radius: 16px; padding: 1.2rem 1.1rem; background: var(--surface); transition: transform .2s, border-color .2s; }
+  .fork-card:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .fork-card.hot { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
+  .fork-eyebrow { font-family: var(--mono); font-size: .66rem; letter-spacing: .14em; text-transform: uppercase; margin-bottom: .5rem; display: flex; align-items: center; gap: .5em; color: var(--accent); }
+  .fork-card h4 { font-family: var(--display); font-size: 1rem; margin: 0 0 .5em; color: var(--text); }
+  .fork-card ul { margin: 0; padding-left: 1.1em; }
+  .fork-card li { font-size: .84rem; color: var(--text-soft); line-height: 1.55; margin: .25em 0; }
+  .fork-card .ic { width: 22px; height: 22px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dash-flow, .soft-pulse, .shelf-eyebrow .lamp { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      模型接入被商品化<span class="brand-sub">跨市场 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>模型接入被商品化<span class="en"> · Voting With Their Feet</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">
+        当一家自研旗舰模型的公司，都开始放全体工程师去用对手的模型，「拥有一个模型」就不再是护城河——护城河上移到了「谁能安全地编排/路由多模型」，下沉到了「谁的模型真能干活」。
+      </p>
+      <div class="doc-meta">
+        <span>2026-09-15</span>
+        <span>跨市场</span>
+        <span>Agent OS</span>
+        <span>Google</span>
+        <span>Anthropic</span>
+        <span>Microsoft</span>
+        <span>多模型路由</span>
+        <span>可对外</span>
+        <span>时机：进行中</span>
+        <span>信心：高</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="num">$40<small>B</small></div>
+          <div class="lab">Google 拟投 Anthropic，<br/>却仍让员工挑 Claude</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">2<small>巨头</small></div>
+          <div class="lab">Amazon→Google 先后<br/>对员工开放竞品模型</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">3<small>模型</small></div>
+          <div class="lab">微软 Copilot 货架并存<br/>OpenAI/Anthropic/xAI</div>
+        </div>
+        <div class="hero-stat">
+          <div class="num">~6<small>月</small></div>
+          <div class="lab">Gemini 3.5 Pro 跳票<br/>（2 月 3.1 后无 Pro 新品）</div>
+        </div>
+      </div>
+
+      <p style="font-size: .82rem; color: var(--text-muted); margin: 1.2em 0 0;">
+        <strong>信源</strong>：
+        <a href="https://en.mycoding.id/google-finally-lets-all-engineers-use-anthropic-s-claude-67877.html" target="_blank" rel="noopener">Business Insider（转载）· Google 向全体工程师开放 Claude</a> ·
+        <a href="https://www.ithome.com/1/001/875.htm" target="_blank" rel="noopener">IT之家 · 微软把 Grok 装进 Office 三件套</a> ·
+        本站每日前沿扫描（2026-09-15）
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>2026-09-15，一贯「Gemini 优先、封杀外部编码工具」的 <b style="color:var(--accent)">Google</b>，首次放全体工程师用 <b style="color:var(--accent)">Anthropic Claude（Opus 5）</b> 做内部开发；前一天，微软把 <b>xAI Grok</b> 加进 Copilot，让 Office 三件套变成一个「多模型货架」。这两步连起来，是一个比任何 benchmark 都硬的信号：<b>「有没有一个好模型」正在从护城河退化成入场券，「模型接入」本身被商品化、被多路复用。</b>当连自研旗舰厂都用脚投票、按任务从货架上挑模型，竞争就必然<em>上移</em>到「谁能安全、可计费、可审计地编排/路由这些模型」（control plane），并<em>下沉</em>到「谁的模型在真实任务里真能干活」（能力事实，而非发布会）。<b>预判：进行中——12 个月内，卖点不再是「我们接了哪个模型」，而是「我们把多模型选型、路由、退出与治理想清楚了」。</b>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><b>被商品化的是「模型接入」，不是「模型能力」</b>：谁家旗舰、接哪个 API 正在变得可替换；真正拉开差距的是「这个模型在你这条业务上到底干不干得成」。</li>
+        <li><b>自研厂用脚投票是最硬的信号</b>：Google 花数十亿做 Gemini、还拟投 Anthropic 最高 $40B，却让工程师改用 Claude 写代码——继 Amazon 之后第二家巨头低头，编码能力已成刚需。</li>
+        <li><b>货架化正在发生</b>：微软 Copilot 把 OpenAI / Anthropic / xAI 三家并排上架，用户按需选。「模型」是货，「货架 + 路由 + 治理」才是产品。</li>
+        <li><b>护城河向两端跑</b>：<em>上移</em>到编排 / 多模型路由 / 身份配额审计（control plane），<em>下移</em>到「谁的模型真能干活」的能力事实与私有数据。</li>
+        <li><b>发布会不再等于领先</b>：Gemini 3.5 Pro 半年跳票、Grok 4.7 七周三次跳票，说明「按时交付能干活的模型」本身就是稀缺；能力事实与交付纪律取代 PPT。</li>
+        <li><b>对 FDE 的意义</b>：别把「我们接了 X 模型」当卖点；把工程预算投到<b>多模型路由与评测归因、可控性与合规治理</b>，并在技术方案里默认「模型可替换」。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 视觉一：模型即产品 → 模型即货架 ═════════ -->
+    <figure class="shelf reveal">
+      <div class="shelf-eyebrow"><span class="lamp"></span>Hero · From "the model" to "a shelf of models"</div>
+      <div class="shelf-title">模型即产品 → 模型即货架<span class="en">Model-as-product → Model-as-stock</span></div>
+      <p class="shelf-sub">左边是过去：自研旗舰模型是唯一入口，员工只能用它。右边是现在：模型变成货架上可替换的货，工程师/应用按任务从货架挑；货架前那道「路由 · 治理 · 配额审计」的关卡，才是新的产品面。</p>
+      <div class="shelf-vis">
+        <svg viewBox="0 0 880 430" role="img" aria-label="双态对照：左侧过去是一个自研旗舰模型作为唯一入口、带锁；右侧现在是一个货架，上面并排 Claude、GPT、Gemini、Grok 四个模型芯片，货架前有一道路由治理配额审计的关卡，中间箭头标注接入被商品化、多路复用" xmlns="http://www.w3.org/2000/svg">
+
+          <!-- 左：模型即产品 -->
+          <g style="color:var(--text-muted)"><text x="175" y="30" text-anchor="middle" font-size="12" class="disp" fill="currentColor">过去 · 模型即产品</text></g>
+          <g style="color:var(--accent)">
+            <rect x="66" y="60" width="220" height="300" rx="14" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.8"/>
+          </g>
+          <g style="color:var(--accent-ink)">
+            <text x="176" y="150" text-anchor="middle" font-size="14" class="disp" fill="currentColor">自研旗舰模型</text>
+            <text x="176" y="176" text-anchor="middle" font-size="10" fill="currentColor">唯一入口</text>
+          </g>
+          <g style="color:var(--text-muted)">
+            <text x="176" y="204" text-anchor="middle" font-size="9.5" fill="currentColor">员工只能用它</text>
+            <text x="176" y="220" text-anchor="middle" font-size="9.5" fill="currentColor">（以为是壁垒）</text>
+          </g>
+          <!-- 锁图标 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="158" y="252" width="36" height="28" rx="5"/>
+            <path d="M164 252 v-8 a12 12 0 0 1 24 0 v8"/>
+          </g>
+
+          <!-- 中间：商品化箭头 -->
+          <g class="soft-pulse" style="color:var(--accent)">
+            <path d="M 292 210 C 360 210, 400 190, 542 175" fill="none" stroke="currentColor" stroke-width="2.6" class="dash-flow"/>
+            <path d="M 542 175 l -13 -1 l 7 11 z" fill="currentColor"/>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="415" y="160" text-anchor="middle" font-size="10.5" fill="currentColor">接入被商品化 · 多路复用</text></g>
+
+          <!-- 右：模型即货架 -->
+          <g style="color:var(--accent)"><text x="700" y="30" text-anchor="middle" font-size="12" class="disp" fill="currentColor">现在 · 模型即货架</text></g>
+          <!-- 货架外框 -->
+          <g style="color:var(--accent)">
+            <rect x="558" y="54" width="286" height="252" rx="14" fill="var(--surface)" stroke="currentColor" stroke-width="1.6" stroke-dasharray="7 5"/>
+            <line x1="566" y1="180" x2="836" y2="180" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 6"/>
+          </g>
+          <!-- 四个模型芯片：Claude 高亮 -->
+          <g style="color:var(--accent)">
+            <rect x="574" y="72" width="120" height="56" rx="9" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="634" y="105" text-anchor="middle" font-size="12" class="disp" fill="currentColor">Claude</text></g>
+          <g style="color:var(--border-strong)"><rect x="708" y="72" width="120" height="56" rx="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/></g>
+          <g style="color:var(--text)"><text x="768" y="105" text-anchor="middle" font-size="12" fill="currentColor">GPT</text></g>
+          <g style="color:var(--border-strong)"><rect x="574" y="142" width="120" height="56" rx="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/></g>
+          <g style="color:var(--text)"><text x="634" y="175" text-anchor="middle" font-size="12" fill="currentColor">Gemini</text></g>
+          <g style="color:var(--border-strong)"><rect x="708" y="142" width="120" height="56" rx="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/></g>
+          <g style="color:var(--text)"><text x="768" y="175" text-anchor="middle" font-size="12" fill="currentColor">Grok</text></g>
+          <!-- 治理关卡条 -->
+          <g style="color:var(--accent)">
+            <rect x="574" y="222" width="254" height="46" rx="9" fill="url(#gateFill)" stroke="currentColor" stroke-width="1.8"/>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="701" y="243" text-anchor="middle" font-size="11" class="disp" fill="currentColor">路由 · 治理 · 配额审计</text></g>
+          <g style="color:var(--text-muted)"><text x="701" y="259" text-anchor="middle" font-size="8.5" fill="currentColor">新的产品面</text></g>
+          <g style="color:var(--text-muted)"><text x="701" y="294" text-anchor="middle" font-size="9.5" fill="currentColor">应用 / 工程师 按任务挑模型</text></g>
+
+          <g style="color:var(--text-muted)"><text x="440" y="420" text-anchor="middle" font-size="10" fill="currentColor" letter-spacing="1">示意图：表达「模型从唯一入口变成可替换的货架货、价值面前移到路由与治理」的结构关系</text></g>
+
+          <defs>
+            <linearGradient id="gateFill" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" style="stop-color:var(--accent); stop-opacity:.06"/>
+              <stop offset="100%" style="stop-color:var(--accent); stop-opacity:.24"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+    </figure>
+
+    <!-- ═════════ 一、背景与触发 ═════════ -->
+    <h2 id="whynow"><span class="sec-num">一</span>触发：自研旗舰厂开始用脚投票<a href="#whynow" class="anchor">#</a></h2>
+    <p class="kicker">— WHY NOW · 连做模型的公司都改用对手的模型</p>
+
+    <p>过去两年，AI 竞争的隐含假设是「有一个足够好的自研模型 = 有护城河」。所以 Google 花数十亿建 Gemini、要求员工只用自家工具，微软深度绑定 OpenAI。但 2026 年 9 月这一周，几个动作把这个假设撕开了口子：</p>
+
+    <ul>
+      <li><b>Google（09-15，Business Insider）</b>：向<em>全公司</em>工程师开放 Anthropic Claude（Opus 5，经内部平台 Antigravity，按人配额）。此前 Claude 仅限 DeepMind 等少数团队。背景：Gemini 3.5 Pro 自 5 月预告后跳票、编码仍落后，而 Google 还宣布<em>拟向 Anthropic 投资最高 $40B</em>——一边投钱、一边让员工用它的模型。</li>
+      <li><b>Amazon（今年早些时候）</b>：已先一步允许员工使用 Claude 与 OpenAI Codex。Google 这步被普遍解读为对同一竞争压力的跟进。</li>
+      <li><b>微软（09-14）</b>：把 xAI Grok 加进 Copilot 与 Microsoft 365，Word/Excel/PowerPoint 里可选 OpenAI 之外的模型。Nadella：「更多模型选择来到 Copilot，欢迎 Grok！」</li>
+    </ul>
+
+    <p>三件事指向同一个方向：<b>在「模型能不能干活」这件事上，连自研旗舰厂都不再为了「用自家的」而牺牲生产力。</b>模型成了可以按任务替换的组件，而不是唯一入口。</p>
+
+    <!-- ═════════ 视觉三：用脚投票证据卡 ═════════ -->
+    <div class="votes reveal">
+      <div class="votes-head">用脚投票：谁在把竞品模型请进门<span class="en">The "Feet" Have Voted</span></div>
+      <p class="votes-sub">三张证据卡按时间排列。共同点：都是有自研模型 / 有深度绑定的巨头，却主动为员工或用户引入对手的模型。</p>
+      <div class="votes-vis">
+        <svg viewBox="0 0 880 250" role="img" aria-label="用脚投票时间线三张卡：Amazon 今年早些时候开放 Claude 与 Codex；Google 9 月 15 日向全体工程师开放 Claude Opus 5；微软 9 月 14 日把 Grok 加进 Copilot。底部时间轴串联三者" xmlns="http://www.w3.org/2000/svg">
+          <!-- 时间轴 -->
+          <g style="color:var(--border-strong)"><line x1="60" y1="196" x2="820" y2="196" stroke="currentColor" stroke-width="1.4" stroke-dasharray="4 6"/></g>
+
+          <!-- 卡 1 Amazon -->
+          <g style="color:var(--accent)"><rect x="60" y="40" width="230" height="120" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/></g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="80" y="58" width="26" height="26" rx="5"/><path d="M86 71h14"/>
+          </g>
+          <g style="color:var(--text)"><text x="118" y="76" font-size="13" class="disp" fill="currentColor">Amazon</text></g>
+          <g style="color:var(--text-soft)">
+            <text x="80" y="108" font-size="10" fill="currentColor">开放 Claude + OpenAI Codex</text>
+            <text x="80" y="126" font-size="10" fill="currentColor">给员工（编码）</text>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="80" y="148" font-size="9.5" fill="currentColor">verdict：巨头第一个松口</text></g>
+          <g style="color:var(--text-muted)"><text x="175" y="222" text-anchor="middle" font-size="10" fill="currentColor">2026 年早些时候</text></g>
+          <g style="color:var(--accent)"><circle cx="175" cy="196" r="5" fill="currentColor"/></g>
+
+          <!-- 卡 2 Google（高亮） -->
+          <g style="color:var(--accent)"><rect x="325" y="40" width="230" height="120" rx="12" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/></g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="358" cy="71" r="13"/><path d="M358 62v9l6 4"/>
+          </g>
+          <g style="color:var(--text)"><text x="382" y="76" font-size="13" class="disp" fill="currentColor">Google</text></g>
+          <g style="color:var(--text-soft)">
+            <text x="345" y="108" font-size="10" fill="currentColor">全体工程师可用</text>
+            <text x="345" y="126" font-size="10" fill="currentColor">Claude Opus 5（Antigravity）</text>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="345" y="148" font-size="9.5" fill="currentColor">verdict：自研旗舰厂低头</text></g>
+          <g style="color:var(--text-muted)"><text x="440" y="222" text-anchor="middle" font-size="10" fill="currentColor">2026-09-15</text></g>
+          <g style="color:var(--accent)"><circle cx="440" cy="196" r="6" fill="currentColor"/></g>
+
+          <!-- 卡 3 Microsoft -->
+          <g style="color:var(--accent)"><rect x="590" y="40" width="230" height="120" rx="12" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/></g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="610" y="58" width="12" height="12" rx="2"/><rect x="626" y="58" width="12" height="12" rx="2"/><rect x="610" y="74" width="12" height="12" rx="2"/><rect x="626" y="74" width="12" height="12" rx="2"/>
+          </g>
+          <g style="color:var(--text)"><text x="648" y="76" font-size="13" class="disp" fill="currentColor">Microsoft</text></g>
+          <g style="color:var(--text-soft)">
+            <text x="610" y="108" font-size="10" fill="currentColor">Copilot 加入 xAI Grok</text>
+            <text x="610" y="126" font-size="10" fill="currentColor">Office 三件套多模型货架</text>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="610" y="148" font-size="9.5" fill="currentColor">verdict：把货架摆给用户</text></g>
+          <g style="color:var(--text-muted)"><text x="705" y="222" text-anchor="middle" font-size="10" fill="currentColor">2026-09-14</text></g>
+          <g style="color:var(--accent)"><circle cx="705" cy="196" r="5" fill="currentColor"/></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ═════════ 二、核心论点 ═════════ -->
+    <h2 id="claim"><span class="sec-num">二</span>核心论点：接入商品化，能力事实为王<a href="#claim" class="anchor">#</a></h2>
+    <p class="kicker">— 「有没有模型」退化成入场券</p>
+
+    <p>「商品化（commoditization）」的定义是：一件曾经稀缺、能区分高下的东西，变成随处可得、彼此可替换的基础货。<b>正在被商品化的不是「模型能力」，而是「模型接入」这件事</b>——接哪个厂、走哪个 API、用不用自家的，越来越像在货架上取货，随时可换。真正稀缺、拉得开差距的东西被挤到两端：</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">注意分辨</div>
+      <p style="margin:.2em 0;">商品化的是<b>「接入某个模型」的动作</b>，不是<em>「某个模型在你业务上真能干成活」的事实</em>。同一个货架，谁的模型在编码 / 长任务上真能收敛，差距巨大——这就是 Google 宁可用 Claude 的原因。<b>货架抹平的是「接哪个」，抹不平的是「哪个真行」。</b></p>
+    </div>
+
+    <p>于是竞争沿两个方向重构：<b>向上</b>——谁能把一货架的模型安全、可计费、可审计地编排/路由起来（多模型 control plane）；<b>向下</b>——谁的模型在真实任务里的<em>能力事实</em>更硬（而非发布会 benchmark）。夹在中间、只靠「我们接了某个明星模型」的团队，最先被抹平。</p>
+
+    <!-- ═════════ 三、机制 ═════════ -->
+    <h2 id="mechanism"><span class="sec-num">三</span>机制：货架前那道关卡才是产品<a href="#mechanism" class="anchor">#</a></h2>
+    <p class="kicker">— 请求进来，先过路由与治理，再落到某个模型</p>
+
+    <p>当模型可替换，价值就聚到「一个请求进来、如何被路由到<em>该由谁来干、并且被允许怎么干</em>」这道关卡上。它不是模型，而是模型之上的 control plane：按任务/成本/合规选模型（路由），并回答「哪个 agent 能改哪些系统、什么要人工审批、每个工作流花多少钱」（治理）。这正是本周 Microsoft / OpenAI / Salesforce 同时在推的「企业 AI 控制面」。</p>
+
+    <!-- ═════════ 视觉二：路由 + 治理关卡 ═════════ -->
+    <div class="router reveal">
+      <div class="router-head">多模型路由 + 治理关卡<span class="en">Route → Govern → Dispatch</span></div>
+      <p class="router-sub">一个请求先进路由器（按任务/成本/合规选模型），再过治理关卡（身份 · 配额 · 审计），最后才落到货架上某个模型。中间这两段——不是模型——是可防御的产品面。</p>
+      <div class="router-vis">
+        <svg viewBox="0 0 880 270" role="img" aria-label="横向流程：请求进入路由器，按任务成本合规选模型；经过治理关卡的身份配额审计；再分发到 Claude、GPT、Gemini、Grok 四个可替换模型。路由器与治理关卡被标为可防御的产品面" xmlns="http://www.w3.org/2000/svg">
+          <!-- 请求 -->
+          <g style="color:var(--border-strong)"><rect x="40" y="104" width="96" height="56" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/></g>
+          <g style="color:var(--text)"><text x="88" y="130" text-anchor="middle" font-size="11" fill="currentColor">请求</text></g>
+          <g style="color:var(--text-muted)"><text x="88" y="147" text-anchor="middle" font-size="8" fill="currentColor">一个任务</text></g>
+
+          <!-- 路由器 -->
+          <g style="color:var(--accent)"><rect x="184" y="88" width="150" height="88" rx="12" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/></g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M212 118h20M212 132h20"/><path d="M244 118l10 7-10 7"/>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="272" y="123" text-anchor="middle" font-size="11.5" class="disp" fill="currentColor">路由器</text></g>
+          <g style="color:var(--text-soft)"><text x="272" y="150" text-anchor="middle" font-size="8.5" fill="currentColor">按任务/成本/合规选模型</text></g>
+
+          <!-- 治理关卡 -->
+          <g style="color:var(--accent)"><rect x="382" y="88" width="150" height="88" rx="12" fill="var(--accent-soft)" stroke="currentColor" stroke-width="2"/></g>
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M470 112l0 0"/><path d="M448 104l14-6 14 6v10c0 8-6 13-14 16-8-3-14-8-14-16z"/>
+          </g>
+          <g style="color:var(--accent-ink)"><text x="470" y="123" text-anchor="middle" font-size="11.5" class="disp" fill="currentColor">治理关卡</text></g>
+          <g style="color:var(--text-soft)"><text x="470" y="150" text-anchor="middle" font-size="8.5" fill="currentColor">身份 · 配额 · 审计</text></g>
+
+          <!-- 可防御产品面 标注 -->
+          <g style="color:var(--accent)"><path d="M184 76 h348" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="4 4"/></g>
+          <g style="color:var(--accent-ink)"><text x="358" y="68" text-anchor="middle" font-size="9.5" fill="currentColor">↑ 可防御的产品面（不是模型）</text></g>
+
+          <!-- 流动箭头 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M136 132 h44" class="dash-flow"/>
+            <path d="M334 132 h44" class="dash-flow" style="animation-delay:-.8s"/>
+          </g>
+
+          <!-- 分发到四个模型 -->
+          <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M532 110 C 600 90, 640 66, 704 66" class="dash-flow"/>
+            <path d="M532 122 C 600 118, 640 112, 704 112" class="dash-flow" style="animation-delay:-.5s"/>
+            <path d="M532 142 C 600 150, 640 158, 704 158" class="dash-flow" style="animation-delay:-1s"/>
+            <path d="M532 154 C 600 178, 640 204, 704 204" class="dash-flow" style="animation-delay:-1.5s"/>
+          </g>
+          <g style="color:var(--accent)"><rect x="704" y="52" width="128" height="30" rx="7" fill="var(--accent-soft)" stroke="currentColor" stroke-width="1.6"/></g>
+          <g style="color:var(--accent-ink)"><text x="768" y="72" text-anchor="middle" font-size="10.5" fill="currentColor">Claude</text></g>
+          <g style="color:var(--border-strong)">
+            <rect x="704" y="98" width="128" height="30" rx="7" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="704" y="144" width="128" height="30" rx="7" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="704" y="190" width="128" height="30" rx="7" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+          </g>
+          <g style="color:var(--text)">
+            <text x="768" y="118" text-anchor="middle" font-size="10.5" fill="currentColor">GPT</text>
+            <text x="768" y="164" text-anchor="middle" font-size="10.5" fill="currentColor">Gemini</text>
+            <text x="768" y="210" text-anchor="middle" font-size="10.5" fill="currentColor">Grok</text>
+          </g>
+          <g style="color:var(--text-muted)"><text x="768" y="240" text-anchor="middle" font-size="9" fill="currentColor">可替换的货 · 商品化</text></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ═════════ 四、护城河去哪 ═════════ -->
+    <h2 id="moat"><span class="sec-num">四</span>护城河向两端跑<a href="#moat" class="anchor">#</a></h2>
+    <p class="kicker">— 上移到治理路由，下沉到能力事实</p>
+
+    <p>接入被商品化后，可防御价值离开中间层，往两端聚集。下面两张卡把方向画出来——两端都要投，最不该投的是「中间那层：接了哪个明星模型」。</p>
+
+    <div class="forks reveal">
+      <div class="fork-card hot">
+        <div class="fork-eyebrow">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="向上箭头"><path d="M12 19V5M5 12l7-7 7 7"/></svg></span>
+          向上 · 编排 / 治理 / 路由
+        </div>
+        <h4>多模型 control plane</h4>
+        <ul>
+          <li><b>路由</b>：按任务 / 成本 / 合规，把请求派给最合适的模型</li>
+          <li><b>治理</b>：身份、配额、审批、审计——哪个 agent 能改哪些系统</li>
+          <li><b>可计费</b>：把每个工作流的 token 与成本讲清楚给财务</li>
+          <li>越贴客户、越难被单一模型厂标准化 → 可防御</li>
+        </ul>
+      </div>
+      <div class="fork-card hot">
+        <div class="fork-eyebrow">
+          <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="向下箭头"><path d="M12 5v14M5 12l7 7 7-7"/></svg></span>
+          向下 · 能力事实 / 私有数据
+        </div>
+        <h4>谁的模型真能干活</h4>
+        <ul>
+          <li><b>能力事实</b>：在你这条业务的真实任务上收敛率、返工率——不是发布会 benchmark</li>
+          <li><b>私有上下文数据</b>：你的独占资产，喂进任何模型都增值</li>
+          <li><b>评测归因</b>：用你的口径持续量出「哪个模型/配置真行」</li>
+          <li>平台给不了你的东西 → 可防御</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>层</th><th>商品化后的处境</th><th>该不该投工程</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>多模型路由 / 编排</td><td>模型可换，路由与编排成为新战场</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>治理 / 身份 / 审计</td><td>企业落地的准入条件，平台各搞各的</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>评测归因（你的口径）</td><td>「谁真能干活」只有你自己量得准</td><td><b style="color:var(--accent)">重投</b></td></tr>
+          <tr><td>模型接入 / 选哪个明星模型</td><td>已商品化，绑定单一模型的边际收益趋零</td><td><b style="color:var(--con)">别当卖点</b>，默认可换</td></tr>
+          <tr><td>模型能力事实 / 自研微调</td><td>要么挑真能干活的、要么向下深挖</td><td>视资源，<b>向下深挖</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ═════════ 五、对 FDE 的意义 ═════════ -->
+    <h2 id="fde"><span class="sec-num">五</span>对 FDE 的意义<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">— 把方案从「接了谁」改写成「怎么路由、怎么治理、谁真行」</p>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">下一步（1–2 周）</div>
+      <ul style="margin:.3em 0;">
+        <li><b>把「模型可替换」写进架构默认</b>：接入层抽象成可切换的 provider，别让任何一个明星模型渗进业务逻辑；退出成本先算清。</li>
+        <li><b>停止把「我们接了 X 模型」当卖点</b>：对客户改讲多模型路由、治理审计、以及「我们怎么量出哪个模型在你场景真行」。</li>
+        <li><b>把预算投到 control plane + 评测归因</b>：路由策略、身份/配额/审计、以及用自己口径的持续评测——这些是模型厂抹不平的。</li>
+        <li><b>用能力事实选型，而非发布会</b>：为关键任务建一套自己的评测集，用它决定货架上谁上场；把 Gemini/Grok 跳票当作「交付纪律」信号纳入选型。</li>
+        <li><b>新增一条尽调项</b>：客户/合作方评估里加「多模型策略与单一供应商锁定风险」。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 六、典型陷阱 ═════════ -->
+    <h2 id="pitfalls"><span class="sec-num">六</span>典型陷阱<a href="#pitfalls" class="anchor">#</a></h2>
+    <p class="kicker">— 商品化不是「随便接一个就行」</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险</div>
+      <ul style="margin:.3em 0;">
+        <li><b>把「多模型」做成「多份耦合」</b>：没有路由抽象，接三个模型 = 三套散落的 if-else，换模型照样要动业务，反而更脆。</li>
+        <li><b>用发布会 benchmark 替代能力事实</b>：榜单分数与你业务上的真实收敛率脱节；不建自己的评测集，选型就是拍脑袋。</li>
+        <li><b>治理缺位</b>：模型随便换、agent 权限不清，审计和合规红线会在企业客户处直接卡死。</li>
+        <li><b>忽视货架背后的账单</b>：多模型路由的可观测性、数据出域、按量计费复利，和「运行时商品化」是同一批新账单（见姊妹篇）。</li>
+      </ul>
+    </div>
+
+    <!-- ═════════ 七、待验证问题 ═════════ -->
+    <h2 id="open-questions"><span class="sec-num">七</span>待验证问题<a href="#open-questions" class="anchor">#</a></h2>
+    <ol>
+      <li>Google 开放 Claude 是「战术止血」还是「战略转向」？若 Gemini 4/3.5 Pro 补上编码短板，会不会再收回？</li>
+      <li>会不会出现<b>可移植的多模型路由标准</b>（跨厂的调用/治理语义），把货架的锁定风险降下来？还是各家继续各搞私有 control plane？</li>
+      <li>「能力事实」怎么被行业客观量化——除了各家自建评测集，有没有可信的第三方口径能供企业选型？</li>
+      <li>当微软/OpenAI/Salesforce 都在做「企业 AI 控制面」，这层会不会又被平台收编、重演「运行时被商品化」的剧本？（见姊妹篇）</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-09-15 初稿（基于每日前沿扫描：Google 向全体工程师开放 Claude、微软 Copilot 接入 Grok，抓取 2026-09-15）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_agent-runtime-commoditized.html">姊妹篇：Agent 运行时被商品化</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      <a href="./2026-09_benchmark-inflation-eval-attribution.html">相关：跑分通胀与评测归因</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>

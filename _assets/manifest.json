@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-09-12T15:03:54.425635+00:00",
+  "generated_at": "2026-09-15T06:03:36.538492+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-09_model-access-commoditized.html",
+      "title": "模型接入被商品化 · Voting With Their Feet",
+      "date": "2026-09-15",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Agent OS",
+        "Google",
+        "Anthropic",
+        "Microsoft",
+        "多模型路由"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "高"
+      }
+    },
     {
       "path": "insights/cross/2026-09_benchmark-inflation-eval-attribution.html",
       "title": "跑分通胀与评测归因 · Benchmarks Are Inflating",
