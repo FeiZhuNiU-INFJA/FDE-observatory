@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>繁荣之后，工资去了哪里：变革性 AI 的三种经济剧本 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #5a4b81;
+    --accent-deep: #40345f;
+    --accent-ink: #382b56;
+    --accent-soft: color-mix(in srgb, #5a4b81 11%, white);
+    --accent-glow: color-mix(in srgb, #5a4b81 18%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #b8a9e6;
+    --accent-deep: #d1c7f2;
+    --accent-ink: #e4def8;
+    --accent-soft: color-mix(in srgb, #5a4b81 34%, #1a1a22);
+    --accent-glow: color-mix(in srgb, #b8a9e6 22%, transparent);
+  }
+
+  .scenario-engine text,
+  .scenario-deck text,
+  .income-shift text,
+  .wage-seesaw text { font-family: var(--mono); }
+  .scenario-engine .display,
+  .scenario-deck .display,
+  .income-shift .display,
+  .wage-seesaw .display { font-family: var(--display); font-weight: 700; }
+
+  .dash-flow { stroke-dasharray: 7 9; animation: dashflow 1.7s linear infinite; }
+  @keyframes dashflow { to { stroke-dashoffset: -32; } }
+  .soft-pulse { animation: softpulse 2.8s ease-in-out infinite; }
+  @keyframes softpulse { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+
+  /* 视觉一：五参数进入三段模型 */
+  .scenario-engine {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); padding: 1.2rem;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .scenario-engine:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+    box-shadow: 0 12px 28px var(--accent-glow);
+  }
+  .scenario-engine svg { width: 100%; height: auto; display: block; }
+  .scenario-engine-cap {
+    margin: .7rem 0 0; color: var(--text-soft); font-size: .82rem; line-height: 1.55;
+  }
+
+  /* 视觉二：三种情景的结果牌 */
+  .scenario-deck {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 1.8em 0;
+  }
+  @media (max-width: 860px) { .scenario-deck { grid-template-columns: 1fr; } }
+  .scenario-card {
+    border: 1px solid var(--border); border-radius: 14px; background: var(--surface);
+    padding: 1.1rem; position: relative; overflow: hidden;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .scenario-card:hover {
+    transform: translateY(-4px); border-color: var(--accent);
+    box-shadow: 0 12px 26px var(--accent-glow);
+  }
+  .scenario-card::before {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 4px;
+    background: var(--accent); opacity: var(--intensity);
+  }
+  .scenario-card .scenario-kicker {
+    font-family: var(--mono); font-size: .66rem; letter-spacing: .12em;
+    color: var(--accent); font-weight: 600; text-transform: uppercase;
+  }
+  .scenario-card h4 {
+    margin: .35rem 0 .75rem; font-family: var(--display); font-size: 1.12rem;
+    color: var(--text);
+  }
+  .scenario-card svg { display: block; width: 100%; height: auto; }
+  .scenario-verdict {
+    margin-top: .7rem; padding-top: .7rem; border-top: 1px dashed var(--border-strong);
+    color: var(--text-soft); font-size: .8rem; line-height: 1.5;
+  }
+
+  /* 视觉三：收入份额换轨 */
+  .income-shift {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); padding: 1.25rem;
+    transition: transform .2s, border-color .2s;
+  }
+  .income-shift:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .income-shift-grid {
+    display: grid; grid-template-columns: 1fr 1.25fr; gap: 1.5rem; align-items: center;
+  }
+  @media (max-width: 820px) { .income-shift-grid { grid-template-columns: 1fr; } }
+  .income-shift svg { width: 100%; height: auto; display: block; }
+  .ledger { display: flex; flex-direction: column; gap: .7rem; }
+  .ledger-row {
+    display: grid; grid-template-columns: 1fr auto; gap: .8rem; align-items: baseline;
+    padding: .7rem .8rem; border-radius: 10px; border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 68%, transparent);
+  }
+  .ledger-row b { color: var(--text); font-size: .9rem; }
+  .ledger-row span { color: var(--accent); font-family: var(--mono); font-size: .76rem; }
+  .ledger-note {
+    color: var(--text-soft); font-size: .8rem; line-height: 1.5;
+    padding-left: .8rem; border-left: 3px solid var(--accent);
+  }
+
+  /* 视觉四：工资刚性把同一压力分到工资或失业 */
+  .wage-seesaw {
+    margin: 1.8em 0; border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); padding: 1.2rem;
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .wage-seesaw:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+    box-shadow: 0 12px 26px var(--accent-glow);
+  }
+  .wage-seesaw svg { width: 100%; height: auto; display: block; }
+  .wage-scale {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin-top: .8rem;
+  }
+  @media (max-width: 680px) { .wage-scale { grid-template-columns: 1fr; } }
+  .wage-case {
+    border: 1px solid var(--border); border-radius: 10px; padding: .75rem .8rem;
+    background: color-mix(in srgb, var(--surface) 68%, transparent);
+  }
+  .wage-case strong { display: block; color: var(--accent); font-family: var(--mono); font-size: .72rem; }
+  .wage-case span { display: block; color: var(--text-soft); font-size: .78rem; margin-top: .25rem; }
+
+  .signal-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: .9rem; margin: 1.5em 0;
+  }
+  @media (max-width: 700px) { .signal-grid { grid-template-columns: 1fr; } }
+  .signal {
+    border: 1px solid var(--border); border-radius: 12px; padding: 1rem;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .signal:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .signal .signal-head { display: flex; align-items: center; gap: .65rem; }
+  .signal .signal-icon { color: var(--accent); flex: none; }
+  .signal .signal-icon svg { width: 24px; height: 24px; display: block; }
+  .signal h4 { margin: 0; color: var(--text); font-family: var(--display); font-size: 1rem; }
+  .signal p { margin: .45rem 0 0; color: var(--text-soft); font-size: .82rem; line-height: 1.5; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .dash-flow, .soft-pulse { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      繁荣之后，工资去了哪里<span class="brand-sub">跨市场 · 阅读材料 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+    <header class="doc-header">
+      <h1>繁荣之后，工资去了哪里<span class="en">Economic Scenarios for Transformative AI</span></h1>
+      <p style="font-size:1.05rem;color:var(--text-muted);margin-top:-.2em;">Anthropic Institute 57 页工作论文深读：AI 可以同时制造增长奇迹、就业冲击与一次无声的收入换轨</p>
+      <div class="doc-meta">
+        <span>2026-09-23</span>
+        <span>跨市场</span>
+        <span>Anthropic</span>
+        <span>AI 经济学</span>
+        <span>自动化</span>
+        <span>劳动力市场</span>
+        <span>收入分配</span>
+        <span>可对外</span>
+        <span>时机：1–2 年</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">3<small>幕</small></div><div class="lab">温和 / 显著 / 极端<br />不是概率预测</div></div>
+        <div class="hero-stat"><div class="num">32.4<small>%</small></div><div class="lab">极端情景 2030 GDP<br />高于无 AI 路径</div></div>
+        <div class="hero-stat"><div class="num">45.2<small>%</small></div><div class="lab">极端情景劳动份额<br />从 60% 下坠</div></div>
+        <div class="hero-stat"><div class="num">17.9<small>%</small></div><div class="lab">极端情景认知劳动者<br />失业率</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        原文：<a href="https://www-cdn.anthropic.com/files/4zrzovbb/website/cf58f84d46a4a76bf5a5b039ac695fba6b80041c.pdf" target="_blank" rel="noopener">Korinek et al. · Economic Scenarios for Transformative AI</a>
+        · The Anthropic Institute Working Paper No. 2026-02 · 2026-09
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心判断：</strong>这篇论文最重要的不是「AI 到 2030 年让 GDP 增长多少」，而是把一个经常被总量叙事遮住的问题算了出来：<strong>生产率、工资与就业可以向三个不同方向运动</strong>。在极端情景里，经济总量比无 AI 路径高三分之一，劳动总收入却几乎原地不动，新增财富基本由资本吸收。AI 的经济难题因此不是先有「够不够多」，而是先有「谁拿到、谁失去、多久能转过去」。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>它不是预测报告</strong>：作者不给三个情景分配概率，而是提供一台「参数 → 经济结果」的转换器。</li>
+        <li><strong>五个关键输入</strong>：AI 能覆盖多少任务、实际采用多少、单任务提效多少、替代还是增强劳动、被替代者转岗有多难。</li>
+        <li><strong>显著情景已经很激进</strong>：2030 年 GDP 高 8.3%、增长率 5.4%，劳动份额四年下降约 4 个百分点，接近美国过去四十年的全部降幅。</li>
+        <li><strong>极端情景不是全面失业</strong>：认知就业下降 21.5%，但其他职业工资上涨 33.6%；冲击首先表现为跨职业重配。</li>
+        <li><strong>工资与失业是一副跷跷板</strong>：工资越能快速下调，就业越能保住；工资越刚性，裁员越多。模型没有一条「无痛」路径。</li>
+        <li><strong>公众中位预期接近显著情景</strong>：调查映射出的结果是 GDP 高 8.6%、认知就业低 4.2%，但这是信念输入，不是现实证据。</li>
+        <li><strong>真正的政策门槛</strong>：极端情景需转移约 GDP 的 9%，才能把认知劳动者收入补回无 AI 路径；增长本身不会自动完成这笔转移。</li>
+      </ul>
+    </div>
+
+    <h2 id="paper"><span class="sec-num">一</span>先把它读对：不是预言，是压力测试<a href="#paper" class="anchor">#</a></h2>
+    <p class="kicker">WHAT THIS PAPER IS — AND IS NOT</p>
+
+    <p>《Economic Scenarios for Transformative AI》由 Anton Korinek、Charles I. Jones、Szymon Sacher、Tess Cotter 与 Peter McCrory 合著。它把 2026 到 2030 年的 AI 经济影响装进一个任务型宏观模型：AI 逐步进入认知任务，一部分与人协作，一部分直接替代人；被释放的劳动再尝试进入其他职业；资本则响应更高回报而扩张。</p>
+
+    <p>这套框架最值得肯定的地方，是作者明确拒绝把情景叫作预测。三组结果只是不同假设的条件推演，论文不声称哪一组更可能。读者应该问的不是「17.9% 会不会发生」，而是「要出现 17.9%，哪些前提必须同时成立」。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">三层证据纪律</div>
+      <p style="margin:.3em 0;"><strong>测量值</strong>来自 CPS、JOLTS、企业采用调查和 Anthropic 使用数据；<strong>情景值</strong>是作者为 2030 人工设定的路径；<strong>结果值</strong>是模型在这些设定下算出的输出。把三者混写，就会把压力测试误读成预测。</p>
+    </div>
+
+    <h2 id="engine"><span class="sec-num">二</span>模型引擎：能力不是唯一变量<a href="#engine" class="anchor">#</a></h2>
+    <p class="kicker">FIVE INPUTS · THREE TRANSMISSION BLOCKS</p>
+
+    <p>论文把经济拆成认知职业与其他职业两组，再通过生产、资本与劳动力匹配三个模块连接起来。它纠正了最常见的直觉错误：AI 能做多少任务，只决定了能力上限；真正进入经济的冲击，还要连续经过采用、生产率、自动化方式与转岗摩擦。</p>
+
+    <div class="scenario-engine reveal">
+      <svg viewBox="0 0 900 440" role="img" aria-label="五个 AI 情景参数通过生产、资本和劳动力匹配模块，输出增长、分配和就业结果">
+        <defs>
+          <marker id="eng-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+            <path d="M1 1 L7 4 L1 7 Z" style="fill:var(--text-muted)"/>
+          </marker>
+        </defs>
+
+        <g style="color:var(--accent)" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="35" y="42" width="180" height="52" rx="10" style="fill:var(--surface)"/>
+          <rect x="35" y="109" width="180" height="52" rx="10" style="fill:var(--surface)"/>
+          <rect x="35" y="176" width="180" height="52" rx="10" style="fill:var(--surface)"/>
+          <rect x="35" y="243" width="180" height="52" rx="10" style="fill:var(--surface)"/>
+          <rect x="35" y="310" width="180" height="52" rx="10" style="fill:var(--surface)"/>
+          <text x="55" y="65" font-size="12" fill="currentColor" stroke="none">01 · 任务覆盖 m</text>
+          <text x="55" y="83" font-size="10" style="fill:var(--text-muted)" stroke="none">AI 能做多少</text>
+          <text x="55" y="132" font-size="12" fill="currentColor" stroke="none">02 · 采用率 d</text>
+          <text x="55" y="150" font-size="10" style="fill:var(--text-muted)" stroke="none">企业实际用多少</text>
+          <text x="55" y="199" font-size="12" fill="currentColor" stroke="none">03 · 单任务增益 a</text>
+          <text x="55" y="217" font-size="10" style="fill:var(--text-muted)" stroke="none">执行成本降多少</text>
+          <text x="55" y="266" font-size="12" fill="currentColor" stroke="none">04 · 自动化比例 ψ</text>
+          <text x="55" y="284" font-size="10" style="fill:var(--text-muted)" stroke="none">替代，还是增强</text>
+          <text x="55" y="333" font-size="12" fill="currentColor" stroke="none">05 · 转岗摩擦 μ</text>
+          <text x="55" y="351" font-size="10" style="fill:var(--text-muted)" stroke="none">跨职业有多难</text>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)">
+          <path class="dash-flow" d="M215 68 C260 68 260 112 305 112" marker-end="url(#eng-arrow)"/>
+          <path class="dash-flow" d="M215 135 C260 135 260 130 305 130" marker-end="url(#eng-arrow)"/>
+          <path class="dash-flow" d="M215 202 C260 202 260 148 305 148" marker-end="url(#eng-arrow)"/>
+          <path class="dash-flow" d="M215 269 C260 269 260 276 305 276" marker-end="url(#eng-arrow)"/>
+          <path class="dash-flow" d="M215 336 C260 336 260 294 305 294" marker-end="url(#eng-arrow)"/>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.6">
+          <g style="color:var(--accent)">
+            <rect x="305" y="82" width="230" height="96" rx="14" style="fill:var(--accent-soft)"/>
+            <text class="display" x="420" y="116" text-anchor="middle" font-size="17" fill="currentColor" stroke="none">生产与资本</text>
+            <text x="420" y="140" text-anchor="middle" font-size="10" style="fill:var(--accent-ink)" stroke="none">任务提效 · 资本扩张 · 要素份额</text>
+            <circle class="soft-pulse" cx="420" cy="160" r="5" fill="currentColor" stroke="none"/>
+          </g>
+          <g style="color:var(--accent)">
+            <rect x="305" y="242" width="230" height="96" rx="14" style="fill:var(--surface)"/>
+            <text class="display" x="420" y="276" text-anchor="middle" font-size="17" fill="currentColor" stroke="none">劳动力匹配</text>
+            <text x="420" y="300" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">裁员 · 空缺 · 搜寻 · 跨职业吸收</text>
+          </g>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--text-muted)">
+          <path d="M535 130 C585 130 580 90 630 90" marker-end="url(#eng-arrow)"/>
+          <path d="M535 145 C585 145 580 210 630 210" marker-end="url(#eng-arrow)"/>
+          <path d="M535 290 C585 290 580 330 630 330" marker-end="url(#eng-arrow)"/>
+        </g>
+
+        <g fill="none" stroke="currentColor" stroke-width="1.5">
+          <g style="color:var(--accent)">
+            <rect x="630" y="52" width="235" height="76" rx="12" style="fill:var(--surface)"/>
+            <text class="display" x="650" y="82" font-size="16" fill="currentColor" stroke="none">增长</text>
+            <text x="650" y="105" font-size="10" style="fill:var(--text-muted)" stroke="none">GDP · TFP · 资本存量</text>
+          </g>
+          <g style="color:var(--accent)">
+            <rect x="630" y="172" width="235" height="76" rx="12" style="fill:var(--accent-soft)"/>
+            <text class="display" x="650" y="202" font-size="16" fill="currentColor" stroke="none">分配 ← 真正焦点</text>
+            <text x="650" y="225" font-size="10" style="fill:var(--accent-ink)" stroke="none">工资 · 劳动份额 · 资本回报</text>
+          </g>
+          <g style="color:var(--accent)">
+            <rect x="630" y="292" width="235" height="76" rx="12" style="fill:var(--surface)"/>
+            <text class="display" x="650" y="322" font-size="16" fill="currentColor" stroke="none">转型成本</text>
+            <text x="650" y="345" font-size="10" style="fill:var(--text-muted)" stroke="none">就业迁移 · 搜寻时间 · 失业</text>
+          </g>
+        </g>
+      </svg>
+      <p class="scenario-engine-cap">作者还加入「新任务恢复率」与工资刚性等参数。能力更强并不必然意味着就业更差；决定劳动冲击的是能力如何被部署，以及新任务和新岗位能否及时吸收被释放的人。</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>2030 情景输入</th><th>温和</th><th>显著</th><th>极端</th><th>怎么理解</th></tr></thead>
+        <tbody>
+          <tr><td>受影响任务占全经济</td><td>20%</td><td>30%</td><td>50%</td><td>能力边界，不等于实际使用</td></tr>
+          <tr><td>可做任务中的采用率</td><td>20%</td><td>40%</td><td>60%</td><td>组织扩散速度</td></tr>
+          <tr><td>受影响任务生产率</td><td>约 +35%</td><td>约 +57%</td><td>约 +123%</td><td>参数以对数增益表示</td></tr>
+          <tr><td>AI 使用中的自动化</td><td>50%</td><td>75%</td><td>90%</td><td>其余为人机增强</td></tr>
+          <tr><td>每自动化 1 单位产生的新任务</td><td>0.50</td><td>0.25</td><td>0</td><td>人类任务恢复机制</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 id="scenarios"><span class="sec-num">三</span>三种剧本：分歧几乎都在 2027 年之后<a href="#scenarios" class="anchor">#</a></h2>
+    <p class="kicker">MODEST · SUBSTANTIAL · EXTREME</p>
+
+    <p>三个情景共享 2026 年中的观察锚点：全经济约 14% 的任务处于 AI 影响范围，真正采用 AI 的实例约占其中 10%。路径随后才分叉，所以模型给出的一个可证伪判断是：<strong>未来一两年，任务覆盖和组织采用是否继续加速，会快速缩小情景空间</strong>。</p>
+
+    <div class="scenario-deck reveal">
+      <div class="scenario-card" style="--intensity:.3;">
+        <div class="scenario-kicker">Scenario 01</div>
+        <h4>温和：一种普通技术</h4>
+        <svg viewBox="0 0 260 180" role="img" aria-label="温和情景：GDP 增加 1.6%，认知就业下降 0.5%，全社会失业率 3.9%">
+          <g fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--accent)">
+            <line x1="30" y1="145" x2="235" y2="145" opacity=".35"/>
+            <rect x="42" y="127" width="42" height="18" rx="5" style="fill:var(--accent-soft)"/>
+            <rect x="109" y="140" width="42" height="5" rx="3" style="fill:var(--surface)"/>
+            <rect x="176" y="101" width="42" height="44" rx="5" style="fill:var(--accent-soft)"/>
+            <text class="display" x="63" y="116" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">+1.6%</text>
+            <text class="display" x="130" y="126" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">−0.5%</text>
+            <text class="display" x="197" y="90" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">3.9%</text>
+            <text x="63" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">GDP</text>
+            <text x="130" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">认知就业</text>
+            <text x="197" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">总失业率</text>
+          </g>
+        </svg>
+        <div class="scenario-verdict">到 2030 年只是给常态增长多加约十个月进度，劳动力市场变化仍在历史吸收范围内。</div>
+      </div>
+
+      <div class="scenario-card" style="--intensity:.65;">
+        <div class="scenario-kicker">Scenario 02</div>
+        <h4>显著：超过互联网级</h4>
+        <svg viewBox="0 0 260 180" role="img" aria-label="显著情景：GDP 增加 8.3%，认知就业下降 3.9%，全社会失业率 4.6%">
+          <g fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--accent)">
+            <line x1="30" y1="145" x2="235" y2="145" opacity=".35"/>
+            <rect x="42" y="91" width="42" height="54" rx="5" style="fill:var(--accent-soft)"/>
+            <rect x="109" y="128" width="42" height="17" rx="5" style="fill:var(--surface)"/>
+            <rect x="176" y="94" width="42" height="51" rx="5" style="fill:var(--accent-soft)"/>
+            <text class="display" x="63" y="80" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">+8.3%</text>
+            <text class="display" x="130" y="117" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">−3.9%</text>
+            <text class="display" x="197" y="83" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">4.6%</text>
+            <text x="63" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">GDP</text>
+            <text x="130" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">认知就业</text>
+            <text x="197" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">总失业率</text>
+          </g>
+        </svg>
+        <div class="scenario-verdict">GDP 增速在 2030 年升至 5.4%，但认知工资略低于无 AI 路径，劳动份额降至 56.1%。</div>
+      </div>
+
+      <div class="scenario-card" style="--intensity:1;">
+        <div class="scenario-kicker">Scenario 03</div>
+        <h4>极端：增长与失业同现</h4>
+        <svg viewBox="0 0 260 180" role="img" aria-label="极端情景：GDP 增加 32.4%，认知就业下降 21.5%，全社会失业率 11.9%">
+          <g fill="none" stroke="currentColor" stroke-width="1.4" style="color:var(--accent)">
+            <line x1="30" y1="145" x2="235" y2="145" opacity=".35"/>
+            <rect x="42" y="36" width="42" height="109" rx="5" style="fill:var(--accent-soft)"/>
+            <rect x="109" y="71" width="42" height="74" rx="5" style="fill:var(--surface)"/>
+            <rect x="176" y="57" width="42" height="88" rx="5" style="fill:var(--accent-soft)"/>
+            <text class="display" x="63" y="25" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">+32.4%</text>
+            <text class="display" x="130" y="60" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">−21.5%</text>
+            <text class="display" x="197" y="46" text-anchor="middle" font-size="18" fill="currentColor" stroke="none">11.9%</text>
+            <text x="63" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">GDP</text>
+            <text x="130" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">认知就业</text>
+            <text x="197" y="164" text-anchor="middle" font-size="9" style="fill:var(--text-muted)" stroke="none">总失业率</text>
+          </g>
+        </svg>
+        <div class="scenario-verdict">2030 年 GDP 增速 15.4%，认知劳动者失业率 17.9%。这是组合压力测试，不是基准预测。</div>
+      </div>
+    </div>
+
+    <p>显著情景最值得用作企业侧的中间参考：它不要求 AGI，也不要求全部白领任务自动化，只要求 30% 的全经济任务进入能力范围、其中 40% 实际采用，并且 AI 使用有四分之三是自动执行。结果已经足以让劳动份额在四年内下降约 4 个百分点。</p>
+
+    <h2 id="distribution"><span class="sec-num">四</span>论文的真正主角：不是 GDP，是收入份额<a href="#distribution" class="anchor">#</a></h2>
+    <p class="kicker">THE DISTRIBUTION LEDGER</p>
+
+    <p>极端情景制造了一个极其醒目的会计恒等式：GDP 相对无 AI 路径增加约 32%，劳动份额却从 60% 降至约 45%。两者相乘后，劳动总收入几乎没有增长。换句话说，经济创造出的新增蛋糕，基本被资本端拿走。</p>
+
+    <div class="income-shift reveal">
+      <div class="income-shift-grid">
+        <svg viewBox="0 0 430 310" role="img" aria-label="极端情景下收入份额从劳动 60%、资本 40% 转为劳动 45%、资本 55%">
+          <g fill="none" stroke="currentColor" stroke-width="1.5">
+            <g style="color:var(--text-muted)">
+              <rect x="34" y="55" width="128" height="180" rx="14" style="fill:var(--surface)"/>
+              <rect x="34" y="55" width="128" height="108" rx="14" style="fill:var(--accent-soft)"/>
+              <text class="display" x="98" y="104" text-anchor="middle" font-size="27" style="fill:var(--accent-ink)" stroke="none">60%</text>
+              <text x="98" y="128" text-anchor="middle" font-size="10" style="fill:var(--accent-ink)" stroke="none">劳动</text>
+              <text class="display" x="98" y="199" text-anchor="middle" font-size="23" fill="currentColor" stroke="none">40%</text>
+              <text x="98" y="220" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">资本</text>
+              <text x="98" y="265" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">2026 基线</text>
+            </g>
+
+            <g style="color:var(--accent)">
+              <path class="dash-flow" d="M180 145 H244"/>
+              <path d="M236 139 L246 145 L236 151" fill="currentColor" stroke="none"/>
+              <text x="213" y="130" text-anchor="middle" font-size="9" fill="currentColor" stroke="none">15pt 换轨</text>
+            </g>
+
+            <g style="color:var(--accent)">
+              <rect x="265" y="55" width="128" height="180" rx="14" style="fill:var(--surface)"/>
+              <rect x="265" y="55" width="128" height="81" rx="14" style="fill:var(--accent-soft)"/>
+              <text class="display" x="329" y="95" text-anchor="middle" font-size="27" fill="currentColor" stroke="none">45%</text>
+              <text x="329" y="119" text-anchor="middle" font-size="10" style="fill:var(--accent-ink)" stroke="none">劳动</text>
+              <text class="display" x="329" y="190" text-anchor="middle" font-size="23" fill="currentColor" stroke="none">55%</text>
+              <text x="329" y="212" text-anchor="middle" font-size="10" fill="currentColor" stroke="none">资本</text>
+              <text x="329" y="265" text-anchor="middle" font-size="10" style="fill:var(--text-muted)" stroke="none">2030 极端情景</text>
+            </g>
+          </g>
+        </svg>
+        <div class="ledger">
+          <div class="ledger-row"><b>GDP 相对无 AI 路径</b><span>+32.4%</span></div>
+          <div class="ledger-row"><b>资本收入</b><span>+81.4%</span></div>
+          <div class="ledger-row"><b>劳动总收入</b><span>+0.5%</span></div>
+          <div class="ledger-row"><b>认知职业工资总额</b><span>−31.0%</span></div>
+          <div class="ledger-note"><strong>45% × 1.32 ≈ 60%</strong>：总量增长抵消了劳动份额下跌，因此劳动整体看似没输；但认知劳动者与其他劳动者之间发生了剧烈再分配。</div>
+        </div>
+      </div>
+    </div>
+
+    <p>「劳动总收入几乎不变」并不意味着劳动者普遍不受损。认知职业工资比无 AI 路径低 11.5%，岗位少 21.5%；与此同时，其他职业工资高 33.6%，因为这些尚未被自动化的劳动变得相对稀缺。模型描述的不是简单的“机器替代所有人”，而是一次<strong>认知劳动向非认知劳动、劳动收入向资本收入的双重迁移</strong>。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">最容易被标题党拿走的数字</div>
+      <p style="margin:.3em 0;">17.9% 是<strong>原本属于认知职业人群</strong>的失业率；11.9% 才是全社会失业率。两者都只属于极端情景，且依赖「90% 的 AI 使用用于自动化、没有新的人类任务、跨职业搜寻效率极低」等假设同时成立。</p>
+    </div>
+
+    <h2 id="friction"><span class="sec-num">五</span>没有无痛选项：工资下降，或失业上升<a href="#friction" class="anchor">#</a></h2>
+    <p class="kicker">WAGE RIGIDITY · SAME PRESSURE, DIFFERENT SYMPTOM</p>
+
+    <p>论文最有解释力的稳健性检验，是改变认知工资的调整速度。企业对认知劳动的需求下降后，如果工资快速下调，市场可以保住更多岗位；如果工资因为合同、制度或员工抵抗而保持刚性，企业就通过裁员完成调整。</p>
+
+    <div class="wage-seesaw reveal">
+      <svg viewBox="0 0 820 300" role="img" aria-label="工资刚性跷跷板：工资越灵活，工资跌幅越大而失业越低；工资越刚性，工资跌幅越小而失业越高">
+        <g fill="none" stroke="currentColor" stroke-width="1.6">
+          <g style="color:var(--accent)">
+            <path d="M110 92 L705 190" stroke-width="6" stroke-linecap="round"/>
+            <path d="M387 220 L437 220 L412 166 Z" style="fill:var(--accent-soft)"/>
+            <circle cx="412" cy="171" r="9" style="fill:var(--accent)"/>
+          </g>
+          <g style="color:var(--text-muted)">
+            <rect x="68" y="47" width="205" height="86" rx="13" style="fill:var(--surface)"/>
+            <text class="display" x="170" y="78" text-anchor="middle" font-size="17" style="fill:var(--text)" stroke="none">工资灵活</text>
+            <text x="170" y="101" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">认知工资 −42.2%</text>
+            <text x="170" y="119" text-anchor="middle" font-size="11" fill="currentColor" stroke="none">认知失业率 2.6%</text>
+          </g>
+          <g style="color:var(--accent)">
+            <rect x="550" y="158" width="205" height="86" rx="13" style="fill:var(--accent-soft)"/>
+            <text class="display" x="652" y="189" text-anchor="middle" font-size="17" fill="currentColor" stroke="none">工资高度刚性</text>
+            <text x="652" y="212" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" stroke="none">认知工资 +2.8%</text>
+            <text x="652" y="230" text-anchor="middle" font-size="11" style="fill:var(--accent-ink)" stroke="none">认知失业率 24.0%</text>
+          </g>
+          <text x="412" y="258" text-anchor="middle" font-size="11" style="fill:var(--text-muted)" stroke="none">同一自动化压力，被分配到不同损失通道</text>
+        </g>
+      </svg>
+      <div class="wage-scale">
+        <div class="wage-case"><strong>ξ = 0 · 完全灵活</strong><span>工资承担冲击，岗位调整较少</span></div>
+        <div class="wage-case"><strong>ξ = 0.5 · 论文基准</strong><span>工资 −11.5%，认知失业率 17.9%</span></div>
+        <div class="wage-case"><strong>ξ = 0.9 · 高度刚性</strong><span>工资被托住，失业率升至 24.0%</span></div>
+      </div>
+    </div>
+
+    <p>这组结果不能被解释为「降薪优于裁员」，因为模型没有刻画收入损失对家庭需求、心理健康与职业资本的反馈。它真正说明的是：<strong>自动化冲击不会因为工资制度不同而消失，只会换一个出口</strong>。企业、劳动者与政策制定者看到的表面症状可能不同，但底层压力相同。</p>
+
+    <h2 id="survey"><span class="sec-num">六</span>公众调查：中位信念落在显著情景<a href="#survey" class="anchor">#</a></h2>
+    <p class="kicker">EXPECTATIONS ARE INPUTS, NOT EVIDENCE</p>
+
+    <p>作者在 2026 年 8 月通过 Morning Consult 调查 10,980 名美国成年人，询问 AI 何时能完成八类任务、企业会采用多少、效率提升多少、AI 会独立完成还是辅助人类，以及失业者跨职业找工作需要多久。把每位受访者的答案映射进模型后，中位结果是：2030 年 GDP 比无 AI 路径高 8.6%，认知就业下降 4.2%，全社会失业率约 4.6%。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>调查中位输入</th><th>数值</th><th>对应含义</th></tr></thead>
+        <tbody>
+          <tr><td>AI 可覆盖的任务质量</td><td>六项 / 八项</td><td>折算为全经济 44% 的任务质量</td></tr>
+          <tr><td>实际采用</td><td>40%</td><td>能做的任务中，不到一半被稳定使用</td></tr>
+          <tr><td>自动化比例</td><td>47%</td><td>公众预期比论文显著情景更偏增强</td></tr>
+          <tr><td>任务提效</td><td>约 55%</td><td>与显著情景接近</td></tr>
+          <tr><td>跨职业再就业</td><td>约 8 个月</td><td>明显慢于正常时期约 3 个月</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>这里需要两层降温。第一，公众是在预测能力和采用，不是在直接预测 GDP；GDP 数字是模型的二次推导。第二，只有 3,259 人完整回答了进入个体模拟的全部五项问题。这个调查适合说明「公众想象落在哪个参数区间」，不适合证明显著情景正在发生。</p>
+
+    <h2 id="limits"><span class="sec-num">七</span>模型没有看见什么<a href="#limits" class="anchor">#</a></h2>
+    <p class="kicker">FOUR BLIND SPOTS</p>
+
+    <div class="signal-grid">
+      <div class="signal">
+        <div class="signal-head">
+          <span class="signal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19V5m0 14h16"/><path d="m7 15 4-4 3 2 5-6"/></svg></span>
+          <h4>情景把变量成组绑定</h4>
+        </div>
+        <p>能力越强的情景，同时设定更高自动化、更少新任务与更难转岗。三组结果展示的是组合包，而不是单个参数的因果贡献。</p>
+      </div>
+      <div class="signal">
+        <div class="signal-head">
+          <span class="signal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+          <h4>只看到 2030</h4>
+        </div>
+        <p>资本长期积累、教育选择和新职业形成通常需要更久。短窗口擅长看转型摩擦，却不适合断言长期均衡。</p>
+      </div>
+      <div class="signal">
+        <div class="signal-head">
+          <span class="signal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h16"/><path d="M6 20V9l6-5 6 5v11"/><path d="M9 20v-6h6v6"/></svg></span>
+          <h4>劳动者只有两类</h4>
+        </div>
+        <p>管理者、程序员、教师、销售被放进同一认知组，技能、地区、资历与企业采用能力的差异都被抹平。</p>
+      </div>
+      <div class="signal">
+        <div class="signal-head">
+          <span class="signal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h5l2-7 4 14 2-7h5"/></svg></span>
+          <h4>缺少二阶反馈</h4>
+        </div>
+        <p>需求萎缩、金融波动、政治反应、机器人进展与递归研发反馈没有完整进入模型；极端情况下，这些遗漏可能改变方向而不只是幅度。</p>
+      </div>
+    </div>
+
+    <p>还有一个值得单独指出的弱环节：论文用 Claude.ai 与 API 对话中「像自动化」的交互比例，为未来 automation share 提供直觉锚点。但一次对话由模型独立执行，并不等于一个生产任务消灭了岗位。产品交互形态与企业劳动替代之间，仍隔着流程重构、责任承担、质量验收和组织设计。</p>
+
+    <h2 id="implications"><span class="sec-num">八</span>对企业与 FDE：别只追踪模型能力<a href="#implications" class="anchor">#</a></h2>
+    <p class="kicker">FROM BENCHMARKS TO TRANSITION TELEMETRY</p>
+
+    <p>对企业 AI 落地来说，这篇论文最实用的启发是重新定义观测面。模型分数只覆盖第一项输入，真正决定组织冲击的，是部署后面的四项。</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>应该追踪</th><th>企业内可观测指标</th><th>它回答什么</th></tr></thead>
+        <tbody>
+          <tr><td>实际采用率</td><td>进入稳定生产流的任务占比，而非账号开通率</td><td>能力有没有穿过组织摩擦</td></tr>
+          <tr><td>自动化 / 增强比例</td><td>无人执行、人工审批、人机协作的任务分布</td><td>生产率增益是否同时释放劳动</td></tr>
+          <tr><td>端到端生产率</td><td>含复核、返工、失败恢复后的周期与成本</td><td>演示增益是否成为真实增益</td></tr>
+          <tr><td>任务恢复率</td><td>旧任务消失后新增的人类职责与决策节点</td><td>组织是否在创造新的人类价值位</td></tr>
+          <tr><td>内部再配置时间</td><td>人员从受冲击岗位到新岗位的中位周期</td><td>企业自己的「转岗摩擦 μ」有多大</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">建议：建立转型遥测，而不只是 AI 使用看板</div>
+      <ul style="margin:.3em 0;">
+        <li>把每个 AI 用例标注为<strong>增强、局部自动化、端到端自动化</strong>，避免把调用量误当价值。</li>
+        <li>同时记录节省工时与新增任务，计算组织自己的任务恢复率。</li>
+        <li>将岗位变化、内部流动和再培训周期接入同一看板，提前识别局部「高增长、低吸收」区域。</li>
+        <li>在 ROI 中拆出资本收益、员工收益与客户收益，避免总收益掩盖内部转移。</li>
+      </ul>
+    </div>
+
+    <h2 id="judgment"><span class="sec-num">九</span>最终判断：丰裕是技术结果，共享是制度结果<a href="#judgment" class="anchor">#</a></h2>
+    <p class="kicker">THE QUESTION AFTER PRODUCTIVITY</p>
+
+    <p>这篇论文没有证明极端情景会发生，但它成功证明了一件更重要的事：<strong>「AI 提高生产率」不能推出「劳动者普遍受益」</strong>。中间至少还隔着资本供给、自动化方式、新任务形成、工资调整与跨职业匹配五道门。</p>
+
+    <p>极端情景里，新增经济资源约是认知劳动者损失的三倍，因此在会计意义上完全有能力补偿受损者。作者估算，转移约 GDP 的 9%，可以让认知劳动者的收入维持在无 AI 路径。但如此大规模、因技术转型而发生的转移没有历史先例。资源存在，不代表制度会把它送达。</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">判断台</div>
+      <p style="margin:.3em 0;"><strong>时机：1–2 年。</strong>真正需要预警的不是宏观失业率突然跳升，而是企业内部自动化占比、认知岗位招聘与劳动份额开始同步偏离。<strong>信心：中。</strong>增长与分配分离的机制可信，但 2030 数值高度依赖成组的情景假设；应把它当监测框架和压力测试，而不是预测。</p>
+    </div>
+
+    <h3 id="watchlist">9.1 接下来观察五个信号</h3>
+    <ol>
+      <li>AI 使用从辅助模式迁移到代理式端到端执行的速度。</li>
+      <li>高暴露认知职业的初级岗位、起薪与招聘量是否持续走弱。</li>
+      <li>企业采用是否从少数任务试点扩散到稳定生产流程。</li>
+      <li>被释放员工能否在企业内部转岗，而不是进入长期失业池。</li>
+      <li>劳动收入份额是否在没有衰退的情况下加速下降。</li>
+    </ol>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-09-23 初稿
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      ·
+      <a href="./index.html">阅读材料索引</a>
+    </div>
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

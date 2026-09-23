@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-15T06:03:36.538492+00:00",
+  "generated_at": "2026-09-23T05:39:15.670466+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-09_model-access-commoditized.html",
@@ -800,6 +800,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-09_transformative-ai-economic-scenarios.html",
+      "title": "繁荣之后，工资去了哪里Economic Scenarios for Transformative AI",
+      "date": "2026-09-23",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Anthropic",
+        "AI 经济学",
+        "自动化",
+        "劳动力市场",
+        "收入分配"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "1–2 年",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-08_anthropic-risk-report.html",
       "title": "安全档案的自曝时刻Anthropic Risk Report · August 2026",
