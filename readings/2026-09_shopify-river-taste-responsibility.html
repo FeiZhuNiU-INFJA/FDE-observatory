@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>执行趋近于免费，责任没有 · Shopify River 与 AI 时代的判断力 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #68722b;
+    --accent-deep: #4e571c;
+    --accent-ink: #39400f;
+    --accent-soft: color-mix(in srgb, #9cab3c 16%, white);
+  }
+  [data-theme="dark"] {
+    --accent: #c4d264;
+    --accent-deep: #aebd4d;
+    --accent-ink: #e7efaa;
+    --accent-soft: color-mix(in srgb, #9cab3c 22%, #1a1a22);
+  }
+
+  .river-map {
+    margin: 1.8em 0; padding: 1.2rem; border: 1px solid var(--border);
+    border-radius: 16px; background: var(--surface); box-shadow: var(--shadow);
+    transition: transform .2s, border-color .2s;
+  }
+  .river-map:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .river-map svg { width: 100%; height: auto; display: block; }
+  .river-map text { font-family: var(--mono); }
+  .river-map .river-dash { stroke-dasharray: 7 9; animation: river-flow 1.8s linear infinite; }
+  @keyframes river-flow { to { stroke-dashoffset: -32; } }
+
+  .council {
+    margin: 1.8em 0; display: grid; grid-template-columns: minmax(260px, .9fr) minmax(320px, 1.1fr);
+    gap: 1rem; align-items: stretch;
+  }
+  .council-stage {
+    border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem;
+    background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .council-stage:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .council-stage svg { display: block; width: 100%; height: auto; }
+  .council-stage text { font-family: var(--mono); }
+  .council-caption {
+    margin: .8rem 0 0; color: var(--text-soft); font-size: .86rem; line-height: 1.55;
+  }
+  .council-verdict {
+    display: grid; grid-template-rows: auto 1fr auto; gap: .8rem;
+    border: 2px solid var(--accent); box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .council-label {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--accent);
+  }
+  .council-quote {
+    font-family: var(--display); font-size: 1.35rem; line-height: 1.42;
+    color: var(--text); align-self: center;
+  }
+  .council-foot { color: var(--text-muted); font-size: .82rem; }
+
+  .slop {
+    margin: 1.8em 0; display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: center;
+  }
+  .slop-side {
+    min-height: 250px; border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.1rem; background: var(--surface); transition: transform .2s, border-color .2s;
+  }
+  .slop-side:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .slop-side svg { width: 100%; height: auto; display: block; }
+  .slop-side text { font-family: var(--mono); }
+  .slop-arrow { color: var(--accent); font-family: var(--display); font-size: 2rem; }
+  .slop-title { margin: .7rem 0 .25rem; font-family: var(--display); font-weight: 700; }
+  .slop-copy { margin: 0; color: var(--text-soft); font-size: .86rem; }
+
+  .funnel {
+    margin: 1.8em 0; padding: 1.2rem; border: 1px solid var(--border);
+    border-radius: 16px; background: var(--surface); box-shadow: var(--shadow);
+    transition: transform .2s, border-color .2s;
+  }
+  .funnel:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .funnel svg { width: 100%; height: auto; display: block; }
+  .funnel text { font-family: var(--mono); }
+  .funnel .pulse { animation: responsibility-pulse 2.2s ease-in-out infinite; transform-origin: center; }
+  @keyframes responsibility-pulse { 50% { transform: scale(1.035); } }
+
+  .signal-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; margin: 1.4em 0;
+  }
+  .signal {
+    border: 1px solid var(--border); border-radius: 10px; padding: 1rem;
+    background: color-mix(in srgb, var(--surface) 74%, transparent);
+  }
+  .signal b { display: block; color: var(--accent); margin-bottom: .35rem; }
+  .signal p { margin: 0; color: var(--text-soft); font-size: .86rem; line-height: 1.55; }
+
+  .threads { list-style: none; padding: 0; counter-reset: q; }
+  .threads li {
+    counter-increment: q; position: relative; margin: .55rem 0; padding: .8rem 1rem .8rem 3rem;
+    border-left: 2px solid var(--rule); border-radius: 0 8px 8px 0;
+    background: color-mix(in srgb, var(--surface) 58%, transparent);
+  }
+  .threads li::before {
+    content: "?" counter(q); position: absolute; left: .8rem; color: var(--accent);
+    font-family: var(--display); font-style: italic; font-weight: 700;
+  }
+
+  @media (max-width: 820px) {
+    .council, .signal-grid { grid-template-columns: 1fr; }
+    .slop { grid-template-columns: 1fr; }
+    .slop-arrow { transform: rotate(90deg); text-align: center; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .river-map .river-dash, .funnel .pulse { animation: none !important; }
+    .reveal { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      执行趋近于免费，责任没有<span class="brand-sub">跨市场 · Shopify River · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+  <article>
+    <header class="doc-header">
+      <h1>执行趋近于免费，<span class="en">责任没有</span></h1>
+      <p style="font-size:1.05rem;color:var(--text-muted);margin-top:-.3em;">Shopify River、AI 决策委员会，与“品味比技能更重要”的真正含义</p>
+      <div class="doc-meta">
+        <span>2026-09-23</span>
+        <span>跨市场</span>
+        <span>Shopify</span>
+        <span>AI Agent</span>
+        <span>组织设计</span>
+        <span>判断力</span>
+        <span>状态：可对外</span>
+        <span>时机：已发生</span>
+        <span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">≈50<small>%</small></div><div class="lab">PR 源自聊天 · Tobi 自述</div></div>
+        <div class="hero-stat"><div class="num">7,000<small>人</small></div><div class="lab">River 所在组织规模</div></div>
+        <div class="hero-stat"><div class="num">5–6<small>角色</small></div><div class="lab">重大决策 AI 委员会</div></div>
+        <div class="hero-stat"><div class="num">$15–20</div><div class="lab">一次深度研究 token 成本</div></div>
+      </div>
+      <p style="color:var(--text-soft);font-size:.95rem;">
+        源：The Knowledge Project ·
+        <a href="https://www.youtube.com/watch?v=G9P9D9hptq8" target="_blank" rel="noopener">Taste Matters More Than Skill | Shopify Founder, Tobi Lütke</a>
+        · 约 65 分钟
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>这场访谈表面谈“品味”，真正有价值的是一条完整因果链：AI 把执行和信息搜集变成廉价供给，组织瓶颈随之迁移到<strong>上下文、筛选、判断与责任</strong>。River 的先进不只在能写代码，而在它被嵌进公开协作、持续记忆和人类问责之中。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul>
+        <li>Shopify 已把 Agent 从个人工具提升为公共组织角色：River 在开放 Slack 频道参与讨论、调用工具、提出 PR。</li>
+        <li>强制公开不是权限细节，而是学习机制：员工能旁观别人如何向 AI 提问、纠偏和验收，替代远程组织失去的“耳濡目染”。</li>
+        <li>重大决策不交给单一模型，而是让多个角色、多个模型独立研究，再随机化综合；AI 负责扩大证据面，人类负责做选择。</li>
+        <li>最重要的边界不是“AI 会不会判断”，而是机器不能承担后果。决策权最终必须落到可追责的人。</li>
+        <li>AI 的新型懒惰不是少产出，而是过量产出：未经审阅的 PR、长邮件和报告把验证成本转嫁给同事，形成 “slop grenade”。</li>
+        <li>当生成能力普及，稀缺能力从“怎么做”转向“什么值得做、哪个方案更好、何时该删掉重来”。</li>
+      </ul>
+    </div>
+
+    <h2 id="river"><span class="sec-num">一</span>River 不是聊天机器人，而是组织中的公共执行层<a href="#river" class="anchor">#</a></h2>
+    <p class="kicker">Agent As Colleague · 从私人工具到共享基础设施</p>
+    <p>Tobi 描述的 River 有名字、头像、人格和记忆，也被允许指出请求很蠢。更关键的是，它能访问代码、系统与工具，在沙箱中完成工作，并从公司聊天直接提出代码变更。Tobi 称，Shopify 目前“可能高达约 50%”的 PR 不是由工程师手写起步，而是从公共聊天中的对话产生。这个数字应视为 CEO 自述，不是外部审计结论。</p>
+
+    <div class="river-map reveal">
+      <svg viewBox="0 0 920 330" role="img" aria-label="River 从公开 Slack 对话获取上下文，调用代码与工具形成产物，并通过夜间反思更新个人记忆与技能">
+        <defs>
+          <marker id="river-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0 0L10 5L0 10z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <g fill="none" stroke="currentColor" stroke-width="2" style="color:var(--border-strong)">
+          <rect x="26" y="72" width="205" height="170" rx="18"/>
+          <rect x="357" y="55" width="206" height="204" rx="26" style="color:var(--accent)" stroke="currentColor"/>
+          <rect x="689" y="72" width="205" height="170" rx="18"/>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="2.5" marker-end="url(#river-arrow)" style="color:var(--accent)">
+          <path class="river-dash" d="M232 157H347"/>
+          <path class="river-dash" d="M564 157H679"/>
+          <path class="river-dash" d="M790 250C790 312 526 315 489 269"/>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="color:var(--accent)">
+          <path d="M85 117h88M85 145h116M85 173h71"/>
+          <circle cx="460" cy="125" r="31"/>
+          <path d="M447 124h26M451 137c7 6 13 6 19 0"/>
+          <path d="M751 118h82M751 148h55M751 178h91"/>
+        </g>
+        <g fill="var(--text)">
+          <text x="52" y="102" font-size="15" font-weight="600">公开 Slack 对话</text>
+          <text x="52" y="218" font-size="12" fill="var(--text-muted)">讨论 · 纠偏 · 示范</text>
+          <text x="430" y="190" font-size="21" font-weight="700" fill="var(--accent)">RIVER</text>
+          <text x="397" y="217" font-size="12" fill="var(--text-muted)">人格 + 权限 + 沙箱</text>
+          <text x="724" y="102" font-size="15" font-weight="600">可执行产物</text>
+          <text x="724" y="218" font-size="12" fill="var(--text-muted)">研究 · 图表 · 原型 · PR</text>
+          <text x="552" y="303" font-size="12" fill="var(--accent)">夜间反思：记忆 / Skill / 指令更新</text>
+        </g>
+      </svg>
+    </div>
+
+    <p>River 被限制在开放频道工作，是这套设计最有组织含义的一笔。办公室原本通过资深与初级员工共处产生“渗透式学习”；远程工作削弱了这种旁观学习。公开 Agent 对话把提示、追问、失败和验收重新变成可观察行为，AI 使用能力因此不再只是个人技巧，而成为可传播的团队实践。</p>
+
+    <h2 id="decision"><span class="sec-num">二</span>AI 不替 CEO 决策，它制造更好的“决策表面”<a href="#decision" class="anchor">#</a></h2>
+    <p class="kicker">Decision Surface · 扩大认知，不外包选择</p>
+    <p>面对战略或哲学型问题，Tobi 的 AI chief of staff 会组织一个 5–6 个角色的“委员会”：数据、论文研究、商业、工程等视角分别调查，同一角色还会跨多个模型运行，再经过随机化的综合步骤，最后由当前最强模型读取全部材料。他估算一次成本约 15–20 美元、半小时完成，而人工可能耗时数周。</p>
+
+    <div class="council reveal">
+      <div class="council-stage">
+        <svg viewBox="0 0 420 290" role="img" aria-label="一个问题被拆给数据、研究、商业、工程和反方五个角色，再交叉运行于多个模型">
+          <g fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--border-strong)">
+            <circle cx="210" cy="145" r="42" style="color:var(--accent)" stroke="currentColor"/>
+            <circle cx="72" cy="58" r="34"/><circle cx="348" cy="58" r="34"/>
+            <circle cx="52" cy="226" r="34"/><circle cx="368" cy="226" r="34"/>
+            <circle cx="210" cy="255" r="28"/>
+            <path d="M103 78l72 45M317 78l-72 45M84 213l89-45M336 213l-89-45M210 227v-38"/>
+          </g>
+          <g text-anchor="middle" fill="var(--text)">
+            <text x="210" y="140" font-size="14" font-weight="700">复杂问题</text>
+            <text x="210" y="160" font-size="11" fill="var(--text-muted)">同题多视角</text>
+            <text x="72" y="62" font-size="12">数据</text>
+            <text x="348" y="62" font-size="12">论文</text>
+            <text x="52" y="230" font-size="12">商业</text>
+            <text x="368" y="230" font-size="12">工程</text>
+            <text x="210" y="259" font-size="11">反方</text>
+          </g>
+        </svg>
+        <p class="council-caption">不是让五个 Agent 投票，而是刻意制造互不相同的证据来源与解释框架。</p>
+      </div>
+      <div class="council-stage council-verdict">
+        <div class="council-label">Human-involved decision surface</div>
+        <div class="council-quote">“机器可以帮助我们承担更多责任，因为它能让我们掌握更多信息；但做出选择的人仍必须承担后果。”</div>
+        <div class="council-foot">AI：搜集、挑战、综合　·　人：取舍、签字、负责</div>
+      </div>
+    </div>
+
+    <p>这里值得借鉴的不是“多 Agent 越多越好”，而是角色独立、模型异质、综合者随机化，以及最终责任不变。它本质上是一套降低单模型偏见和单一叙事锁定的研究协议。AI 提高的是判断的<strong>输入质量</strong>，不是替人取得道德或法律主体资格。</p>
+
+    <h2 id="slop"><span class="sec-num">三</span>AI 的失败模式从“没产出”变成“产出过量”<a href="#slop" class="anchor">#</a></h2>
+    <p class="kicker">Slop Grenade · 生成者省一分钟，接收者多花一小时</p>
+    <p>Tobi 给 Shopify 内部的坏用法起了一个很准确的名字：<strong>slop grenade</strong>。员工让 Agent 放手生成代码，却不先审阅，就把 PR 丢给同事；或把简单观点膨胀成长邮件，接收者只好再用 LLM 压缩。计算成本下降了，组织总成本却可能上升。</p>
+
+    <div class="slop reveal">
+      <div class="slop-side">
+        <svg viewBox="0 0 360 150" role="img" aria-label="低责任模式中，一个短提示膨胀成大量未经验证的代码和文字">
+          <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <rect x="20" y="52" width="76" height="44" rx="8" style="color:var(--accent)" stroke="currentColor"/>
+            <path d="M108 74h45" style="color:var(--accent)" stroke="currentColor"/>
+            <path d="M154 32h178M154 54h132M154 76h194M154 98h148M154 120h180" style="color:var(--con)" stroke="currentColor"/>
+          </g>
+          <text x="33" y="79" font-size="12" fill="var(--text)">一句请求</text>
+        </svg>
+        <div class="slop-title">成本外部化</div>
+        <p class="slop-copy">生成者省下检查，评审者承担辨伪、压缩、返工和上下文恢复。</p>
+      </div>
+      <div class="slop-arrow">→</div>
+      <div class="slop-side">
+        <svg viewBox="0 0 360 150" role="img" aria-label="高责任模式中，生成内容经过人工验证和压缩后形成清晰交付">
+          <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M26 30h125v92H26z" style="color:var(--border-strong)" stroke="currentColor"/>
+            <path d="M46 55h84M46 76h70M46 97h76" style="color:var(--accent)" stroke="currentColor"/>
+            <circle cx="223" cy="76" r="42" style="color:var(--accent)" stroke="currentColor"/>
+            <path d="M204 76l13 13 26-29" style="color:var(--pro)" stroke="currentColor" stroke-width="4"/>
+            <path d="M270 76h60" style="color:var(--accent)" stroke="currentColor"/>
+          </g>
+        </svg>
+        <div class="slop-title">责任内收</div>
+        <p class="slop-copy">发起者先验证、删减并说明取舍，只把可消费的结果交给下一环。</p>
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">判断</div>
+      <p style="margin:.3em 0;">企业真正需要监控的不是“AI 使用率”，而是<strong>单位有效决策的总验证成本</strong>。若生成量上涨、评审等待和返工也同步上涨，组织只是把瓶颈从生产端搬到了消费端。</p>
+    </div>
+
+    <h2 id="taste"><span class="sec-num">四</span>“品味”不是审美玄学，而是压缩后的判断<a href="#taste" class="anchor">#</a></h2>
+    <p class="kicker">Taste & Judgment · 在多个好答案中选择</p>
+    <p>Tobi 对 judgment 的定义很实用：难点通常不是找到一个正确答案，而是在多个都说得通的方案中找到最好的取舍。AI 让可行方案数量暴涨，这正是品味升值的原因。品味来自长期重复、研究经受时间考验的系统，以及追问“为什么它会这样工作”；直觉则是这些判断经过大量练习后的快速压缩。</p>
+
+    <div class="funnel reveal">
+      <svg viewBox="0 0 920 360" role="img" aria-label="判断漏斗把无限可生成选项依次经过相关性、系统理解、长期取舍和品味筛选，最终落到由人承担责任的选择">
+        <g fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M65 48H855L700 128H220Z" style="color:var(--border-strong)" stroke="currentColor"/>
+          <path d="M220 128H700L620 206H300Z" style="color:var(--accent)" stroke="currentColor"/>
+          <path d="M300 206H620L555 275H365Z" style="color:var(--accent)" stroke="currentColor"/>
+          <path d="M365 275H555L505 324H415Z" style="color:var(--accent-deep)" stroke="currentColor"/>
+          <circle class="pulse" cx="460" cy="333" r="20" style="color:var(--accent)" stroke="currentColor" stroke-width="4"/>
+        </g>
+        <g text-anchor="middle" fill="var(--text)">
+          <text x="460" y="86" font-size="18" font-weight="700">无限可生成选项</text>
+          <text x="460" y="166" font-size="15">相关性 · 先删掉不值得做的</text>
+          <text x="460" y="245" font-size="15">系统理解 · 看见二阶后果</text>
+          <text x="460" y="305" font-size="13">品味 · 在好答案之间取舍</text>
+          <text x="610" y="340" font-size="13" fill="var(--accent)">人类选择 + 承担责任</text>
+        </g>
+      </svg>
+    </div>
+
+    <p>访谈里最反常识的一点是：最值得做的长期选择，往往恰好缺少即时反馈。季度收入、股价和短期转化率都有高频反馈，因而天然吸引组织资源；重构产品、进入新市场或放弃一个看似可行的方向，反馈则可能几年后才出现。不能把“有数据”误当成“更正确”。</p>
+
+    <h2 id="software"><span class="sec-num">五</span>对软件产品的信号：界面从菜单转向愿望<a href="#software" class="anchor">#</a></h2>
+    <p class="kicker">Wish-shaped Software · 软件围绕意图重组</p>
+    <p>Tobi 用自己的 Linux 环境举例：他不再手改配置，而是直接告诉 Agent 希望系统发生什么变化；缺一个截图标注工具，就通过几轮语音指令做出工具、开源并合入发行版。他把这种体验概括为“电脑开始满足愿望”，并判断未来软件会成为多人协作、可持续塑形的系统。</p>
+
+    <div class="signal-grid">
+      <div class="signal"><b>产品单位变化</b><p>从固定功能和页面，转向意图、上下文与可执行能力的组合。</p></div>
+      <div class="signal"><b>交互单位变化</b><p>从点击预设路径，转向对话、澄清、生成、试用与继续 steer。</p></div>
+      <div class="signal"><b>护城河变化</b><p>通用生成能力趋同后，长期上下文、权限边界和组织信任更难复制。</p></div>
+    </div>
+
+    <p>这并不等于 GUI 消失。更合理的推论是：稳定、高频、低歧义操作仍适合确定性界面；高变化、高语境任务则由 Agent 承接。产品设计的核心问题变成：何时让用户表达意图，何时提供可视化控制，何时强制确认。</p>
+
+    <h2 id="fde"><span class="sec-num">六</span>FDE / ToB 映射：先设计责任链，再接模型<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">Field Mapping · 把 River 拆成可交付能力</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>访谈信号</th><th>企业落地含义</th><th>应交付的机制</th></tr></thead>
+        <tbody>
+          <tr><td>River 只在公开频道工作</td><td>Agent 使用本身是组织学习资产</td><td>公开操作轨迹、可复用范例、失败复盘</td></tr>
+          <tr><td>按人 / 频道维护记忆</td><td>共享事实与个人偏好必须分层</td><td>记忆作用域、来源引用、过期与删除策略</td></tr>
+          <tr><td>夜间 dreaming 更新 Skill</td><td>Agent 可从运行轨迹持续改进</td><td>变更 diff、评测门禁、回滚与审批</td></tr>
+          <tr><td>多角色、多模型委员会</td><td>高风险任务应增加观点独立性</td><td>角色隔离、证据链、综合者轮换</td></tr>
+          <tr><td>机器不能承担责任</td><td>审批不是临时补丁，而是系统边界</td><td>实名签署、风险分级、最终决策记录</td></tr>
+          <tr><td>slop grenade</td><td>吞吐量不能代表生产率</td><td>评审成本、返工率、有效决策时延</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">两周内可做</div>
+      <ul>
+        <li>选一个跨职能、证据密集但可逆的决策，试跑“多角色研究 + 人工签字”，记录与原流程的时间和质量差异。</li>
+        <li>在团队 Agent 中区分公共记忆、频道记忆和个人记忆，并让每条记忆可追溯到原始来源。</li>
+        <li>给 AI 产出增加提交者声明：我检查了什么、没检查什么、接收者需要重点看什么。</li>
+        <li>把“生成数量”从成功指标中移除，改看采纳率、返工率、评审时长和事故率。</li>
+      </ul>
+    </div>
+
+    <h2 id="limits"><span class="sec-num">七</span>这场访谈的局限<a href="#limits" class="anchor">#</a></h2>
+    <p class="kicker">What Is Not Proven · 方向信号，不是效果评测</p>
+    <p>这是一位高技术密度创始人的经验陈述，不是对 Shopify 全公司的系统研究。访谈给出了令人兴奋的运行图景，但没有提供 PR 采纳率、缺陷率、评审负担、权限事故、员工分布或对照组数据。River 的“人格”也可能提升参与感，却不必然提升任务正确率。</p>
+    <p>此外，“机器不能承担责任”是清晰的治理原则，却还没有回答责任如何在发起者、审批者、平台团队和模型供应商之间分配。真正困难的工作，恰好从这句原则之后才开始。</p>
+
+    <h2 id="questions"><span class="sec-num">八</span>待验证问题<a href="#questions" class="anchor">#</a></h2>
+    <p class="kicker">Open Threads · 下一轮应拿数据回答</p>
+    <ol class="threads">
+      <li>“约 50% PR 源自聊天”中，有多少被合并、返工或回滚？与人工起草 PR 的缺陷率差异如何？</li>
+      <li>公开频道提高了学习速度，是否也让员工因担心被观察而减少探索性提问？</li>
+      <li>River 的个人记忆与频道记忆如何处理冲突、过期、敏感信息和离职数据？</li>
+      <li>多模型委员会的收益来自模型多样性，还是只是更多 token 与更长推理？</li>
+      <li>如何量化 slop grenade 的真实组织成本，并把成本归还给提交者而非评审者？</li>
+      <li>当 AI 给出更有说服力的错误答案时，人的“品味”靠什么评测与校准？</li>
+    </ol>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">最终判断</div>
+      <p style="margin:.3em 0;">这场访谈最值得带走的，不是“人人都要有 AI 同事”，而是一个更严格的组织公式：<strong>能力越强，越要让过程可观察；生成越便宜，越要核算验证成本；建议越像人，越要明确谁承担责任。</strong>品味不是 AI 之后留下的浪漫余项，而是决定稀缺资源投向何处的生产能力。</p>
+    </div>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-09-23 初稿 · 基于公开视频、官方章节与 ASR 逐字稿核对
+    </p>
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a> · <a href="./index.html">阅读材料索引</a>
+    </div>
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>
