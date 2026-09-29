@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>最后 10% 才是产品：Grok Bot 的七周构建法 · FDE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,600&family=Noto+Serif+SC:wght@500;700;900&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #28685a;
+    --accent-deep: #174c42;
+    --accent-ink: #123d35;
+    --accent-soft: #e7f2ee;
+    --accent-glow: color-mix(in srgb, #28685a 18%, transparent);
+  }
+  [data-theme="dark"] {
+    --accent: #79c9b5;
+    --accent-deep: #a3ddcf;
+    --accent-ink: #c9eee5;
+    --accent-soft: #14342e;
+    --accent-glow: color-mix(in srgb, #79c9b5 20%, transparent);
+  }
+
+  .build-loop text,
+  .interface-cut text,
+  .computer-shift text,
+  .trust-cliff text { font-family: var(--mono); }
+  .build-loop .display,
+  .interface-cut .display,
+  .computer-shift .display,
+  .trust-cliff .display { font-family: var(--display); font-weight: 700; }
+
+  .pulse-ring { animation: pulse-ring 2.8s ease-in-out infinite; transform-origin: center; }
+  @keyframes pulse-ring { 0%, 100% { opacity: .3; } 50% { opacity: .85; } }
+  .dash-run { stroke-dasharray: 7 8; animation: dash-run 1.7s linear infinite; }
+  @keyframes dash-run { to { stroke-dashoffset: -30; } }
+
+  .build-loop,
+  .interface-cut,
+  .computer-shift,
+  .trust-cliff {
+    margin: 1.8em 0;
+    padding: 1.2rem;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    transition: transform .2s, border-color .2s, box-shadow .2s;
+  }
+  .build-loop:hover,
+  .interface-cut:hover,
+  .computer-shift:hover,
+  .trust-cliff:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+    box-shadow: 0 12px 28px var(--accent-glow);
+  }
+  .build-loop svg,
+  .interface-cut svg,
+  .computer-shift svg,
+  .trust-cliff svg { width: 100%; height: auto; display: block; }
+  .visual-cap {
+    margin: .75rem 0 0;
+    color: var(--text-soft);
+    font-size: .82rem;
+    line-height: 1.55;
+    text-align: center;
+  }
+
+  .principle-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: .9rem;
+    margin: 1.5em 0;
+  }
+  .principle {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    background: var(--surface);
+    transition: transform .2s, border-color .2s;
+  }
+  .principle:hover { transform: translateY(-3px); border-color: var(--accent); }
+  .principle-head { display: flex; align-items: center; gap: .65rem; }
+  .principle-icon { color: var(--accent); flex: none; }
+  .principle-icon svg { width: 24px; height: 24px; display: block; }
+  .principle h4 { margin: 0; color: var(--text); font-family: var(--display); font-size: 1rem; }
+  .principle p { margin: .45rem 0 0; color: var(--text-soft); font-size: .84rem; line-height: 1.55; }
+
+  @media (max-width: 760px) {
+    .principle-grid { grid-template-columns: 1fr; }
+    .build-loop,
+    .interface-cut,
+    .computer-shift,
+    .trust-cliff { padding: .7rem; overflow-x: auto; }
+    .build-loop svg,
+    .interface-cut svg,
+    .computer-shift svg,
+    .trust-cliff svg { min-width: 660px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .pulse-ring, .dash-run { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../index.html">← 首页</a></span>
+      最后 10% 才是产品<span class="brand-sub">跨市场 · 阅读材料 · 2026-09</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+
+  <article>
+    <header class="doc-header">
+      <h1>最后 10% 才是产品<span class="en"> · How Grok Bot Shipped in Seven Weeks</span></h1>
+      <p style="font-size:1.05rem;color:var(--text-muted);margin-top:-.2em;">Roman Ugarte × Lenny’s Podcast：一个月做出内测版、三周推向公众，真正被压缩的不是代码时间，而是决策与反馈的距离</p>
+      <div class="doc-meta">
+        <span>2026-09-29</span>
+        <span>跨市场</span>
+        <span>Lenny’s Podcast</span>
+        <span>Grok Bot</span>
+        <span>产品方法</span>
+        <span>自主工作</span>
+        <span>人机协作</span>
+        <span>可对外</span>
+        <span>时机：已发生</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats reveal">
+        <div class="hero-stat"><div class="num">4<small>周</small></div><div class="lab">第一行代码<br />到内部可用</div></div>
+        <div class="hero-stat"><div class="num">3<small>周</small></div><div class="lab">内部 Beta<br />到公开发布</div></div>
+        <div class="hero-stat"><div class="num">200–300<small>人</small></div><div class="lab">团队逐个陪跑<br />早期用户</div></div>
+        <div class="hero-stat"><div class="num">90→100<small>%</small></div><div class="lab">从需监督<br />到可托付</div></div>
+      </div>
+
+      <p style="color:var(--text-soft);font-size:.95rem;margin-top:1.2em;">
+        信源：<a href="https://www.youtube.com/watch?v=maSdsTLaMuU" target="_blank" rel="noopener">Lenny’s Podcast · How we built Grok Bot in a month</a>
+        · <a href="https://www.lennysnewsletter.com/p/how-we-built-grok-bot-in-a-month" target="_blank" rel="noopener">节目页</a>
+        · 2026-09-08
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心判断：</strong>Grok Bot 的七周速度，不该被读成“模型让开发快了十倍”。更准确的解释是：团队把<strong>组织决策、用户反馈与产品修正压进同一个短回路</strong>，再围绕一个极硬的验收标准做减法——用户能否像托付同事一样把整件事交出去。所谓最后 10%，不是输出更漂亮，而是用户不再需要持续盯着它；那是从“能力演示”跨到“责任承接”的断崖。
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>七周不是单纯工程速度：</strong>小团队隔离、日内决策、手工 onboarding 与持续删功能，共同缩短了反馈路径。</li>
+        <li><strong>200–300 次陪跑是产品观测系统：</strong>每个卡顿、误解和失败都直接进入次日修复，不靠汇总报告转述。</li>
+        <li><strong>界面刻意隐藏内部机制：</strong>用户要进度、计划与结果，不要工具调用和推理流水账；透明度应服务控制，而不是展示复杂度。</li>
+        <li><strong>云端工作空间是产品边界：</strong>常驻状态、跨设备访问、无 API 时操作真实界面，让任务不再依附用户的电脑与在线时间；但访谈中的“一 Bot 一电脑”是产品化表述，公开安全文档显示实际隔离粒度到用户。</li>
+        <li><strong>90% 与 100% 不是线性差距：</strong>只要人仍要检查最后一步，认知负担与责任就没有转移，产品仍是副驾驶。</li>
+        <li><strong>护城河是使用残留物：</strong>访谈主张先把今天的产品做到有用，优势从数据、工作习惯与信任中长出来，而非先画静态壁垒。</li>
+        <li><strong>证据仍有限：</strong>数字与效果主要来自核心参与者自述，没有公开成功率、留存、成本或安全事故数据。</li>
+      </ul>
+    </div>
+
+    <h2 id="read"><span class="sec-num">一</span>先把访谈读对：它讲的不是“一个月写完”<a href="#read" class="anchor">#</a></h2>
+    <p class="kicker">SPEED IS A SYSTEM PROPERTY</p>
+
+    <p>Roman Ugarte 给出的时间线很抓眼球：从第一行代码到内部产品约四周，再用三周公开发布。但访谈真正可复用的部分，不是日历上的“七周”，而是这七周里四种距离同时被压短：做决定的人离代码近、写代码的人离用户近、失败离修复近、产品形态离验收标准近。</p>
+
+    <p>团队没有把 Grok Bot 塞进已有编程产品，而是另起产品；人数保持很小，办公与沟通也刻意隔离。这样做牺牲了早期协同覆盖面，换来每天几十个细小产品判断可以即时收敛。它更像一次被保护的探索，而不是一条按季度路线图推进的常规项目。</p>
+
+    <div class="build-loop reveal">
+      <svg viewBox="0 0 900 410" role="img" aria-label="Grok Bot 七周构建闭环：小团队隔离、四周内部版本、逐个陪跑二百至三百名用户、三周删减与公开发布">
+        <defs>
+          <marker id="loop-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+            <path d="M1 1 L7 4 L1 7 Z" style="fill:var(--accent)"/>
+          </marker>
+        </defs>
+        <g style="color:var(--accent)" fill="none" stroke="currentColor">
+          <circle cx="450" cy="205" r="105" stroke-width="1.4" class="pulse-ring"/>
+          <circle cx="450" cy="205" r="76" stroke-width="2"/>
+          <path d="M450 100 C615 100 650 170 650 205" stroke-width="2" marker-end="url(#loop-arrow)" class="dash-run"/>
+          <path d="M650 205 C650 320 535 340 450 310" stroke-width="2" marker-end="url(#loop-arrow)" class="dash-run"/>
+          <path d="M450 310 C290 340 250 270 250 205" stroke-width="2" marker-end="url(#loop-arrow)" class="dash-run"/>
+          <path d="M250 205 C250 95 365 80 450 100" stroke-width="2" marker-end="url(#loop-arrow)" class="dash-run"/>
+          <rect x="34" y="42" width="210" height="92" rx="14" style="fill:var(--surface)" stroke-width="1.5"/>
+          <rect x="656" y="42" width="210" height="92" rx="14" style="fill:var(--surface)" stroke-width="1.5"/>
+          <rect x="656" y="276" width="210" height="92" rx="14" style="fill:var(--surface)" stroke-width="1.5"/>
+          <rect x="34" y="276" width="210" height="92" rx="14" style="fill:var(--surface)" stroke-width="1.5"/>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <g transform="translate(58 62)" style="color:var(--accent)"><circle cx="12" cy="8" r="4"/><circle cx="27" cy="8" r="4"/><path d="M4 27c1-7 17-7 18 0M19 27c1-7 17-7 18 0"/></g>
+          <g transform="translate(680 62)" style="color:var(--accent)"><rect x="2" y="2" width="32" height="24" rx="3"/><path d="M10 34h16M18 26v8"/></g>
+          <g transform="translate(680 296)" style="color:var(--accent)"><path d="M4 7h30M8 14h22M12 21h14M16 28h6"/><path d="M32 26l4 4 7-9"/></g>
+          <g transform="translate(58 296)" style="color:var(--accent)"><path d="M4 20h34M28 9l11 11-11 11"/></g>
+        </g>
+        <g style="fill:var(--text)">
+          <text x="104" y="75" font-size="11" style="fill:var(--accent)">01 · 决策结构</text>
+          <text x="104" y="99" font-size="15" font-weight="700">小团队隔离</text>
+          <text x="104" y="119" font-size="10" style="fill:var(--text-muted)">少数人高频收敛，不等季度共识</text>
+
+          <text x="726" y="75" font-size="11" style="fill:var(--accent)">02 · 可用内核</text>
+          <text x="726" y="99" font-size="15" font-weight="700">四周出 Beta</text>
+          <text x="726" y="119" font-size="10" style="fill:var(--text-muted)">先让真实任务端到端跑通</text>
+
+          <text x="726" y="309" font-size="11" style="fill:var(--accent)">03 · 直接观测</text>
+          <text x="726" y="333" font-size="15" font-weight="700">200–300 次陪跑</text>
+          <text x="726" y="353" font-size="10" style="fill:var(--text-muted)">20 分钟一人，失败即产品信号</text>
+
+          <text x="104" y="309" font-size="11" style="fill:var(--accent)">04 · 三周收口</text>
+          <text x="104" y="333" font-size="15" font-weight="700">删掉，再发布</text>
+          <text x="104" y="353" font-size="10" style="fill:var(--text-muted)">去掉调试感、面板与解释负担</text>
+
+          <text x="450" y="178" text-anchor="middle" font-size="11" style="fill:var(--text-muted)">不是四段瀑布</text>
+          <text x="450" y="213" text-anchor="middle" font-size="27" class="display" style="fill:var(--accent-ink)">一天一圈</text>
+          <text x="450" y="239" text-anchor="middle" font-size="11" style="fill:var(--text-muted)">决策 · 使用 · 失败 · 修正</text>
+        </g>
+      </svg>
+      <p class="visual-cap">七周只是外观，真正的速度来自闭环频率。若反馈仍需跨三层汇报，再强的代码生成也只会更快地产生错误方向。</p>
+    </div>
+
+    <h2 id="onboarding"><span class="sec-num">二</span>手工 onboarding：不是不可扩展，是先买真相<a href="#onboarding" class="anchor">#</a></h2>
+    <p class="kicker">HUMANS AS EARLY OBSERVABILITY</p>
+
+    <p>团队逐个陪跑约 200–300 名早期用户，每次约 20 分钟。这个动作表面上极不“规模化”，实际上是在产品尚无稳定指标时，用创始团队的注意力换高带宽证据：电脑起不来、用户不知道下一句说什么、某个 Shopify 流程偶发失败，都不再被埋进客服工单。</p>
+
+    <p>更重要的是样本选择。团队主动找了 AI 圈外的人，包括咖啡店经营者，而不只听内部员工与高阶用户。对于以自然语言为界面的新产品，早期最大风险常常不是功能缺失，而是团队把自己的概念模型误当成用户常识。陪跑的价值，就是在这种误差固化前把它暴露出来。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">可迁移的方法</div>
+      <p style="margin:.3em 0;">把前 50–100 次 onboarding 当成<strong>观测工程</strong>：记录用户原话、首次停顿、第一次授权、第一次失败、第一次真正省事的时刻。等这些模式稳定后再自动化，而不是先优化注册转化率。</p>
+    </div>
+
+    <h2 id="interface"><span class="sec-num">三</span>界面减法：别把内部复杂度倒给用户<a href="#interface" class="anchor">#</a></h2>
+    <p class="kicker">CONTROL WITHOUT DEBUG THEATER</p>
+
+    <p>Grok Bot 选择隐藏工具调用和推理流，只保留简单的工作状态与必要进度。团队在公开发布前做的很多事情不是增加，而是“unship”：删掉开发者味很重的仪表盘、调试信息和暴露内部机制的界面。</p>
+
+    <p>这不是反对透明，而是重新定义透明。普通用户需要知道三件事：它准备做什么、现在做到哪里、何时需要我拍板。完整工具调用日志适合审计与排错，却不该成为主交互。把内部活动全部摊开，往往只是让用户承担解释成本，并不增加真实控制。</p>
+
+    <div class="interface-cut reveal">
+      <svg viewBox="0 0 900 360" role="img" aria-label="界面减法对照：左侧暴露大量工具调用与推理噪音，右侧只呈现计划、进度、审批点和结果">
+        <g>
+          <rect x="25" y="40" width="365" height="275" rx="16" style="fill:var(--surface);stroke:var(--border)" stroke-width="1.5"/>
+          <rect x="510" y="40" width="365" height="275" rx="16" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+          <text x="54" y="75" font-size="11" style="fill:var(--text-muted)">DEBUG TRANSPARENCY</text>
+          <text x="539" y="75" font-size="11" style="fill:var(--accent)">OUTCOME TRANSPARENCY</text>
+          <text x="54" y="104" font-size="19" class="display" style="fill:var(--text)">把机制倒给用户</text>
+          <text x="539" y="104" font-size="19" class="display" style="fill:var(--accent-ink)">把控制留给用户</text>
+        </g>
+        <g fill="none" stroke-width="1.3">
+          <g style="color:var(--text-muted)" stroke="currentColor">
+            <rect x="54" y="127" width="307" height="31" rx="6"/><rect x="54" y="168" width="307" height="31" rx="6"/>
+            <rect x="54" y="209" width="307" height="31" rx="6"/><rect x="54" y="250" width="307" height="31" rx="6"/>
+          </g>
+          <g style="color:var(--accent)" stroke="currentColor">
+            <rect x="539" y="127" width="307" height="43" rx="8"/>
+            <rect x="539" y="181" width="307" height="43" rx="8"/>
+            <rect x="539" y="235" width="307" height="46" rx="8" style="fill:var(--surface)"/>
+          </g>
+        </g>
+        <g font-size="10">
+          <text x="69" y="147" style="fill:var(--text-muted)">tool_call browser.navigate()</text>
+          <text x="69" y="188" style="fill:var(--text-muted)">reasoning: inspect page state...</text>
+          <text x="69" y="229" style="fill:var(--text-muted)">tool_call filesystem.write()</text>
+          <text x="69" y="270" style="fill:var(--text-muted)">token stream / retry / trace...</text>
+
+          <text x="556" y="146" font-weight="700" style="fill:var(--text)">计划</text>
+          <text x="604" y="146" style="fill:var(--text-muted)">整理 125 家供应商并检查闲置席位</text>
+          <text x="556" y="200" font-weight="700" style="fill:var(--text)">进度</text>
+          <text x="604" y="200" style="fill:var(--text-muted)">已核对 83 家，发现 11 项异常</text>
+          <text x="556" y="255" font-weight="700" style="fill:var(--accent)">审批</text>
+          <text x="604" y="255" style="fill:var(--text)">是否停用 43 个零活跃席位？</text>
+          <text x="604" y="272" style="fill:var(--text-muted)">预计每年节省 $14,220</text>
+        </g>
+        <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round">
+          <line x1="415" y1="177" x2="480" y2="177"/>
+          <path d="M470 166l11 11-11 11"/>
+        </g>
+        <text x="448" y="157" text-anchor="middle" font-size="10" style="fill:var(--accent)">UNSHIP</text>
+      </svg>
+      <p class="visual-cap">主界面回答“我能否托付”，审计界面回答“出了问题能否追溯”。两者都需要，但不能混成一条实时流水账。</p>
+    </div>
+
+    <h2 id="computer"><span class="sec-num">四</span>一台自己的电脑：不是基础设施细节<a href="#computer" class="anchor">#</a></h2>
+    <p class="kicker">STATE · IDENTITY · CONTINUITY</p>
+
+    <p>访谈反复强调的产品决策，是让 Bot 运行在持续存在的云端工作空间，而不是借用用户本地设备。它带来三种连续性：状态持续存在、用户可从任何设备回来、任务不依赖用户在线。更关键的是，当 SaaS 没有可靠 API 时，它仍可通过浏览器界面完成工作。</p>
+
+    <p>“给同事一台自己的电脑”是一个强产品隐喻，也是一条真实的系统边界：执行环境、登录态、文件与工作记忆被放到一个可持续容器里。这里必须区分两层口径：访谈把它说成“每个 Bot 自己的电脑”，而公开安全文档显示<strong>同一用户的多个 Bot 实际共享一台云电脑</strong>。因此，它准确表达的是“与用户本机分离”，并不等于“一 Bot 一隔离域”。最小权限、任务隔离、凭证轮换、审计与撤销仍要另外设计；已有的 Grok Bot 厂商页已详细记录这道安全边界。</p>
+
+    <div class="computer-shift reveal">
+      <svg viewBox="0 0 900 380" role="img" aria-label="从共享用户电脑到独立云电脑的产品边界变化：任务由依赖在线和本地状态，变为常驻、跨设备和独立状态">
+        <defs>
+          <marker id="computer-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto">
+            <path d="M1 1 L7 4 L1 7 Z" style="fill:var(--accent)"/>
+          </marker>
+        </defs>
+        <g>
+          <rect x="28" y="40" width="340" height="290" rx="16" style="fill:var(--surface);stroke:var(--border)" stroke-width="1.5"/>
+          <rect x="532" y="40" width="340" height="290" rx="16" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.8"/>
+          <text x="54" y="75" font-size="11" style="fill:var(--text-muted)">BORROWED DEVICE</text>
+          <text x="558" y="75" font-size="11" style="fill:var(--accent)">PERSISTENT WORKSPACE</text>
+          <text x="54" y="103" font-size="19" class="display" style="fill:var(--text)">与用户抢一台电脑</text>
+          <text x="558" y="103" font-size="19" class="display" style="fill:var(--accent-ink)">拥有持续执行环境</text>
+        </g>
+        <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <g transform="translate(118 132)" style="color:var(--text-muted)">
+            <rect x="0" y="0" width="160" height="100" rx="8"/><path d="M55 123h50M80 100v23"/>
+            <circle cx="80" cy="50" r="18"/><path d="M64 50h32M80 34v32"/>
+          </g>
+          <g transform="translate(622 128)" style="color:var(--accent)">
+            <path d="M34 79c-23 0-31-30-11-42 2-25 38-32 50-11 21-7 40 10 36 31 22 8 16 39-7 39H34z"/>
+            <rect x="43" y="111" width="94" height="66" rx="7"/>
+            <path d="M65 193h50M90 177v16"/>
+          </g>
+        </g>
+        <g font-size="10">
+          <text x="83" y="274" style="fill:var(--text-muted)">在线依赖 · 本地状态 · 设备争用</text>
+          <text x="574" y="274" style="fill:var(--accent-ink)">常驻状态 · 跨设备 · 后台运行</text>
+          <text x="574" y="297" style="fill:var(--text-muted)">无 API 时仍可操作真实界面</text>
+        </g>
+        <g style="color:var(--accent)" stroke="currentColor" fill="none" stroke-width="2">
+          <line x1="401" y1="184" x2="499" y2="184" marker-end="url(#computer-arrow)"/>
+        </g>
+        <text x="450" y="163" text-anchor="middle" font-size="10" style="fill:var(--accent)">OWN COMPUTER</text>
+      </svg>
+      <p class="visual-cap">“独立电脑”把执行从一次会话变成持续工作，但运行边界不等于权限边界。企业落地必须把两者分开验收。</p>
+    </div>
+
+    <h2 id="last-ten"><span class="sec-num">五</span>最后 10%：从正确率问题变成责任问题<a href="#last-ten" class="anchor">#</a></h2>
+    <p class="kicker">THE SUPERVISION CLIFF</p>
+
+    <p>Roman 最有穿透力的判断是：完成 100% 的工作，与完成 90% 有类别差异。若最后 10% 仍要人核查，用户并没有真正卸下任务；他只是把执行外包，却继续持有监督、判断和事故责任。对高风险任务而言，90% 甚至可能比 0% 更累，因为人必须从看似正确的产物里找少量但致命的错误。</p>
+
+    <p>因此，“最后 10%”不是再堆一点模型能力。它通常由四类工程共同组成：明确完成定义、让失败可见、在正确节点请求审批、让结果可验证与可回滚。模型回答质量只占其中一部分。</p>
+
+    <div class="trust-cliff reveal">
+      <svg viewBox="0 0 900 390" role="img" aria-label="责任断崖：任务完成度从零到九成时用户监督负担下降很慢，只有跨过可验证与可托付门槛后责任负担才显著下降">
+        <g>
+          <line x1="90" y1="310" x2="835" y2="310" style="stroke:var(--border-strong)" stroke-width="1.5"/>
+          <line x1="90" y1="55" x2="90" y2="310" style="stroke:var(--border-strong)" stroke-width="1.5"/>
+          <text x="462" y="350" text-anchor="middle" font-size="11" style="fill:var(--text-muted)">系统完成度 →</text>
+          <text x="30" y="183" text-anchor="middle" font-size="11" transform="rotate(-90 30 183)" style="fill:var(--text-muted)">用户仍持有的监督责任</text>
+          <text x="90" y="330" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">0%</text>
+          <text x="685" y="330" text-anchor="middle" font-size="10" style="fill:var(--text-muted)">90%</text>
+          <text x="835" y="330" text-anchor="middle" font-size="10" style="fill:var(--accent)">100%</text>
+        </g>
+        <g style="color:var(--accent)" fill="none" stroke="currentColor">
+          <path d="M90 82 C270 92 480 112 650 145 C710 157 745 180 770 221 C790 255 805 290 835 302"
+                stroke-width="4" stroke-linecap="round"/>
+          <line x1="685" y1="65" x2="685" y2="310" stroke-width="1.4" stroke-dasharray="5 6" opacity=".55"/>
+          <line x1="790" y1="65" x2="790" y2="310" stroke-width="1.4" stroke-dasharray="5 6" opacity=".55"/>
+          <circle cx="685" cy="151" r="7" style="fill:var(--surface)" stroke-width="3"/>
+          <circle cx="790" cy="257" r="7" style="fill:var(--surface)" stroke-width="3"/>
+        </g>
+        <g>
+          <rect x="132" y="104" width="230" height="73" rx="11" style="fill:var(--surface);stroke:var(--border)" stroke-width="1.2"/>
+          <text x="151" y="130" font-size="11" style="fill:var(--text-muted)">0–90% · 能力区</text>
+          <text x="151" y="153" font-size="14" font-weight="700" style="fill:var(--text)">更快产出，但人仍要盯</text>
+
+          <rect x="551" y="68" width="250" height="62" rx="11" style="fill:var(--accent-soft);stroke:var(--accent)" stroke-width="1.4"/>
+          <text x="570" y="93" font-size="11" style="fill:var(--accent)">最后 10% · 责任区</text>
+          <text x="570" y="115" font-size="13" font-weight="700" style="fill:var(--accent-ink)">验证 · 审批 · 回滚 · 兜底</text>
+
+          <text x="653" y="195" text-anchor="end" font-size="10" style="fill:var(--text-muted)">副驾驶</text>
+          <text x="812" y="286" text-anchor="end" font-size="10" style="fill:var(--accent)">可托付</text>
+        </g>
+      </svg>
+      <p class="visual-cap">概念图，不是访谈中的定量曲线。它表达的是责任负担的非线性：结果看似接近完成，不等于用户接近省心。</p>
+    </div>
+
+    <h2 id="principles"><span class="sec-num">六</span>“同事化”框架，能留下四条产品原则<a href="#principles" class="anchor">#</a></h2>
+    <p class="kicker">COLLEAGUE-PILLED, TRANSLATED</p>
+
+    <p>“如果这是一个真实同事，我会期待他怎么做？”是团队处理产品争议的常用问题。把隐喻去掉，可以得到四条更工程化的原则：</p>
+
+    <div class="principle-grid">
+      <div class="principle reveal">
+        <div class="principle-head">
+          <span class="principle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="目标图标"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M21 12h-3"/></svg></span>
+          <h4>接完整目标，不接碎片命令</h4>
+        </div>
+        <p>产品单位应是可验收的工作结果；自然语言只是入口，不是价值本身。</p>
+      </div>
+      <div class="principle reveal">
+        <div class="principle-head">
+          <span class="principle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="消息图标"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg></span>
+          <h4>主动汇报异常，不直播思考</h4>
+        </div>
+        <p>进度更新围绕风险、阻塞与决策点组织；详细轨迹留给审计和诊断。</p>
+      </div>
+      <div class="principle reveal">
+        <div class="principle-head">
+          <span class="principle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="记忆图标"><path d="M12 2a4 4 0 0 0-4 4v1a4 4 0 0 0-3 4 4 4 0 0 0 3 4v1a4 4 0 0 0 4 4"/><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1 3 4 4 4 0 0 1-3 4v1a4 4 0 0 1-4 4V2z"/></svg></span>
+          <h4>保留工作连续性</h4>
+        </div>
+        <p>身份、文件、上下文与例行任务持续存在，避免每次会话重新入职。</p>
+      </div>
+      <div class="principle reveal">
+        <div class="principle-head">
+          <span class="principle-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="检查图标"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+          <h4>用完成定义建立信任</h4>
+        </div>
+        <p>能验证、能回滚、知道何时升级给人，才有资格从工具变成被托付者。</p>
+      </div>
+    </div>
+
+    <h2 id="fde"><span class="sec-num">七</span>对 FDE 的映射：先设计责任交接面<a href="#fde" class="anchor">#</a></h2>
+    <p class="kicker">FROM CAPABILITY DEMO TO OPERATING SYSTEM</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>访谈信号</th><th>常见误读</th><th>FDE 落地动作</th></tr></thead>
+        <tbody>
+          <tr><td>四周内测、三周发布</td><td>主要靠代码生成提速</td><td>缩短决策链；把真实用户失败直接送回产品与工程</td></tr>
+          <tr><td>200–300 人逐个 onboarding</td><td>只是早期增长手段</td><td>建立任务级观测表：原话、阻塞点、接管点、完成证据</td></tr>
+          <tr><td>隐藏工具调用与推理</td><td>减少透明度</td><td>拆分主界面与审计面；主界面只展示计划、进度、风险、审批</td></tr>
+          <tr><td>云端持久工作空间</td><td>只是部署选型</td><td>把执行环境、身份、状态与权限当作一组产品契约设计，并核实真实隔离粒度</td></tr>
+          <tr><td>90% 不等于完成</td><td>继续追单点正确率</td><td>评测改看端到端成功、人工接管分钟数、回滚率与事故成本</td></tr>
+          <tr><td>护城河靠发现</td><td>无需战略</td><td>以高频真实使用寻找数据、流程与信任残留，不提前虚构壁垒</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">两周实验</div>
+      <ol style="margin:.3em 0;">
+        <li>选一个每周发生、输入不完全结构化、结果可核验且可回滚的完整任务。</li>
+        <li>由产品、工程与 FDE 共同陪跑前 20 名用户，不通过二手工单理解失败。</li>
+        <li>同时记录任务成功率与<strong>人工接管分钟数</strong>，避免 90% 完成度制造假繁荣。</li>
+        <li>主界面只留计划、当前状态、阻塞与审批；完整轨迹进入独立审计视图。</li>
+        <li>每两天做一次 unship review：哪些信息与控制看似丰富，实际只是在转嫁复杂度。</li>
+      </ol>
+    </div>
+
+    <h2 id="limits"><span class="sec-num">八</span>这份材料没有证明什么<a href="#limits" class="anchor">#</a></h2>
+    <p class="kicker">EVIDENCE BOUNDARIES</p>
+
+    <p>这是一场核心参与者的产品访谈，不是独立评测。四周、三周、200–300 人等数字可以作为过程事实阅读，但“成功”“可托付”“保持创业速度”等结论主要来自 Roman 自述。节目没有给出端到端任务成功率、七日留存、单任务成本、人工接管时长或安全事故数据。</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">三处保留</div>
+      <ul style="margin:.3em 0;">
+        <li><strong>幸存者偏差：</strong>访谈展示了被修好的 onboarding 问题，没有呈现被放弃的用户与任务。</li>
+        <li><strong>“100%”缺乏统一定义：</strong>低风险信息整理与高风险付款、生产变更不可使用同一完成阈值。</li>
+        <li><strong>产品抽象遮住治理成本：</strong>自己的云电脑提升连续性，也集中了承载凭证、数据与动作权限的风险。</li>
+      </ul>
+    </div>
+
+    <p>所以，本篇给“时机：已发生”，因为这套构建方式与产品抽象已经进入公开产品；只给“信心：中”，因为访谈足以说明团队如何思考，却不足以证明规模化后的可靠性与经济性。</p>
+
+    <h2 id="questions"><span class="sec-num">九</span>接下来只看六个数<a href="#questions" class="anchor">#</a></h2>
+    <p class="kicker">WHAT WOULD CHANGE THE JUDGMENT</p>
+
+    <ol>
+      <li><strong>端到端成功率：</strong>按任务类型拆开，而不是汇总成“用户满意”。</li>
+      <li><strong>人工接管分钟数：</strong>每个成功任务仍消耗多少监督时间。</li>
+      <li><strong>审批命中率：</strong>系统请求人的节点是否真的高风险、低噪声。</li>
+      <li><strong>失败可恢复率：</strong>出错后有多少能自动回滚或从检查点续跑。</li>
+      <li><strong>单任务全成本：</strong>模型、云电脑、重试、人工支持与安全治理一起算。</li>
+      <li><strong>四周后留存：</strong>早期惊喜是否沉淀为固定工作习惯，而非一次性演示。</li>
+    </ol>
+
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">
+      修订记录：2026-09-29 初稿 · 基于 Lenny’s Podcast 视频、节目页、公开章节与逐时点摘要交叉整理
+    </p>
+
+    <div class="doc-footer">
+      <a href="../index.html">← 首页</a>
+      ·
+      <a href="./index.html">阅读材料索引</a>
+      ·
+      <a href="../frontier/vendors/xai/deep_dives/2026-09-12_grok-bot-autonomous-workforce.html">相关：Grok Bot 企业治理与隔离边界</a>
+      ·
+      <a href="https://www.youtube.com/watch?v=maSdsTLaMuU" target="_blank" rel="noopener">观看原访谈</a>
+    </div>
+  </article>
+</div>
+
+<script src="../_assets/insight.js"></script>
+</body>
+</html>

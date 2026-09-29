@@ -197,6 +197,7 @@
 | amethyst | `#8b2fb0` / dark `#dd9cf0` | 模型接入被商品化 · 用脚投票（跨市场洞察） |
 | slate-violet | `#5a4b81` / dark `#b8a9e6` | 变革性 AI 的三种经济剧本（阅读材料） |
 | field-olive | `#68722b` / dark `#c4d264` | 执行趋近于免费，责任没有 · Shopify River（阅读材料） |
+| mineral-green | `#28685a` / dark `#79c9b5` | 最后 10% 才是产品 · Grok Bot 七周构建法（阅读材料） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`
