@@ -1,6 +1,43 @@
 {
-  "generated_at": "2026-10-09T06:17:16.811761+00:00",
+  "generated_at": "2026-10-10T09:05:04.765253+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-10_base-model-unit-economics-turning-point.html",
+      "title": "基座单位经济学的拐点 · From Capability Race to Routing Capability",
+      "date": "2026-10-10",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "基座模型",
+        "单位经济学",
+        "路由",
+        "OpenAI",
+        "Anthropic"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
+    {
+      "path": "insights/cross/2026-10_fde-industrialization-anthropic-100m.html",
+      "title": "FDE 工业化 · Anthropic 的 $100M 是什么信号",
+      "date": "2026-10-10",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "FDE",
+        "Anthropic",
+        "落地工程",
+        "AI 工程化"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "6–12 月",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-10_personal-agent-form-converges.html",
       "title": "个人 Agent 的产品形态在 60 天内收敛 · Form Convergence",
