@@ -1,6 +1,23 @@
 {
-  "generated_at": "2026-09-29T01:57:08.392264+00:00",
+  "generated_at": "2026-10-09T06:17:16.811761+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-10_personal-agent-form-converges.html",
+      "title": "个人 Agent 的产品形态在 60 天内收敛 · Form Convergence",
+      "date": "2026-10-09",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "个人 Agent",
+        "产品形态",
+        "认知裁量权"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-09_model-access-commoditized.html",
       "title": "模型接入被商品化 · Voting With Their Feet",

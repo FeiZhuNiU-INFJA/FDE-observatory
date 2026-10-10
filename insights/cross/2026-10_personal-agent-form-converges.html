@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>个人 Agent 的产品形态收敛 · Muse / Dot / Grok Bot / Instinct · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* 本页 accent：electric-violet（表达"不约而同的会师"） */
+  :root {
+    --accent: #6d28d9;
+    --accent-soft: #ede9fe;
+    --accent-deep: #4c1d95;
+    --accent-ink: #ffffff;
+  }
+  [data-theme="dark"] {
+    --accent: #c4b5fd;
+    --accent-soft: #312e81;
+    --accent-deep: #ddd6fe;
+    --accent-ink: #0f172a;
+  }
+
+  /* ============ bespoke 1: 时间线 .wave ============ */
+  .wave { position: relative; margin: 1.6em 0 2em; padding: 1.4em 1em 1.1em; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); overflow: hidden; }
+  .wave-svg { position: absolute; left: 0; right: 0; top: 42%; width: 100%; height: 44px; pointer-events: none; opacity: .7; color: var(--accent); }
+  .wave-svg path { animation: wave-flow 7s linear infinite; }
+  @keyframes wave-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24; } }
+  .wave-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; position: relative; z-index: 1; }
+  .wave-node { display: flex; flex-direction: column; align-items: center; gap: .55em; padding: .45em .3em; }
+  .wave-dot { width: 46px; height: 46px; border-radius: 50%; border: 2px solid var(--accent); background: var(--surface); display: grid; place-items: center; font-family: var(--display, 'Noto Serif SC'); font-weight: 700; color: var(--accent); font-size: 1.1rem; box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 10%, transparent); }
+  .wave-when { font-family: var(--mono); font-size: .78rem; color: var(--text-muted); letter-spacing: .05em; }
+  .wave-who { font-weight: 700; font-size: 1rem; }
+  .wave-what { font-size: .82rem; color: var(--text-muted); text-align: center; line-height: 1.45; }
+  @media (max-width: 820px) {
+    .wave-svg { display: none; }
+    .wave-track { grid-template-columns: 1fr; gap: 14px; }
+    .wave-node { flex-direction: row; justify-content: flex-start; text-align: left; }
+    .wave-what { text-align: left; }
+  }
+
+  /* ============ bespoke 2: 同心圆共识架构 .rings ============ */
+  .rings { display: grid; grid-template-columns: minmax(280px, 1.1fr) 1fr; gap: 1.6em; align-items: center; margin: 1.6em 0 2em; padding: 1.4em 1.2em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .rings svg { width: 100%; height: auto; max-width: 420px; }
+  .rings-legend { display: flex; flex-direction: column; gap: .75em; }
+  .rings-layer { padding: .55em .7em; border: 1px dashed var(--border); border-radius: 10px; background: var(--bg-elev, var(--surface)); }
+  .rings-layer h4 { margin: 0 0 .2em; font-size: .95rem; letter-spacing: .02em; }
+  .rings-layer small { display: block; color: var(--text-muted); font-size: .78rem; line-height: 1.5; }
+  .rings-layer .pin { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: .5em; }
+  @media (max-width: 820px) { .rings { grid-template-columns: 1fr; } }
+
+  /* ============ bespoke 3: 四象限 .quad ============ */
+  .quad { position: relative; margin: 1.8em 0 2em; padding: 1.3em 1.1em 1.1em; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
+  .quad-grid { position: relative; aspect-ratio: 1.4 / 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 2px; background: var(--border); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .quad-cell { background: var(--surface); position: relative; padding: 1.2em 1em .9em; }
+  .quad-cell .tag { position: absolute; top: 8px; right: 10px; font-family: var(--mono); font-size: .7rem; color: var(--text-muted); letter-spacing: .05em; }
+  .quad-chip { display: inline-flex; align-items: center; gap: .5em; padding: .35em .8em .35em .55em; border: 2px solid var(--accent); border-radius: 999px; background: color-mix(in srgb, var(--accent) 8%, transparent); color: var(--accent); font-weight: 700; font-size: .9rem; font-family: var(--display, 'Noto Serif SC'); }
+  .quad-chip svg { width: 20px; height: 20px; }
+  .quad-note { margin-top: .45em; font-size: .82rem; color: var(--text-muted); line-height: 1.5; }
+  .quad-axes { position: absolute; inset: 0; pointer-events: none; }
+  .quad-axis-x, .quad-axis-y { position: absolute; font-family: var(--mono); font-size: .72rem; color: var(--text-muted); letter-spacing: .05em; }
+  .quad-axis-x.l { left: 10px; bottom: -22px; }
+  .quad-axis-x.r { right: 10px; bottom: -22px; }
+  .quad-axis-y.t { top: 10px; left: -8px; transform: translateX(-100%) rotate(-90deg); transform-origin: right top; }
+  .quad-axis-y.b { bottom: 10px; left: -8px; transform: translateX(-100%) rotate(-90deg); transform-origin: right bottom; }
+  .quad-wrap { padding: 10px 44px 36px 44px; }
+  @media (max-width: 760px) {
+    .quad-grid { aspect-ratio: auto; grid-template-columns: 1fr; grid-template-rows: repeat(4, auto); }
+    .quad-wrap { padding: 8px 8px 8px 8px; }
+    .quad-axes { display: none; }
+  }
+
+  /* ============ bespoke 4: 认知裁量权刻度 .scale ============ */
+  .scale { margin: 1.6em 0 2em; padding: 1.3em 1.2em 1.1em; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); box-shadow: var(--shadow); }
+  .scale-svg { display: block; width: 100%; height: auto; margin: 1em 0 .4em; }
+  .scale-svg .step-floor { stroke: var(--border); stroke-width: 1.2; fill: none; }
+  .scale-svg .step-fill { fill: color-mix(in srgb, var(--accent) 18%, transparent); stroke: var(--accent); stroke-width: 1.6; }
+  .scale-svg .step-icon { color: var(--accent); }
+  .scale-svg .arrow { stroke: var(--accent); stroke-width: 1.8; fill: none; stroke-dasharray: 4 5; }
+  .scale-svg .divider { stroke: var(--con, #dc2626); stroke-width: 1.8; stroke-dasharray: 3 4; }
+  .scale-svg text { font-family: var(--sans); fill: var(--text); }
+  .scale-svg text.mono { font-family: var(--mono); fill: var(--text-muted); font-size: 10px; letter-spacing: .06em; }
+  .scale-svg text.big { font-family: var(--display, 'Noto Serif SC'); font-weight: 700; font-size: 15px; }
+  .scale-svg text.danger { fill: var(--con, #dc2626); font-family: var(--mono); font-size: 10px; letter-spacing: .06em; }
+  .scale-foot { font-size: .85rem; color: var(--text-muted); margin-top: .9em; line-height: 1.65; }
+  @media (max-width: 760px) {
+    .scale-svg { min-height: 180px; }
+  }
+
+  /* 轻微入场动画 */
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .reveal.in { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      个人 Agent 的产品形态收敛<span class="brand-sub">跨市场 · 2026-10</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>个人 Agent 的产品形态在 60 天内收敛 <span class="en">· Form Convergence</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">Muse / Dot / Grok Bot / Instinct —— 四家不同基因的公司，在同一个时间窗给出了几乎同构的架构答案。</p>
+      <div class="doc-meta">
+        <span>2026-10-09</span>
+        <span>跨市场</span>
+        <span>个人 Agent</span>
+        <span>Meta / OpenAI / xAI / Instinct</span>
+        <span>产品形态</span>
+        <span>认知裁量权</span>
+        <span>状态：对内</span>
+        <span>时机：进行中</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">60<small>天</small></div><div class="lab">8/11 Grok Bot 到 9/30 Dot</div></div>
+        <div class="hero-stat"><div class="num">4<small>家</small></div><div class="lab">Meta / OpenAI / xAI / Instinct</div></div>
+        <div class="hero-stat"><div class="num">$10<small>B</small></div><div class="lab">Instinct 一个月 4 倍估值</div></div>
+        <div class="hero-stat"><div class="num">$1,300<small>/月</small></div><div class="lab">Instinct 用户经 Agent 支出</div></div>
+      </div>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>过去两年"更强 chat"的争论，在 2026 年 8–9 月被四家公司同时用脚投票结束了 —— 答案不是把聊天框再做深，是<strong>给 Agent 一台自己的电脑</strong>。VM、浏览器、凭据托管、审批护栏、一次性支付卡 —— 这五件事成了"个人 Agent"的新 baseline。接下来 6 个月的护城河不再是模型能力，是用户敢不敢对它说"<em>你来定</em>"。
+    </div>
+
+    <div class="callout callout-accent reveal">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>收敛窗口非常短</strong>：Grok Bot（8/11）→ Muse（9/8）→ Instinct $10B 轮（9/28）→ Dot（9/30），60 天内四家各自给出同构答案。</li>
+        <li><strong>共识架构 5 层</strong>：独立云端 VM / 浏览器 / connectors / 审批 Sentinel / 一次性虚拟卡 —— 不是巧合，是物理约束逼出来的最优解。</li>
+        <li><strong>outbound calling 从差异化变 baseline</strong>：9 月 Muse 和 Instinct Concierge 同步宣布打电话功能。</li>
+        <li><strong>最大赌注不是技术，是认知裁量权</strong>：Instinct 用户敢让 Agent 决定"今晚和朋友吃哪家"、月均 $1,300 经它花出去 —— 这是比订阅费大一个数量级的生意。</li>
+        <li><strong>IM 挂载 vs 独立 app 是真分叉</strong>：Muse → WhatsApp、Dot → Slack/Teams、Instinct → iMessage，三家挤进"用户已经在的地方"；Grok Bot 坚守自家 app。</li>
+        <li><strong>对 LIFT 的直接影响</strong>：L1 错误分类里"擅自决策"将成为高频类目；审批点变一等公民意味着归因必须区分"Agent 的功"与"用户的锅"。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、现象 · 60 天内的集体亮相 ========== -->
+    <h2 id="phenomenon"><span class="sec-num">一</span>60 天内的集体亮相<a href="#phenomenon" class="anchor">#</a></h2>
+    <p class="kicker">— Timeline of a convergence</p>
+
+    <p>2026 年 8 月中旬到 10 月初，个人 Agent 赛道出现了一次近乎同步的产品发布。这不是常见的"厂商互相抄作业"，因为四家的开发周期相互独立；更像<strong>技术栈成熟到某个阈值后的集体结晶</strong>。</p>
+
+    <div class="wave reveal" role="img" aria-label="2026 年 8 月到 9 月，Grok Bot、Muse、Instinct、Dot 四款个人 Agent 产品的发布时间线">
+      <svg class="wave-svg" viewBox="0 0 1000 44" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 22 Q 60 2, 120 22 T 240 22 T 360 22 T 480 22 T 600 22 T 720 22 T 840 22 T 960 22 L 1000 22"
+              fill="none" stroke="currentColor" stroke-width="1.8"
+              stroke-dasharray="4 20" stroke-linecap="round"/>
+      </svg>
+      <div class="wave-track">
+        <div class="wave-node">
+          <div class="wave-dot">1</div>
+          <div class="wave-when">08 / 11</div>
+          <div class="wave-who">Grok Bot</div>
+          <div class="wave-what">xAI beta 上线，SuperGrok Heavy / Cursor Ultra 用户先用。多 Bot 分部门协作，<em>"八爪鱼"</em>模式。</div>
+        </div>
+        <div class="wave-node">
+          <div class="wave-dot">2</div>
+          <div class="wave-when">09 / 08</div>
+          <div class="wave-who">Muse</div>
+          <div class="wave-what">Meta 发布首个消费级个人 Agent，底层 Muse Spark 模型 + Muse Secure VM，原生接入 WhatsApp。</div>
+        </div>
+        <div class="wave-node">
+          <div class="wave-dot">3</div>
+          <div class="wave-when">09 / 28</div>
+          <div class="wave-who">Instinct</div>
+          <div class="wave-what">Series C 完成 $1B / 估值 $10B，距上一轮 $2.5B 仅 33 天。23 岁的 Noah Shinn（Reflexion 一作）操盘。</div>
+        </div>
+        <div class="wave-node">
+          <div class="wave-dot">4</div>
+          <div class="wave-when">09 / 30</div>
+          <div class="wave-who">Dot</div>
+          <div class="wave-what">OpenAI DevDay 压轴，每个 Dot 有独立身份 / 云电脑 / 4000+ 连接器，未来可组团队。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">脚注</div>
+      <p style="margin: .2em 0;">
+        这个窗口内还有两件配套事件值得记下：9 月中 Muse 与 Instinct Concierge <strong>同步宣布 outbound calling</strong>（打电话从差异化变 baseline）；9 月 21 日 xAI 把 Grok Bot 底座升级到 Grok 4.7（针对 harness 原生训练）。四家都在赶同一个窗口。
+      </p>
+    </div>
+
+    <!-- ========== 二、事实卡片 ========== -->
+    <h2 id="facts"><span class="sec-num">二</span>四家事实卡片<a href="#facts" class="anchor">#</a></h2>
+    <p class="kicker">— Side-by-side specs</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>维度</th>
+            <th>Muse</th>
+            <th>Dot</th>
+            <th>Grok Bot</th>
+            <th>Instinct</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th>母体</th>
+            <td>Meta Superintelligence Lab</td>
+            <td>OpenAI</td>
+            <td>xAI</td>
+            <td>Spear Street Technology</td>
+          </tr>
+          <tr>
+            <th>首发日</th>
+            <td>2026-09-08</td>
+            <td>2026-09-30</td>
+            <td>2026-08-11 beta</td>
+            <td>2026-02 邀请制起</td>
+          </tr>
+          <tr>
+            <th>底座模型</th>
+            <td>Muse Spark（4 月已发）</td>
+            <td>GPT-6.1 Sol / Codex</td>
+            <td>Grok 4.7（harness 原生训练）</td>
+            <td>自训（含 τ-bench 血统）</td>
+          </tr>
+          <tr>
+            <th>云端沙箱</th>
+            <td>Muse Secure VM + Sentinel</td>
+            <td>Dot 云电脑（4000+ 连接器）</td>
+            <td>每 Bot 独立 cloud computer</td>
+            <td>its own phone and computer</td>
+          </tr>
+          <tr>
+            <th>主入口</th>
+            <td>Muse app · <strong>WhatsApp</strong></td>
+            <td>ChatGPT · <strong>Slack / Teams</strong></td>
+            <td>自家 app（Mac / Win / iOS）</td>
+            <td><strong>iMessage</strong> + 电话</td>
+          </tr>
+          <tr>
+            <th>协作形态</th>
+            <td>单 Agent + 大量 connectors</td>
+            <td>多 Dot 可组团队（future）</td>
+            <td>多 Bot 跨部门分工</td>
+            <td>Instinct-to-Instinct 协议</td>
+          </tr>
+          <tr>
+            <th>钱包</th>
+            <td>Stripe Link 一次性卡</td>
+            <td>（未披露）</td>
+            <td>（未披露）</td>
+            <td>Stripe Link 一次性卡</td>
+          </tr>
+          <tr>
+            <th>商业模式</th>
+            <td>免费 + 订阅（Muse for SMB 9/29）</td>
+            <td>Pro / Business Premium 订阅捆绑</td>
+            <td>SuperGrok Heavy / Cursor 捆绑</td>
+            <td>早期访问 → 疑似走交易抽成</td>
+          </tr>
+          <tr>
+            <th>目标画像</th>
+            <td>普通人 billions + SMB</td>
+            <td>专业工作者 / 企业员工</td>
+            <td>开发者 / Cursor 用户</td>
+            <td>中产以上"懒得办事"的人</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ========== 三、共识架构 ========== -->
+    <h2 id="consensus"><span class="sec-num">三</span>共识架构 · 五层同心圆<a href="#consensus" class="anchor">#</a></h2>
+    <p class="kicker">— What everyone agreed on, without agreeing</p>
+
+    <p>把四家的架构图叠在一起，重合的部分出奇地一致。这不是因为互抄，是因为"<strong>Agent 要替用户干活</strong>"这件事从技术约束上只能这么做：没有 VM 隔离就不敢给凭据，没有 Sentinel 就不敢让它上网，没有一次性卡就不敢让它付钱。</p>
+
+    <div class="rings reveal">
+      <svg viewBox="0 0 400 400" role="img" aria-label="五层共识架构同心圆：Agent 核心外依次是独立云端电脑、浏览器与登录态、Connectors、审批 Sentinel、钱包"
+           xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="rg-core" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+            <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g style="color: var(--accent)" stroke="currentColor" fill="none" stroke-width="1.6">
+          <!-- 5 层环 -->
+          <circle cx="200" cy="200" r="188" stroke-dasharray="3 4" opacity="0.9"/>
+          <circle cx="200" cy="200" r="152" stroke-dasharray="3 4" opacity="0.85"/>
+          <circle cx="200" cy="200" r="116" stroke-dasharray="3 4" opacity="0.8"/>
+          <circle cx="200" cy="200" r="80" stroke-dasharray="3 4" opacity="0.75"/>
+          <circle cx="200" cy="200" r="44" stroke-width="2.2"/>
+          <circle cx="200" cy="200" r="44" fill="url(#rg-core)" stroke="none"/>
+          <!-- 核心文字 -->
+          <text x="200" y="196" text-anchor="middle" fill="currentColor" stroke="none"
+                style="font-family: var(--sans); font-size: 13px; font-weight: 700;">Agent</text>
+          <text x="200" y="214" text-anchor="middle" fill="currentColor" stroke="none"
+                style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em;" opacity="0.75">model + plan</text>
+          <!-- 环标签位点 -->
+          <circle cx="200" cy="12"  r="3" fill="currentColor" stroke="none"/>
+          <circle cx="200" cy="48"  r="3" fill="currentColor" stroke="none"/>
+          <circle cx="200" cy="84"  r="3" fill="currentColor" stroke="none"/>
+          <circle cx="200" cy="120" r="3" fill="currentColor" stroke="none"/>
+          <circle cx="200" cy="156" r="3" fill="currentColor" stroke="none"/>
+        </g>
+        <g style="color: var(--text-muted)" fill="currentColor" stroke="none"
+           text-anchor="middle"
+           data-font="label">
+          <text x="200" y="8"   style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;">WALLET</text>
+          <text x="200" y="44"  style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;">SENTINEL</text>
+          <text x="200" y="80"  style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;">CONNECTORS</text>
+          <text x="200" y="116" style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;">BROWSER</text>
+          <text x="200" y="152" style="font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;">VM</text>
+        </g>
+      </svg>
+
+      <div class="rings-legend">
+        <div class="rings-layer">
+          <h4><span class="pin" style="background: var(--accent); opacity: .95;"></span>① 独立云端 VM</h4>
+          <small>Muse Secure VM · Dot 云电脑 · Grok Bot cloud computer · Instinct "its own phone and computer" —— Agent 不住在聊天框里，有自己的隔离沙箱。</small>
+        </div>
+        <div class="rings-layer">
+          <h4><span class="pin" style="background: var(--accent); opacity: .80;"></span>② 浏览器 + 登录态</h4>
+          <small>可以打开网页、填表单、维持会话。Grok Bot 的卖点就是"<em>工作在真实工具里完成，不是在 chat 草稿里</em>"。</small>
+        </div>
+        <div class="rings-layer">
+          <h4><span class="pin" style="background: var(--accent); opacity: .65;"></span>③ Connectors</h4>
+          <small>Muse 一次点击接 Canva / Shopify / Stripe / Figma / Notion…；Dot 可连 4000+ 应用；Instinct 直接拿你的 iMessage / 邮箱 / 日历。</small>
+        </div>
+        <div class="rings-layer">
+          <h4><span class="pin" style="background: var(--accent); opacity: .50;"></span>④ 审批 Sentinel</h4>
+          <small>Muse 的 Sentinel 单独 agent 审出站流量；Dot 敏感动作前必问；Instinct active detective 捕获幻觉；<strong>审批点变一等公民</strong>。</small>
+        </div>
+        <div class="rings-layer">
+          <h4><span class="pin" style="background: var(--accent); opacity: .35;"></span>⑤ 一次性虚拟卡</h4>
+          <small>Muse 和 Instinct 都接 Stripe Link：Agent 替你付钱，拿不到真卡号。这不是技术选型，是信任协议的物化。</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">判断</div>
+      <p style="margin: .2em 0;">
+        这五层会沉淀成"<strong>个人 Agent 操作系统</strong>"的事实标准。谁家 agent 没有这五件事，谁就上不了桌 —— 就像今天没有沙箱的浏览器插件也上不了 Chrome Web Store。
+      </p>
+    </div>
+
+    <!-- ========== 四、分化 · 四象限 ========== -->
+    <h2 id="divergence"><span class="sec-num">四</span>真正的分化在两个轴<a href="#divergence" class="anchor">#</a></h2>
+    <p class="kicker">— Where the four actually bet differently</p>
+
+    <p>共识是地基，分化才看出赌注。把四家按两个轴摆出来，就能看清各自在押什么：横轴是<strong>目标用户</strong>（专业工作者 ↔ 普罗大众），纵轴是<strong>入口形态</strong>（独立 app ↔ 挂载到用户已在的 IM）。</p>
+
+    <div class="quad reveal">
+      <div class="quad-wrap">
+        <div class="quad-grid">
+          <!-- 左上：专业 + 独立 app -->
+          <div class="quad-cell">
+            <span class="tag">① 专业 · 独立 app</span>
+            <div class="quad-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+              </svg>
+              Grok Bot
+            </div>
+            <div class="quad-note">开发者 / Cursor 用户。多 Bot 分部门，依附 SuperGrok 和 Cursor 的订阅捆绑。赌<strong>工程师愿意为 Agent 新开一个 app</strong>。</div>
+          </div>
+          <!-- 右上：普罗 + 独立 app -->
+          <div class="quad-cell">
+            <span class="tag">② 普罗 · 独立 app</span>
+            <div class="quad-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              Muse
+            </div>
+            <div class="quad-note">数十亿人的消费级。免费 + 订阅，Meta 规模赌<strong>"开箱即用，无学习曲线"</strong>就是最大护城河。同时也走 WhatsApp 捷径，脚踏两船。</div>
+          </div>
+          <!-- 左下：专业 + 挂 IM -->
+          <div class="quad-cell">
+            <span class="tag">③ 专业 · 挂 IM</span>
+            <div class="quad-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 9V5a3 3 0 0 0-6 0v4"/><rect x="2" y="9" width="20" height="13" rx="2" ry="2"/>
+              </svg>
+              Dot
+            </div>
+            <div class="quad-note">企业专业工作者。挂 ChatGPT / Slack / Teams，把<strong>工作面升级成"办公室"</strong>而不是另开 app。企业 Dot 甚至拥有组织内身份。</div>
+          </div>
+          <!-- 右下：普罗 + 挂 IM -->
+          <div class="quad-cell">
+            <span class="tag">④ 普罗 · 挂 IM</span>
+            <div class="quad-chip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 16.92V21a2 2 0 0 1-2.18 2A19.86 19.86 0 0 1 1 5.18 2 2 0 0 1 3 3h4.09a2 2 0 0 1 2 1.72c.13.96.37 1.9.72 2.8a2 2 0 0 1-.45 2.11L8.09 10.9a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.35 1.84.59 2.8.72A2 2 0 0 1 22 16.92z"/>
+              </svg>
+              Instinct
+            </div>
+            <div class="quad-note">中产以上懒得办事的 C 端。挂 iMessage + 电话，<strong>没有新 UI</strong>。23 岁创始人赌：个人意图接管权是消费软件终局之战。</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: .78rem; color: var(--text-muted); margin: .9em 0 0; font-family: var(--mono); letter-spacing: .04em;">横轴：目标用户（左=专业 / 右=普罗）　纵轴：入口形态（上=独立 app / 下=挂 IM）</p>
+    </div>
+
+    <h3 id="takeaway-divergence">4.1 分化透露的赌注</h3>
+    <ul>
+      <li><strong>Muse</strong> 的赌注是"<em>规模即护城河</em>"：Sensor Tower 报告它发布头几天 73 万次下载，比 Meta AI app 首发还多。Meta 相信只要能把 Agent 塞进 billions 用户的 WhatsApp，模型追赶是时间问题。</li>
+      <li><strong>Dot</strong> 的赌注是"<em>Agent 有身份即员工化</em>"：企业 Dot 在组织内有独立 job title，这是把 Agent 从"工具"抬成"编制"的尝试。</li>
+      <li><strong>Grok Bot</strong> 的赌注是"<em>工程师更愿意为自己的编制买单</em>"：靠 SuperGrok Heavy / Cursor Ultra 等高价订阅，不走补贴路线。</li>
+      <li><strong>Instinct</strong> 的赌注是最激进的 —— "<em>认知裁量权让渡</em>"。详见下一节。</li>
+    </ul>
+
+    <!-- ========== 五、认知裁量权 ========== -->
+    <h2 id="agency"><span class="sec-num">五</span>真正的护城河 · 认知裁量权<a href="#agency" class="anchor">#</a></h2>
+    <p class="kicker">— The real moat is trust, not tokens</p>
+
+    <p>如果 5 层架构会被所有家拉齐，模型能力又在"模型接入被商品化"的大势里趋同，那么个人 Agent 的真正差异化在哪？Nextie 创始人李笛的说法最到位：<strong>看用户什么时候敢把"你来定"三个字交给 Agent</strong>。这是比订阅费大一个数量级的生意。</p>
+
+    <div class="scale reveal" role="img" aria-label="认知裁量权刻度：从'搜索'到'执行'到'裁量'到'付钱'四级跃迁">
+      <div style="font-family: var(--mono); font-size: .76rem; color: var(--text-muted); letter-spacing: .05em;">AUTHORITY LADDER · 用户让渡给 Agent 的权限深度</div>
+
+      <svg class="scale-svg" viewBox="0 0 820 220" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- 地平线 -->
+        <line class="step-floor" x1="20" y1="186" x2="800" y2="186"/>
+
+        <!-- 阶梯 4 级 -->
+        <!-- 1. 搜索（低） -->
+        <rect class="step-fill" x="40" y="150" width="140" height="36" rx="4"/>
+        <!-- 2. 执行 -->
+        <rect class="step-fill" x="200" y="114" width="140" height="72" rx="4"/>
+        <!-- 3. 裁量 -->
+        <rect class="step-fill" x="360" y="76" width="140" height="110" rx="4"/>
+        <!-- 4. 付钱 -->
+        <rect class="step-fill" x="520" y="38" width="260" height="148" rx="4"/>
+
+        <!-- 分水岭：第 2 到第 3 之间 -->
+        <line class="divider" x1="350" y1="24" x2="350" y2="200"/>
+        <text class="danger" x="356" y="36">分水岭 · 开始让渡裁量权</text>
+
+        <!-- 顶部连贯箭头 -->
+        <path class="arrow" d="M 60 142 Q 180 100, 270 108"/>
+        <path class="arrow" d="M 260 108 Q 360 70, 430 70"/>
+        <path class="arrow" d="M 430 68 Q 540 32, 650 32"/>
+        <polygon fill="var(--accent)" points="648 25 668 32 648 39"/>
+
+        <!-- 图标和级标签 -->
+        <g class="step-icon" style="color: var(--accent)" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <!-- 1 search -->
+          <g transform="translate(96 160)"><circle cx="0" cy="0" r="7"/><line x1="5" y1="5" x2="11" y2="11"/></g>
+          <!-- 2 play -->
+          <g transform="translate(263 142)"><polygon points="-7,-8 9,0 -7,8" fill="currentColor" stroke="none"/></g>
+          <!-- 3 scales -->
+          <g transform="translate(425 116)"><line x1="0" y1="-10" x2="0" y2="10"/><line x1="-9" y1="-5" x2="9" y2="-5"/><path d="M-9 -5 L-13 5 L-5 5 Z"/><path d="M9 -5 L5 5 L13 5 Z"/></g>
+          <!-- 4 credit card -->
+          <g transform="translate(640 92)"><rect x="-13" y="-9" width="26" height="18" rx="2"/><line x1="-13" y1="-3" x2="13" y2="-3"/><line x1="-9" y1="5" x2="-3" y2="5"/></g>
+        </g>
+
+        <!-- 标题文字 -->
+        <text class="big" x="110" y="200" text-anchor="middle">① 搜索</text>
+        <text class="big" x="270" y="200" text-anchor="middle">② 执行</text>
+        <text class="big" x="430" y="200" text-anchor="middle">③ 裁量</text>
+        <text class="big" x="650" y="200" text-anchor="middle">④ 付钱</text>
+
+        <!-- 举例 mono -->
+        <text class="mono" x="110" y="214" text-anchor="middle">找附近评分最高的餐厅</text>
+        <text class="mono" x="270" y="214" text-anchor="middle">订晚上 7 点那家</text>
+        <text class="mono" x="430" y="214" text-anchor="middle">"你来定"选个安静的</text>
+        <text class="mono" x="650" y="214" text-anchor="middle">Stripe Link 一次性卡 · $1,300/月</text>
+      </svg>
+
+      <div class="scale-foot">
+        前两格现在的 chat 都能做；<strong>第三格是分水岭</strong> —— 价格、距离、口味、过去踩过的坑放进同一个决策，Agent 替人做判断。Instinct 用户已经把钱包递过去：平均每人每月经由它支出 <strong>$1,300</strong>，场景覆盖国际旅行、日用品、瑜伽课、汽车维修。即便抽 1%，一个活跃用户一年也是约 $156 ARPU —— 对比 ChatGPT 月费，这是数量级的差异。
+      </div>
+    </div>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险</div>
+      <p style="margin: .2em 0;">
+        但裁量权让渡也会翻车。有投资人 Jason Yeh 只让 Instinct"<em>找</em>"有空位的餐厅，它直接替他订下了一个 <strong>取消费 $200</strong> 的座位。这个边界事故 = 技术成本（$200）＋ 信任成本（下一次用户会不会收回"你来定"）。
+      </p>
+    </div>
+
+    <!-- ========== 六、FDE 视角 ========== -->
+    <h2 id="implications"><span class="sec-num">六</span>对 LIFT 和 FDE 工作的影响<a href="#implications" class="anchor">#</a></h2>
+    <p class="kicker">— What this means for eval + attribution</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">三个直接传导</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>L1 错误分类里"擅自决策"将成高频类目。</strong>Instinct 餐厅事故就是典型"越权执行" —— 现有 AgentErrorTaxonomy 里要把这类从"工具使用错误"独立出来、按"用户授予的裁量权等级 vs Agent 实际消耗的裁量权等级"打分。</li>
+        <li><strong>审批点变一等公民 → 归因必须区分"Agent 的功"与"用户的锅"。</strong>当四家都把 Sentinel / active detective / 用户确认做成架构级组件，评测口径里就必须显式记录"<em>这一步是 Agent 决定的，还是用户通过审批追认的</em>"，否则归因会算错账。</li>
+        <li><strong>连接器爆发 = 轨迹采集面骤增。</strong>Muse 一键接 Canva / Shopify / Stripe / Figma / Notion，Dot 支持 4000+ 应用 —— LIFT 的 Trace 层要能标准化这些跨 app 的产物与打分，否则归因到不了 L2。</li>
+      </ul>
+    </div>
+
+    <h3 id="playbook">6.1 我们该做什么（1–2 周）</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动</div>
+      <ol style="margin: .3em 0;">
+        <li>把"<strong>认知裁量权</strong>"写进 LIFT 的 L1 错误库 —— 作为与"工具调用错误"、"工程失误"并列的独立维度。</li>
+        <li>Trace schema 里补一个 <code>approval_point</code> 字段 —— 记录每个敏感动作是 Agent 自决还是用户追认。</li>
+        <li>找一款可触达的个人 Agent（Grok Bot 最可行，SuperGrok Heavy / Cursor Ultra 用户可以直接用）跑通一轮 FDE 实验：同一任务让它跑 10 次，看裁量权消耗的分布是不是稳定。</li>
+      </ol>
+    </div>
+
+    <!-- ========== 七、待观察问题 ========== -->
+    <h2 id="open"><span class="sec-num">七</span>待观察的开放问题<a href="#open" class="anchor">#</a></h2>
+    <ol>
+      <li><strong>IM 挂载 vs 独立 app 哪条路跑赢？</strong>看 Grok Bot 6–12 个月的留存和 Instinct 的 iMessage 转化率。</li>
+      <li><strong>多 Agent 协作是不是伪需求？</strong>Dot 和 Grok Bot 都在押多 Agent 组队，但目前所有 benchmark 都是单 Agent 的；企业场景里真的需要吗？</li>
+      <li><strong>一次性卡能撑住多大 TPV？</strong>Instinct $1,300 / 用户 / 月 × 10 万用户 ≈ 月 1.3 亿美金流水 —— 到 100 万用户的时候，Stripe Link 的欺诈率曲线会不会反噬？</li>
+      <li><strong>Meta 规模路线会不会把其他三家挤出 toC？</strong>Muse 免费 + 2026 Q4 WhatsApp 全球铺开 —— Instinct 的 $10B 估值能守住吗？</li>
+      <li><strong>模型谁家胜出不再决定 Agent 谁家胜出。</strong>如果这个判断成立，模型厂的护城河会不会反而掉队到应用层下面？</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-10-09 初稿（基于 WebSearch 四路并行一手资料）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      相关篇：<a href="./2026-09_agent-sandbox-supervisor-convergence.html">Agent 安全底座收敛</a> ·
+      <a href="./2026-09_agent-runtime-commoditized.html">Agent 运行时被商品化</a> ·
+      <a href="./2026-09_model-access-commoditized.html">模型接入被商品化</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
