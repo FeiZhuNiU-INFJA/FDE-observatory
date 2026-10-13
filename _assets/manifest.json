@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-10-10T09:05:04.765253+00:00",
+  "generated_at": "2026-10-10T09:21:36.165010+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-10_muse-trust-engineered.html",
+      "title": "Muse 真正出彩的不是模型 · Trust, Engineered",
+      "date": "2026-10-10",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Meta",
+        "个人 Agent",
+        "产品形态",
+        "信任工程",
+        "Agent OS"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "已发生",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-10_base-model-unit-economics-turning-point.html",
       "title": "基座单位经济学的拐点 · From Capability Race to Routing Capability",

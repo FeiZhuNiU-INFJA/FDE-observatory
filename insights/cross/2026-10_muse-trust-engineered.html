@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Muse 真正出彩的不是模型，是把「信任」工程化了 · FDE 洞察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@500;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  /* 本页 accent：guardian-cobalt（表达"守护 / 可信契约"的质感） */
+  :root {
+    --accent: #1e40af;
+    --accent-soft: #dbeafe;
+    --accent-deep: #1e3a8a;
+    --accent-ink: #ffffff;
+  }
+  [data-theme="dark"] {
+    --accent: #93c5fd;
+    --accent-soft: #1e3a8a;
+    --accent-deep: #bfdbfe;
+    --accent-ink: #0b1220;
+  }
+
+  /* ============ bespoke 1: 信任契约三层 .pact ============ */
+  .pact {
+    position: relative;
+    margin: 1.6em 0 2em;
+    padding: 1.4em 1.1em 1.1em;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .pact-stack {
+    display: grid;
+    grid-template-rows: auto 44px auto 44px auto;
+    gap: 0;
+  }
+  .pact-row {
+    border: 1.5px solid var(--accent);
+    border-radius: 12px;
+    padding: 1em 1.1em;
+    background: color-mix(in srgb, var(--accent) 5%, var(--surface));
+    position: relative;
+  }
+  .pact-row.inner {
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    border-style: solid;
+  }
+  .pact-row.outer {
+    background: color-mix(in srgb, var(--text-muted) 6%, var(--surface));
+    border-color: var(--border);
+    border-style: dashed;
+  }
+  .pact-row h4 {
+    margin: 0 0 .4em;
+    font-size: .95rem;
+    letter-spacing: .03em;
+    display: flex;
+    align-items: center;
+    gap: .55em;
+  }
+  .pact-row h4 .num {
+    font-family: var(--display, 'Noto Serif SC');
+    color: var(--accent);
+    font-size: 1.3rem;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pact-row small {
+    color: var(--text-muted);
+    font-size: .83rem;
+    line-height: 1.6;
+    display: block;
+  }
+  .pact-gate {
+    display: grid;
+    place-items: center;
+    position: relative;
+    color: var(--accent);
+  }
+  .pact-gate::before,
+  .pact-gate::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    width: 1px;
+    height: 10px;
+    background: var(--accent);
+  }
+  .pact-gate::before { top: 0; }
+  .pact-gate::after  { bottom: 0; }
+  .pact-gate-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .45em;
+    padding: .3em .8em;
+    background: var(--surface);
+    border: 1.5px solid var(--accent);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: var(--accent);
+    letter-spacing: .06em;
+    position: relative;
+    z-index: 1;
+  }
+  .pact-gate-badge svg { width: 14px; height: 14px; }
+  .pact-foot {
+    margin-top: 1em;
+    font-size: .82rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+  }
+  @media (max-width: 760px) {
+    .pact-stack { grid-template-rows: auto 36px auto 36px auto; }
+  }
+
+  /* ============ bespoke 2: Sentinel 分治 .sentry ============ */
+  .sentry {
+    margin: 1.6em 0 2em;
+    padding: 1.3em 1.1em 1em;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .sentry-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 340px;
+    margin: 0 auto;
+  }
+  .sentry-svg .vm-frame {
+    fill: color-mix(in srgb, var(--accent) 5%, transparent);
+    stroke: var(--accent);
+    stroke-width: 1.6;
+    stroke-dasharray: 5 4;
+  }
+  .sentry-svg .brain {
+    fill: color-mix(in srgb, var(--accent) 15%, var(--surface));
+    stroke: var(--accent);
+    stroke-width: 1.6;
+  }
+  .sentry-svg .brain.sentry-brain {
+    fill: color-mix(in srgb, var(--warn, #b45309) 15%, var(--surface));
+    stroke: var(--warn, #b45309);
+  }
+  .sentry-svg .label-main {
+    font-family: var(--display, 'Noto Serif SC');
+    font-weight: 700;
+    font-size: 15px;
+    fill: var(--text);
+  }
+  .sentry-svg .label-mono {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--text-muted);
+    letter-spacing: .06em;
+  }
+  .sentry-svg .label-tag {
+    font-family: var(--mono);
+    font-size: 9.5px;
+    letter-spacing: .07em;
+  }
+  .sentry-svg .arrow-ok {
+    stroke: var(--pro, #16a34a);
+    stroke-width: 2;
+    fill: none;
+    marker-end: url(#arrow-ok);
+  }
+  .sentry-svg .arrow-block {
+    stroke: var(--con, #dc2626);
+    stroke-width: 2;
+    fill: none;
+    stroke-dasharray: 4 4;
+  }
+  .sentry-svg .gate {
+    stroke: var(--warn, #b45309);
+    stroke-width: 2.4;
+    fill: none;
+    stroke-linecap: round;
+  }
+  .sentry-legend {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .5em .9em;
+    margin-top: .9em;
+    font-size: .82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .sentry-legend b {
+    color: var(--text);
+    display: block;
+    font-size: .9rem;
+    margin-bottom: .2em;
+  }
+  @media (max-width: 760px) {
+    .sentry-legend { grid-template-columns: 1fr; }
+  }
+
+  /* ============ bespoke 3: 凭据黑盒 .vault ============ */
+  .vault {
+    margin: 1.6em 0 2em;
+    padding: 1.3em 1.1em 1em;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+  .vault-flow {
+    display: grid;
+    grid-template-columns: 1fr auto 1.1fr auto 1fr;
+    gap: 1em .9em;
+    align-items: center;
+  }
+  .vault-cell {
+    padding: .9em .85em;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    background: var(--bg-elev, var(--surface));
+    text-align: center;
+  }
+  .vault-cell.box {
+    border: 1.8px solid var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+    position: relative;
+  }
+  .vault-cell .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    margin-bottom: .35em;
+  }
+  .vault-cell .main {
+    font-family: var(--display, 'Noto Serif SC');
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.3;
+  }
+  .vault-cell .note {
+    margin-top: .4em;
+    font-size: .78rem;
+    color: var(--text-muted);
+    line-height: 1.45;
+  }
+  .vault-cell.box .main { color: var(--accent); }
+  .vault-arrow {
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+  }
+  .vault-arrow svg { width: 28px; height: 28px; }
+  .vault-arrow .cap {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .05em;
+    color: var(--text-muted);
+    margin-top: .2em;
+    text-align: center;
+    max-width: 80px;
+    line-height: 1.3;
+  }
+  .vault-eye {
+    display: inline-flex;
+    align-items: center;
+    gap: .35em;
+    margin-top: .5em;
+    padding: .25em .55em;
+    border: 1px dashed var(--con, #dc2626);
+    border-radius: 999px;
+    color: var(--con, #dc2626);
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .05em;
+  }
+  .vault-eye svg { width: 12px; height: 12px; }
+  @media (max-width: 820px) {
+    .vault-flow {
+      grid-template-columns: 1fr;
+      grid-auto-rows: auto;
+      gap: .55em;
+    }
+    .vault-arrow svg { transform: rotate(90deg); }
+  }
+
+  /* ============ bespoke 4: 入口拓扑 .topo ============ */
+  .topo {
+    margin: 1.6em 0 2em;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1em;
+  }
+  .topo-card {
+    padding: 1.1em 1em;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    position: relative;
+    transition: transform .2s ease, border-color .2s ease;
+  }
+  .topo-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent);
+  }
+  .topo-card .tag {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .07em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+  }
+  .topo-card h4 {
+    margin: .3em 0 .6em;
+    font-size: 1rem;
+    color: var(--text);
+  }
+  .topo-svg {
+    display: block;
+    width: 100%;
+    height: 150px;
+    margin: .3em 0 .5em;
+  }
+  .topo-svg .user {
+    fill: color-mix(in srgb, var(--accent) 12%, var(--surface));
+    stroke: var(--accent);
+    stroke-width: 1.6;
+  }
+  .topo-svg .ui {
+    fill: color-mix(in srgb, var(--text-muted) 12%, var(--surface));
+    stroke: var(--text-muted);
+    stroke-width: 1.4;
+  }
+  .topo-svg .agent {
+    fill: color-mix(in srgb, var(--pro, #16a34a) 15%, var(--surface));
+    stroke: var(--pro, #16a34a);
+    stroke-width: 1.6;
+  }
+  .topo-svg .line {
+    stroke: var(--text-muted);
+    stroke-width: 1.3;
+    fill: none;
+    stroke-dasharray: 3 3;
+  }
+  .topo-svg text {
+    font-family: var(--mono);
+    font-size: 10px;
+    fill: var(--text);
+    letter-spacing: .04em;
+  }
+  .topo-card .note {
+    font-size: .82rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+    margin-top: .5em;
+  }
+  .topo-card.highlight { border-left: 3px solid var(--accent); }
+  @media (max-width: 760px) {
+    .topo { grid-template-columns: 1fr; }
+  }
+
+  /* 动画 */
+  @keyframes vault-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 25%, transparent); }
+    50%      { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 0%, transparent); }
+  }
+  .vault-cell.box { animation: vault-pulse 3.2s ease-in-out infinite; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vault-cell.box { animation: none; }
+    .reveal, .reveal.in { transition: none; animation: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      Muse · 把信任工程化<span class="brand-sub">跨市场 · 2026-10</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer">
+  <h5>目录</h5>
+  <ul id="drawerToc"></ul>
+</aside>
+
+<div class="container">
+  <aside class="toc-aside">
+    <h5>目录</h5>
+    <ul id="toc"></ul>
+  </aside>
+
+  <article>
+
+    <header class="doc-header">
+      <h1>Muse 真正出彩的不是模型 <span class="en">· Trust, Engineered</span></h1>
+      <p style="font-size: 1.05rem; color: var(--text-muted); margin-top: -.3em;">把"你敢不敢让 Agent 替你花钱"这个最软的问题，拆成了五件可审计的硬工程。</p>
+      <div class="doc-meta">
+        <span>2026-10-10</span>
+        <span>跨市场</span>
+        <span>Meta</span>
+        <span>个人 Agent</span>
+        <span>产品形态</span>
+        <span>信任工程</span>
+        <span>Agent OS</span>
+        <span>状态：对内</span>
+        <span>时机：已发生</span>
+        <span>信心：中</span>
+      </div>
+
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">2<small>个 Agent</small></div><div class="lab">Muse 做事 + Sentinel 守门</div></div>
+        <div class="hero-stat"><div class="num">0<small></small></div><div class="lab">Muse 能看到的凭据与卡号</div></div>
+        <div class="hero-stat"><div class="num">1<small>个 VM</small></div><div class="lab">每个用户独占的"数字私宅"</div></div>
+        <div class="hero-stat"><div class="num">∞<small></small></div><div class="lab">用户可随时撤回的授权</div></div>
+      </div>
+
+      <p style="font-size: .85rem; color: var(--text-muted); margin-top: 1em;">
+        信源：
+        <a href="https://about.fb.com/news/2026/09/introducing-muse-personal-ai-agent/" rel="noopener">Meta Newsroom · Introducing Muse</a> ·
+        <a href="https://about.fb.com/news/2026/07/meta-ai-muse-spark-doesnt-just-think-it-acts/" rel="noopener">Muse Spark 1.1 Doesn't Just Think, It Acts</a> ·
+        <a href="https://ai.meta.com/blog/introducing-muse-spark-meta-model-api/" rel="noopener">Muse Spark 1.1 API</a>
+      </p>
+    </header>
+
+    <div class="lede">
+      <strong>核心论点：</strong>把 Muse 当"Meta 版 ChatGPT"是对它的误读。真正出彩的是——它第一次把 LLM 产品的默认范式<strong>从「越界的礼貌助理」改成了「有封地的受托人」</strong>：Agent 住在自己的虚拟机里、要出门必须过另一个 Agent 的审批、碰钱必须用临时虚拟卡、看凭据只能用不能读。这些约束合在一起不是"安全特性"，是把<strong>消费者让渡控制权的那条心理闸门</strong>从模糊的"品牌好感"物化成了可审计的工程契约。
+    </div>
+
+    <div class="callout callout-accent reveal">
+      <div class="callout-tag">一页要点</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>Secure VM = Agent 的封地</strong>：Muse 不再寄居在聊天框进程里，每个用户一台专属云电脑，与 Meta 的 ad system / 其他 Agent 物理隔离。</li>
+        <li><strong>Sentinel = 第一个消费级"守门人进程"</strong>：Muse 做事、Sentinel 独立审出站流量 —— 把过去藏在模型 system prompt 里的"安全自律"拆成了另一个 agent 的职责，变 observable。</li>
+        <li><strong>凭据黑盒</strong>：Muse 用你的 Gmail / Stripe，但看不见密码和卡号。这不是技术选型是信任协议 —— 它承认"Agent 不该被信任到看见你的卡号"。</li>
+        <li><strong>审批点作为一等公民</strong>：发邮件 / 付钱前必问，并给用户留一条"完整 audit trail"。这把 Agent 和用户的权责边界写成了产品层级的 UI。</li>
+        <li><strong>入口倒置</strong>：Agent 在远端 VM，前端挂到 WhatsApp —— 没有新 UI 要学。Muse 把"用户看到的 app"和"Agent 运行的地方"拆开了。</li>
+        <li><strong>这些加起来不是防御，是进攻</strong>：Meta 用工程契约把"你敢不敢把钱包递过来"这个认知裁量权的门槛，从消费者的信任直觉里挪到了可核验的技术合约上。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 一、Muse 是什么 ========== -->
+    <h2 id="what"><span class="sec-num">一</span>Muse 到底是什么<a href="#what" class="anchor">#</a></h2>
+    <p class="kicker">— Not another chatbot</p>
+
+    <p>Meta 于 2026-09-08 发布 Muse，官方定位 "<em>世界第一款面向所有人的个人 AI Agent</em>"。表面是 iOS/Android/Web 三端 app + WhatsApp 挂载，底层模型是 Muse Spark 1.1（Meta Superintelligence Labs 的旗舰 multimodal reasoning model）。但如果只看模型表现，这是一款"用 Meta 自己的模型做一款 ChatGPT 竞品"的平淡产品 —— 真正出彩的是<strong>它承载模型的运行时</strong>。</p>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">官方措辞里的信号</div>
+      <ul style="margin: .3em 0;">
+        <li>"personal agents need a <strong>new kind of secure computer</strong>" —— 不是说"更安全的助理"，是说"新的计算机形态"。</li>
+        <li>"houses both the agent and a person's data" —— Agent 和数据同住一台 VM，这是把过去散落的"你的日历 / 邮件 / 消息"物化成了一处"数字住址"。</li>
+        <li>"Muse <strong>can use</strong> credentials <strong>without seeing them</strong>" —— 这句话一个字都不能省，这是整个信任契约的核心语法。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 二、信任契约三层 ========== -->
+    <h2 id="pact"><span class="sec-num">二</span>信任契约 · 三层封地<a href="#pact" class="anchor">#</a></h2>
+    <p class="kicker">— The envelope that makes "it acts for you" sayable</p>
+
+    <p>把 Muse 的产品层级图叠出来看，不是 UI → 模型 → API 的常规三层，而是一张<strong>把 Agent 当成"有权能也有边界的受托人"</strong>的契约图：你对 Agent 说话 → Agent 在它的封地里干活 → 出门必须过门。</p>
+
+    <div class="pact reveal" aria-label="Muse 三层信任契约：用户对话层 / Agent 封地层 / 外部世界">
+      <div class="pact-stack">
+
+        <div class="pact-row outer">
+          <h4><span class="num">③</span>外部世界 · Internet / Gmail / Stripe / Instagram</h4>
+          <small>Agent 要和真实世界交互的目的地。<strong>没有通行证就上不去</strong>。</small>
+        </div>
+
+        <div class="pact-gate">
+          <span class="pact-gate-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            SENTINEL · 独立进程审批
+          </span>
+        </div>
+
+        <div class="pact-row inner">
+          <h4><span class="num">②</span>Agent 封地 · Muse Secure VM</h4>
+          <small>每个用户一台专属云电脑：浏览器 / 文件 / 凭据库 / Muse 本尊 / Sentinel 都住在这里。<strong>与 Meta ad system 和其他用户的 Agent 物理隔离</strong>。</small>
+        </div>
+
+        <div class="pact-gate">
+          <span class="pact-gate-badge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 6 9 17l-5-5"/>
+            </svg>
+            APPROVAL · 敏感动作用户追认
+          </span>
+        </div>
+
+        <div class="pact-row">
+          <h4><span class="num">①</span>对话层 · Muse app / WhatsApp</h4>
+          <small>人在哪就在哪 —— WhatsApp 挂载让 Agent 没有新 UI。<strong>这一层只收意图，不执行</strong>。</small>
+        </div>
+
+      </div>
+
+      <div class="pact-foot">
+        三层之间的两道门不是修辞 —— 它们是产品里真实存在的、可以在 audit trail 里逐行查看的审批点。这把"要不要让 Agent 替你买东西"这个<strong>模糊的消费者犹豫</strong>，变成了"每一笔都看得见、都可追溯"的<strong>工程契约</strong>。
+      </div>
+    </div>
+
+    <!-- ========== 三、Sentinel 分治 ========== -->
+    <h2 id="sentry"><span class="sec-num">三</span>Sentinel · 消费级 Agent 的第一个"守门人进程"<a href="#sentry" class="anchor">#</a></h2>
+    <p class="kicker">— Externalizing self-restraint</p>
+
+    <p>Muse 做得最反直觉的决定是：<strong>把"安全自律"从模型内部拆出来，变成另一个独立的 Agent</strong>。过去 LLM 产品里的"别乱发邮件"是写在 system prompt 里的叮嘱，模型要同时扮演"干活的员工"和"守规矩的保安"。Muse 的做法是直接雇两个 agent：Muse 做事，Sentinel 守门，<strong>所有出站流量必须 Sentinel 放行</strong>。</p>
+
+    <div class="sentry reveal">
+      <svg class="sentry-svg" viewBox="0 0 820 300" xmlns="http://www.w3.org/2000/svg"
+           role="img" aria-label="Muse Secure VM 内双 Agent 分治：Muse 本尊负责干活、Sentinel 独立进程审批所有出站请求">
+        <defs>
+          <marker id="arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--pro, #16a34a)"/>
+          </marker>
+        </defs>
+
+        <!-- 外部世界 -->
+        <g>
+          <rect x="680" y="100" width="130" height="100" rx="10"
+                fill="color-mix(in srgb, var(--text-muted) 10%, var(--surface))"
+                stroke="var(--text-muted)" stroke-width="1.4" stroke-dasharray="4 4"/>
+          <text x="745" y="140" text-anchor="middle" class="label-main">Internet</text>
+          <text x="745" y="162" text-anchor="middle" class="label-mono">Gmail · Stripe · Shopify</text>
+          <text x="745" y="180" text-anchor="middle" class="label-mono">Instagram · Canva</text>
+        </g>
+
+        <!-- VM 封地 -->
+        <rect class="vm-frame" x="30" y="30" width="580" height="240" rx="18"/>
+        <text x="320" y="55" text-anchor="middle" class="label-mono" style="letter-spacing: .14em;">MUSE SECURE VM · 用户专属封地</text>
+
+        <!-- Muse 本尊 -->
+        <g>
+          <rect class="brain" x="80" y="100" width="170" height="110" rx="14"/>
+          <text x="165" y="140" text-anchor="middle" class="label-main">Muse</text>
+          <text x="165" y="162" text-anchor="middle" class="label-mono">plan · tool-use</text>
+          <text x="165" y="180" text-anchor="middle" class="label-mono" style="fill: var(--text);">「我要发邮件」</text>
+          <!-- 图标 -->
+          <g stroke="var(--accent)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="165" cy="118" r="7"/>
+            <path d="M158 118h14"/>
+          </g>
+        </g>
+
+        <!-- Sentinel 守门 -->
+        <g>
+          <rect class="brain sentry-brain" x="340" y="100" width="170" height="110" rx="14"/>
+          <text x="425" y="140" text-anchor="middle" class="label-main" style="fill: var(--warn, #b45309);">Sentinel</text>
+          <text x="425" y="162" text-anchor="middle" class="label-mono">egress gate</text>
+          <text x="425" y="180" text-anchor="middle" class="label-mono" style="fill: var(--text);">「这单超预算，问用户」</text>
+          <!-- 盾牌 icon -->
+          <g stroke="var(--warn, #b45309)" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M425 112 l-8 3 v6 c0 5 4 9 8 11 c4 -2 8 -6 8 -11 v-6 z"/>
+          </g>
+        </g>
+
+        <!-- Muse -> Sentinel 请求 -->
+        <line class="arrow-ok" x1="252" y1="155" x2="338" y2="155"/>
+        <text x="295" y="146" text-anchor="middle" class="label-tag" style="fill: var(--pro, #16a34a);">request</text>
+
+        <!-- Sentinel 门限 -->
+        <path class="gate" d="M610 90 L610 220"/>
+        <text x="610" y="80" text-anchor="middle" class="label-tag" style="fill: var(--warn, #b45309);">GATE</text>
+
+        <!-- 放行 -->
+        <path class="arrow-ok" d="M512 135 Q 560 115, 680 125"/>
+        <text x="585" y="105" text-anchor="middle" class="label-tag" style="fill: var(--pro, #16a34a);">✓ 放行</text>
+
+        <!-- 拦截 -->
+        <path class="arrow-block" d="M512 180 Q 560 215, 605 215"/>
+        <text x="580" y="245" text-anchor="middle" class="label-tag" style="fill: var(--con, #dc2626);">✗ 问用户</text>
+
+      </svg>
+
+      <div class="sentry-legend">
+        <div><b>职责分离</b>Muse 只管推理和产出，Sentinel 只管审查流量 —— 两个 agent 不共享上下文，Muse 的 prompt 被攻陷不会直接污染守门。</div>
+        <div><b>默认拒绝</b>"Nothing Muse does reaches the internet unless the Sentinel approves it." —— 这是白名单模型，不是黑名单。</div>
+        <div><b>Observable</b>每次审批决策进 audit trail，用户可以看，可以回溯 —— 第一次把 LLM 的"安全动作"做成了可审计的产品特性。</div>
+      </div>
+    </div>
+
+    <div class="callout callout-pro">
+      <div class="callout-tag">为什么这是大事</div>
+      <p style="margin: .2em 0;">
+        LLM 的 jailbreak、prompt injection 之所以难治，是因为"干活"和"自律"住在同一个模型的同一次推理里 —— 攻击者能同时越过两者。Sentinel 把两者拆成不共享 context 的两个 agent，等于<strong>把"信任边界"从模型 token 平面抬到了进程平面</strong>。这是 Agent 产品从"调教提示词"升级到"工程架构"的分水岭。
+      </p>
+    </div>
+
+    <!-- ========== 四、凭据黑盒 ========== -->
+    <h2 id="vault"><span class="sec-num">四</span>凭据黑盒 · Agent 能用但不能读<a href="#vault" class="anchor">#</a></h2>
+    <p class="kicker">— Credentials you give it, but not show it</p>
+
+    <p>最优雅的一句官方措辞是："<em>Muse has no visibility into people's passwords or payment methods. Any credentials a person shares with Muse go into secure storage, so Muse can use them without seeing them.</em>" 这不是产品特性，是重新定义了"<strong>信任的粒度</strong>"：用户授予 Agent 的是"可执行"而不是"可知悉"。</p>
+
+    <div class="vault reveal" aria-label="凭据黑盒：用户提交密码到安全存储，Agent 签出请求但看不见原文">
+      <div class="vault-flow">
+
+        <div class="vault-cell">
+          <div class="eyebrow">USER</div>
+          <div class="main">你的凭据</div>
+          <div class="note">Gmail 密码 · Stripe 卡号 · 日历 token</div>
+        </div>
+
+        <div class="vault-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+          <div class="cap">注入<br/>Secure Storage</div>
+        </div>
+
+        <div class="vault-cell box">
+          <div class="eyebrow">BLACK BOX</div>
+          <div class="main">Credential Vault<br/>+ Request Signer</div>
+          <div class="note">在 VM 内但 Muse 不可读 —— Muse 调<code style="font-size:.78rem;">sign(target, intent)</code>，拿到的是签好的请求，不是明文凭据。</div>
+          <div class="vault-eye">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+              <line x1="1" y1="1" x2="23" y2="23"/>
+            </svg>
+            Muse 的视野盲区
+          </div>
+        </div>
+
+        <div class="vault-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14M13 6l6 6-6 6"/>
+          </svg>
+          <div class="cap">签好的<br/>HTTPS 请求</div>
+        </div>
+
+        <div class="vault-cell">
+          <div class="eyebrow">TARGET</div>
+          <div class="main">外部服务</div>
+          <div class="note">Gmail 收到的是「来自你的授权请求」，不知道中间经过了 Agent。</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">这一改隐含三个变化</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>Prompt injection 不再能偷凭据</strong>：就算攻击者让 Muse 吐出"记忆里的 Stripe 卡号"，Muse 根本没见过它。</li>
+        <li><strong>审计口径天然干净</strong>：所有 outbound 请求都是 Signer 签的，日志里一笔一笔对得上，没有"模型偷偷用了 token"的灰区。</li>
+        <li><strong>把"可执行"和"可知悉"解耦</strong>这件事，是消费者 Agent 从"玩具"升到"受托人"的最关键一跃 —— 你雇一个人类管家，也不会把密码本直接给他。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 五、入口倒置 ========== -->
+    <h2 id="topo"><span class="sec-num">五</span>入口倒置 · UI 在 WhatsApp，Agent 在远端<a href="#topo" class="anchor">#</a></h2>
+    <p class="kicker">— The UI is where you already live</p>
+
+    <p>常规聊天 app 的拓扑是：UI 和 Agent 在同一个 app 进程里。Muse 把这个拓扑拆开了：<strong>UI 挂到 WhatsApp（30 亿月活）</strong>，Agent 住在远端 VM 里。这意味着用户的"交互表面"没有迁移成本（给另一个联系人发消息而已），但 Agent 拿到的是一台可以长线作业、关 app 也不停的工作机。</p>
+
+    <div class="topo reveal">
+
+      <div class="topo-card">
+        <span class="tag">① 传统 Chat</span>
+        <h4>UI = Agent 进程</h4>
+        <svg class="topo-svg" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- 用户 -->
+          <circle class="user" cx="40" cy="75" r="22"/>
+          <text x="40" y="79" text-anchor="middle">USER</text>
+          <!-- UI+Agent 合体 -->
+          <rect class="ui" x="110" y="40" width="150" height="70" rx="10"/>
+          <text x="185" y="68" text-anchor="middle">Chat UI</text>
+          <text x="185" y="88" text-anchor="middle">+ Agent 同进程</text>
+          <!-- 连线 -->
+          <path class="line" d="M62 75 L110 75"/>
+          <text x="86" y="68" text-anchor="middle" style="font-size:9px;">messages</text>
+        </svg>
+        <div class="note">关 app = Agent 停。短会话适合，长任务难做。<strong>UI 创新成本 = 用户迁移成本</strong>。</div>
+      </div>
+
+      <div class="topo-card highlight">
+        <span class="tag">② Muse 拓扑</span>
+        <h4>UI 挂 WhatsApp，Agent 在远端</h4>
+        <svg class="topo-svg" viewBox="0 0 300 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <!-- 用户 -->
+          <circle class="user" cx="30" cy="75" r="20"/>
+          <text x="30" y="79" text-anchor="middle">USER</text>
+          <!-- WhatsApp UI -->
+          <rect class="ui" x="80" y="55" width="80" height="40" rx="8"/>
+          <text x="120" y="78" text-anchor="middle">WhatsApp</text>
+          <!-- 远端 VM -->
+          <rect class="agent" x="195" y="30" width="95" height="90" rx="10"/>
+          <text x="242" y="58" text-anchor="middle">Secure VM</text>
+          <text x="242" y="76" text-anchor="middle" style="font-size:9px;">Muse</text>
+          <text x="242" y="90" text-anchor="middle" style="font-size:9px;">Sentinel</text>
+          <text x="242" y="106" text-anchor="middle" style="font-size:9px;">Browser</text>
+          <!-- 连线 -->
+          <path class="line" d="M50 75 L80 75"/>
+          <path class="line" d="M160 75 L195 75"/>
+          <text x="178" y="68" text-anchor="middle" style="font-size:9px;">long-run</text>
+        </svg>
+        <div class="note"><strong>关 app 也在跑</strong>："Muse keeps working after people close the app, and comes back when something changes."  —— 这是 chat 产品难以模仿的架构红利。</div>
+      </div>
+
+    </div>
+
+    <div class="callout callout-info">
+      <div class="callout-tag">副作用</div>
+      <p style="margin: .2em 0;">
+        这个倒置还顺手解决了一个历史难题：<strong>Agent 的通知权和打扰权</strong>。常规 chat 应用你不打开它它就死，Muse 的 Agent 一直活在远端，但<strong>通知走 WhatsApp 系统</strong> —— 用户的操作系统替它管了"什么时候可以打扰我"。Agent 不需要再争取"notification 权限"这类用户不想给的东西。
+      </p>
+    </div>
+
+    <!-- ========== 六、也要讲清：没做到位的三件事 ========== -->
+    <h2 id="gaps"><span class="sec-num">六</span>也要讲清 · 还没做到位的三件事<a href="#gaps" class="anchor">#</a></h2>
+    <p class="kicker">— The honest limitations</p>
+
+    <div class="callout callout-warn">
+      <div class="callout-tag">风险 / 隐忧</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>Confidential VM 还在路上</strong>：Meta 承认 "<em>later this year</em>" 才会推 Muse Confidential VM（用户持密钥、Meta 自己也无法访问）。在那之前，Secure VM 保护的是"别的用户 / 别的 Agent"，但没保护"Meta 自己能看到你"。信任契约里最硬的那块砖还没砌。</li>
+        <li><strong>Sentinel 的决策透明度未知</strong>：Sentinel "approves or asks" 的具体规则没公开 —— 它是另一个 LLM 还是规则引擎？决策可不可以被用户调？被攻破会怎样？目前只有产品层面的承诺，没有技术 spec 可核验。</li>
+        <li><strong>IM 挂载是双刃剑</strong>：WhatsApp 规模红利很大，但也意味着 Muse 的消息也要走 WhatsApp 的协议 / 法规 / 合规（EU DMA、端到端加密边界）。<strong>Agent 的推理数据能不能在 E2E 协议里合规地流转，是未解命题</strong>。</li>
+      </ul>
+    </div>
+
+    <!-- ========== 七、对 LIFT / FDE 的启发 ========== -->
+    <h2 id="lift"><span class="sec-num">七</span>对 LIFT / FDE 工作的启发<a href="#lift" class="anchor">#</a></h2>
+    <p class="kicker">— What to steal</p>
+
+    <div class="callout callout-accent">
+      <div class="callout-tag">三个可直接借鉴的做法</div>
+      <ul style="margin: .3em 0;">
+        <li><strong>把"审批点"做成 Trace 的一等公民字段</strong>：Muse 的 audit trail 示范了"每一个敏感动作要有一条可追溯记录"。在 LIFT 的 Trace schema 里补 <code>approval_point</code>、<code>approver_role</code>（agent-self / sentinel / user），归因才算得清"这锅谁背"。</li>
+        <li><strong>把"安全自律"从模型中拆出去</strong>：如果我们评测 Agent 产品的"错误率"，就该区分"Muse 本尊错了"和"Sentinel 没拦住" —— 这是两个独立的归因维度。单个黑盒的 pass@1 掩盖了组件级的真实表现。</li>
+        <li><strong>"可执行 ≠ 可知悉"进评测口径</strong>：评测里要有一类专门的 case 考察 Agent 对敏感数据的"看见但不该用"行为。Muse 的 Credential Vault 示范：授权是分维度的，不是一刀切的信任。</li>
+      </ul>
+    </div>
+
+    <h3 id="playbook">7.1 一周内可以做的事</h3>
+    <div class="callout callout-pro">
+      <div class="callout-tag">行动</div>
+      <ol style="margin: .3em 0;">
+        <li>翻一遍 LIFT 的 L1 错误库：把"越权执行"、"审批跳过"、"凭据泄露"做成独立维度，而不是归在"工具调用错误"的大桶里。</li>
+        <li>给 Trace schema 加 <code>approval_point</code> / <code>approver</code> 字段 —— 不等 Muse 出 API 文档，先从"等价结构"落地在我们的测试 agent 上。</li>
+        <li>找一个 Muse 的内测账号，跑一组"故意越界"的 adversarial case（让 Agent 擅自订机票 / 擅自发邮件），录 audit trail 作为归因样本。</li>
+      </ol>
+    </div>
+
+    <!-- ========== 八、待观察 ========== -->
+    <h2 id="open"><span class="sec-num">八</span>待观察问题<a href="#open" class="anchor">#</a></h2>
+    <ol>
+      <li><strong>Sentinel 是不是开源出去的"Agent 安全标准"？</strong>如果 Meta 把 Sentinel 的决策协议开放，它可能成为跨厂商的"门卫层标准" —— 这比做一个 app 大得多。</li>
+      <li><strong>一次性虚拟卡的 TPV 增速</strong>：参考 Instinct 的 $1,300/用户/月数据，Muse 规模 ×10 后 Stripe Link 一次性卡的欺诈率曲线会不会反噬？</li>
+      <li><strong>Confidential VM 落地后 Meta 的生意怎么算？</strong>如果连 Meta 都看不到用户数据，Muse 的训练闭环靠什么反哺？</li>
+      <li><strong>Muse 的"记忆忘记"接口会不会成为 GDPR / 中国个保法的事实标准？</strong>它第一次把"用户可指令 Agent 忘记某条事实"做进产品，这个 UX 原子操作可能被监管借用。</li>
+      <li><strong>Sentinel 本身被攻陷会发生什么？</strong>两个 Agent 不共享 context 不等于不能被同时攻 —— 一个瞄准 context 污染，一个瞄准审批规则漏洞。消费级 Agent 的红队方法学需要重建。</li>
+    </ol>
+
+    <hr />
+    <p style="font-size: .85rem; color: var(--text-muted); text-align: center;">
+      修订记录：2026-10-10 初稿 · 基于 Meta Newsroom 一手公告与官方博客原文抽取 ·
+      与姊妹篇
+      <a href="./2026-10_personal-agent-form-converges.html">《个人 Agent 的产品形态收敛》</a>
+      互为上下文（本文聚焦 Muse 单款产品的工程细节）
+    </p>
+
+    <div class="doc-footer">
+      <a href="../../insights/index.html">← 洞察总索引</a>
+      <span style="margin: 0 .6em; color: var(--text-muted);">·</span>
+      相关篇：<a href="./2026-10_personal-agent-form-converges.html">个人 Agent 产品形态收敛</a> ·
+      <a href="./2026-09_agent-sandbox-supervisor-convergence.html">Agent 安全底座收敛</a> ·
+      <a href="./2026-09_capability-control-same-curve.html">能力与失控同曲线</a>
+    </div>
+
+  </article>
+</div>
+
+<script src="../../_assets/insight.js"></script>
+</body>
+</html>
