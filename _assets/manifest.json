@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-10-10T09:21:36.165010+00:00",
+  "generated_at": "2026-10-21T10:19:20.954332+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-10_claude-managed-agents-dynamic-workflows.html",
+      "title": "Claude 开始自己写工作流 · Managed Agents · Dynamic Workflows",
+      "date": "2026-10-21",
+      "audience": "cross",
+      "status": "对内",
+      "tags": [
+        "Anthropic",
+        "Managed Agents",
+        "Durable Workflow",
+        "Agent 运行时",
+        "多 Agent 编排"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "已发生",
+        "confidence": "高"
+      }
+    },
     {
       "path": "insights/cross/2026-10_muse-trust-engineered.html",
       "title": "Muse 真正出彩的不是模型 · Trust, Engineered",
