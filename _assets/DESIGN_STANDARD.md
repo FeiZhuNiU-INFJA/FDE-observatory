@@ -201,6 +201,7 @@
 | ledger-navy | `#153a5c` / dark `#89b7d8` | 基座单位经济学拐点（跨市场洞察） |
 | ledger-emerald | `#1b5e3f` / dark `#7fcfa0` | FDE 工业化 · Anthropic $100M（跨市场洞察） |
 | guardian-cobalt | `#1e40af` / dark `#93c5fd` | Muse · 把信任工程化（跨市场洞察） |
+| petroleum-plum | `#514368` / dark `#c7b5e9` | DeepSeek Super Agent · 事件驱动控制面（开源拆解） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`

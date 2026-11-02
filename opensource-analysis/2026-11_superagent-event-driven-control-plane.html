@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="结合 DeepSeek dsh-superagent-prototype 源码，拆解 Router/Worker、事件订阅、任务授权、持久化交付和恢复边界，区分设计愿景与公开实现。" />
+<title>DeepSeek Super Agent · 把多任务协同搬进控制面 · 开源拆解</title>
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root { --accent:#514368; --accent-soft:#eeeaf4; --accent-deep:#3d3053; --accent-ink:#392d4b; }
+  [data-theme="dark"] { --accent:#c7b5e9; --accent-soft:#2b2438; --accent-deep:#dacbf3; --accent-ink:#e8def8; }
+  .sa-subtitle { font-size:1.08rem; max-width:48em; }
+  .sa-source { font-size:.86rem; overflow-wrap:anywhere; }
+  .sa-hash { overflow-wrap:anywhere; word-break:break-all; }
+  .sa-figure { margin:1.6em 0; padding:1.2em; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow); }
+  .sa-figure:hover { border-color:var(--accent); }
+  .sa-eyebrow { font:600 .7rem var(--mono); color:var(--accent); letter-spacing:.11em; margin-bottom:.8em; }
+  .sa-caption { font-size:.83rem; color:var(--text-soft); margin:.9em 0 0; line-height:1.7; }
+  .sa-scroll { overflow-x:auto; min-width:0; }
+  .sa-figure svg { display:block; width:100%; height:auto; }
+  .sa-figure svg text { font-family:var(--mono); fill:var(--text); font-size:13px; }
+  .sa-figure svg .sa-label { font-family:var(--sans); font-size:15px; font-weight:600; }
+  .sa-figure svg .sa-small { font-size:11px; fill:var(--text-soft); }
+  .sa-figure svg .sa-accent { fill:var(--accent); }
+  .sa-figure svg .sa-node { fill:var(--bg-soft); stroke:var(--border-strong); stroke-width:1.4; }
+  .sa-figure svg .sa-accent-node { fill:var(--accent-soft); stroke:var(--accent); stroke-width:1.5; }
+  .sa-figure svg .sa-line { fill:none; stroke:var(--text-muted); stroke-width:1.5; }
+  .sa-shift svg { min-width:560px; }
+  .sa-shift .sa-dots { stroke-dasharray:5 5; }
+  .sa-architecture { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(220px,1fr); gap:1.1em; align-items:stretch; }
+  .sa-architecture svg { min-width:520px; }
+  .sa-architecture [data-sa-node] { cursor:pointer; outline:none; }
+  .sa-architecture [data-sa-node]:hover rect,
+  .sa-architecture [data-sa-node]:focus rect,
+  .sa-architecture [data-sa-node].sa-selected rect { fill:var(--accent-soft); stroke:var(--accent); stroke-width:2.5; }
+  .sa-detail { padding:1em; border-left:3px solid var(--accent); border-radius:0 10px 10px 0; background:var(--bg-soft); min-width:0; }
+  .sa-detail h4 { margin:0 0 .5em; font-size:1rem; }
+  .sa-detail p { font-size:.85rem; margin:.6em 0; }
+  .sa-detail a { font-size:.78rem; overflow-wrap:anywhere; }
+  .sa-detail-basis { color:var(--accent); font:500 .7rem var(--mono); margin-bottom:.6em; }
+  .sa-controls { display:flex; flex-wrap:wrap; gap:.4em; margin-top:1em; }
+  .sa-controls button { font:500 .75rem var(--mono); padding:.4em .7em; border:1px solid var(--border-strong); border-radius:6px; color:var(--text-soft); background:var(--surface); cursor:pointer; transition:transform .15s; }
+  .sa-controls button[aria-pressed="true"] { background:var(--accent-soft); color:var(--accent-ink); border-color:var(--accent); }
+  .sa-controls button:hover { transform:translateY(-2px); }
+  .sa-controls button:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+  .sa-timeline svg { min-width:680px; }
+  .sa-timeline .sa-track { stroke:var(--accent); stroke-width:2; fill:none; }
+  .sa-timeline .sa-event { fill:var(--surface); stroke:var(--accent); stroke-width:2; }
+  .sa-timeline .sa-index { fill:var(--accent); font-size:11px; }
+  .sa-crash svg { min-width:610px; }
+  .sa-crash .sa-danger { fill:var(--warn-soft); stroke:var(--warn); stroke-width:1.3; }
+  .sa-crash .sa-warn-label { fill:var(--warn); }
+  .sa-code { padding:1em 1.2em; border:1px solid var(--border); border-radius:12px; background:var(--code-bg); overflow-x:auto; font:400 .8rem/1.8 var(--mono); white-space:pre; }
+  .sa-code code { font:inherit; padding:0; background:none; }
+  .sa-evidence { font-size:.8rem; color:var(--text-muted); }
+  .sa-matrix td:first-child { min-width:100px; font-weight:600; }
+  .sa-reading-map td:first-child { min-width:140px; }
+  .sa-reading-map code { overflow-wrap:anywhere; }
+  .sa-measure { display:grid; grid-template-columns:repeat(3,1fr); gap:.8em; margin:1.2em 0; }
+  .sa-measure-cell { padding:1em; border:1px solid var(--border); border-radius:12px; background:var(--surface); }
+  .sa-measure-num { font:600 1.6rem var(--display); color:var(--accent); }
+  .sa-measure-label { font-size:.8rem; color:var(--text-soft); margin-top:.5em; }
+  .sa-verdict { border-top:3px solid var(--accent); padding:1.1em 1.3em; background:var(--accent-soft); border-radius:0 0 12px 12px; margin:1.5em 0; }
+  .sa-verdict p { color:var(--accent-ink); }
+  .sa-bibliography li { font-size:.87rem; margin:.8em 0; overflow-wrap:anywhere; }
+  @media(max-width:860px) { .sa-architecture { grid-template-columns:1fr; } .sa-detail { min-height:180px; } }
+  @media(max-width:560px) { .sa-figure { padding:.9em; } .sa-measure { grid-template-columns:1fr; } .sa-measure-cell { display:flex; gap:1em; align-items:center; } .sa-measure-num { min-width:100px; } .sa-measure-label { margin:0; } }
+  @media(prefers-reduced-motion:reduce) { .sa-controls button { transition:none; } .sa-controls button:hover { transform:none; } .sa-figure.reveal { opacity:1!important; transform:none!important; transition:none!important; } }
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+  <div class="brand"><span class="brand-home"><a href="../index.html">← 首页</a></span>DeepSeek Super Agent<span class="brand-sub">开源拆解 · 2026-11</span></div>
+  <div class="actions"><button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button><button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button></div>
+</div></div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+<div class="container">
+<aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+<article>
+<header class="doc-header">
+  <h1>DeepSeek <span class="en">Super Agent</span> ·<br />把多任务协同搬进控制面</h1>
+  <p class="sa-subtitle">从 Router / Worker 到不可变授权、事件直通与可恢复交付：结合公开仓库，拆开“常驻自主实体”的思想与实现。</p>
+  <div class="doc-meta"><span>2026-11-02</span><span>跨市场</span><span>DeepSeek</span><span>Agent 架构</span><span>事件驱动</span><span>授权</span><span>对内</span><span>时机：进行中</span><span>信心：中</span></div>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">2<small>路径</small></div><div class="lab">新任务判断 / 后续事件直通</div></div>
+    <div class="hero-stat"><div class="num">3<small>默认槽位</small></div><div class="lab">Worker 并发，可配置</div></div>
+    <div class="hero-stat"><div class="num">1<small>仓库</small></div><div class="lab">每个公开原型的编码范围</div></div>
+    <div class="hero-stat"><div class="num">1,197<small>测试</small></div><div class="lab">本次运行上游测试全部通过</div></div>
+  </div>
+  <p class="sa-source">一手源码：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype" target="_blank" rel="noopener">deepseek-ai/dsh-superagent-prototype</a> · 固定版本 <code>6337fc823ce2</code> · MIT · 核查日期 2026-11-02。</p>
+</header>
+
+<div class="lede"><strong>核心判断：</strong>Super Agent 将散落在人的脑中、聊天记录和多个 Agent 会话里的协同工作，搬进一个有状态的控制面。公开原型最扎实的部分是<strong>任务授权、事件归属、执行隔离和可靠交付</strong>；广泛的常驻自主能力仍需要更多实现与验证。</div>
+<div class="callout callout-accent"><div class="callout-tag">一页要点</div><ul>
+  <li>它是基于 DeepSeek Harness 的<strong>研究原型</strong>。README 明确说，公开代码与内部系统、设计文章并不相同。</li>
+  <li>Router 做接单、路由和结果转交；Worker 在独立会话与目录里执行。重点是多个独立任务跨时间推进。</li>
+  <li><strong>新任务走 Gate → Eval → Ticket；已有任务走 Subscription → Input → 原 Worker。</strong>后者避免重复判断与派单。</li>
+  <li>Mandate 固化“凭什么、在什么范围内做事”。Subscription 只输送上下文，关联信息不会自动变成权限。</li>
+  <li>SQLite 事务、持久化 Effects、Outbox、稳定消息 ID 支持恢复；任意外部执行动作仍有重复窗口。</li>
+  <li>默认是 <code>observe</code>，主动规则只有文案修正和局部视觉修正。Router 有 bash，Worker 运行在操作者 OS 权限下。</li>
+  <li>可与“薄 Agent + Durable Workflow”组合：前者管跨任务协同，后者管单项任务内部的 DAG、阶段门槛和局部重试。</li>
+</ul></div>
+
+<h2 id="identity"><span class="sec-num">一</span>这次发布，究竟发布了什么<a class="anchor" href="#identity">#</a></h2>
+<p class="kicker">— RELEASE IDENTITY &amp; EVIDENCE</p>
+<p>2026 年 10 月 31 日的发布包含 Super-agent 设计讨论和一个公开原型仓库。这里最容易混淆三层对象：文章中的<strong>系统愿景</strong>、团队日常使用的<strong>内部实现</strong>、适配后发布的 <strong>dsh-superagent-prototype</strong>。仓库开头就提醒：它不是正式 DeepSeek 产品，不是生产就绪软件，部分文章设计尚未实现。后文所有实现判断都固定到同一提交，避免把新闻里的能力直接套到代码上。<a href="#src-repo">[S1]</a></p>
+<p>公开原型的定位很具体：为<strong>一个 GitHub 仓库</strong>工作的主动编码 Agent，通过 GitHub，以及可选的飞书获取消息；有人提出允许执行的请求后，创建工作项，在独立会话和目录里处理，再回到原对话交付，例如一个 PR。管理面板显示哪些事项需要人。它复用 Harness 的会话、工具、插件和模型适配能力，新增跨会话的协同控制层；Harness 的基础机制可先读<a href="./2026-08_deepseek-harness.html">此前的源码拆解</a>。</p>
+<div class="callout callout-info"><div class="callout-tag">证据口径</div><p>本次直接阅读了仓库代码、编号文档、角色 Prompt 和已有测试。官方微信公众号设计文章在当前环境显示验证页，正文未取得；涉及文章的四项特征、未来架构和实验数字，引用媒体转述并单独标注。源码结论与实验转述分别判断可信度。<a href="#sources">来源见文末</a>。</p></div>
+
+<h2 id="philosophy"><span class="sec-num">二</span>思想：优化人的注意力，而后才是自主性<a class="anchor" href="#philosophy">#</a></h2>
+<p class="kicker">— CONTINUOUS ENTITY / MINIMUM HUMAN ATTENTION</p>
+<p><code>docs/000-philosophy.md</code> 的目标非常清楚：<strong>“Take as little human attention as possible, and give as much value as possible.”</strong> 团队级 Agent 能帮整支团队，也能浪费整支团队的时间。因此它默认安静：只有被明确授权，或团队写下的规则允许时才行动；只有确认接单、交付可用结果、需要人做决定、或说明具体无法推进的原因时才说话。一个新事件并不天然值得开票，观察到模糊问题也不天然值得追问。</p>
+<p>按公开报道对设计文章的转述，四项特征是<strong>连续性、效率、主动性、持久性</strong>。它们指向一种长时间存在的工作实体：消息来了能接、任务并行能推进、等待外部结果时能让出控制、进程恢复后仍知道哪些事情没做完。实现上采用 Router / Workers、事件驱动、异步通道、计算/状态/环境分离，以及外部 Watchdog 等机制；最后两项在公开原型中只部分落地。<a href="#src-essay">[S2–S4]</a></p>
+
+<figure class="sa-figure sa-shift reveal">
+  <div class="sa-eyebrow">01 / THE UNIT OF COORDINATION CHANGES</div>
+  <div class="sa-scroll" tabindex="0" aria-label="会话与控制面对照图，可横向滚动">
+  <svg viewBox="0 0 780 270" role="img" aria-label="传统会话由人串起任务与事件；Super Agent 用控制面维护三个独立任务，分别交给隔离 Worker。">
+    <defs><marker id="sa-shift-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10" style="fill:var(--text-muted)" /></marker></defs>
+    <text x="22" y="28" class="sa-label">以会话为中心</text><text x="410" y="28" class="sa-label">以持续任务为中心</text>
+    <rect class="sa-node" x="22" y="48" width="325" height="62" rx="10" />
+    <text x="42" y="76" class="sa-label">人维护：谁在做 / 等什么 / 怎么续上</text><text x="42" y="96" class="sa-small">消息、任务、结果散落在会话中</text>
+    <rect class="sa-node" x="22" y="151" width="94" height="58" rx="8" /><rect class="sa-node" x="137" y="151" width="94" height="58" rx="8" /><rect class="sa-node" x="253" y="151" width="94" height="58" rx="8" />
+    <text x="40" y="185">Session A</text><text x="155" y="185">Session B</text><text x="271" y="185">Session C</text>
+    <path class="sa-line sa-dots" d="M69 151V128H300V151M184 110V151" />
+    <text x="22" y="246" class="sa-small">并行可能存在；归属、唤醒、交付仍要人串联</text>
+    <path class="sa-line" d="M363 133H393" marker-end="url(#sa-shift-arrow)" />
+    <rect class="sa-accent-node" x="410" y="48" width="345" height="62" rx="10" />
+    <text x="431" y="76" class="sa-label">控制面：授权 / 订阅 / 生命周期 / 交付</text><text x="431" y="96" class="sa-small">状态持续存在，Worker 按事件获得执行机会</text>
+    <path class="sa-line" d="M582 110V131M459 151V131H705V151M582 131V151" />
+    <rect class="sa-node" x="410" y="151" width="99" height="58" rx="8" /><rect class="sa-node" x="533" y="151" width="99" height="58" rx="8" /><rect class="sa-node" x="656" y="151" width="99" height="58" rx="8" />
+    <text x="426" y="176">Ticket A</text><text x="426" y="195" class="sa-small">Worker A</text><text x="549" y="176">Ticket B</text><text x="549" y="195" class="sa-small">Worker B</text><text x="672" y="176">Ticket C</text><text x="672" y="195" class="sa-small">Worker C</text>
+    <text x="410" y="246" class="sa-small">任务连续性由宿主管；技术执行由局部会话管</text>
+  </svg></div>
+  <figcaption class="sa-caption">本图是对协同责任转移的抽象。独立任务可以分别到达、分别完成、分别恢复；不要求把它们分配成一个固定“角色团队”。</figcaption>
+</figure>
+<p>这套思想大量借鉴成熟系统设计：控制面与执行面分离，快慢路径，发布订阅，缓存局部性，后台执行和外部监督。它的价值在于把这些机制组织成 Agent 的工作契约。Router 不需要背着全部代码上下文，Worker 不需要反复询问“这条消息到底属于谁”，人也不必负责每次接续。代价是控制面必须明确建模授权、归属、终止和恢复，不能靠一句“请自主工作”代替。</p>
+
+<h2 id="architecture"><span class="sec-num">三</span>实现：同步内核，异步边缘<a class="anchor" href="#architecture">#</a></h2>
+<p class="kicker">— CLICK A NODE TO FOLLOW THE CODE</p>
+<p>运行时组合 <code>Engine</code>、<code>Store</code>、<code>Effects</code>、SourceRegistry、MasterAssessor、DshExecutor、Sessions 和 Outbox。<strong>Engine 的命令同步进入事务</strong>，做状态变更并登记效果；网络调用、模型判断、Worker 启动和消息发送在提交后异步执行。外部 Source 保留自己的身份语义和游标，领域内核只处理规范化后的对象。这种接缝让核心不依赖飞书或 GitHub 的具体 SDK。</p>
+
+<figure class="sa-figure reveal">
+  <div class="sa-eyebrow">02 / EVENT → AUTHORITY → EXECUTION → DELIVERY</div>
+  <div class="sa-architecture">
+    <div class="sa-scroll" tabindex="0" aria-label="交互架构图，可点击节点或使用下方按钮">
+      <svg viewBox="0 0 640 350" role="img" aria-label="Source 将事件交给 Engine；Engine 分别启动 Router 判断和 Worker 执行，并通过 SQLite、Effects 和 Outbox 维护状态与交付。点击节点查看对应源码。">
+        <defs><marker id="sa-arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10" style="fill:var(--text-muted)" /></marker></defs>
+        <path class="sa-line" d="M157 75H243M392 62H481M392 91H428V169H481M554 205V276H393M243 95H207V288H243" marker-end="url(#sa-arch-arrow)" />
+        <path class="sa-line" d="M481 80H444V120H320V108M481 182H427V146H320V108" stroke-dasharray="4 4" marker-end="url(#sa-arch-arrow)" />
+        <text x="407" y="35" class="sa-small">新任务 / 模型判断</text><text x="406" y="239" class="sa-small">订阅后续 / 直接唤醒</text>
+        <g data-sa-node="source" role="button" tabindex="0" aria-label="查看 Source 适配层">
+          <rect class="sa-node" x="17" y="42" width="140" height="66" rx="10" /><text x="34" y="69" class="sa-label">Source adapters</text><text x="34" y="91" class="sa-small">GitHub / Feishu</text>
+        </g>
+        <g data-sa-node="engine" role="button" tabindex="0" aria-label="查看 Engine 事务内核" class="sa-selected">
+          <rect class="sa-accent-node" x="243" y="42" width="150" height="66" rx="10" /><text x="261" y="69" class="sa-label">Engine + Policy</text><text x="261" y="91" class="sa-small">归属、授权、状态机</text>
+        </g>
+        <g data-sa-node="router" role="button" tabindex="0" aria-label="查看 Router 判断与路由">
+          <rect class="sa-node" x="481" y="42" width="140" height="66" rx="10" /><text x="499" y="69" class="sa-label">Router / Eval</text><text x="499" y="91" class="sa-small">接单、路由、转交</text>
+        </g>
+        <g data-sa-node="worker" role="button" tabindex="0" aria-label="查看 Worker 执行层">
+          <rect class="sa-node" x="481" y="149" width="140" height="66" rx="10" /><text x="499" y="176" class="sa-label">Worker sessions</text><text x="499" y="198" class="sa-small">目录、工具、PR、报告</text>
+        </g>
+        <g data-sa-node="store" role="button" tabindex="0" aria-label="查看 Store 与 Effects">
+          <rect class="sa-node" x="243" y="255" width="150" height="66" rx="10" /><text x="260" y="281" class="sa-label">SQLite + Effects</text><text x="260" y="305" class="sa-small">先提交，再异步执行</text>
+        </g>
+        <g data-sa-node="outbox" role="button" tabindex="0" aria-label="查看 Outbox 结果交付">
+          <rect class="sa-node" x="17" y="255" width="140" height="66" rx="10" /><text x="34" y="281" class="sa-label">Outbox</text><text x="34" y="305" class="sa-small">回到原始对话</text>
+        </g>
+        <path class="sa-line" d="M243 287H159M86 255V110" marker-end="url(#sa-arch-arrow)" />
+        <text x="244" y="197" class="sa-small">实线：状态 / 效果流</text><text x="244" y="216" class="sa-small">虚线：判断 / 执行回报</text>
+      </svg>
+    </div>
+    <div class="sa-detail" id="sa-detail" aria-live="polite">
+      <div class="sa-detail-basis" id="sa-detail-basis">TRANSACTIONAL CORE</div>
+      <h4 id="sa-detail-title">Engine + Policy：结构约束归宿主</h4>
+      <p id="sa-detail-text">事件去重、一个线程同时只有一个 Eval、授权后创建 Ticket 与 Assignment、订阅归属和状态转移，都在同步事务内完成。LLM 提交判断，Engine 检查是否仍适用；异步网络与模型调用留在提交之后。</p>
+      <p id="sa-detail-limit">它持久化任务生命周期，但没有实现完整的单任务 DAG 工作流引擎。</p>
+      <a id="sa-detail-link" href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/engine.ts#L19-L48" target="_blank" rel="noopener">源码：src/core/engine.ts · L19–48 ↗</a>
+    </div>
+  </div>
+  <div class="sa-controls" role="group" aria-label="选择架构节点">
+    <button data-sa-select="source" aria-pressed="false">Source</button><button data-sa-select="engine" aria-pressed="true">Engine</button><button data-sa-select="router" aria-pressed="false">Router</button><button data-sa-select="worker" aria-pressed="false">Worker</button><button data-sa-select="store" aria-pressed="false">Store / Effects</button><button data-sa-select="outbox" aria-pressed="false">Outbox</button>
+  </div>
+  <figcaption class="sa-caption">点击图中节点，右侧直接展示责任、实现边界和固定提交的源码入口；窄屏时详情落在图下方。这里画的是逻辑接缝，公开运行时仍是单进程本地部署。</figcaption>
+</figure>
+<p>数据模型比“Router + Worker”这四个词更有解释力。尤其要把<strong>事件、对话、任务、授权和一次执行</strong>分开；否则重复消息、任务重开、跨渠道通知和停止指令很快会纠缠在一起。下面的对象定义来自 <code>docs/001-domain.md</code> 和核心实现。</p>
+<div class="table-wrap"><table class="sa-matrix">
+  <thead><tr><th>对象</th><th>回答的问题</th><th>由谁维护 / 关键约束</th></tr></thead>
+  <tbody>
+    <tr><td>Trigger</td><td>发生了哪件不可变的外部事件？</td><td>Source 生成稳定 ID，Engine 去重；正文视为不可信外部数据。</td></tr>
+    <tr><td>Thread</td><td>这些事件属于哪段对话？</td><td>Engine 保存待评估批次、历史与订阅；同一线程一次只运行一个 Eval。</td></tr>
+    <tr><td>Correlation</td><td>哪些线程共享同一事件？</td><td>补充上下文；不会因为相互关联就自动路由。</td></tr>
+    <tr><td>Subscription</td><td>哪些任务应该收到这段对话的后续？</td><td>多对多；输送上下文，不授予新权限；自有线程与只供上下文的线程有区别。</td></tr>
+    <tr><td>Mandate</td><td>凭谁的请求 / 哪条规则，在什么范围内做事？</td><td>接单时固化策略版本、来源身份、explicit / inferred 强度、规则和范围；Worker 不能自行扩大。</td></tr>
+    <tr><td>Ticket</td><td>这项已授权工作目前是什么状态？</td><td>独立于执行会话；拥有输入、通道和多次 Assignment，open ↔ ended。</td></tr>
+    <tr><td>Assignment</td><td>这次执行的启动、运行和结束如何记录？</td><td>pending → running → ended；任务重开可以新增一次 Assignment，保留原 Ticket。</td></tr>
+    <tr><td>Input / Report</td><td>消息送到了、读到了、处理到了哪一步？</td><td>投递与读取分别持久化；Report 用结构化 progress / waiting / ready / blocked 等状态表达。</td></tr>
+  </tbody>
+</table></div>
+<p>一个细节很重要：<strong>完成任务不会自动撤销 Mandate</strong>。人的 stop 会撤回授权，重开时不通过现行策略校验也会撤销；普通完成则保留延续工作的基础。所以“任务已结束”“执行会话不活跃”“授权仍有效”可以同时成立。这正是长期协作系统与一次性工具调用的差别。</p>
+
+<h2 id="routing"><span class="sec-num">四</span>两条路径：接单慢路径，后续快路径<a class="anchor" href="#routing">#</a></h2>
+<p class="kicker">— ADMISSION IS NOT CONTEXT DELIVERY</p>
+<p>外部事件进入 <code>intake.ts</code> 时，先做时间规范化、ID 去重和 Source 范围检查，然后持久化事件与处置记录。系统更新线程关联，并汇总订阅该事件的任务；即使一个 Ticket 经由多个 Thread 与它关联，<strong>一次事件也只生成一次任务输入</strong>。这一步解决“同一评论从通知、PR 订阅和关联线程重复进来”的常见问题。</p>
+<p><strong>慢路径处理“是否产生一项新工作”。</strong>没有既有任务承接时，事件进入线程的待评估批次。确定性 Gate 根据来源身份、是否指向 Agent、接入规则等决定候选强度；没有合格候选便直接忽略，不调用模型。合格候选才产生 Eval，交给 Router 或准入判断。批次选取最强的请求作为授权基础，同强度时取较新的一条；已被接受的 Trigger 不能再次创建 Ticket。<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/evals.ts#L70-L119" target="_blank" rel="noopener">源码：evals.ts L70–119</a>。</p>
+<p><strong>快路径处理“现有工作需要什么新信息”。</strong>命中 Subscription 的评论、CI 结果、审阅意见直接形成 Input，送到原 Worker。Router 可以收到“发生了 follow-up”的摘要通知，但不负责再次投递，也不应该再造一个任务。Worker 仍持有原 Mandate；这条评论提供上下文，并未自动授权相邻需求。错误 attach 的代价很高，因为 attach 会订阅整个线程，后续信息将持续流入。Prompt 因此要求明确的任务引用，不能只因话题相似就关联。</p>
+<div class="callout callout-accent"><div class="callout-tag">三个不等号</div><p><strong>相关 ≠ 属于；属于 ≠ 授权；送达 ≠ 读到。</strong>Correlation 只补上下文，Subscription 决定投递，Mandate 限定行动，Input 的读取状态决定恢复时是否需要重新交给执行者。</p></div>
+<p>人的自有线程后续可以交给活跃 Ticket，也可以在重校验后唤醒已结束 Ticket；机器人和 CI 只推动仍活跃的任务，只供上下文的线程不会把结束任务重新打开。存在 Worker 承接人的后续时，内核拒绝 Router 对这段后续再做 accept / attach / ignore，保留 stop 入口。Worker 无法承接超出范围的信息时可以 handback，未被消费的请求回到 Eval；多任务共享线程时，需要所有相关承接者释放，才能重新评估。边界属于宿主状态机，不依赖 Router 记住约定。</p>
+
+<h2 id="lifecycle"><span class="sec-num">五</span>用一次飞书 → PR → 回飞书串起来<a class="anchor" href="#lifecycle">#</a></h2>
+<p class="kicker">— ONE TICKET, MULTIPLE CHANNELS AND ASSIGNMENTS</p>
+<p>以下是按领域契约组织的示例流程，不是本次连接真实账号录制的运行轨迹。它展示同一任务怎样跨渠道延续，以及人为什么不必每次重新向 Agent 描述背景。</p>
+<figure class="sa-figure sa-timeline reveal">
+  <div class="sa-eyebrow">03 / TICKET W1 LIVES LONGER THAN ONE RUN</div>
+  <div class="sa-scroll" tabindex="0" aria-label="跨渠道任务时间线，可横向滚动">
+  <svg viewBox="0 0 850 430" role="img" aria-label="飞书请求创建任务 W1，Worker 建 PR 后订阅 CI 和审阅意见，结果回到原飞书对话，PR 关闭结束任务；后来人类后续通过策略校验，以同一任务新建 Assignment 继续。">
+    <path class="sa-track" d="M69 78V369" />
+    <g>
+      <circle class="sa-event" cx="69" cy="80" r="7" /><text class="sa-index" x="22" y="85">01</text>
+      <rect class="sa-accent-node" x="103" y="50" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="73">飞书：允许发起工作的用户提出明确请求</text><text class="sa-small" x="121" y="92">Gate → Router accept → Mandate + Ticket W1 + Assignment 1 + ACK</text>
+      <circle class="sa-event" cx="69" cy="139" r="7" /><text class="sa-index" x="22" y="144">02</text>
+      <rect class="sa-node" x="103" y="112" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="135">Worker：独立目录里修改、验证、提交并创建 PR</text><text class="sa-small" x="121" y="154">progress report 绑定 PR 订阅；普通进度不会逐条转发到飞书</text>
+      <circle class="sa-event" cx="69" cy="201" r="7" /><text class="sa-index" x="22" y="206">03</text>
+      <rect class="sa-accent-node" x="103" y="174" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="197">GitHub：CI / 审阅意见直接送回 Worker W1</text><text class="sa-small" x="121" y="216">Subscription → Input → 原 Worker；延续原授权，不重新接单</text>
+      <circle class="sa-event" cx="69" cy="263" r="7" /><text class="sa-index" x="22" y="268">04</text>
+      <rect class="sa-node" x="103" y="236" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="259">ready：Router 将可用结果转交原飞书对话</text><text class="sa-small" x="121" y="278">有 PR 则仍等待审阅和关闭条件；“建了 PR”不等于任务已结束</text>
+      <circle class="sa-event" cx="69" cy="325" r="7" /><text class="sa-index" x="22" y="330">05</text>
+      <rect class="sa-node" x="103" y="298" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="321">PR 关闭 / 合并：满足条件后 ended，并发送一次闭环通知</text><text class="sa-small" x="121" y="340">保存 Ticket、授权、订阅和会话；未处理后续不会被关闭动作吞掉</text>
+      <circle class="sa-event" cx="69" cy="387" r="7" /><text class="sa-index" x="22" y="392">06</text>
+      <rect class="sa-accent-node" x="103" y="360" width="717" height="52" rx="9" /><text class="sa-label" x="121" y="383">后来人的后续：重校验通过 → W1 + Assignment 2</text><text class="sa-small" x="121" y="402">原目录 / 原会话延续；人已 stop 则不自动恢复，超出范围则交回判断</text>
+    </g>
+  </svg></div>
+  <figcaption class="sa-caption">一条工作线穿过多个消息渠道；执行机会可以多次出现。状态机维持其身份，模型负责每次局部工作。</figcaption>
+</figure>
+<p>PR 结束条件也不是简单盯着一个“merged”字段：<code>ready</code> 且无 PR 可以结束；有 PR 时，要等待相关 PR 的关闭条件。任务拥有自有 PR，就检查全部自有 PR；没有自有 PR 时检查跟进的 PR。还有未完成的后续工作，关闭事件不能替 Worker 报告完成。这些细节避免系统交了一个初稿就消失，也避免合并之后把尚未回答的人类评论丢掉。<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/003-execution.md#L94-L116" target="_blank" rel="noopener">执行契约 L94–116</a>。</p>
+
+<h2 id="policy"><span class="sec-num">六</span>主动性：程序检查结构，Prompt 判断语义<a class="anchor" href="#policy">#</a></h2>
+<p class="kicker">— A NARROW DEFAULT / AN EXPLICIT AUTHORIZATION BASIS</p>
+<p>“主动”在公开原型中非常克制。<code>policy.ts</code> 的默认主动规则只有两条：<strong>Copy fixes</strong> 与 <strong>Visual fixes</strong>，分别针对保留业务含义的文案修正，以及目标明确或已有客观标准的局部间距、对齐、溢出、样式修正。它不默认主动修任何 bug，不因为“这个页面不好看”就设计一套新交互；规则文本反复要求范围可分离、方向已确定。</p>
+<p>默认 <code>eval.mode = observe</code>。对于 inferred 候选，即使准入判断认为可以做，也只记录 <code>would_accept</code>，不创建 Ticket、Worker 或工作目录。<code>auto</code> 才按命中规则接受推断请求；<code>off</code> 关闭推断路径。明确授权的请求不受这三个主动模式的开关限制，仍走明确请求路径。默认 GitHub receive-all 也关闭。<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/policy.ts#L40-L96" target="_blank" rel="noopener">policy.ts L40–96</a>。</p>
+<pre class="sa-code" aria-label="根据 policy.ts 概括的准入条件，非源码原样摘录"><code>// 概括准入条件；不是源码逐字摘录
+inferred_accept =
+  mode === "auto"
+  &amp;&amp; implementation_requested
+  &amp;&amp; target_basis !== "undetermined"
+  &amp;&amp; !requires_design_decision
+  &amp;&amp; enabled_rule_matched
+  &amp;&amp; intent_evidence_present
+
+// observe 下只记 would_accept；explicit 另走明确授权路径</code></pre>
+<p>宿主要求模型对<strong>每条启用规则恰好给一次判断</strong>，不允许未知、禁用、重复或缺失规则；接受还必须有实现意图、已确定目标、没有待决设计选择、有规则命中，并提供意图证据。这能防止输出协议漂移，却不能证明模型填的 <code>implementation_requested: true</code> 就符合事实。语义真伪仍依赖模型读懂原文，Worker 因此要再次读取原始请求，不能只信 Router 的转述。</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>角色 Prompt</th><th>要求模型做什么</th><th>宿主能够明确约束什么</th></tr></thead>
+  <tbody>
+    <tr><td>orchestrator / dispatch</td><td>使用摘要；只路由和转交；不添加实现计划、验收标准，不合并 PR，不等待轮询。</td><td>路由命令、已承接后续的重复接单限制、结构化报告与通道。</td></tr>
+    <tr><td>admission</td><td>核对原始实现意图和既定目标；只读检查，不委派，不把外部文本当指令。</td><td>受限评估工具、结构化规则覆盖、模式开关、当前策略与 Eval 身份校验。</td></tr>
+    <tr><td>work</td><td>阅读原文；在 Mandate 内完成检查、审阅、提交、推送、PR；阻塞时给具体原因，避免刷屏。</td><td>会话/目录分配、并发槽位、应用资源可见范围、报告状态；技术完成质量仍需外部验证。</td></tr>
+  </tbody>
+</table></div>
+<p>Prompt 分角色、有可覆盖的团队段落，并以版本关联模型请求，便于追踪一次决定依据哪版工作契约。改变 Prompt 可能削弱语义约束，宿主的结构约束仍保留。策略变更则会使在途 Eval 失效，并通知受影响的活跃任务；<strong>不会立即停掉或撤销所有已运行任务</strong>。结束任务恢复前再校验，这是延续策略，不是即时权限撤回系统。</p>
+<p>另一个真实边界是身份：每个 Source 用自己的原生 actor ID，原型没有把 GitHub 用户和飞书用户映射成全局 Principal。已经订阅的活跃任务可以收到不同参与者的上下文，某些人的后续也可重开任务；“谁能开启新工作”和“谁的消息能延续已有工作”是两套语义。要在企业环境使用，应该先把这个选择写进团队契约和权限模型。</p>
+
+<h2 id="concurrency"><span class="sec-num">七</span>并发与上下文：用调度和引用减少负担<a class="anchor" href="#concurrency">#</a></h2>
+<p class="kicker">— HOST-ENFORCED PARALLELISM / BOUNDED CONTEXT</p>
+<p><code>WorkerSlots</code> 在异步启动之前同步预占槽位，默认最多 <strong>3 个</strong>并发 Worker，可配置到 1–16。人的自有线程后续或状态请求允许使用<strong>一个额外槽位</strong>，已有工作的唤醒优先于新任务启动。计数的是正在准备、运行、唤醒或占着后台工作的执行机会；不是系统只能保有三个 Ticket 或三个历史 Session。系统不需要寄希望于模型“今天记得用子 Agent”。</p>
+<p>Router 和 Worker 的 shell 前台时间限额为 <strong>5 秒</strong>，长命令会转成后台 job，控制权迅速返回，并非超过 5 秒就杀掉命令。Worker 一轮结束仍有活跃后台作业时继续占槽；最长再保留约 30 分钟，随后杀 shell jobs，子 Agent 可有不同生命周期。交给人接手可释放槽位并留下审阅服务。Router 也有防长等待约束。这样把“等工具结束”从对话控制流移到运行时。</p>
+<p>上下文组织采用类似 <strong>Inline / Spill</strong> 的办法：短摘要直接放进当前提示，细节通过稳定引用按需读取。Worker 默认内联约 1,500 字符 Assignment、600 字符 Trigger，以及更短的回复预览；Router 结果摘要上限约 600 字符，评估候选有自己的 4,000 字符预算，邻近信息被进一步压缩。不同预算对应不同资源，不能统一解读成“整个上下文只有 4,000 token”。</p>
+<p>读取路径沿着 <code>Trigger → Thread → Ticket / Assignment / Result</code> 和 Source 原生资源引用展开，有分页和文本预算，原始依据随时可扩展读取。它是一张<strong>资源引用图</strong>，不是向量检索系统或语义知识图谱。Worker 的应用资源读取限制在自己的 Ticket、线程、Trigger 和 Prompt 修订；这减少无关信息，却不等价于 OS 文件隔离，因为 Worker 仍有 bash。</p>
+<p>这套设计的取舍是清楚的：Router 持有跨任务的有限摘要，Worker 保有局部执行细节，事件订阅省掉重复搬运和推理。GitHub 接入仍采用<strong>默认 60 秒轮询</strong>，飞书则通过 <code>lark-cli event consume</code> 接 NDJSON 事件，带就绪检测、重连和历史补偿。内部事件驱动不代表所有外部事件都零延迟到达。已结束任务的订阅还会轮询一段时间；游标回退窗口配合稳定 ID，降低时间戳边缘漏消息的概率。</p>
+<p class="sa-evidence">并发：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/executor/dsh.ts#L171-L198" target="_blank" rel="noopener">dsh.ts L171–198</a> · 生命周期：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/003-execution.md#L31-L47" target="_blank" rel="noopener">execution L31–47</a> · 内联预算：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/executor/dsh.ts#L112-L128" target="_blank" rel="noopener">dsh.ts L112–128</a>。</p>
+
+<h2 id="durability"><span class="sec-num">八</span>持久性：恢复任务与交付，承认外部动作的窗口<a class="anchor" href="#durability">#</a></h2>
+<p class="kicker">— COMMIT FIRST / RETRY WITH STABLE IDENTITIES</p>
+<p><code>store.ts</code> 使用 <code>node:sqlite</code>，数据库文件权限 0600，WAL 与 <code>synchronous = FULL</code>，保存 Trigger、处置、Thread、Ticket、Decision、Outbox、Effect 和配置版本。命令事务通过 savepoint 组织，只有提交后的回调才能启动外部效果。目录锁保证同一状态目录由一个运行时占用；公开部署没有分布式 Router 或多节点一致性协议。</p>
+<p><code>effects.ts</code> 把异步动作登记为持久化队列，用 kind / key 标识可替换效果，带 seq 与 generation。相同键更新载荷时递增 generation、重置尝试次数并重新到期；旧的在途执行完成时，只有 seq / generation 仍匹配才允许删除对应记录。这样<strong>旧完成结果不能误删较新的任务</strong>。队列还支持按类型并发、顺序约束、延期和指数退避；停止 drain 不会清空尚未处理的持久记录。</p>
+<p>交付环节同样区分阶段。给 Session 的消息使用稳定 ID，在已保存事件历史和两个 inbox 中检查重复，并先 flush 再向生产者确认。送进 inbox 不等于 Worker 已认领并读取；恢复时未读输入重新分配。Outbox 把回执与发送效果放进同一事务，维护每任务、每渠道的发送顺序。GitHub 评论带隐藏的消息 ID 标记，发送前扫描自己的评论做去重；飞书使用原生幂等键。</p>
+
+<figure class="sa-figure sa-crash reveal">
+  <div class="sa-eyebrow">04 / WHAT SURVIVES A CRASH — AND WHAT CAN REPEAT</div>
+  <div class="sa-scroll" tabindex="0" aria-label="持久化与外部动作崩溃窗口图，可横向滚动">
+  <svg viewBox="0 0 810 320" role="img" aria-label="Engine 原子提交任务状态和效果队列后，Effects 执行外部动作，再确认结果。外部动作成功到本地确认之间发生崩溃可能导致重试，消息 ID 可去重，但任意 bash、Git 或 PR 动作仍需检查远端状态。">
+    <defs><marker id="sa-crash-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10" style="fill:var(--text-muted)" /></marker></defs>
+    <rect class="sa-accent-node" x="20" y="40" width="222" height="106" rx="12" /><text class="sa-label" x="38" y="70">一个 SQLite 事务</text><text x="38" y="99">Ticket / Input / Receipt</text><text x="38" y="124">+ queued Effect</text>
+    <path class="sa-line" d="M243 94H296" marker-end="url(#sa-crash-arrow)" /><text class="sa-small" x="248" y="79">commit</text>
+    <rect class="sa-node" x="305" y="40" width="210" height="106" rx="12" /><text class="sa-label" x="323" y="70">异步执行外部动作</text><text x="323" y="99">Session / IM / GitHub</text><text class="sa-small" x="323" y="124">重试、顺序、稳定消息身份</text>
+    <path class="sa-line" d="M516 94H591" marker-end="url(#sa-crash-arrow)" />
+    <rect class="sa-node" x="600" y="40" width="190" height="106" rx="12" /><text class="sa-label" x="618" y="70">本地确认</text><text x="618" y="99">seq + generation</text><text class="sa-small" x="618" y="124">匹配才完成 / 删除</text>
+    <rect class="sa-danger" x="419" y="183" width="371" height="100" rx="10" /><text class="sa-label sa-warn-label" x="437" y="211">崩溃窗口：远端成功，本地未确认</text><text class="sa-small" x="437" y="236">消息发送：标记 / 原生幂等键可降低重复</text><text class="sa-small" x="437" y="258">任意 bash / git / PR：恢复时检查远端再行动</text>
+    <path class="sa-line" d="M553 108V170L566 183" stroke-dasharray="4 4" />
+    <text class="sa-label" x="22" y="210">可以恢复的责任</text><text class="sa-small" x="22" y="235">任务状态、待送效果、未读输入、交付回执</text><text class="sa-small" x="22" y="258">这些责任不要求 LLM 从聊天文字里重新猜测</text>
+  </svg></div>
+  <figcaption class="sa-caption">宿主队列提供重试，目标通道提供去重。generation 保护队列替换；它无法把所有外部操作与 SQLite 合成一个全局事务。</figcaption>
+</figure>
+<p>因此准确的表述是<strong>可恢复的任务生命周期与效果交付</strong>。系统不是普适的 exactly-once 执行器。Worker 自行运行的 bash、git push 或 PR 创建，如果远端成功而本地尚未记录就崩溃，恢复执行可能重复。文档要求先检查工作目录与远端状态，再重做外部动作。模型/网络瞬态失败有最多三次重试，prepare 失败不会自动反复重试；failed / blocked 状态会冻结自动输入，等待合适的人类推进。</p>
+<p>长期运行还有存储代价：架构文档明确没有删除旧 Trigger、Decision、结束 Ticket、回执和版本记录的策略。它保存了丰富审计数据，也需要后续归档与保留规则。不要仅因“SQLite + 恢复”就把它视为完整 Durable Workflow：它没有提供确定步骤的 DAG、节点级重放和阶段屏障。任务内部复杂工作仍由 Worker 在会话中推进。</p>
+<p class="sa-evidence">持久化：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/store.ts#L59-L86" target="_blank" rel="noopener">store.ts L59–86</a> · 效果代际：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/effects.ts#L103-L145" target="_blank" rel="noopener">effects.ts L103–145</a> · 投递确认：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/delivery.ts#L26-L85" target="_blank" rel="noopener">delivery.ts L26–85</a>。</p>
+
+<h2 id="boundaries"><span class="sec-num">九</span>哪些愿景已经落地，哪些还没有<a class="anchor" href="#boundaries">#</a></h2>
+<p class="kicker">— DESIGN DIRECTIONS ARE NOT CODE GUARANTEES</p>
+<div class="table-wrap"><table class="sa-matrix">
+  <thead><tr><th>常见概括</th><th>公开实现中能确认的事实</th><th>应该保留的边界</th></tr></thead>
+  <tbody>
+    <tr><td>全能常驻助手</td><td>为一个 GitHub 仓库编码，可选飞书渠道；独立 Ticket 和 Worker。</td><td>没有通用邮件 / 日历 / 浏览器任务集成；“长期实体”是演进方向。</td></tr>
+    <tr><td>轻 Router，强 Worker</td><td>职责和上下文分离；角色模型分别配置，模型 Provider 没有写死为 DeepSeek。</td><td>没有测得“任何小模型 Router 都够用”；当前 Router 实际拥有 bash / read / jobs。</td></tr>
+    <tr><td>事件驱动</td><td>内核按事件推进，飞书流式接入；后续通过订阅直达 Worker。</td><td>GitHub 默认 60 秒轮询，不能据此声称全渠道实时。</td></tr>
+    <tr><td>计算 / 状态 / 环境解耦</td><td>Store / Executor / Source 有独立接口；Ticket 与 Session 分离。</td><td>运行时仍本地、单进程，Worker 目录也在本机；未实现完整远程守护进程与分布式路由。</td></tr>
+    <tr><td>外部 Watchdog</td><td>部署文档建议独立 DSH profile 每小时运行状态检查，故障时重启，保留手动暂停。</td><td>这是健康检查兜底；没有实现独立检查任务轨迹、纠正假完成的语义监督者。</td></tr>
+    <tr><td>授权与安全隔离</td><td>Mandate、Source 策略、只读评估工具和任务资源范围；命令 wrapper 与目录约定。</td><td>Worker Session 是 <code>danger-full-access</code>，使用操作者 OS 权限；绝对路径可绕过部分 wrapper，worktree 不是沙箱。</td></tr>
+    <tr><td>自动审阅与合并</td><td>团队 Delivery Prompt 可描述审阅和合并策略；Router Prompt 要求不合并。</td><td>Prompt 不替代 GitHub branch protection；代码不能证明所有合并都经过独立质量审查。</td></tr>
+    <tr><td>自主恢复</td><td>状态、队列、回执持久化；若干瞬态失败有重试，未读输入重新分配。</td><td>没有无限自愈；远端副作用与宿主提交之间仍有重复窗口。</td></tr>
+  </tbody>
+</table></div>
+<p>最值得认真对待的限制来自仓库自身，而不是推测：执行文档明确说环境 wrapper 不是安全边界；源码确实创建全权限 Session；Watchdog 部署建议只检查健康与重启。将这些边界写清楚，才能知道工程上该补哪层：权限隔离在运行环境，审阅在代码托管规则，语义完工检查在独立验证器，分布式恢复在调度与存储协议。</p>
+<p class="sa-evidence">执行权限：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/sessions.ts#L137-L154" target="_blank" rel="noopener">sessions.ts L137–154</a> · wrapper 边界：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/003-execution.md#L76-L80" target="_blank" rel="noopener">execution L76–80</a> · 健康检查：<a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/006-deployment.md#L133-L141" target="_blank" rel="noopener">deployment L133–141</a>。</p>
+
+<h2 id="experiments"><span class="sec-num">十</span>实验说明了什么，尚未说明什么<a class="anchor" href="#experiments">#</a></h2>
+<p class="kicker">— COORDINATION FEASIBILITY / NOT CODING QUALITY</p>
+<p>设计文章实验的以下细节来自 <a href="https://www.aimodeling.com/en/news/slug/deepseek-super-agent-router-worker-architecture" target="_blank" rel="noopener">AIModeling 的二手转述</a>，属于团队报告，本次未复现：约 300 条消息、20 个工作请求，<strong>用定时工具替代真实编码</strong>；消息到达与工作持续时间按 1/4 缩放，模型响应延迟保持真实，每种配置运行五次。它主要测试协调、排队与完成时延，不能解释真实代码质量。</p>
+<div class="sa-measure">
+  <div class="sa-measure-cell"><div class="sa-measure-num">12.4 / 15.7</div><div class="sa-measure-label">Super Agent p50 / p95，分钟<br />团队报告，经二手资料转述</div></div>
+  <div class="sa-measure-cell"><div class="sa-measure-num">20.4 / 29.5</div><div class="sa-measure-label">单 Session + 子 Agent，中性提示<br />p50 / p95，分钟</div></div>
+  <div class="sa-measure-cell"><div class="sa-measure-num">13.8 / 29.0</div><div class="sa-measure-label">单 Session + 子 Agent，优先委派提示<br />p50 / p95，分钟</div></div>
+</div>
+<p>同一转述称，中性提示的单会话在五次运行里都没有调用子 Agent；强调委派后，四次使用子 Agent，一次仍亲自做小任务并拉长尾部。它支持一个有限、但有用的判断：<strong>把并发和事件归属固化到宿主，比单靠 Prompt 要求模型委派更稳定</strong>。测试规模、模拟工具与提示敏感性，也限制了它能证明的范围。</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>转述中的消融结果</th><th>合理解释</th><th>不能据此推出</th></tr></thead>
+  <tbody>
+    <tr><td>移除订阅，Router 决策约增加 30%；cache-read 23.23M → 31.77M。</td><td>后续直达 Worker，减少 Router 处理；cache-read 增幅约 37% 为据上述数值计算。</td><td>这些是缓存读取 token，不是总 token，也不能直接换算成本降幅。</td></tr>
+    <tr><td>批处理使摊销推理决策时间 6.4 → 1.6 秒。</td><td>一次推理服务多个候选，减少单位决策的推理负担。</td><td>不等于每条消息的端到端延迟缩短 75%；批次等待和外部轮询仍存在。</td></tr>
+    <tr><td>独立 Worker 配置的 p95 更低。</td><td>隔离执行和宿主调度有助于控制这个负载里的长尾。</td><td>不证明真实仓库任务的成功率、审阅质量、长期可靠性或生产成本。</td></tr>
+  </tbody>
+</table></div>
+<div class="callout callout-pro"><div class="callout-tag">本次实际验证</div><p>在固定提交的独立临时目录，按 lockfile 安装依赖，运行仓库原有 <code>pnpm check</code>：<strong>TypeScript 检查通过，59 个测试文件、1,197 个测试全部通过，构建通过</strong>。使用 Node 26.11.1、pnpm 11.7.0。没有改上游代码，也没有连接真实 GitHub / 飞书账号启动工作 Agent；测试通过不能替代外部渠道、模型行为和文章实验的复现。</p></div>
+
+<h2 id="fde"><span class="sec-num">十一</span>对 FDE 的启发：外层协同，内层 Durable Workflow<a class="anchor" href="#fde">#</a></h2>
+<p class="kicker">— ORIGINAL ANALYSIS / TWO COMPLEMENTARY RESPONSIBILITIES</p>
+<p>下面是基于代码的分析判断。与你偏好的<strong>“薄 Agent + Durable Workflow”</strong>相比，Super Agent 的公开原型解决的是外围问题：谁授权、哪些工作正在进行、这条新消息该交给谁、什么时候值得打扰人。Durable Workflow 解决内部问题：一项工作分几步、依赖如何安排、失败重试哪一节点、跨阶段如何保留结果。两层可以组合，并不需要把其中一种当成另一种的替代品。</p>
+<pre class="sa-code" aria-label="建议的 FDE 架构分层"><code>外层协同控制面
+  Source → Gate / Eval → Mandate + Ticket
+  Subscription → Follow-up → 原任务
+  Result / Attention → Outbox → 原渠道
+
+内层任务执行
+  薄 Worker → Durable Workflow
+  DAG / 阶段屏障 / 局部重试 / 产物与状态
+
+共同身份
+  ticket_id / assignment_id / input_id
+  policy_version / prompt_revision / effect_generation</code></pre>
+<p>例如一个客户交付需要数据准备、分析、生成报告、人工确认、发布。外层负责把新材料和客户意见送回同一任务，并保留原授权；内层用 DAG 管并行分析和阶段确认。最终交付和需要人的决定，通过结构化 Report 回到外层。既保留对开放事件的适应性，又不会让一个长会话承担所有执行恢复责任。可以对照<a href="../insights/cross/2026-10_claude-managed-agents-dynamic-workflows.html">Dynamic Workflows 与薄 Agent 的既有分析</a>阅读。</p>
+<div class="table-wrap"><table>
+  <thead><tr><th>优先借鉴</th><th>落地目的</th><th>如何验证</th></tr></thead>
+  <tbody>
+    <tr><td>稳定 Trigger / Ticket / Assignment / Input ID</td><td>同事件去重、同任务延续、多次执行可追踪。</td><td>重复入站、跨线程命中和恢复后重投，不重复开票、不丢输入。</td></tr>
+    <tr><td>不可变 Mandate + 当前策略重校验</td><td>把授权基础留在状态里，避免摘要或后续消息扩大范围。</td><td>越界请求进入 handback；停止后不自动恢复；策略变化能追溯。</td></tr>
+    <tr><td>先提交，后 Effects / Outbox</td><td>进程崩溃时保住任务与交付责任。</td><td>在提交、发送、确认之间注入故障，检查丢失、重复及远端去重。</td></tr>
+    <tr><td>原始依据引用 + 有预算的摘要</td><td>减轻 Router 上下文，同时让 Worker 能核查意图。</td><td>抽样核对摘要与原文；统计引用读取、误派单、token 和队列时延。</td></tr>
+    <tr><td>Attention 作为结构字段</td><td>只在可用结果或具体决策点请求人的注意。</td><td>看通知有用率、人介入次数、未回答请求和过早 ready。</td></tr>
+  </tbody>
+</table></div>
+<p>对于 LIFT，可以直接利用 <strong>Trace、Artifact、Scores、Metrics</strong>做论证性归因，不把 replay 当成前提。轨迹应记录 Gate 结果、Mandate、订阅变化、读/送达状态、Prompt 版本、Effect generation 和渠道回执。这样可以从“没交付”继续定位为误准入、误 attach、后续丢失、越界执行、过早 ready、遗漏原渠道转交或外部动作重复，并用产物和打分支持解释。真正的验证性干预，可在有条件时另做。</p>
+<div class="sa-verdict"><p><strong>我的判断：</strong>值得借鉴的是把协同责任做成程序可检查的状态，并围绕人的注意力定义行为。现在就能迁移的是事件身份、授权基础、订阅直通、结果交付和恢复契约。通用自主性、强安全边界与长期生产收益，仍需分别验证。</p></div>
+
+<h2 id="code-map"><span class="sec-num">十二</span>源码阅读地图：从不变量读到运行时<a class="anchor" href="#code-map">#</a></h2>
+<p class="kicker">— PINNED COMMIT / CHECK THE CONTRACT AGAINST THE CODE</p>
+<p>推荐顺序是先读领域与授权契约，再读核心状态转移，最后读会话和外部适配。下列链接都固定到 <code class="sa-hash">6337fc823ce20251c8de8085948165c81aaa701e</code>，代码行号对应本次检查版本。</p>
+<div class="table-wrap"><table class="sa-reading-map">
+  <thead><tr><th>要核实的机制</th><th>固定版本入口</th><th>阅读重点</th></tr></thead>
+  <tbody>
+    <tr><td>工作哲学 / 领域</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/000-philosophy.md#L5-L18" target="_blank" rel="noopener">000-philosophy L5–18</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/docs/001-domain.md#L18-L49" target="_blank" rel="noopener">001-domain L18–49</a></td><td>安静默认，Thread / Subscription / Mandate / Ticket 分离。</td></tr>
+    <tr><td>入站 / 判断</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/intake.ts#L19-L61" target="_blank" rel="noopener">intake.ts L19–61</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/evals.ts#L131-L155" target="_blank" rel="noopener">evals.ts L131–155</a></td><td>去重与订阅扇出、过期 Eval、Worker 承接后的 Router 限制。</td></tr>
+    <tr><td>接单 / 恢复</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/tickets.ts#L37-L55" target="_blank" rel="noopener">tickets.ts L37–55</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/tickets.ts#L234-L269" target="_blank" rel="noopener">tickets.ts L234–269</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/core/tickets.ts#L317-L362" target="_blank" rel="noopener">tickets.ts L317–362</a></td><td>事务内建票 / ACK / launch，重开 Assignment，结束时未读输入释放。</td></tr>
+    <tr><td>准入 / 默认</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/policy.ts#L40-L96" target="_blank" rel="noopener">policy.ts L40–96</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/policy.ts#L191-L240" target="_blank" rel="noopener">policy.ts L191–240</a></td><td>结构化规则校验、observe、Gate 与恢复重校验。</td></tr>
+    <tr><td>角色契约</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/prompts/orchestrator.md#L1-L16" target="_blank" rel="noopener">orchestrator L1–16</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/prompts/admission.md#L1-L68" target="_blank" rel="noopener">admission L1–68</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/prompts/work.md#L1-L49" target="_blank" rel="noopener">work L1–49</a></td><td>Router 不做技术计划，评估只读，Worker 核对原文与完成责任。</td></tr>
+    <tr><td>持久化 / 交付</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/effects.ts#L60-L65" target="_blank" rel="noopener">effects.ts L60–65</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/outbox.ts#L27-L50" target="_blank" rel="noopener">outbox.ts L27–50</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/sources/github-channel.ts#L17-L40" target="_blank" rel="noopener">github-channel L17–40</a></td><td>效果更新、顺序与发送回执、隐藏消息标记去重。</td></tr>
+    <tr><td>摘要 / 接入</td><td><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/assessment.ts#L36-L37" target="_blank" rel="noopener">assessment.ts L36–37</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/app/notices.ts#L107-L128" target="_blank" rel="noopener">notices.ts L107–128</a><br /><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/src/sources/feishu-loops.ts#L70-L96" target="_blank" rel="noopener">feishu-loops.ts L70–96</a></td><td>候选预算、结果内联与引用、飞书事件进程。</td></tr>
+  </tbody>
+</table></div>
+<h3 id="sources">来源与核查记录</h3>
+<ol class="sa-bibliography">
+  <li id="src-repo"><strong>[S1] P1 · 一手仓库。</strong><a href="https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/README.md#L1-L9" target="_blank" rel="noopener">README L1–9</a>：研究原型定位、公开适配与一仓库范围；源码与测试按上述 SHA 核查。</li>
+  <li id="src-essay"><strong>[S2] 原始设计文章入口。</strong><a href="https://mp.weixin.qq.com/s/zoS7GlReWPhfCjENGxXCdg" target="_blank" rel="noopener">Exploring Super-agent Design: Towards a More Autonomous Agent System</a>。本次正文未取得，环境显示验证页面；未将二手转述当作已读原文。</li>
+  <li><strong>[S3] P2 · 发布与架构报道。</strong><a href="https://m.zhidx.com/p/606311.html" target="_blank" rel="noopener">智东西</a>；<a href="https://www.globaltimes.cn/page/202611/1373392.shtml" target="_blank" rel="noopener">Global Times，2026-11</a>。用于交叉核对发布身份与日期，不替代源码证据。</li>
+  <li><strong>[S4] P2 · 实验细节转述。</strong><a href="https://www.aimodeling.com/en/news/slug/deepseek-super-agent-router-worker-architecture" target="_blank" rel="noopener">AIModeling：Router / Worker architecture</a>。本文实验配置、p50 / p95、消融数据取自此报道；未取得可复现实验脚本与完整原始结果。</li>
+  <li><strong>[S5] P1 · Harness 基础产品入口。</strong><a href="https://www.deepseek.com/en/harness/" target="_blank" rel="noopener">DeepSeek Harness</a>。基础运行框架与 Super Agent bundle 分别理解。</li>
+</ol>
+<p class="sa-evidence">方法：发布信息交叉核对 → 固定源码提交 → 对照领域文档与实现 → 阅读角色 Prompt → 运行上游检查。实现判断以代码为准；思想转述与实验转述注明出处；FDE / LIFT 建议是本文分析。站点页面另经亮色、暗色与移动端预览验收。</p>
+<hr />
+<p style="font-size:.85rem;color:var(--text-muted);text-align:center">修订记录：2026-11-02 初稿 · 固定提交源码核查与上游测试 · 时机：进行中 / 信心：中</p>
+<div class="doc-footer"><a href="./index.html">← 开源拆解索引</a> · <a href="./2026-08_deepseek-harness.html">DeepSeek Harness 基础拆解</a> · <a href="../insights/cross/2026-10_claude-managed-agents-dynamic-workflows.html">薄 Agent + Durable Workflow</a></div>
+</article></div>
+<script src="../_assets/insight.js"></script>
+<script>
+(() => {
+  const base = 'https://github.com/deepseek-ai/dsh-superagent-prototype/blob/6337fc823ce20251c8de8085948165c81aaa701e/';
+  const entries = {
+    source: { basis:'NATIVE IDENTITY / DURABLE CURSOR', title:'Source：外部事件在边缘规范化', text:'GitHub 通知、线程与可选仓库流通过轮询接入；飞书用 lark-cli 事件流，并用历史和主题轮询补偿。Source 保存原生 actor 身份、稳定事件 ID 和读游标；机器人自己的消息被排除。', limit:'GitHub 默认轮询周期 60 秒；没有全局跨渠道 Principal 身份映射。', path:'src/sources/github.ts', lines:'L25-L28' },
+    engine: { basis:'TRANSACTIONAL CORE', title:'Engine + Policy：结构约束归宿主', text:'事件去重、一个线程同时只有一个 Eval、授权后创建 Ticket 与 Assignment、订阅归属和状态转移，都在同步事务内完成。LLM 提交判断，Engine 检查是否仍适用；异步网络与模型调用留在提交之后。', limit:'它持久化任务生命周期，但没有实现完整的单任务 DAG 工作流引擎。', path:'src/core/engine.ts', lines:'L19-L48' },
+    router: { basis:'ADMISSION / ROUTING / HANDOFF', title:'Router：在薄上下文里管理归属', text:'没有现有任务承接的候选，才进入 Gate 与 Eval。明确请求走路由；推断请求核对启用规则、实现意图与既定目标。Router 还负责把可用结果或决策点送回原渠道。', limit:'技术方案由 Worker 决定；当前 Router 有 bash / read / jobs，轻角色不等于无工具角色。', path:'prompts/orchestrator.md', lines:'L1-L16' },
+    worker: { basis:'ISOLATED TASK CONTEXT / EXECUTION SLOT', title:'Worker：读取原文，完成局部工作', text:'一个 Ticket 对应局部会话和目录。Worker 接收订阅后续、检查授权范围、执行代码工作，并提交结构化 Report。默认三个槽位；人的特定后续可使用一个额外槽位。', limit:'应用资源按任务限定；OS 层使用 danger-full-access，目录分离不等于安全沙箱。', path:'src/executor/dsh.ts', lines:'L171-L198' },
+    store: { basis:'SQLITE / AFTER-COMMIT EFFECTS', title:'Store / Effects：保住未完成的责任', text:'SQLite 保存领域对象与效果队列。提交之后才执行模型、会话和外部调用；效果按 kind / key 更新 generation，旧完成不能删掉新载荷。未读输入和待送效果在恢复后继续处理。', limit:'generation 保护队列替换；任意远端动作成功到本地确认之间仍可能重复。', path:'src/app/effects.ts', lines:'L103-L145' },
+    outbox: { basis:'ORIGIN CHANNEL / IDEMPOTENT DELIVERY', title:'Outbox：把可用结果送回原对话', text:'交付回执与发送效果在同一事务中保存，按 Ticket 与渠道维护顺序。GitHub 评论使用隐藏消息 ID 标记去重，飞书使用原生幂等键；普通进度不会逐条刷到发起渠道。', limit:'渠道关闭会永久放弃相应交付；停止接入会等待。发送去重不覆盖 Worker 任意 bash 动作。', path:'src/app/outbox.ts', lines:'L27-L50' }
+  };
+  function select(key) {
+    const item = entries[key];
+    if (!item) return;
+    document.getElementById('sa-detail-basis').textContent = item.basis;
+    document.getElementById('sa-detail-title').textContent = item.title;
+    document.getElementById('sa-detail-text').textContent = item.text;
+    document.getElementById('sa-detail-limit').textContent = item.limit;
+    const link = document.getElementById('sa-detail-link');
+    link.href = base + item.path + '#' + item.lines;
+    link.textContent = '源码：' + item.path + ' · ' + item.lines.replace(/L/g,'').replace('-','–') + ' ↗';
+    document.querySelectorAll('[data-sa-node]').forEach(node => node.classList.toggle('sa-selected', node.dataset.saNode === key));
+    document.querySelectorAll('[data-sa-select]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.saSelect === key)));
+  }
+  document.querySelectorAll('[data-sa-select]').forEach(button => button.addEventListener('click', () => select(button.dataset.saSelect)));
+  document.querySelectorAll('[data-sa-node]').forEach(node => {
+    node.addEventListener('click', () => select(node.dataset.saNode));
+    node.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); select(node.dataset.saNode); }
+    });
+  });
+})();
+</script>
+</body>
+</html>
