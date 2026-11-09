@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Anthropic《The components of agent memory》深度解读：记忆的显著性判断、经验验证闭环、Dreaming、Wiki 与搜索的实验口径，以及薄 Agent + Durable Workflow 的工程映射。" />
+<title>Agent Memory 的组成 · 从当场记录到事后校正 · FDE</title>
+<link rel="stylesheet" href="../../../../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #99524c;
+    --accent-soft: #f6eae6;
+    --accent-deep: #743d38;
+    --accent-ink: #60332f;
+  }
+  [data-theme="dark"] {
+    --accent: #eab0a4;
+    --accent-soft: #352724;
+    --accent-deep: #d79788;
+    --accent-ink: #f4d2c9;
+  }
+  .memory-intro { font-size: 1.05rem; margin-top: -.3em; }
+  .memory-source { font-size: .9rem; }
+  .memory-cite { font-family: var(--mono); font-size: .76em; white-space: nowrap; }
+  .memory-note { font-size: .88rem; color: var(--text-soft); }
+  .memory-label { font-family: var(--mono); font-size: .7rem; letter-spacing: .1em; color: var(--accent); }
+  .memory-title { font-family: var(--serif); font-size: 1.1rem; font-weight: 700; margin: .25rem 0 .5rem; }
+  .memory-proof { display: flex; gap: .5rem; flex-wrap: wrap; margin: .7rem 0; }
+  .memory-proof span { border: 1px solid var(--border); border-radius: 6px; padding: .15rem .55rem; font-size: .8rem; color: var(--text-soft); }
+  .memory-loop, .memory-scores, .memory-hierarchy, .memory-publish {
+    margin: 1.6em 0; padding: 1.25rem; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow);
+    transition: transform .18s, border-color .18s;
+  }
+  .memory-loop:hover, .memory-scores:hover, .memory-hierarchy:hover, .memory-publish:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+  }
+  .memory-loop-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(200px, 1fr); gap: 1rem; align-items: center; }
+  .memory-loop-svg { display: block; width: 100%; height: auto; }
+  .memory-loop-mobile { display: none; }
+  .memory-loop svg text, .memory-hierarchy svg text, .memory-publish svg text {
+    font-family: var(--sans); font-size: 18px; fill: var(--text);
+  }
+  .memory-loop .memory-svg-sub { font-size: 16px; fill: var(--text-soft); }
+  .memory-node-box { fill: var(--bg-soft); stroke: var(--border-strong); stroke-width: 1.5; }
+  .memory-loop [data-memory-node].is-selected .memory-node-box { stroke: var(--accent); stroke-width: 2.5; }
+  .memory-loop [data-memory-node], .memory-hierarchy [data-memory-layer] { cursor: pointer; }
+  .memory-connector { stroke: var(--text-muted); stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .memory-connector-main { stroke: var(--accent); stroke-width: 2.2; }
+  .memory-detail { border-left: 3px solid var(--accent); padding: .9rem 1rem; background: var(--bg-soft); border-radius: 0 10px 10px 0; }
+  .memory-detail-title { font-weight: 600; color: var(--text); margin: 0 0 .4rem; }
+  .memory-detail-copy { margin: 0; font-size: .92rem; }
+  .memory-tabs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; margin-top: .9rem; }
+  .memory-tabs button, .memory-hierarchy-tabs button {
+    color: var(--text-soft); background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: .6rem .65rem; font: inherit; font-size: .86rem; cursor: pointer;
+  }
+  .memory-tabs button[aria-pressed="true"], .memory-hierarchy-tabs button[aria-pressed="true"] {
+    color: var(--accent-ink); border-color: var(--accent); background: var(--accent-soft);
+  }
+  .memory-tabs button:focus-visible, .memory-hierarchy-tabs button:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px;
+  }
+  .memory-scores-axis { display: flex; justify-content: space-between; padding-left: 0; font: .75rem var(--mono); color: var(--text-muted); margin: .9rem 0 .45rem; }
+  .memory-scores-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 52px; gap: .75rem; align-items: center; margin: .75rem 0; }
+  .memory-scores-name { font-size: .9rem; color: var(--text-soft); }
+  .memory-scores-value { font-family: var(--display); font-size: 1.35rem; text-align: right; color: var(--text); }
+  .memory-scores-track { display: block; width: 100%; height: 28px; }
+  .memory-scores-track .track { fill: var(--bg-soft); }
+  .memory-scores-track .bar { fill: var(--text-muted); }
+  .memory-scores-row.is-focus .bar { fill: var(--accent); }
+  .memory-scores-row.is-focus .memory-scores-name, .memory-scores-row.is-focus .memory-scores-value { color: var(--accent-ink); font-weight: 600; }
+  .memory-scores-foot { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; border-top: 1px solid var(--border); margin-top: 1rem; padding-top: .8rem; }
+  .memory-scores-foot p { margin: .25em 0; font-size: .9rem; }
+  .memory-scores-foot strong { font-size: 1.02rem; }
+  .memory-hierarchy-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.2rem; align-items: center; }
+  .memory-hierarchy-svg { width: 100%; height: auto; max-width: 430px; margin: 0 auto; display: block; }
+  .memory-hierarchy [data-memory-layer] rect { fill: var(--bg-soft); stroke: var(--border-strong); stroke-width: 1.5; }
+  .memory-hierarchy [data-memory-layer].is-selected rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  .memory-hierarchy .memory-svg-sub { font-size: 17px; fill: var(--text-soft); }
+  .memory-hierarchy-tabs { display: grid; gap: .5rem; margin-bottom: .9rem; }
+  .memory-hierarchy-tabs button { text-align: left; }
+  .memory-hierarchy .memory-detail { min-height: 145px; }
+  .memory-publish-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .memory-publish-card { padding: .9rem 1rem; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-soft); }
+  .memory-publish-card p { font-size: .9rem; margin: .45em 0; }
+  .memory-publish-card svg { width: 100%; height: auto; display: block; margin: .5rem 0; }
+  .memory-publish-card .memory-svg-sub { font-size: 16px; fill: var(--text-soft); }
+  .memory-record { white-space: pre-wrap; overflow-wrap: anywhere; }
+  .memory-sources li { margin-bottom: .8rem; }
+  .memory-revision { font-size: .85rem; color: var(--text-muted); text-align: center; }
+  @media (max-width: 860px) {
+    .memory-loop-layout { grid-template-columns: 1fr; }
+    .memory-loop-desktop { max-width: 700px; margin: auto; }
+    .memory-hierarchy-layout { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .memory-loop, .memory-scores, .memory-hierarchy, .memory-publish { padding: 1rem; }
+    .memory-loop-desktop { display: none; }
+    .memory-loop-mobile { display: block; max-width: 360px; margin: auto; }
+    .memory-tabs { grid-template-columns: 1fr 1fr; }
+    .memory-scores-row { grid-template-columns: 88px minmax(0, 1fr) 43px; gap: .5rem; }
+    .memory-scores-name { font-size: .86rem; }
+    .memory-scores-value { font-size: 1.15rem; }
+    .memory-scores-foot, .memory-publish-grid { grid-template-columns: 1fr; }
+    .memory-hierarchy .memory-detail { min-height: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .memory-loop, .memory-scores, .memory-hierarchy, .memory-publish { transition: none; }
+    .memory-loop:hover, .memory-scores:hover, .memory-hierarchy:hover, .memory-publish:hover { transform: none; }
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-home"><a href="../../../../index.html">← 首页</a></span>Agent Memory<span class="brand-sub">Anthropic · 2026-11</span></div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+<div class="container">
+<aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+<article>
+  <header class="doc-header">
+    <h1><span class="en">Agent Memory</span> 的组成<br />
+      从当场记录到事后校正</h1>
+    <p class="memory-intro">Anthropic《The components of agent memory》深度解读：显著性、验证闭环、Dreaming 与分层记忆</p>
+    <div class="doc-meta">
+      <span>2026-11-10</span><span>跨市场</span><span>Anthropic</span><span>Agent Memory</span><span>Dreaming</span><span>Context Engineering</span><span>对内</span><span>时机：进行中</span><span>信心：中</span>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">61<small>%</small></div><div class="lab">Stainless：搜索 + 成熟 Wiki 的得分</div></div>
+      <div class="hero-stat"><div class="num">≈20k</div><div class="lab">同一实验：每题节省 tokens</div></div>
+      <div class="hero-stat"><div class="num">57<small>/57</small></div><div class="lab">合同案例：改进后可满足的事实标准</div></div>
+    </div>
+    <p class="memory-source">原文：<a href="https://www.anthropic.com/research/components-of-agent-memory" target="_blank" rel="noopener">The components of agent memory</a> · 2026-11-06 · Lance Martin / Anthropic Engineering<br />阅读与文档日期：2026-11-10。本文实验数字均为原文报告，未独立复现。</p>
+  </header>
+  <div class="lede"><strong>核心判断：</strong>记忆是在当下预测未来会需要什么；Dreaming 则利用事后证据修正这份预测。系统需要同时设计经验的捕获、验证、组织与再使用，并保留回到原始材料的路径。</div>
+  <div class="callout callout-accent">
+    <div class="callout-tag">一页要点</div>
+    <ul>
+      <li><strong>持久化目录只是起点。</strong>收益取决于是否读到记忆、是否检验解释，以及是否把经验变成可复用规则。</li>
+      <li><strong>选择性记忆很重要。</strong>环境每轮直接提供的状态容易过期；经过推理形成的策略、计划与验证经验更需要保留。</li>
+      <li><strong>Dreaming 是后台维护。</strong>回查记录、纠错、去重、建立 Wiki、提升索引、补断链，都属于它的工作。</li>
+      <li><strong>Wiki 与搜索可以互补。</strong>企业文档实验中，搜索 + Wiki 得分 61%，搜索约 53%，Wiki 单用最高 48%。<a class="memory-cite" href="#source-1">[1]</a></li>
+      <li><strong>提示要匹配能力与任务。</strong>较弱模型受益于明确的读记忆和验证步骤；较强模型被固定筛选规则限制后，收益可能下降。</li>
+      <li><strong>工程落地需要区分状态、证据与知识。</strong>Workflow 管执行与恢复，后台整理经验，启动层保持小而可追溯；这是本文的工程推演。</li>
+    </ul>
+  </div>
+
+  <h2 id="scope"><span class="sec-num">一</span>文章讨论的记忆边界<a class="anchor" href="#scope">#</a></h2>
+  <p class="kicker">— MEMORY AS A PREDICTION</p>
+  <p>原文将 Agent Memory 定义为：Claude 从用户互动与任务经历中获得，并以以后能够读取的上下文形式跨会话保留的知识。模型权重更新、单次对话内的 in-context learning，以及为延续当前任务而进行的 compaction，都被排除在这个定义之外。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <p>它提出的困难来自时间顺序：Agent 在写笔记时，无法知道未来会出现什么任务。写下一条规则，就隐含地预测了这条规律会再次有用；保存一项已核实事实，则预测未来可以复用验证成果。<strong>因此，写入量不能直接代表记忆质量。</strong>是否值得保留，要结合未来可复用性、重新获取的难度、过期速度和维护成本判断。</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>信息类型</th><th>原文中的例子</th><th>工程上的处理建议</th></tr></thead>
+    <tbody>
+      <tr><td>直接可观察状态</td><td>游戏当前位置、金钱，每轮能从屏幕读到</td><td>优先读环境；如需快照，标明时间并放在任务状态中</td></tr>
+      <tr><td>目标与下一步</td><td><code>global.md</code> 保存目标和路线计划</td><td>持久化并随执行更新，避免混成永久规则</td></tr>
+      <tr><td>经验知识</td><td>策略、陷阱、检验过的答题规则</td><td>保存依据、适用条件与更新信息，供跨会话复用</td></tr>
+      <tr><td>原始证据</td><td>会话 transcript、工具返回、行动记录</td><td>保留检索路径，供后续核对与重新解释</td></tr>
+    </tbody>
+  </table></div>
+  <p class="memory-note">上表右列为工程推演。原文没有主张删除所有任务进度；它展示的有效记忆中也包含目标和下一步计划。</p>
+
+  <h2 id="learning-loop"><span class="sec-num">二</span>在线经验怎样形成验证闭环<a class="anchor" href="#learning-loop">#</a></h2>
+  <p class="kicker">— CAPTURE · HYPOTHESIZE · VERIFY · REUSE</p>
+  <p>CL-Bench 1.0 的数据库任务要求模型连续回答问题。每次回答后，系统给出正确答案，模型可以写记忆；下一题在全新会话中开始，只有记忆目录持续存在。这样的设计使跨会话经验能够被观察到。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <p>原文观察到，Sonnet 4.6 的目录散落着未经检验的解释；Opus 4.7 开始把笔记整合成参考文档，并区分确认与未确认事实；Sonnet 5 根据 grader 反馈标记答案并写纠正；Opus 5 及后续列举的模型进一步保存规则、验证依据和陷阱，形成了更完整的学习闭环。这里的“学会”体现为后续会话能复用外部笔记中的经验。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="memory-loop reveal" data-memory-widget="loop">
+    <div class="memory-label">MEMORY LOOP · TWO TIMESCALES</div>
+    <div class="memory-title">当场笔记与原始记录，共同进入事后校正</div>
+    <div class="memory-loop-layout">
+      <div>
+        <svg class="memory-loop-svg memory-loop-desktop" viewBox="0 0 660 300" role="img" aria-label="在线笔记与原始记录共同进入后台校正，结果供下次会话使用，下次会话再产生新的笔记。">
+          <defs><marker id="loop-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--text-muted)" /></marker><marker id="loop-accent-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--accent)" /></marker></defs>
+          <path class="memory-connector" d="M216 112 C269 145 341 160 397 191" marker-end="url(#loop-arrow)" />
+          <path class="memory-connector" d="M509 112 L509 191" marker-end="url(#loop-arrow)" />
+          <path class="memory-connector memory-connector-main" d="M392 232 L268 232" marker-end="url(#loop-accent-arrow)" />
+          <path class="memory-connector" d="M151 191 L151 112" marker-end="url(#loop-arrow)" />
+          <g data-memory-node="0"><rect class="memory-node-box" x="34" y="30" width="234" height="82" rx="12" /><text x="54" y="62">① 在线笔记</text><text class="memory-svg-sub" x="54" y="91">捕获可能再次有用的经验</text></g>
+          <g data-memory-node="1"><rect class="memory-node-box" x="392" y="30" width="234" height="82" rx="12" /><text x="412" y="62">② 原始记录</text><text class="memory-svg-sub" x="412" y="91">保留行动与工具反馈</text></g>
+          <g data-memory-node="2" class="is-selected"><rect class="memory-node-box" x="392" y="191" width="234" height="82" rx="12" /><text x="412" y="223">③ 后台校正</text><text class="memory-svg-sub" x="412" y="252">回查、纠错、组织</text></g>
+          <g data-memory-node="3"><rect class="memory-node-box" x="34" y="191" width="234" height="82" rx="12" /><text x="54" y="223">④ 下次会话</text><text class="memory-svg-sub" x="54" y="252">读取索引与相关经验</text></g>
+        </svg>
+        <svg class="memory-loop-svg memory-loop-mobile" viewBox="0 0 330 440" role="img" aria-label="移动端记忆闭环：在线笔记和原始记录进入后台校正，校正后的知识供下次会话使用。">
+          <defs><marker id="loop-mobile-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--text-muted)" /></marker></defs>
+          <path class="memory-connector" d="M87 127 C87 156 112 160 112 190" marker-end="url(#loop-mobile-arrow)" />
+          <path class="memory-connector" d="M247 127 C247 156 218 160 218 190" marker-end="url(#loop-mobile-arrow)" />
+          <path class="memory-connector memory-connector-main" d="M165 270 L165 322" marker-end="url(#loop-mobile-arrow)" />
+          <g data-memory-node="0"><rect class="memory-node-box" x="17" y="38" width="140" height="89" rx="12" /><text x="29" y="73">① 在线笔记</text><text class="memory-svg-sub" x="29" y="104">当场判断</text></g>
+          <g data-memory-node="1"><rect class="memory-node-box" x="177" y="38" width="140" height="89" rx="12" /><text x="189" y="73">② 原始记录</text><text class="memory-svg-sub" x="189" y="104">行动与反馈</text></g>
+          <g data-memory-node="2" class="is-selected"><rect class="memory-node-box" x="24" y="190" width="282" height="80" rx="12" /><text x="44" y="221">③ 后台校正</text><text class="memory-svg-sub" x="44" y="249">将笔记与记录交叉核对</text></g>
+          <g data-memory-node="3"><rect class="memory-node-box" x="24" y="322" width="282" height="80" rx="12" /><text x="44" y="353">④ 下次会话</text><text class="memory-svg-sub" x="44" y="381">读取索引，按需获取知识</text></g>
+        </svg>
+      </div>
+      <div class="memory-detail" aria-live="polite">
+        <div class="memory-detail-title">③ 后台校正</div>
+        <p class="memory-detail-copy">把笔记与原始记录交叉核对，修正错误、处理过期内容，并建立可检索的结构。仅重新措辞或缩短摘要，无法保证旧错误得到纠正。</p>
+      </div>
+    </div>
+    <div class="memory-tabs" role="group" aria-label="查看记忆闭环各步骤">
+      <button type="button" data-memory-step="0" aria-pressed="false">① 在线笔记</button><button type="button" data-memory-step="1" aria-pressed="false">② 原始记录</button><button type="button" data-memory-step="2" aria-pressed="true">③ 后台校正</button><button type="button" data-memory-step="3" aria-pressed="false">④ 下次会话</button>
+    </div>
+    <p class="memory-note">图为本文对原文机制的重绘；移动端按证据流展开。点选步骤可查看职责。</p>
+  </div>
+  <p>Pokémon 的观察进一步展示了显著性判断的差异：约 10,000 步时，Sonnet 3.7 写了 413 个文件、225 个目录，获得一枚徽章；Fable 5 写了九个文件和一个顶层 <code>global.md</code>，分布在两个目录中，获得四枚徽章。较小的目录集中保存目标、路线和策略，减少了对不断过期状态的重复记录。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="callout callout-warn"><div class="callout-tag">证据边界</div><p>这是两个不同模型各一次运行的比较。模型能力和记忆策略同时变化，不能据此断言“减少文件数量”单独导致了更好的游戏表现。它更适合揭示维护开销与状态过期问题。</p></div>
+  <p>提示的作用也取决于模型能力。要求 Sonnet 4.6 在回答前读取记忆并检验解释，接近翻倍地提高了该 benchmark 分数；要求 Opus 4.7 和 Opus 5“只记录失败”，则削弱了记忆原有的收益。<strong>能够自主闭环的模型，需要足够的选择空间；尚不能可靠闭环的模型，需要更明确的过程指导。</strong>这个判断仍受当前任务与模型范围限制。<a class="memory-cite" href="#source-1">[1]</a></p>
+
+  <h2 id="evidence"><span class="sec-num">三</span>实验收益与测量口径<a class="anchor" href="#evidence">#</a></h2>
+  <p class="kicker">— WHAT WAS MEASURED</p>
+  <p>Stainless 文档实验使用约 35 万个文件、4.2 亿 tokens，构建了 25 道问题。Opus 5 在多轮会话中探索材料、写 Wiki、合并重复内容并核查来源。Wiki 单独使用的得分随 Dreaming 从两轮到 128 轮由 13% 增至 48%；搜索 + Wiki 则由 54% 增至 61%，搜索单独使用约为 53%。这些百分比是针对评分标准的得分，不应直接写成“答对题目的比例”。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="memory-scores reveal">
+    <div class="memory-label">EVIDENCE · STAINLESS / 25 QUESTIONS</div>
+    <div class="memory-title">成熟 Wiki 配合搜索，获得最高报告得分</div>
+    <div class="memory-scores-axis"><span>评分标准得分 · 0%</span><span>100%</span></div>
+    <div class="memory-scores-row">
+      <div class="memory-scores-name">Wiki 单用</div>
+      <svg class="memory-scores-track" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" aria-label="成熟 Wiki 单独使用：最高得分 48%。"><rect class="track" width="100" height="28" rx="2" /><rect class="bar" width="48" height="28" rx="2" /></svg>
+      <div class="memory-scores-value">48%</div>
+    </div>
+    <div class="memory-scores-row">
+      <div class="memory-scores-name">原文搜索</div>
+      <svg class="memory-scores-track" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" aria-label="原文搜索单独使用：得分约 53%。"><rect class="track" width="100" height="28" rx="2" /><rect class="bar" width="53" height="28" rx="2" /></svg>
+      <div class="memory-scores-value">53%</div>
+    </div>
+    <div class="memory-scores-row is-focus">
+      <div class="memory-scores-name">搜索 + Wiki</div>
+      <svg class="memory-scores-track" viewBox="0 0 100 28" preserveAspectRatio="none" role="img" aria-label="原文搜索配合成熟 Wiki：得分 61%，比搜索单用高约 8 个百分点。"><rect class="track" width="100" height="28" rx="2" /><rect class="bar" width="61" height="28" rx="2" /></svg>
+      <div class="memory-scores-value">61%</div>
+    </div>
+    <div class="memory-scores-foot">
+      <div><strong>约 +8 个百分点</strong><p>61% 与 53% 的差值；不是增加 8% 的相对收益。</p></div>
+      <div><strong>每题少用约 20,000 tokens</strong><p>原文报告的答题阶段节省；未据此计算 Wiki 建设与维护后的净成本。</p></div>
+    </div>
+    <p class="memory-note">来源：原文 Figure 10 与对应正文。图为报告端点值的重绘，不补绘未披露的中间数据。<a class="memory-cite" href="#source-1">[1]</a></p>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>实验</th><th>设置与结果</th><th>支持的观察</th><th>不能推出什么</th></tr></thead>
+    <tbody>
+      <tr><td>CL-Bench 数据库任务</td><td>每题新会话；共享目录；提供正确答案后允许写记忆</td><td>反馈、验证和后续读取能形成跨会话学习闭环</td><td>任意存储机制都能产生同样收益</td></tr>
+      <tr><td>Pokémon 记忆目录</td><td>不同模型各一次运行；413 文件 / 一枚徽章，对比九文件 + 顶层文件 / 四枚徽章</td><td>重复保存易过期状态，会产生维护开销</td><td>文件少是表现提升的独立因果因素</td></tr>
+      <tr><td>Stainless 企业文档</td><td>25 道问题；Wiki 单用最高 48%；搜索约 53%；组合达到 61%</td><td>知识结构可辅助原文检索；收益随组织积累变化</td><td>48% → 61% 是同一条件下增加 Dreaming 的收益</td></tr>
+      <tr><td>合并交易问答</td><td>24 个问题中，需要跨文档等处理的条目：Wiki 87%，搜索 73%</td><td>提前建立跨文档关联可能有帮助</td><td>所有 24 道题的总分都等于 87%</td></tr>
+      <tr><td>LAB 法律任务</td><td>某任务未见明确收益；另一任务的 Wiki 大于原文档</td><td>能直接单篇检索的内容，额外组织可能没有收益</td><td>所有法律任务都不需要 Wiki</td></tr>
+      <tr><td>合同事实保留</td><td>41/57 → 57/57；同时改为每合同独立页面、单 Agent 写入、逐字引用条款</td><td>组织、写入冲突与保真方式会影响事实完整性</td><td>单独由串行化或逐字引用贡献全部提升</td></tr>
+    </tbody>
+  </table></div>
+  <p class="memory-note">本表全部实验来自同一篇 Anthropic 一手文章 <a href="#source-1">[1]</a>；它们不是六份独立验证。原文未提供足以让本文独立复现所有实验的完整材料，尤其需要保留案例、模型差异、评分范围和干预混杂的边界。</p>
+
+  <h2 id="dreaming"><span class="sec-num">四</span>Dreaming 如何纠错与补缺口<a class="anchor" href="#dreaming">#</a></h2>
+  <p class="kicker">— VERIFY AGAINST THE RECORD</p>
+  <p>月见山案例中，Claude 错把治疗中心记在山的东侧，随后宣布已经穿过山洞。它走下单向台阶、回到之前的路线，却将失败解释成“向西走过头了”，从而没有纠正原有方位判断。错误笔记于是成为下一次行动的依据。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="callout callout-accent">
+    <div class="callout-tag">错误如何被持久化</div>
+    <p><strong>错误方位 → 已完成山洞的判断 → 后续导航失败 → 用旧判断解释失败 → 再次走错。</strong></p>
+    <p>Dreaming 将笔记与会话记录核对后，改正了治疗中心的方位。使用纠正笔记的运行重新进入山洞并到达华蓝市；原笔记运行和无记忆运行都未越过该障碍。原文展示的是具体纠错案例。<a class="memory-cite" href="#source-1">[1]</a></p>
+  </div>
+  <p>这个过程的关键是回到更接近行动事实的材料，而非仅在错误笔记上继续解释。<strong>原始轨迹是一条证据路径，但并不使其中每句话都成为事实。</strong>读取时需要区分用户陈述、模型推断、工具返回与实际观察；若记录自身不足以验证，应保留“未确认”。</p>
+  <p>Dreaming 也可跨会话修补组织问题。LAB Wiki 的第二轮整理中，一个案例发现了九条指向缺失页面的链接，将其改指向已有的对应文档页面，并新增三页，包括索引。这种工作依赖全局视角：当场写笔记的会话未必能看到此前所有页面或之后出现的重复信息。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <p>原文将这类后台计算连接到 Letta 与 UC Berkeley 的 sleep-time compute：在问题到来前利用闲时处理已有上下文。该研究支持“把部分计算提前并跨相关查询摊销”的方向，但它使用的推理任务并不是本文的 Pokémon 或企业 Wiki 实验，不能用它替代对这些结果的独立验证。<a class="memory-cite" href="#source-5">[5]</a></p>
+
+  <h2 id="hierarchy"><span class="sec-num">五</span>Wiki、搜索与启动层怎样配合<a class="anchor" href="#hierarchy">#</a></h2>
+  <p class="kicker">— A SMALL INDEX, WITH PATHS TO EVIDENCE</p>
+  <p>Wiki 是由 Agent 维护、互相链接的知识页面。它的价值包括聚合一个主题、建立关联、留下来源路径，并减少下一次任务从头探索的工作。企业文档结果提示，<strong>组织后的知识与原文搜索可以共同工作</strong>：前者提供地图，后者提供细节与核验材料。对于单篇文档即可回答的问题，额外建立 Wiki 的收益则可能很小。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="memory-hierarchy reveal" data-memory-widget="hierarchy">
+    <div class="memory-label">MEMORY HIERARCHY · PROMOTE / LINK / RETRIEVE</div>
+    <div class="memory-title">顶层保持小，详细知识向下展开</div>
+    <div class="memory-hierarchy-layout">
+      <svg class="memory-hierarchy-svg" viewBox="0 0 380 370" role="img" aria-label="三层记忆：顶层是启动索引，中层是主题笔记和 Wiki，底层是原始轨迹与文档。顶层较小，详细材料按需读取。">
+        <defs><marker id="hierarchy-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--text-muted)" /></marker></defs>
+        <path class="memory-connector" d="M190 110 L190 151" marker-end="url(#hierarchy-arrow)" />
+        <path class="memory-connector" d="M190 235 L190 276" marker-end="url(#hierarchy-arrow)" />
+        <g data-memory-layer="0" class="is-selected"><rect x="70" y="26" width="240" height="84" rx="12" /><text x="190" y="61" text-anchor="middle">启动索引</text><text class="memory-svg-sub" x="190" y="88" text-anchor="middle">少量规则 + 查找入口</text></g>
+        <g data-memory-layer="1"><rect x="45" y="151" width="290" height="84" rx="12" /><text x="190" y="187" text-anchor="middle">主题笔记 / Wiki</text><text class="memory-svg-sub" x="190" y="214" text-anchor="middle">经验证的规则与关联</text></g>
+        <g data-memory-layer="2"><rect x="20" y="276" width="340" height="84" rx="12" /><text x="190" y="312" text-anchor="middle">原始轨迹 / 文档</text><text class="memory-svg-sub" x="190" y="339" text-anchor="middle">观察、来源与具体上下文</text></g>
+      </svg>
+      <div>
+        <div class="memory-hierarchy-tabs" role="group" aria-label="查看记忆层级">
+          <button type="button" data-memory-step="0" aria-pressed="true">① 启动时加载什么</button>
+          <button type="button" data-memory-step="1" aria-pressed="false">② 按主题读取什么</button>
+          <button type="button" data-memory-step="2" aria-pressed="false">③ 如何回到证据</button>
+        </div>
+        <div class="memory-detail" aria-live="polite">
+          <div class="memory-detail-title">① 启动索引</div>
+          <p class="memory-detail-copy">放少量重要规则与查找入口。提升到这一层意味着每次会话都占用上下文，也意味着错误规则可能反复影响行动，因此需要更严格的验证与容量控制。</p>
+        </div>
+      </div>
+    </div>
+    <p class="memory-note">本文依据原文分层思想重绘。三层是解释结构，不是 Anthropic 规定的固定数据库模式。点选右侧条目可查看各层职责。</p>
+  </div>
+  <p>Dreaming 能将高价值笔记提升到启动层，harness 在会话开始时预先加载它们，避免模型连“应该搜什么”都不知道。但注入内容会占上下文，也可能把错误传播到每个会话；文件变长还会影响指令遵循。原文以 Claude Code auto memory 为例，启动时只加载 <code>MEMORY.md</code> 的前 200 行或 25 KB，使顶层发挥索引作用。这个阈值属于该产品示例，不是通用记忆容量标准。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <p>文章也明确把 transcript search 视为可以考虑的记忆基础。Wiki 是一种额外的组织投资，需要在经常重复的问题、跨文档依赖和检索成本上取得收益；如果 Wiki 比原文档还大，又没有形成抽象或导航能力，维护成本可能超过价值。</p>
+
+  <h2 id="goals"><span class="sec-num">六</span>自由判断与业务约束的层次<a class="anchor" href="#goals">#</a></h2>
+  <p class="kicker">— STEER THE PURPOSE AND PRESERVE WHAT MATTERS</p>
+  <p>“不要过度规定如何写记忆”和“按业务目标指导 Dreaming”针对不同层面。前者涉及在线显著性判断，例如“只记录失败”会排除有价值的成功规则与已验证事实；后者涉及最终知识必须保留什么，以及怎样组织才服务任务。</p>
+  <p>合同案例里，多个 Agent 同时写一张共享条款表，发生覆盖，并且摘要丢失了重要条款。原文报告只有 41/57 项关键事实被保留下来。经失败反思与指令迭代后，每份合同由一个 Agent 写独立页面，逐字引用条款，改进 Wiki 支持满足全部 57 项标准。<a class="memory-cite" href="#source-1">[1]</a></p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>指导层次</th><th>适合明确的内容</th><th>容易产生的问题</th></tr></thead>
+    <tbody>
+      <tr><td>用途</td><td>帮助后续会话减少重复探索；支持合同条款核对</td><td>用途缺失时，模型不知道哪些事实更重要</td></tr>
+      <tr><td>保真要求</td><td>关键条款逐字保留，来源可追溯，不确定性显式记录</td><td>过度摘要可能消除决定性细节</td></tr>
+      <tr><td>写入组织</td><td>明确页面归属，避免多个写入者覆盖同一事实</td><td>共享表格并行覆盖，事实悄悄丢失</td></tr>
+      <tr><td>在线选择</td><td>根据经验价值判断是否值得保存</td><td>一刀切规则可能限制强模型的判断空间</td></tr>
+    </tbody>
+  </table></div>
+  <p>工程上可以同时给予内容选择空间与明确的正确性约束：让模型判断具体哪些经验值得记住，同时要求它保存依据、标注推断、尊重关键原文，并遵守写入并发策略。自由选择内容不等于自由改变事实。</p>
+
+  <h2 id="implementation"><span class="sec-num">七</span>官方实现的两条路径<a class="anchor" href="#implementation">#</a></h2>
+  <p class="kicker">— NEW STORE OR IN-PLACE UPDATE</p>
+  <p>官方 Memory Stores 文档将记忆库描述为跨会话的文本集合。云托管 session 挂载它后，Agent 用文件工具读写；每次变更产生不可变版本，也可以通过 API 使用内容 hash 前置条件避免并发覆盖。这解决持久化和版本记录，但知识是否正确，仍需要验证过程。<a class="memory-cite" href="#source-2">[2]</a></p>
+  <div class="memory-publish reveal">
+    <div class="memory-label">IMPLEMENTATION · TWO OUTPUT POLICIES</div>
+    <div class="memory-title">同样是后台整理，输出策略不同</div>
+    <div class="memory-publish-grid">
+      <div class="memory-publish-card">
+        <div class="memory-label">DREAMS API</div>
+        <svg viewBox="0 0 340 180" role="img" aria-label="Dreams API 从输入记忆库 A 和过去会话生成新的输出记忆库 B，输入 A 保持不变。">
+          <defs><marker id="publish-new-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--accent)" /></marker></defs>
+          <rect class="memory-node-box" x="20" y="26" width="120" height="72" rx="10" /><text x="80" y="57" text-anchor="middle">输入 A</text><text class="memory-svg-sub" x="80" y="82" text-anchor="middle">保持不变</text>
+          <path class="memory-connector memory-connector-main" d="M140 62 L200 62" marker-end="url(#publish-new-arrow)" />
+          <rect x="200" y="26" width="120" height="72" rx="10" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" /><text x="260" y="57" text-anchor="middle">输出 B</text><text class="memory-svg-sub" x="260" y="82" text-anchor="middle">新记忆库</text>
+          <text class="memory-svg-sub" x="170" y="142" text-anchor="middle">过去会话作为核对材料</text>
+        </svg>
+        <p>异步任务读取现有库与 1–100 个会话，生成独立的新库。使用方决定如何检查和采用输出；失败或取消可能留下部分内容。当前为 research preview。<a class="memory-cite" href="#source-3">[3]</a></p>
+        <p><strong>设计重点：</strong>输出完整性、版本切换、避免采用失败任务的部分结果。</p>
+      </div>
+      <div class="memory-publish-card">
+        <div class="memory-label">DYNAMIC WORKFLOW COOKBOOK</div>
+        <svg viewBox="0 0 340 180" role="img" aria-label="Dynamic Workflow 示例通过 Analyzer 和 Organizer 原地更新同一个记忆库 A。">
+          <defs><marker id="publish-same-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M1 1 L7 4 L1 7 Z" style="fill:var(--accent)" /></marker></defs>
+          <rect x="90" y="26" width="160" height="72" rx="10" style="fill:var(--accent-soft);stroke:var(--accent);stroke-width:2" /><text x="170" y="57" text-anchor="middle">同一个库 A</text><text class="memory-svg-sub" x="170" y="82" text-anchor="middle">原地更新</text>
+          <path class="memory-connector memory-connector-main" d="M250 62 C308 62 308 124 170 124 C38 124 38 62 90 62" marker-end="url(#publish-same-arrow)" />
+          <text class="memory-svg-sub" x="170" y="162" text-anchor="middle">Analyzer → Organizer</text>
+        </svg>
+        <p>Lead 写工作流；Analyzer 读取会话、核验并补充笔记；所有 Analyzer 完成后，Organizer 合并重复内容、修链接和索引。后续会话只读挂载该库。<a class="memory-cite" href="#source-4">[4]</a></p>
+        <p><strong>设计重点：</strong>共享写入冲突、更新过程的可见性、备份与版本恢复。</p>
+      </div>
+    </div>
+    <p class="memory-note">API 与 cookbook 是两种实现，不能将“新库生成”与“原地更新”混写为一个产品行为。示例使用 Lead / Analyzer / Organizer，也不意味着任意自建系统必须拆成三个 Agent。</p>
+  </div>
+  <p>两条路径都说明 Dreaming 可以作为独立的后台工作。自建时可以用既有 Scheduler 和任务队列承载它，按材料分片处理，再统一组织；应根据写入冲突、失败恢复、延迟与成本选择并发度。本文没有执行付费 API，也没有对 cookbook 运行成本做复现。</p>
+
+  <h2 id="engineering"><span class="sec-num">八</span>映射到薄 Agent + Durable Workflow<a class="anchor" href="#engineering">#</a></h2>
+  <p class="kicker">— ENGINEERING INTERPRETATION</p>
+  <div class="memory-proof"><span>以下为工程推演</span><span>不是原文发布的标准架构</span><span>需要任务级实验验证</span></div>
+  <p>对于已有持久化调度器的系统，可将三个问题分别处理：任务做到哪里、过去发生了什么、哪些经验能再次使用。这样恢复执行依赖明确状态，经验知识保留证据，而下一次会话不用读取全部历史。</p>
+  <div class="table-wrap"><table>
+    <thead><tr><th>步骤</th><th>责任主体</th><th>主要输入与输出</th><th>完成条件</th></tr></thead>
+    <tbody>
+      <tr><td>1. 执行与恢复</td><td>Durable Workflow / Scheduler</td><td>任务状态、依赖、重试、产物引用</td><td>能确定已完成和待执行步骤</td></tr>
+      <tr><td>2. 捕获经验</td><td>在线 Agent</td><td>反馈与观察 → 候选规则、目标、计划</td><td>标明事实或推断，并能定位来源</td></tr>
+      <tr><td>3. 保留证据</td><td>记录层</td><td>会话、工具返回、产物与评分引用</td><td>后续整理能找到对应材料</td></tr>
+      <tr><td>4. 校正与组织</td><td>后台整理任务</td><td>现有知识 + 新记录 → 校验后的笔记与索引</td><td>不把未确认解释提升为确定规则</td></tr>
+      <tr><td>5. 采用新结果</td><td>记忆版本管理</td><td>新库或原地变更 → 可供后续读取的版本</td><td>输出完整，冲突可检测，失败可恢复</td></tr>
+      <tr><td>6. 按需读取</td><td>新会话的 Agent</td><td>小索引 → 主题笔记 → 必要的原始材料</td><td>能找到相关经验并核对当前适用性</td></tr>
+    </tbody>
+  </table></div>
+  <p>一个候选规则可以保存“规则、依据、适用范围、验证状态、更新时间、被替代关系”。这是便于追溯的建议结构，不必成为复杂数据库 schema，也不需要对所有笔记强制套同一种模板。下面仅展示字段用途，没有模拟实验结果。</p>
+  <pre class="memory-record"><code>规则：从一次经验中提炼的可复用做法
+依据：来源会话 / 工具观察 / 用户确认的引用
+适用范围：项目、环境版本、任务类型
+验证状态：未确认 / 已验证 / 已被替代
+更新时间：本条内容最近被核对的日期
+替代关系：当前规则对应的旧条目引用</code></pre>
+  <p>在线写入与后台整理各有时效代价：前者能即时保存重要经验，却会打断主任务；后者可跨会话回看，但输出可能赶不上下一次任务。更合适的起点是当场捕获高价值内容，再针对近期、频繁使用或容易变化的条目做后台整理，节奏由实际任务验证。</p>
+  <p>评测应把收益和代价一起记录：重复犯错率、有效规则的复用、过期内容被引用的频率、答题 tokens / 延迟，以及后台整理的总成本。总成本至少包含<strong>记忆建设 + 后台维护 + 所有在线任务</strong>；只有在重复任务上摊销后，才能判断每题节省是否转化为净收益。</p>
+  <div class="callout callout-warn"><div class="callout-tag">仍需验证的问题</div>
+    <ol>
+      <li>对当前模型，明确要求先读记忆、验证解释，是否仍带来收益？</li>
+      <li>任务主要需要跨文档组织，还是单篇检索已经足够？</li>
+      <li>新记忆在哪些环境变化后需要重新核对？</li>
+      <li>共享页面的并行写入是否丢失事实，版本前置条件能否及时发现冲突？</li>
+      <li>启动层变长后，是否挤占上下文或削弱指令遵循？</li>
+      <li>保留建设与维护成本后，需要多少次复用才能获得净收益？</li>
+    </ol>
+  </div>
+  <p>判断印章的含义：<strong>时机：进行中</strong>，持久化记忆与后台整理已经有官方 API 和可参考示例；<strong>信心：中</strong>，机制与实现可核对，但任务收益仍来自有限实验，具体业务上的成本与可靠性需要独立测量。</p>
+
+  <h2 id="sources"><span class="sec-num">九</span>来源与阅读范围<a class="anchor" href="#sources">#</a></h2>
+  <p class="kicker">— PRIMARY SOURCES · READ ON 2026-11-10</p>
+  <ol class="memory-sources">
+    <li id="source-1"><strong>[1] Anthropic · The components of agent memory</strong><br /><a href="https://www.anthropic.com/research/components-of-agent-memory" target="_blank" rel="noopener">原文链接</a> · 2026-11-06。本文定义、模型行为观察与全部实验数字的来源；完整正文已阅读。没有将其内部多个实验视为独立研究机构的交叉验证。</li>
+    <li id="source-2"><strong>[2] Claude Platform · Using agent memory</strong><br /><a href="https://platform.claude.com/docs/en/managed-agents/memory" target="_blank" rel="noopener">官方 Memory Stores 文档</a>。核对文本记忆库、session 挂载、读写权限、不可变版本与内容 hash 前置条件。</li>
+    <li id="source-3"><strong>[3] Claude Platform · Dreams</strong><br /><a href="https://platform.claude.com/docs/en/managed-agents/dreams" target="_blank" rel="noopener">官方 Dreams 文档</a>。核对异步任务、输入库与会话、新输出库、失败后的部分内容，以及 research preview 状态。</li>
+    <li id="source-4"><strong>[4] Claude Cookbook · Dreaming with a dynamic workflow</strong><br /><a href="https://platform.claude.com/cookbook/managed-agents-cma-dreaming-with-a-dynamic-workflow" target="_blank" rel="noopener">官方实现示例</a> · 2026-11-02。核对原地更新、Lead / Analyzer / Organizer 分工和后续只读挂载。本文未运行示例；示例中的合成演示语料未用作本文实验结论的证据。</li>
+    <li id="source-5"><strong>[5] Lin et al. · Sleep-time Compute: Beyond Inference Scaling at Test-time</strong><br /><a href="https://arxiv.org/abs/2504.13171" target="_blank" rel="noopener">arXiv:2504.13171</a> · 2025-04-17。阅读摘要，用于追溯问题到来前计算与跨查询摊销的研究背景；未对全文或其代码进行复现。</li>
+  </ol>
+  <hr />
+  <p class="memory-revision">修订记录：2026-11-10 初稿 · 保留实验范围与因果边界，核对官方输出策略，新增四组专属图解。</p>
+  <div class="doc-footer">
+    <a href="../../../../index.html">← 首页</a> · <a href="../../../index.html">厂商动态索引</a> · <a href="../../../../insights/cross/2026-10_claude-managed-agents-dynamic-workflows.html">相关：Managed Agents Dynamic Workflows</a>
+  </div>
+</article>
+</div>
+<script src="../../../../_assets/insight.js"></script>
+<script>
+(() => {
+  const panels = {
+    loop: [
+      ['① 在线笔记', '判断哪些经验可能再次有用，及时保存目标、计划、规则或重要事实。即时写入仍可能包含错误解释，应该保留依据与不确定性。'],
+      ['② 原始记录', '保留用户输入、行动和工具结果，为事后核对提供材料。模型陈述、工具观察与用户确认需要区分；历史记录中的每句话并不都是真实事实。'],
+      ['③ 后台校正', '把笔记与原始记录交叉核对，修正错误、处理过期内容，并建立可检索的结构。仅重新措辞或缩短摘要，无法保证旧错误得到纠正。'],
+      ['④ 下次会话', '启动时读取少量索引，按需加载相关知识，并核对当前适用范围。必要时回到原始材料；新任务的反馈再进入下一轮。']
+    ],
+    hierarchy: [
+      ['① 启动索引', '放少量重要规则与查找入口。提升到这一层意味着每次会话都占用上下文，也意味着错误规则可能反复影响行动，因此需要更严格的验证与容量控制。'],
+      ['② 主题笔记 / Wiki', '按主题保存经验、关联和来源。对于经常重复、需要跨材料组织的问题，可以减少重新探索；内容应支持回到原文检索，而不是封闭在摘要里。'],
+      ['③ 原始轨迹 / 文档', '保留行动、工具返回与来源文档，供核对、补细节和重新解释。原始材料也可能过期或含模型推测，读取时仍需区分证据类型。']
+    ]
+  };
+  document.querySelectorAll('[data-memory-widget]').forEach(root => {
+    const kind = root.dataset.memoryWidget;
+    root.addEventListener('click', event => {
+      const button = event.target.closest('button[data-memory-step]');
+      const node = event.target.closest('[data-memory-node], [data-memory-layer]');
+      const target = button || node;
+      if (!target || !root.contains(target)) return;
+      const step = button ? button.dataset.memoryStep : (kind === 'loop' ? node.dataset.memoryNode : node.dataset.memoryLayer);
+      const selectedButton = root.querySelector(`button[data-memory-step="${step}"]`);
+      const index = Number(step);
+      const entry = panels[kind]?.[index];
+      if (!entry) return;
+      root.querySelectorAll('button[data-memory-step]').forEach(item => {
+        item.setAttribute('aria-pressed', String(item === selectedButton));
+      });
+      root.querySelector('.memory-detail-title').textContent = entry[0];
+      root.querySelector('.memory-detail-copy').textContent = entry[1];
+      const selector = kind === 'loop' ? '[data-memory-node]' : '[data-memory-layer]';
+      root.querySelectorAll(selector).forEach(node => {
+        const value = kind === 'loop' ? node.dataset.memoryNode : node.dataset.memoryLayer;
+        node.classList.toggle('is-selected', Number(value) === index);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
