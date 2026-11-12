@@ -1,12 +1,6 @@
 ---
 name: insight-write
-description: >-
-  Writes a new deep-dive HTML for the FDE insight site from any source
-  (vendor blog / paper / repo / video / original idea), following the site's
-  Design Standard (bespoke SVG, ext-fig, judgment stamps). Use when the user
-  asks 写一篇新的文章 / 解读这篇 / 深度解读 / 拆一下这个开源项目 / 我想写个洞察 / 解读这个视频.
-  视频的字幕提取先走 video-digest fetch，后续写作/落盘统一在这里。
-  触发词：写洞察、解读博客、拆开源、读论文、解读视频、写深度文章。
+description: Write sourced deep-dive HTML for the FDE insight site with clear fact and inference attribution. Use for 写一篇新的文章、深度解读、写洞察、解读博客、拆开源、读论文、解读视频、写深度文章. Fetch video transcripts with video-digest first.
 ---
 
 # 深度文章写作 → 站点发布
@@ -33,15 +27,43 @@ FDE 洞察站**所有深度文章**的统一工作流。四种源类型（厂商
 
 ---
 
+## 信源归属与推论边界（所有板块的写作硬约束）
+
+**让读者在观点出现处就能判断是谁提出的。作者推论必须讲清楚，不能让读者以为它是原文章里的思想；仅在页尾写“本文包含推论”不算满足要求。**
+
+| 内容性质 | 写法 | 引用支持的范围 |
+|----------|------|----------------|
+| 原文事实 / 原文观点 | 明确指出来源主体，保留条件与证据局限，紧邻对应内容放引用。只有原文明确提出，才能写“原文认为 / 官方建议”。 | 引用支持实际读到的事实或来源自己的观点；从原数计算的比例写“据这些数值计算”。 |
+| 本文推论 / 解读 | 在关键观点首次出现处写“本文推论 / 我的判断 / 我的解读”，解释依据、推导与适用前提。 | 来源是推论的依据，不等于来源也提出或验证了该推论。 |
+| 本文设计 / 行动建议 | 写“本文设计建议 / 候选方案 / 本文建议”，说明从问题到实现还有一步作者选择。 | 不把架构对象、协议、指标、试验计划包装成原文方案或已验证收益；自拟案例标为“本文示例”。 |
+
+执行以下规则：
+
+1. **先划清材料与观点。** 提纲中分开列原文披露的事实、作者推论和作者方案。沿用本站既有架构思路时，说明它是作者选择，不能借来源引用包装成原文提出或验证的结论。
+2. **写出推导过程。** 核心推论交代“事实 → 推论 → 设计选择”：依据是什么、为什么能作此判断、额外依赖哪些前提、证据不能推出什么。涉及“必须 / 唯一 / 最优”等必要性或优越性判断时，检查是否有直接证据；否则改为候选建议，并说明替代方案或待验证条件。
+3. **就地标归属，照顾跳读。** 标题、副标题、lede、一页要点若使用作者观点，要让读者明确这是本文观点；相关章节、图表和交互说明也各自标明归属。连续的推论段落可共用清晰标记，不必逐句堆标签，但不能只依赖远处或页尾说明。
+4. **图也要区分还原与设计。** 依据原文重绘的图标“原文实验 / 按原文重绘”并附来源；作者自拟的架构图、概念框架、指标和流程图标“本文设计建议 / 非原文架构”。原文数据图中的选档、策略或推荐说明，单独标为本文解读。
+5. **引用只挂在它实际支持的内容上。** 同段混合事实与推论时，先结束事实陈述并放引用，再明确转入“我的推论”。不能把出处放在自拟方案后，让它看起来像来源提出了该方案。
+
+推荐的关键推论写法：
+
+> **原文事实：** 千 Agent 实验用 SQL 记录协作状态，用 Git / Lean 汇合、验证产物（附工程原文来源）。
+>
+> **本文推论：** 对需要跨执行者恢复的长任务，持久工作事实与可复查验收依据可能很重要；这是对特定实验经验的推广，需在目标任务上验证。
+>
+> **本文设计建议：** 我选择用 Goal 对象关联状态、预算和验收证据。原文没有提出这套对象模型，资料也不能必然推出“必须有 Goal 对象”；任务账本或已有工作流可能同样可行。
+
+---
+
 ## 工作流
 
 ```
 Task Progress:
-- [ ] 1. 抓源材料 + 判断板块 + 定 slug
+- [ ] 1. 抓源材料 + 划清事实/推论/建议 + 判断板块 + 定 slug
 - [ ] 2. 提取外部图片（如有）→ _media/<slug>/
 - [ ] 3. 选 accent（避开语义色 + 已用色）
 - [ ] 4. 起页面骨架（doc-header + hero-stats + lede + 一页要点）
-- [ ] 5. 选 ≥3 bespoke SVG 模式（§4.4）+ 写章节
+- [ ] 5. 选 ≥3 bespoke SVG 模式（§4.4）+ 写章节 + 就地标明观点归属与推导
 - [ ] 6. 盖两枚判断印章 + 修订记录
 - [ ] 7. build_manifest + serve.py 亮/暗验收
 ```
@@ -187,7 +209,7 @@ sips -Z 1600 in.png --out out.png
 </header>
 
 <!-- 核心论点 -->
-<div class="lede"><strong>核心论点：</strong>【一句话抓读者】</div>
+<div class="lede"><strong>核心论点 · 本文推论：</strong>【作者观点标明归属；如转述原文观点则写明来源主体】</div>
 
 <!-- 一页要点 -->
 <div class="callout callout-accent">
@@ -207,6 +229,8 @@ sips -Z 1600 in.png --out out.png
 **语义按板块自适应**：洞察 = 我的预测应验窗口；厂商 / 阅读 / 开源 = 这个一手信号对我们的意义与可信度。
 
 ### Step 5 — 挑 ≥3 个 bespoke SVG 模式 + 写章节
+
+写章节与图表时执行上文“信源归属与推论边界”：事实、推论与方案分别表达，关键推论写出依据和推导，图内或紧邻图的位置标明“原文重绘”或“本文设计建议”。
 
 **从 [§4.4 已验证模式](../../_assets/DESIGN_STANDARD.md) 选型**（按你要表达的概念）：
 
@@ -294,6 +318,8 @@ sips -Z 1600 in.png --out out.png
 
 ### Step 7 — 收尾验证
 
+**先做归属验收，再发布。** 检查标题/lede、一页要点、关键推论、架构图与交互面板；逐一回答“谁提出的、原文哪里支持、哪些是作者补的、是否仍需验证”。尤其检查“原文提出 / 官方建议”等措辞和方案后面的引用。若读者只读该段或该图会误以为作者观点来自原文，先改写，不以页尾说明代替。
+
 ```bash
 # 1. 重建 manifest 静态快照
 python3 _assets/build_manifest.py
@@ -317,6 +343,9 @@ python3 serve.py                     # 默认 8000，被占用则用 python3 ser
 
 ```
 - [ ] 板块选对（价值形态 vs 提到谁）
+- [ ] 原文事实/观点、本文推论、本文设计建议分别表述；引用紧邻它实际支持的内容
+- [ ] 关键推论写出事实 → 推论 → 设计选择，交代前提、证据边界与待验证条件
+- [ ] 标题/lede、一页要点、图表与交互面板就地标观点归属，跳读也不会误认成原文思想
 - [ ] 相对路径深度算对（到 _assets/）
 - [ ] <style> 里设 accent + 暗色变体，避开语义色 & 已用色
 - [ ] doc-meta 齐：日期/受众/标签/状态 + 时机：X + 信心：Y
@@ -336,6 +365,7 @@ python3 serve.py                     # 默认 8000，被占用则用 python3 ser
 
 | 坑 | 现象 | 对策 |
 |----|------|------|
+| 作者推论混成原文思想 | 自拟架构或观点后挂来源引用，只在页尾声明是推论 | 在观点和图表出现处标作者归属，拆开事实与推论，补推导及证据边界 |
 | SVG 属性里写 `var(--x)` | 颜色不生效 | 换 `<g style="color:var(...)" stroke="currentColor">` 或 `style="fill:var(...)"` |
 | bespoke 块用 `h2[id]` | TOC 被刷屏 | 用 `<div>` / `<h4>` 无 id |
 | 单页覆盖了 `body` / `h1` 基础规则 | 「快照漂移」 | 基础规则还回 `insight.css`；单页只放 accent + bespoke |
@@ -351,6 +381,7 @@ python3 serve.py                     # 默认 8000，被占用则用 python3 ser
 | 我要… | 看 |
 |-------|-----|
 | 视觉标准（**先读**） | [`_assets/DESIGN_STANDARD.md`](../../_assets/DESIGN_STANDARD.md) |
+| 事实 → 推论 → 设计选择示例 | [Fable 5.2 · 第四节目标对象的推导与归属](../../insights/cross/2026-11_organize-agents-around-completion.html#goal) |
 | 建页模板 | [`_assets/_template_insight.html`](../../_assets/_template_insight.html) |
 | 参考实现（gold standard） | `insights/cross/2026-06_loop-engineering-coding-agent.html` · `insights/cross/2026-06_claude-code-artifacts.html` · `frontier/vendors/anthropic/deep_dives/2026-07-06_global-workspace-j-space.html`（含 `.ext-fig` 示范） |
 | 视频解读工作流 | [`skill/video-digest/SKILL.md`](../video-digest/SKILL.md) |

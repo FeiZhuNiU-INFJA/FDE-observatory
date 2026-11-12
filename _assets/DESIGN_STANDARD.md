@@ -203,6 +203,8 @@
 | guardian-cobalt | `#1e40af` / dark `#93c5fd` | Muse · 把信任工程化（跨市场洞察） |
 | petroleum-plum | `#514368` / dark `#c7b5e9` | DeepSeek Super Agent · 事件驱动控制面（开源拆解） |
 | copper-rose | `#99524c` / dark `#eab0a4` | Agent Memory 的组成 · 从当场记录到事后校正（`frontier/vendors/anthropic/deep_dives/2026-11-10_components-of-agent-memory.html`） |
+| patina-blue | `#366b73` / dark `#91cbd1` | 下一位客户是 Agent · Vercel 的验证、信任与平台策略（`readings/2026-11_agent-customer-verification-trust.html`） |
+| clay-copper | `#8c6047` / dark `#d7b397` | Fable 5.2 · 把 Agent 围绕「完成」组织起来（`insights/cross/2026-11_organize-agents-around-completion.html`） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`

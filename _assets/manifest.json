@@ -1,6 +1,25 @@
 {
-  "generated_at": "2026-11-09T16:18:29.992788+00:00",
+  "generated_at": "2026-11-12T08:52:29.767095+00:00",
   "insights": [
+    {
+      "path": "insights/cross/2026-11_organize-agents-around-completion.html",
+      "title": "Fable 5.2 · 把 Agent 围绕「完成」组织起来",
+      "date": "2026-11-12",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Anthropic",
+        "Fable 5.2",
+        "目标管理",
+        "多 Agent",
+        "任务经济性"
+      ],
+      "category": "insight",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "insights/cross/2026-10_claude-managed-agents-dynamic-workflows.html",
       "title": "Claude 开始自己写工作流 · Managed Agents · Dynamic Workflows",
@@ -929,6 +948,25 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-11_agent-customer-verification-trust.html",
+      "title": "下一位客户是 Agent",
+      "date": "2026-11-12",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Vercel",
+        "AI Agent",
+        "验证闭环",
+        "开发者体验",
+        "FDE"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-09_grok-bot-last-ten-percent.html",
       "title": "最后 10% 才是产品 · How Grok Bot Shipped in Seven Weeks",

@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="从 Fable 5.2 的 effort 成本曲线、千 Agent 费马实验与安全回退，推导以可验收目标、持久事实、预算和独立验证组织 Agent 工作的方法。" />
+<title>Fable 5.2 · 把 Agent 围绕「完成」组织起来 · FDE 洞察</title>
+<link rel="stylesheet" href="../../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #8c6047;
+    --accent-soft: #f3ece5;
+    --accent-deep: #71482f;
+    --accent-ink: #563921;
+  }
+  [data-theme="dark"] {
+    --accent: #d7b397;
+    --accent-soft: #32271f;
+    --accent-deep: #c59a78;
+    --accent-ink: #f0d6bf;
+  }
+  .completion-shift, .effort-map, .team-map, .goal-map, .completion-meter {
+    margin: 1.6rem 0; padding: 1.3rem;
+    border: 1px solid var(--border); border-radius: 16px;
+    background: var(--surface); box-shadow: var(--shadow);
+    transition: transform .2s, border-color .2s;
+  }
+  .completion-shift:hover, .effort-map:hover, .team-map:hover, .goal-map:hover, .completion-meter:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+  }
+  .completion-eyebrow {
+    font: 500 .7rem/1.5 var(--mono); letter-spacing: .12em;
+    color: var(--accent); margin-bottom: .55rem;
+  }
+  .completion-title { font: 700 1.25rem/1.45 var(--display); color: var(--text); }
+  .completion-caption { font-size: .85rem; color: var(--text-soft); margin: .65rem 0 0; }
+  .completion-note { font-size: .86rem; color: var(--text-soft); }
+  .completion-attribution {
+    display: inline-block; margin: 0 0 .65rem; padding: .2rem .6rem;
+    border: 1px solid var(--border-strong); border-radius: 5px;
+    color: var(--accent-ink); background: var(--accent-soft);
+    font: 500 .75rem/1.5 var(--sans);
+  }
+  .completion-cite { font: 500 .72em/1 var(--mono); vertical-align: super; white-space: nowrap; margin-left: .15em; }
+  .completion-shift-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1rem; }
+  .completion-shift-side { border: 1px solid var(--border); border-radius: 12px; padding: 1rem; min-width: 0; }
+  .completion-shift-side:last-child { background: var(--accent-soft); border-color: var(--accent); }
+  .completion-shift-label { font-size: .85rem; font-weight: 600; color: var(--text); }
+  .completion-shift svg { width: 100%; height: auto; display: block; margin: .7rem 0; }
+  .completion-shift text { font-family: var(--sans); fill: var(--text-soft); font-size: 14px; }
+  .completion-shift .shift-strong { fill: var(--accent-ink); font-weight: 600; }
+  .completion-shift-side p { font-size: .88rem; margin: .5rem 0 0; }
+  .effort-head, .effort-row {
+    display: grid; grid-template-columns: 72px minmax(80px, 1fr) 76px 50px;
+    align-items: center; gap: 12px; width: 100%;
+  }
+  .effort-head { margin: 1rem 0 .45rem; font-size: .75rem; color: var(--text-soft); padding: 0 10px; }
+  .effort-head span:nth-last-child(-n+2) { text-align: right; }
+  .effort-row {
+    border: 1px solid transparent; border-radius: 9px; padding: 11px 10px;
+    background: transparent; color: var(--text-soft); cursor: pointer;
+    font: 500 .9rem/1.4 var(--mono); text-align: left;
+  }
+  .effort-row:hover { background: var(--bg-soft); }
+  .effort-row[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+  .effort-row svg { display: block; width: 100%; height: 24px; }
+  .effort-track { fill: var(--bg-soft); }
+  .effort-bar { fill: var(--accent); opacity: .48; }
+  .effort-row[aria-pressed="true"] .effort-bar { opacity: 1; }
+  .effort-price, .effort-score { text-align: right; }
+  .effort-score { font-family: var(--display); font-size: 1.3rem; }
+  .effort-detail { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 1rem; }
+  .effort-detail-label { color: var(--accent); font: 500 .75rem/1.5 var(--mono); }
+  .effort-detail p { font-size: .93rem; margin: .4rem 0 0; }
+  .effort-time { margin: .4rem 0 0; font-size: .85rem; color: var(--text-soft); }
+  .team-map-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 1.2rem; margin-top: 1rem; align-items: center; }
+  .team-map svg { width: 100%; height: auto; display: block; }
+  .team-map text { font-family: var(--sans); font-size: 14px; fill: var(--text-soft); }
+  .team-map .team-strong { fill: var(--accent-ink); font-weight: 600; }
+  .team-map-ledger { border-left: 2px solid var(--accent); padding-left: 1rem; }
+  .team-map-entry { padding: .6rem 0; border-bottom: 1px solid var(--border); }
+  .team-map-entry:last-child { border-bottom: 0; }
+  .team-map-entry code { font-size: .8rem; }
+  .team-map-entry span { display: block; font-size: .85rem; color: var(--text-soft); margin-top: .2rem; }
+  .team-map-number { font: 700 2.6rem/1 var(--display); color: var(--accent); margin: .3rem 0; }
+  .goal-map-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 1rem; margin-top: 1rem; align-items: stretch; }
+  .goal-map-controls { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .goal-map-node {
+    border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft);
+    color: var(--text); padding: .8rem; text-align: left; cursor: pointer;
+    font: 500 .91rem/1.5 var(--sans); min-height: 92px;
+  }
+  .goal-map-node:hover { border-color: var(--accent); }
+  .goal-map-node[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+  .goal-map-node svg { display: block; width: 24px; height: 24px; margin-bottom: .4rem; color: var(--accent); }
+  .goal-map-node small { display: block; font-size: .72rem; color: var(--text-soft); }
+  .goal-map-detail { border: 1px solid var(--accent); background: var(--accent-soft); padding: 1rem; border-radius: 12px; }
+  .goal-map-detail strong { color: var(--accent-ink); }
+  .goal-map-detail p { margin: .5rem 0; font-size: .9rem; }
+  .goal-map-owner { font: 500 .75rem/1.6 var(--mono); color: var(--accent-ink); }
+  .goal-map-flow { width: 100%; height: auto; display: block; margin-top: 1rem; }
+  .goal-map-flow-mobile { display: none; }
+  .goal-map-flow text { font-family: var(--sans); fill: var(--text-soft); font-size: 15px; }
+  .goal-map-flow .flow-title { font-weight: 600; fill: var(--accent-ink); }
+  .completion-meter-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: .8rem; margin-top: 1rem; }
+  .completion-meter-cell { border-top: 2px solid var(--border-strong); padding-top: .8rem; }
+  .completion-meter-cell:last-child { border-color: var(--accent); }
+  .completion-meter-cell svg { width: 48px; height: 48px; color: var(--accent); margin-bottom: .4rem; }
+  .completion-meter-cell strong { display: block; font-size: .95rem; }
+  .completion-meter-cell p { font-size: .85rem; margin: .4rem 0 0; }
+  .completion-equation {
+    font: 600 1.1rem/1.6 var(--serif); color: var(--accent-ink);
+    background: var(--accent-soft); border-radius: 10px; padding: 1rem; margin-top: 1rem; text-align: center;
+  }
+  .completion-equation small { display: block; font: 400 .8rem/1.6 var(--sans); color: var(--text-soft); margin-top: .3rem; }
+  .completion-sources { padding-left: 1.6rem; font-size: .9rem; }
+  .completion-sources li { padding: .4rem 0; border-bottom: 1px solid var(--border); }
+  .completion-sources small { display: block; color: var(--text-soft); margin-top: .2rem; }
+  .effort-row:focus-visible, .goal-map-node:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+  @media (max-width: 760px) {
+    .completion-shift-grid, .team-map-grid, .goal-map-layout { grid-template-columns: 1fr; }
+    .completion-shift svg { max-width: 360px; margin: .7rem auto; }
+    .team-map svg { max-width: 400px; margin: auto; }
+    .team-map-ledger { display: grid; grid-template-columns: 1fr 1fr; gap: 0 .8rem; }
+    .team-map-entry:first-child { grid-column: 1 / -1; }
+    .goal-map-flow-desktop { display: none; }
+    .goal-map-flow-mobile { display: block; max-width: 360px; margin-left: auto; margin-right: auto; }
+    .completion-meter-grid { grid-template-columns: 1fr; }
+    .completion-meter-cell { display: grid; grid-template-columns: 48px 1fr; column-gap: .8rem; }
+    .completion-meter-cell svg { grid-row: 1 / 3; }
+  }
+  @media (max-width: 560px) {
+    .completion-shift, .effort-map, .team-map, .goal-map, .completion-meter { padding: 1rem; }
+    .effort-head, .effort-row { grid-template-columns: 60px minmax(50px, 1fr) 64px 32px; gap: 6px; padding-left: 5px; padding-right: 5px; }
+    .effort-head { font-size: .65rem; }
+    .effort-row { font-size: .8rem; }
+    .effort-score { font-size: 1.15rem; }
+    .completion-equation { font-size: .95rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; }
+    .completion-shift, .effort-map, .team-map, .goal-map, .completion-meter { transition: none; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="brand-home"><a href="../../index.html">← 首页</a></span>
+      围绕完成组织 Agent<span class="brand-sub">跨市场 · 2026-11</span>
+    </div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+  <article>
+    <header class="doc-header">
+      <h1><span class="en">Fable 5.2</span> · 把 Agent <br />围绕「完成」组织起来</h1>
+      <p style="font-size:1.05rem; color:var(--text-soft); margin-top:-.3em;">本文观点：模型越能持续工作，系统越要回答做什么、做到哪、花多少、怎样算完成。</p>
+      <div class="doc-meta">
+        <span>2026-11-12</span><span>跨市场</span><span>Anthropic</span><span>Fable 5.2</span>
+        <span>目标管理</span><span>多 Agent</span><span>任务经济性</span><span>可对外</span>
+        <span>时机：进行中</span><span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">62<small>分</small></div><div class="lab">AA · high / xhigh 均为 62</div></div>
+        <div class="hero-stat"><div class="num">+63<small>%</small></div><div class="lab">xhigh 相对 high 每题成本</div></div>
+        <div class="hero-stat"><div class="num">1,000</div><div class="lab">费马实验中的 Agent 数量</div></div>
+        <div class="hero-stat"><div class="num">1<small>目标</small></div><div class="lab">本文候选设计 · 尚未验证</div></div>
+      </div>
+      <p class="completion-note">依据：<a href="https://www.anthropic.com/claude-fable-and-mythos-5-2" target="_blank" rel="noopener">官方发布与修订脚注</a>、
+        <a href="https://claude.dev/blog/safely-scaling-multi-agent-teams-with-fable-5-2/" target="_blank" rel="noopener">千 Agent 工程实验</a>、
+        <a href="https://artificialanalysis.ai/models/releases/claude-fable-5-2" target="_blank" rel="noopener">独立评测</a>。数据截至 2026-11-12。</p>
+    </header>
+
+    <p class="completion-note"><strong>阅读约定：</strong>本文是基于 Fable 5.2 资料的原创洞察。“原文事实”指资料披露的数据、行为与实验做法；“本文推论”指我据此作出的判断；“本文设计建议”指我提出的实现选择。标题中的“围绕完成组织 Agent”，以及“把目标变成系统对象”，均为本文观点，Anthropic 原文没有提出这套对象模型。</p>
+    <div class="lede">
+      <strong>核心论点 · 本文推论：</strong>Fable 5.2 让更多复杂技术任务值得交给 Agent 尝试。我的判断是，随着模型能够承担更长、更模糊的工作，系统的瓶颈会更多落在<strong>“完成机制”</strong>上。基于这一判断，我建议把目标写成可验收的结果，保存可恢复的工作事实，为探索设置预算，再用独立证据确认完成。<strong>模型负责判断和推进，系统负责让工作有边界、有记录、有交付</strong>，是本文建议的职责分工。
+    </div>
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul>
+        <li><strong>本文设计建议 · 改变工作单位。</strong>用一个带范围、预算和验收条件的目标组织会话与工具执行。</li>
+        <li><strong>原文数据 → 本文建议 · 按收益买推理。</strong>AA 中 high 与 xhigh 同分，成本相差约 63%；我建议用实际任务的额外收益决定是否升级。</li>
+        <li><strong>原文事实 · 千 Agent 的分工。</strong>模型动态协调，SQL 保存事实，独立 VM 隔离执行，Git 与 Lean 验证提交。</li>
+        <li><strong>本文推论 · 长上下文与外部状态互补。</strong>要跨恢复、跨模型、跨责任人继续工作，我认为还需保存可复查的业务事实。</li>
+        <li><strong>本文建议 · 按实际路径评估安全与成本。</strong>主模型、fallback、advisor、子 Agent 和失败尝试都应纳入评估。</li>
+        <li><strong>本文设计建议 · “薄 Agent + 持久工作流”。</strong>保留模型的动态判断，将持久化、权限与验证交给可靠机制；是否划算尚需实测。</li>
+      </ul>
+    </div>
+
+    <h2 id="signal"><span class="sec-num">一</span>能力变强之后，什么变得更稀缺<a class="anchor" href="#signal">#</a></h2>
+    <p class="kicker">— 原文信号 → 本文推论 · 工作组织的变化</p>
+    <p>Fable 5.2 最值得关注的信号，是它开始覆盖更大的工作单元。Anthropic 将其定位于模糊需求、长期工程、深入研究与科学计算；发布表中，Remote Labor Index 从 5.1 的 17.9% 升到 41.3%。这个指标只说明特定评测条件下的专业项目完成表现，无法换算成可替代的岗位比例。独立机构 Artificial Analysis 的综合评测也支持能力提升这一方向。<a class="completion-cite" href="#source-1">[1]</a><a class="completion-cite" href="#source-2">[2]</a></p>
+    <p>当模型经常只能完成几步，工程师需要不断补充指令、拆小任务、接管执行。当它可以连续工作数小时，新的问题会显现：是否仍在解决原来的目标？子任务的进度可信么？该继续探索，还是交付已有成果？一次中断之后，下一轮究竟从哪里接上？</p>
+    <p><strong>我的推论是：能够继续做下去，会增加“该怎样收口”的价值。</strong>这一判断还包含一个前提：复杂任务的需求偏移、恢复和验收成本，确实会成为瓶颈。在这个前提成立的场景中，我预计 FDE 将更多精力用于把模糊诉求变成可检验的交付约束。这个工作变化尚未由上述模型评测直接验证。</p>
+
+    <div class="completion-shift reveal">
+      <div class="completion-eyebrow">01 / THE UNIT OF WORK</div>
+      <div class="completion-attribution">本文设计建议 · 非原文架构图</div>
+      <div class="completion-title">从一轮回复，走向一个可验收的目标</div>
+      <div class="completion-shift-grid">
+        <div class="completion-shift-side">
+          <div class="completion-shift-label">以会话为中心</div>
+          <svg viewBox="0 0 310 148" role="img" aria-label="以会话为中心：用户提问，模型回复，再由用户判断并追加指令">
+            <g fill="none" style="color:var(--border-strong)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="22" width="86" height="58" rx="10"/><rect x="112" y="22" width="86" height="58" rx="10"/><rect x="216" y="22" width="86" height="58" rx="10"/>
+              <path d="M94 51h18m-6-5 6 5-6 5M198 51h18m-6-5 6 5-6 5"/>
+              <path d="M259 80v37H51V80m-5 6 5-6 5 6"/>
+            </g>
+            <text x="51" y="57" text-anchor="middle">用户提问</text><text x="155" y="57" text-anchor="middle">模型回复</text><text x="259" y="57" text-anchor="middle">用户判断</text>
+            <text x="155" y="141" text-anchor="middle">进度依赖人逐轮接力</text>
+          </svg>
+          <p>“这一轮说完了”容易成为默认停点；完成与否留在人脑和聊天记录里。</p>
+        </div>
+        <div class="completion-shift-side">
+          <div class="completion-shift-label">以目标为中心</div>
+          <svg viewBox="0 0 310 148" role="img" aria-label="以目标为中心：目标包含验收条件，Agent 执行，验证证据回写持久状态，继续推进或交付">
+            <g fill="none" style="color:var(--accent)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="8" y="22" width="86" height="58" rx="10"/><rect x="112" y="22" width="86" height="58" rx="10"/><rect x="216" y="22" width="86" height="58" rx="10"/>
+              <path d="M94 51h18m-6-5 6 5-6 5M198 51h18m-6-5 6 5-6 5"/>
+              <path d="M259 80v37H51V80m-5 6 5-6 5 6"/>
+            </g>
+            <text class="shift-strong" x="51" y="49" text-anchor="middle">目标</text><text x="51" y="68" text-anchor="middle">含验收条件</text>
+            <text class="shift-strong" x="155" y="57" text-anchor="middle">执行</text><text class="shift-strong" x="259" y="49" text-anchor="middle">验证</text><text x="259" y="68" text-anchor="middle">提交证据</text>
+            <text x="155" y="141" text-anchor="middle">事实回写 → 继续 / 重试 / 交付</text>
+          </svg>
+          <p>“目标已被验收”成为停点；会话、工具和子任务共同服务于这个目标。</p>
+        </div>
+      </div>
+      <p class="completion-caption">本文的设计推论。能力提升使这种组织方式更值得尝试，尚不足以证明它适合所有任务。</p>
+    </div>
+    <p>这个判断有适用范围。官方仍建议大多数编程与知识任务先用 Opus 5.5；发布成绩也存在反例，例如 Fable 的 AA-Briefcase rubric 分更高，Opus 的 Elo 却更高。检查表得分、成品偏好和业务目标的达成，应分别判断。<a class="completion-cite" href="#source-1">[1]</a><a class="completion-cite" href="#source-4">[4]</a></p>
+
+    <h2 id="economics"><span class="sec-num">二</span>买更多推理之前，先定义收益<a class="anchor" href="#economics">#</a></h2>
+    <p class="kicker">— 原文评测数据 + 本文投入建议</p>
+    <p>只看每百万 token 的价格，很难判断这次升级是否值得。Fable 5.2 标准输入 / 输出单价为 $8 / $40，Opus 5.5 为 $4 / $20；前者单价更高，却可能通过减少失败与返工降低交付成本。与此同时，在同一个模型内部，effort 会显著改变消耗。<a class="completion-cite" href="#source-5">[5]</a></p>
+    <p>AA 的原文数据是：high 和 xhigh 的综合分都为 62，每题加权成本分别为 $9.08 和 $14.83；max 升到 65 分，成本达到 $26.54。根据这些数值计算，xhigh 比 high 贵约 63%，max 的成本约为 high 的 2.92 倍。<a class="completion-cite" href="#source-2">[2]</a><strong>我的投入建议是：用目标任务的额外完成收益，判断更高 effort 是否值得。</strong></p>
+
+    <div class="effort-map reveal" aria-label="Fable 5.2 五档 effort 的成本、得分与推算时间比较">
+      <div class="completion-eyebrow">02 / THE PRICE OF MORE THINKING</div>
+      <div class="completion-title">同一个模型，五种任务经济性</div>
+      <p class="completion-note">点击一档，查看它相对 high 的成本与时间。条长仅表示每题加权 API 成本。</p>
+      <div class="effort-head" aria-hidden="true"><span>effort</span><span>成本长度</span><span>美元 / 题</span><span>AA 分</span></div>
+      <div class="effort-controls" role="group" aria-label="选择 effort 档位">
+        <button type="button" class="effort-row" data-effort="low" aria-pressed="false" aria-controls="effort-detail" aria-label="low，54 分，每题 3.10 美元">
+          <span>low</span><svg viewBox="0 0 200 24" preserveAspectRatio="none" role="img" aria-label="low 成本为 max 的 11.7%"><rect class="effort-track" width="200" height="24" rx="4"/><rect class="effort-bar" width="23.4" height="24" rx="4"/></svg><span class="effort-price">$3.10</span><span class="effort-score">54</span>
+        </button>
+        <button type="button" class="effort-row" data-effort="medium" aria-pressed="false" aria-controls="effort-detail" aria-label="medium，56 分，每题 3.80 美元">
+          <span>medium</span><svg viewBox="0 0 200 24" preserveAspectRatio="none" role="img" aria-label="medium 成本为 max 的 14.3%"><rect class="effort-track" width="200" height="24" rx="4"/><rect class="effort-bar" width="28.6" height="24" rx="4"/></svg><span class="effort-price">$3.80</span><span class="effort-score">56</span>
+        </button>
+        <button type="button" class="effort-row" data-effort="high" aria-pressed="true" aria-controls="effort-detail" aria-label="high，62 分，每题 9.08 美元">
+          <span>high</span><svg viewBox="0 0 200 24" preserveAspectRatio="none" role="img" aria-label="high 成本为 max 的 34.2%"><rect class="effort-track" width="200" height="24" rx="4"/><rect class="effort-bar" width="68.4" height="24" rx="4"/></svg><span class="effort-price">$9.08</span><span class="effort-score">62</span>
+        </button>
+        <button type="button" class="effort-row" data-effort="xhigh" aria-pressed="false" aria-controls="effort-detail" aria-label="xhigh，62 分，每题 14.83 美元">
+          <span>xhigh</span><svg viewBox="0 0 200 24" preserveAspectRatio="none" role="img" aria-label="xhigh 成本为 max 的 55.9%"><rect class="effort-track" width="200" height="24" rx="4"/><rect class="effort-bar" width="111.8" height="24" rx="4"/></svg><span class="effort-price">$14.83</span><span class="effort-score">62</span>
+        </button>
+        <button type="button" class="effort-row" data-effort="max" aria-pressed="false" aria-controls="effort-detail" aria-label="max，65 分，每题 26.54 美元">
+          <span>max</span><svg viewBox="0 0 200 24" preserveAspectRatio="none" role="img" aria-label="max 成本为每题 26.54 美元，图中最高"><rect class="effort-track" width="200" height="24" rx="4"/><rect class="effort-bar" width="200" height="24" rx="4"/></svg><span class="effort-price">$26.54</span><span class="effort-score">65</span>
+        </button>
+      </div>
+      <div class="effort-detail" id="effort-detail" aria-live="polite" aria-atomic="true">
+        <div class="completion-attribution">本文解读与选档建议</div>
+        <div class="effort-detail-label" id="effort-label">HIGH · 本图比较基准</div>
+        <p id="effort-copy">62 分，$9.08 / 题。适合作为困难任务的评估起点；是否优于现有模型，仍要比较实际验收率与全量成本。</p>
+        <div class="effort-time" id="effort-time">AA 推算时间：16.6 分钟 / 题；相对 high 成本 1.00×，时间 1.00×。</div>
+      </div>
+      <p class="completion-caption">数据来源：<a href="https://artificialanalysis.ai/models/releases/claude-fable-5-2" target="_blank" rel="noopener">AA 发布页</a>与<a href="https://artificialanalysis.ai/methodology/intelligence-benchmarking" target="_blank" rel="noopener">方法说明</a>，2026-11-12 快照，Intelligence Index v5.0.1。图中选档建议为本文解读。配置均含 <strong>Default Fallback</strong>；时间由 token 与速率推算，非真实项目墙钟耗时。综合分为取整展示，不能据此断言 xhigh 对每个任务都无收益。</p>
+    </div>
+    <p>这组结果支持先评估 medium / high，再对有价值的困难任务升级。它没有证明 xhigh 应被淘汰：平均分可能掩盖某些编程或研究难题的收益。AA 的九项评测主要面向英语文本，也不能直接代表中文交付或行业工具链。API 默认 high，应用端发布默认 medium，比较产品体验时还需要对齐配置。<a class="completion-cite" href="#source-3">[3]</a><a class="completion-cite" href="#source-5">[5]</a><a class="completion-cite" href="#source-6">[6]</a></p>
+    <p><strong>本文设计建议：由失败证据触发预算升级。</strong>例如，已有检查显示失败原因在复杂推理，可再给一次高 effort 尝试；若失败来自缺失凭据、错误数据或不可用依赖，应先解决这些条件。我建议同时设置金额、截止时间与重试上限。这个升级策略是本文提出的；官方文档直接说明的是 effort 属于行为信号，本身不是严格预算。<a class="completion-cite" href="#source-7">[7]</a></p>
+
+    <h2 id="team"><span class="sec-num">三</span>千 Agent 的关键，是事实能够汇合<a class="anchor" href="#team">#</a></h2>
+    <p class="kicker">— 原文实验做法 · 协调、状态与验证</p>
+    <p>费马形式化实验很容易被概括成“1,000 个 Agent，约 30 小时”。工程正文展示了更有价值的分工：一个 lead 与 999 个 helpers 分别运行在独立轻量 VM 中，通过 Git 汇合代码，通过共享 Postgres 认领任务、交换发现和记录完成。模型决定怎么拆、谁来做；程序提供隔离、并发一致性与证明检查。<a class="completion-cite" href="#source-8">[8]</a></p>
+    <p>Lead 在开始十分钟内自行创建了五张协作表。SQL 的价值在于共享事实与事务，官方材料没有说明数据库替模型执行了固定的调度 DAG。把这个案例读成“模型已经无需状态系统”，或读成“固定 Scheduler 完成了一切协调”，都会错过它的实际组织方式。</p>
+
+    <div class="team-map reveal">
+      <div class="completion-eyebrow">03 / WHAT THE 1,000 AGENTS SHARED</div>
+      <div class="completion-attribution">原文实验 · 按职责重绘</div>
+      <div class="completion-title">判断发生在模型里，事实落在系统里</div>
+      <div class="team-map-grid">
+        <svg viewBox="0 0 350 370" role="img" aria-label="千 Agent 实验分工：Lead 动态分配工作，Helpers 在独立虚拟机执行，SQL 保存协作状态，Git 汇合提交，Lean 和 grader 验证结果">
+          <g fill="none" style="color:var(--accent)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="70" y="6" width="210" height="58" rx="12"/><path d="M175 64v21M64 85h222M64 85v15m111-15v15m111-15v15"/>
+            <rect x="17" y="100" width="94" height="66" rx="10"/><rect x="128" y="100" width="94" height="66" rx="10"/><rect x="239" y="100" width="94" height="66" rx="10"/>
+            <path d="M64 166v18h222v-18M175 166v43m-5-6 5 6 5-6"/>
+            <rect x="17" y="209" width="145" height="58" rx="10"/><rect x="188" y="209" width="145" height="58" rx="10"/>
+            <path d="M175 209v-11M90 198h171M90 198v11m171-11v11M90 267v19h171v-19M175 286v17m-5-6 5 6 5-6"/>
+            <rect x="49" y="303" width="252" height="55" rx="10"/>
+          </g>
+          <text class="team-strong" x="175" y="31" text-anchor="middle">Lead · 动态判断 / 分配</text><text x="175" y="52" text-anchor="middle">模型组织协作</text>
+          <text class="team-strong" x="64" y="126" text-anchor="middle">Helper</text><text x="64" y="148" text-anchor="middle">独立 VM</text>
+          <text class="team-strong" x="175" y="126" text-anchor="middle">Helper</text><text x="175" y="148" text-anchor="middle">独立 VM</text>
+          <text class="team-strong" x="286" y="126" text-anchor="middle">… 999</text><text x="286" y="148" text-anchor="middle">独立 VM</text>
+          <text class="team-strong" x="90" y="234" text-anchor="middle">Postgres</text><text x="90" y="255" text-anchor="middle">责任 / 笔记 / 状态</text>
+          <text class="team-strong" x="261" y="234" text-anchor="middle">Git</text><text x="261" y="255" text-anchor="middle">分支 / 汇合提交</text>
+          <text class="team-strong" x="175" y="326" text-anchor="middle">Lean 检查 + Grader</text><text x="175" y="347" text-anchor="middle">验证产物，回写完成事实</text>
+        </svg>
+        <div class="team-map-ledger">
+          <div class="team-map-entry"><div class="team-map-number">5<small style="font:500 .8rem var(--sans);"> 张自建表</small></div><span>将协作所需的信息放在所有 Agent 能读写的地方。</span></div>
+          <div class="team-map-entry"><code>announce</code><span>全队指令：当前往哪里走。</span></div>
+          <div class="team-map-entry"><code>assign</code><span>责任归属：谁负责哪条陈述。</span></div>
+          <div class="team-map-entry"><code>notes</code><span>计划、进度、发现与求助。</span></div>
+          <div class="team-map-entry"><code>subtasks</code><span>新增、认领和完成工作。</span></div>
+          <div class="team-map-entry"><code>landed</code><span>已经完成的工作记录。</span></div>
+        </div>
+      </div>
+      <p class="completion-caption">依据官方工程正文重绘的责任图；省略网关与合并处理细节。五张表由实验中的 Agent 自建，不能视为 Anthropic 产品的固定协议。<a class="completion-cite" href="#source-8">[8]</a></p>
+    </div>
+    <p>原文记录了一次难度估计被执行反馈纠正的过程。Helpers 起初将 47 条陈述判断为预算内不可完成；在前十条完成后，Lead 调整判断，继续组织攻关。最后约 750 个 helpers 集中解决 Langlands–Tunnell，而这条任务最初的按时完成概率估计低于 1%。<a class="completion-cite" href="#source-8">[8]</a></p>
+    <p><strong>我的解读：</strong>系统应允许实际进度修正模型的难度判断，并用产物检查核验完成声明。这是我从该实验提炼的工程原则，引用支持的是上面的实验过程。</p>
+    <div class="callout callout-warn">
+      <div class="callout-tag">这项实验究竟证明了什么</div>
+      <p>它证明了特定环境下的大规模协作可行性。使用的是早期 Fable 5.2 快照；输入包含 60 条待证陈述、定义、经典路线和 47 条已证引理，完成的是已有费马证明的 Lean 形式化。Fable 与 Opus 对照各只运行一次，并从 18 小时保存点恢复后再给 12 小时。28.7 小时是一次成功演示的结果，尚不能确定稳定成功率或最优团队规模。<a class="completion-cite" href="#source-1">[1]</a><a class="completion-cite" href="#source-8">[8]</a></p>
+    </div>
+    <p>Managed Agents 产品另有边界：其 subagents 在同一 session 中共享沙箱与文件系统，并有最多 25 个 child threads 的限制，包含 idle；advisor 与 workflow run threads 不计入这个上限。它与千 VM 实验的执行隔离方式不同。<a class="completion-cite" href="#source-9">[9]</a>我的迁移建议是借鉴责任、状态、验证与恢复的分工，再按任务选择具体拓扑。</p>
+
+    <h2 id="goal"><span class="sec-num">四</span>本文设计建议：把“目标”变成系统对象<a class="anchor" href="#goal">#</a></h2>
+    <p class="kicker">— 从资料到设计 · 这里有一步作者的选择</p>
+    <p><strong>本节的“目标对象”和“四个接口”由本文提出。Anthropic 的发布页、千 Agent 工程文章没有提出这套对象模型。</strong>资料展示了共享协作状态、程序验证与提前停止等问题；我从目标管理的视角，选择把这些职责组织到一个可恢复、修改和验收的目标周围。</p>
+    <div class="callout callout-accent" id="goal-derivation">
+      <div class="callout-tag">推导过程：事实 → 推论 → 设计选择</div>
+      <ol>
+        <li><strong>原文事实：</strong>千 Agent 实验用 SQL 记录责任与进度，用 Git 和 Lean 汇合、检查产物。提示指南披露模型会提前停止，鼓励持续完成又会增加 token 消耗。<a class="completion-cite" href="#source-8">[8]</a><a class="completion-cite" href="#source-6">[6]</a></li>
+        <li><strong>我的推论：</strong>需要跨会话或跨执行者继续的长任务，应保存可恢复的工作事实；判断完成时，应有能复查的验收依据。这里把特定实验经验推广到了企业工作，仍需目标任务验证。</li>
+        <li><strong>我的设计选择：</strong>用一个 Goal 对象关联验收条件、工作事实、资源边界和交付证据，模型会话、子任务与工作流关联到它。这套封装方式来自本文的设计视角，并非原文提供的方案。</li>
+      </ol>
+      <p><strong>推论的边界：</strong>这些资料并不能推出“必须有 Goal 对象”。任务账本、已有工作流状态和独立交付记录也可能解决同样问题；是否统一成目标对象，取决于恢复、协作和验收的实际收益。</p>
+    </div>
+    <p>在这个候选设计里，模型会话是推进目标的一次执行上下文，子任务、工作流、工具权限和产物记录与目标关联。下面的迁移任务是<strong>本文构造的示例</strong>：“将服务 A 的解析模块迁移到 Rust，保持公开接口与回归样例兼容，交付分支、基准测试和迁移说明；先在约定时间与费用内完成原型，再根据证据决定是否继续。”它用来说明结果、范围、验收和预算怎样组合，模型仍可决定中间路线。</p>
+
+    <div class="goal-map reveal">
+      <div class="completion-eyebrow">04 / THE CONTRACT AROUND THE AGENT</div>
+      <div class="completion-attribution">本文设计建议 · 四个接口及控制面均为作者方案</div>
+      <div class="completion-title">我建议给目标定义的四个接口</div>
+      <p class="completion-note">点击节点查看这个候选设计保存什么、由谁负责。本图不是对 Anthropic 原文架构的还原。</p>
+      <div class="goal-map-layout">
+        <div class="goal-map-controls" role="group" aria-label="选择目标接口">
+          <button type="button" class="goal-map-node" data-goal="acceptance" aria-pressed="true" aria-controls="goal-map-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="验收清单"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2h6v2M8 10l2 2 5-5M8 16h8"/></svg>
+            验收条件<small>怎样才算完成</small>
+          </button>
+          <button type="button" class="goal-map-node" data-goal="state" aria-pressed="false" aria-controls="goal-map-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="持久状态存储"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 4 16 4 16 0V5M4 12c0 4 16 4 16 0"/></svg>
+            工作事实<small>做到哪、依据在哪</small>
+          </button>
+          <button type="button" class="goal-map-node" data-goal="budget" aria-pressed="false" aria-controls="goal-map-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="预算与时间约束"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2M6 4 4 2M18 4l2-2"/></svg>
+            资源边界<small>能花多少、何时停</small>
+          </button>
+          <button type="button" class="goal-map-node" data-goal="evidence" aria-pressed="false" aria-controls="goal-map-detail">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="验证证据"><path d="m12 2 8 4v6c0 5-8 10-8 10S4 17 4 12V6zM8 12l3 3 5-6"/></svg>
+            交付证据<small>谁确认、能否复查</small>
+          </button>
+        </div>
+        <div class="goal-map-detail" id="goal-map-detail" aria-live="polite" aria-atomic="true">
+          <strong id="goal-detail-title">验收条件：先写清结果</strong>
+          <p id="goal-detail-copy">保存交付物、不可改变的范围、质量门槛与未解决项的处理方式。Agent 可以提出澄清和修订建议，变更后保留版本与原因。</p>
+          <div class="goal-map-owner" id="goal-detail-owner">责任：目标负责人定义；系统保存；Agent 按条件推进。</div>
+          <p id="goal-detail-example">迁移示例：公开接口兼容，回归集通过，交付分支与基准报告。</p>
+        </div>
+      </div>
+      <svg class="goal-map-flow goal-map-flow-desktop" viewBox="0 0 620 160" role="img" aria-label="建议架构：控制面保存目标、状态、预算和证据；执行面由 Agent 与工具探索和提交；验证反馈回到控制面，支持继续、重试或交付">
+        <g fill="none" style="color:var(--accent)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="12" width="260" height="70" rx="10"/><rect x="355" y="12" width="260" height="70" rx="10"/>
+          <path d="M265 36h90m-7-5 7 5-7 5M355 64h-90m7-5-7 5 7 5"/>
+          <path d="M485 82v50H135V82m-5 6 5-6 5 6"/>
+        </g>
+        <text class="flow-title" x="135" y="41" text-anchor="middle">控制面 · 保存工作契约</text><text x="135" y="66" text-anchor="middle">目标 / 状态 / 预算 / 证据</text>
+        <text class="flow-title" x="485" y="41" text-anchor="middle">执行面 · 探索与提交</text><text x="485" y="66" text-anchor="middle">Agent / 工作流 / 工具</text>
+        <text x="310" y="121" text-anchor="middle">验证反馈</text><text x="310" y="154" text-anchor="middle">继续推进 · 局部重试 · 请求决策 · 交付</text>
+      </svg>
+      <svg class="goal-map-flow goal-map-flow-mobile" viewBox="0 0 340 280" role="img" aria-label="建议架构的纵向版本：控制面向执行面提供目标与约束；Agent、工作流和工具执行后，将验证结果回写；目标可以继续、重试、请求决策或交付">
+        <g fill="none" style="color:var(--accent)" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="20" y="6" width="260" height="70" rx="10"/>
+          <rect x="20" y="138" width="260" height="70" rx="10"/>
+          <path d="M150 76v62m-5-7 5 7 5-7M280 173h42V41h-42m7-5-7 5 7 5"/>
+        </g>
+        <text class="flow-title" x="150" y="35" text-anchor="middle">控制面 · 保存工作契约</text>
+        <text x="150" y="60" text-anchor="middle">目标 / 状态 / 预算 / 证据</text>
+        <text x="134" y="111" text-anchor="end">目标与约束</text>
+        <text x="304" y="121" text-anchor="middle" transform="rotate(-90 304 121)">验证反馈</text>
+        <text class="flow-title" x="150" y="167" text-anchor="middle">执行面 · 探索与提交</text>
+        <text x="150" y="192" text-anchor="middle">Agent / 工作流 / 工具</text>
+        <text x="170" y="245" text-anchor="middle">继续推进 · 局部重试</text>
+        <text x="170" y="269" text-anchor="middle">请求决策 · 交付</text>
+      </svg>
+      <p class="completion-caption">本文建议的职责分工：确定性机制保存事实并执行约束，模型根据新证据调整路线。原文实验为状态与验证提供启发，没有验证本图的 Goal 对象与控制面设计。</p>
+    </div>
+    <p><strong>本文进一步提出的候选架构是“薄 Agent + 持久工作流”。</strong>这里的“薄”指将持久化、并发控制、权限和检查交给明确机制，让 Agent 集中处理语义判断。我建议保留模型随结果重新拆解的能力，把清晰的数据处理步骤交给程序。不能据千 Agent 实验推定其采用了固定 Scheduler，原文也没有验证本文候选架构的收益。</p>
+    <p>另一个可以直接核对的<strong>原文事实</strong>是会话协议的限制：Fable 5.2 对 preserved thinking 有 prefix、model、account 绑定；改写旧历史可能返回 400，跨型号或账户也可能丢弃思考块。官方 compaction 返回的签名块需要按协议原样保留。<a class="completion-cite" href="#source-10">[10]</a><a class="completion-cite" href="#source-11">[11]</a></p>
+    <p><strong>由此提出的本文设计建议：</strong>将可供业务恢复的事实与受协议约束的模型会话分别保存。分支、检查结果、责任和未解决依赖需要能被复查；历史消息与 thinking blocks 则按模型协议保留。官方提供 1M 上下文这一规格，<a class="completion-cite" href="#source-5">[5]</a>但它没有直接说明企业应怎样组织业务状态。两层保存是否有收益，仍取决于恢复需求。</p>
+
+    <h2 id="verification"><span class="sec-num">五</span>模型说“完成”，还缺哪一步<a class="anchor" href="#verification">#</a></h2>
+    <p class="kicker">— 原文行为实验 → 本文验收建议</p>
+    <p>官方提示指南披露，medium 下加入“持续完成工作”的提示后，留下可做工作的会话约减少一半，但输出 token 约增加 30%。强调“代码归你所有”则使输出约增加到 1.5 倍，并增加未请求的修改。它们来自厂商内部行为实验，适用范围有限，却揭示了同一个张力：<strong>更坚持执行，也可能花得更多、做得更宽。</strong><a class="completion-cite" href="#source-6">[6]</a></p>
+    <p><strong>我的验收建议：</strong>在提示行为之外设置产物检查。代码可检查回归、接口兼容和变更范围；研究可检查出处、论证、未确定项与实际文件；数据分析可检查口径、输入完整性与可复算结果。下面对三个事件的划分是本文提出的业务设计，原文未定义这套验收状态。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>事件</th><th>它实际说明什么</th><th>确认主体</th></tr></thead>
+        <tbody>
+          <tr><td>一轮生成结束</td><td>当前响应到达停止条件；也可能是长度上限、拒绝或其他终止。</td><td>客户端解析响应与 stop reason。</td></tr>
+          <tr><td>Agent 报告完成</td><td>模型认为当前工作可以交付，提交自己的判断和产物。</td><td>Agent；仍属于待核验声明。</td></tr>
+          <tr><td>目标被验收</td><td>产物符合已保存的约束，证据完整，未解决项已被接受或排除。</td><td>检查程序与目标负责人；系统记录结果。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>科学案例尤其说明“验证”需要分层。费马形式化可以交给 Lean 检查；电子设计还需要真实制造与测试，三款工作原型不足以覆盖长期可靠性和商业认证；理论物理预印本虽有已知特例核对，仍需要外部研究者全面复核。第二篇物理结果还注明 Opus 5.5 后来也得到了同一结果，不能把所有科研成品都归为 Fable 独占能力。<a class="completion-cite" href="#source-8">[8]</a><a class="completion-cite" href="#source-12">[12]</a><a class="completion-cite" href="#source-13">[13]</a><a class="completion-cite" href="#source-14">[14]</a></p>
+    <p><strong>本文推论：验证能力可能限制可委派的工作规模。</strong>当产物需要审阅才能被接受，而验证资源无法随执行量增长时，并行生成会增加待验收积压。在这个前提下，我建议企业先选择有价值且能验收的任务；上面的案例没有直接测量一般企业的验证瓶颈。</p>
+
+    <h2 id="path"><span class="sec-num">六</span>系统表现，取决于整条执行路径<a class="anchor" href="#path">#</a></h2>
+    <p class="kicker">— 原文回退机制 + 本文可观测性建议</p>
+    <p>Fable / Mythos 5.2 是同一底层模型的不同安全配置，但允许处理的工作不同。系统卡执行摘要还提供了一个反例：Fable 自身处理提示注入时很稳健，更频繁的 Opus 4.8 fallback 却使整体攻击成功率上升。主模型的得分无法覆盖完整系统的风险。<a class="completion-cite" href="#source-1">[1]</a><a class="completion-cite" href="#source-4">[4]</a></p>
+    <p>原生 API 的 server-side fallback 需要 opt-in，只处理指定的 classifier refusal；429 或 overload 不是同一种回退事件。拒绝也可能返回 HTTP 200，需要检查 <code>stop_reason: "refusal"</code>。记录请求模型、实际响应模型、拒绝类别和各次 iteration，才能判断一次任务到底走了哪条路径。<a class="completion-cite" href="#source-15">[15]</a></p>
+    <p><strong>本文设计建议：</strong>将回退前后的工作状态、权限与检查要求分别记录。采用目标对象时，可以保留目标状态，再按实际模型确认本次执行是否仍满足约束。若无法满足，就暂停并记录原因。这个恢复策略由本文提出，官方文档提供的是回退协议与模型限制。</p>
+    <p>多 Agent 监控同样要看具体配置。费马实验当时使用 action-based 实时监控，helper 被拦截只移除该 helper；后来才增加 CoT monitor，并加强为任一拦截停全队等待复核。无互联网、严格沙箱中的数学实验，不能直接证明连接企业凭据与开放网络后的表现。<a class="completion-cite" href="#source-8">[8]</a></p>
+    <div class="callout callout-info">
+      <div class="callout-tag">本文设计建议 · 控制面的观察项</div>
+      <p>目标状态、模型路由和权限状态应能够分别观察。至少回答：本次谁在执行，继承了哪些工作事实，使用哪些工具权限，花了多少，哪些检查已通过。这些信息既用于定位失败，也用于最终验收和成本核算。</p>
+    </div>
+
+    <h2 id="fde"><span class="sec-num">七</span>FDE 应卖出可完成的工作<a class="anchor" href="#fde">#</a></h2>
+    <p class="kicker">— 本文产品判断与核算建议 · 尚未实测</p>
+    <p>这篇文章对产品的判断是：企业客户会越来越在意“我交出的目标，有多大概率按约束完成”。一个能讲清责任、进度、费用和验收的交付界面，会比只展示更多 Agent 正在工作更有价值。并行数量与模型档位可以成为实现选择；目标与产物应成为客户能理解的对象。</p>
+    <p>同样，经济性应按被验收的目标核算。一次成功前的失败尝试，helper 的重复劳动，advisor 的判断，合并和验证的费用，都属于完成这份工作的成本。人工审阅时间与严重回归需要另列，避免一个更高通过率掩盖更重的审核负担。</p>
+
+    <div class="completion-meter reveal">
+      <div class="completion-eyebrow">05 / WHAT YOU SHOULD COUNT</div>
+      <div class="completion-attribution">本文建议 · 非 AA 或 Anthropic 定义的指标</div>
+      <div class="completion-title">把账本从“调用”移到“交付”</div>
+      <div class="completion-meter-grid">
+        <div class="completion-meter-cell">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="单次调用账单"><rect x="10" y="5" width="28" height="38" rx="3"/><path d="M17 14h14M17 22h14M17 30h8"/></svg>
+          <strong>单次调用成本</strong><p>回答这一次多贵；看不见失败、恢复和协作。</p>
+        </div>
+        <div class="completion-meter-cell">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="主 Agent 与所有尝试共同计费"><circle cx="24" cy="10" r="5"/><circle cx="10" cy="34" r="5"/><circle cx="24" cy="34" r="5"/><circle cx="38" cy="34" r="5"/><path d="M24 15v8M10 29v-6h28v6M24 23v6"/></svg>
+          <strong>整次运行成本</strong><p>所有尝试、子 Agent、advisor、工具与验证共同计入。</p>
+        </div>
+        <div class="completion-meter-cell">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="被验收的目标与交付物"><path d="m24 5 17 8v15L24 43 7 28V13zM7 13l17 8 17-8M24 21v22M16 29l5 5 10-11"/></svg>
+          <strong>每个被验收目标的成本</strong><p>对齐业务收益；再结合交付时长、审核时间与回归风险。</p>
+        </div>
+      </div>
+      <div class="completion-equation">任务 API 成本 = 全部尝试及协作 API 费用 ÷ 被验收的目标数
+        <small>用于同一任务集合的方案比较。工具、基础设施和人工成本分别披露；若没有目标被验收，该指标无有效有限值，应报告失败与总投入。</small>
+      </div>
+      <p class="completion-caption">本文建议的核算口径，不是现有 Fable 实测结论。目标的粒度与验收规则必须一致，才能比较不同模型和协作方式。</p>
+    </div>
+    <p>实施时，可以把 Fable 放到当前模型经常失败的关键判断位置，例如复杂计划、卡住后的重规划和交付前的审查。较便宜模型或程序承担清晰步骤。是否采用 advisor、是否并行、是否让 Fable 全程执行，应由同一批任务的验收与全量成本决定。官方 advisor 机制支持 executor 咨询更强模型，但不能直接保证这种组合一定省钱。<a class="completion-cite" href="#source-16">[16]</a></p>
+
+    <h2 id="experiment"><span class="sec-num">八</span>两周内，把判断变成可比较的证据<a class="anchor" href="#experiment">#</a></h2>
+    <p class="kicker">— 本文试验建议 · 尚未执行</p>
+    <p>建议从现有失败记录中挑选一组有价值且可验收的任务，覆盖跨模块迁移、多源研究交付、复杂数据分析等场景。包含简单任务作为参照，避免只选强模型容易展示优势的难题。以下是试验方案，尚未执行。</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>时间</th><th>工作</th><th>责任主体</th><th>需要留下的证据</th></tr></thead>
+        <tbody>
+          <tr><td>第 1–3 天</td><td>统一输入、工具权限、范围、预算与验收条件；准备可运行检查。</td><td>FDE + 目标负责人</td><td>固定任务集、验收清单与可复现环境。</td></tr>
+          <tr><td>第 4–7 天</td><td>比较现有模型与 Fable medium / high；重要任务重复运行。</td><td>评测程序 + 审阅人</td><td>验收率、失败原因、全部费用、总时长、人工审核时间。</td></tr>
+          <tr><td>第 8–10 天</td><td>在共同的目标记录上比较单 Agent 与小规模并行，核对相同总预算。</td><td>Agent / 工作流工程师</td><td>重复工作、冲突、整合错误、并行收益与恢复结果。</td></tr>
+          <tr><td>第 11–14 天</td><td>检查困难任务的 effort 升级，并单独演练中断、拒绝和回退路径。</td><td>平台工程师 + 目标负责人</td><td>额外验收收益、实际模型、状态延续和约束执行记录。</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>先固定 harness 比较模型，再固定模型比较组织方式，避免把模型、提示、工具和并行方案一起更换后无法归因。小样本用于筛选设计与发现失败模式，不能包装成稳定的总体胜率。</p>
+    <div class="callout callout-pro">
+      <div class="callout-tag">什么时候继续投入</div>
+      <p>如果 Fable 在重要任务上减少返工与人工接管，且每个被验收目标的总投入符合价值预期，就扩大使用。如果小规模并行同时增加冲突与审核负担，就先改善任务边界和提交机制。如果主要失败来自缺失数据与无法验收，下一笔投入应优先补这些条件。</p>
+    </div>
+    <p><strong>我的当前判断是：更强模型会扩大可委派工作的范围，围绕目标组织、恢复和验收的能力会随之增值。</strong>信心设为“中”，因为目前证据支持能力与工程机制的重要性，仍缺乏目标中文任务、正式发布模型和真实企业工具链上的稳定对照。</p>
+    <p>这个判断也允许被修正。如果实际任务中，直接升级模型已经解决绝大多数问题，额外目标管理只增加维护成本，方案应简化；如果验证成本始终超过执行收益，自治范围就应收缩。最终需要回答的是：客户关心的那份工作，是否更可靠地完成了。</p>
+
+    <h2 id="sources"><span class="sec-num">九</span>出处与证据边界<a class="anchor" href="#sources">#</a></h2>
+    <p class="kicker">— PRIMARY MATERIALS, INDEPENDENT CHECKS</p>
+    <p class="completion-note">本文基于前序调研的 52 项资料索引，选取下列 16 项支撑文中标明出处的事实。引用所支持的事实与随后的作者推论分别表述；它们不能当作原文提出 Goal 对象、“四个接口”或本文控制面设计的证据。Anthropic 的多份材料属于同一证据家族；独立评测、公开案例与厂商自述分开使用。没有本次模型调用实测，没有复跑数学、硬件或物理案例；系统卡仅读取执行摘要、目录与开头节选，未逐页审阅 PDF。目标契约、控制面设计、核算口径和两周试验均为本文提出。</p>
+    <ol class="completion-sources">
+      <li id="source-1"><a href="https://www.anthropic.com/claude-fable-and-mythos-5-2" target="_blank" rel="noopener">Anthropic · Introducing Claude Fable 5.2 and Claude Mythos 5.2</a><small>2026-11-09 发布，11-11 修订。定位、厂商评测、科学案例与费马输入脚注。</small></li>
+      <li id="source-2"><a href="https://artificialanalysis.ai/models/releases/claude-fable-5-2" target="_blank" rel="noopener">Artificial Analysis · Fable 5.2 Release Intelligence, Performance &amp; Price</a><small>独立评测发布者。2026-11-12 动态页快照；五档 effort，Default Fallback，指数 v5.0.1。</small></li>
+      <li id="source-3"><a href="https://artificialanalysis.ai/methodology/intelligence-benchmarking" target="_blank" rel="noopener">Artificial Analysis · Intelligence Benchmarking Methodology</a><small>九项评测、类别权重、成本与时间口径；主要为英语文本。</small></li>
+      <li id="source-4"><a href="https://www.anthropic.com/document/claude-fable-5-2-mythos-5-2-system-card" target="_blank" rel="noopener">Anthropic · Fable 5.2 &amp; Mythos 5.2 System Card</a><small>本文使用执行摘要等已取得节选中的提示注入 / fallback 披露与能力限定；未逐页审阅全文。</small></li>
+      <li id="source-5"><a href="https://platform.claude.com/docs/en/models/fable-5-2/overview" target="_blank" rel="noopener">Claude Platform · Fable 5.2 Overview</a><small>模型规格、1M 上下文、价格与 API 默认 high。</small></li>
+      <li id="source-6"><a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/prompting-claude-fable-5-2" target="_blank" rel="noopener">Claude Platform · Prompting Claude Fable 5.2</a><small>提前停止、代码所有权、委派与进度表现；提示效果数字为厂商内部实验。</small></li>
+      <li id="source-7"><a href="https://platform.claude.com/docs/en/build-with-claude/effort" target="_blank" rel="noopener">Claude Platform · Effort</a><small>effort 参数是行为信号；5.2 专属配置建议结合模型文档核对。</small></li>
+      <li id="source-8"><a href="https://claude.dev/blog/safely-scaling-multi-agent-teams-with-fable-5-2/" target="_blank" rel="noopener">Claude Engineering · Safely Scaling Multi-Agent Teams with Fable 5.2</a><small>独立 VM、Git、SQL、自建协作表、动态重分配、恢复点及实验当时的监控配置。</small></li>
+      <li id="source-9"><a href="https://platform.claude.com/docs/en/managed-agents/multiagent-orchestration" target="_blank" rel="noopener">Claude Managed Agents · Multiagent Orchestration</a><small>产品的共享沙箱、subagent 线程限制、dynamic workflows 与 advisor；不同于千 VM 实验。</small></li>
+      <li id="source-10"><a href="https://platform.claude.com/docs/en/build-with-claude/preserved-thinking" target="_blank" rel="noopener">Claude Platform · Preserved Thinking</a><small>Prefix、model、account 绑定；历史修改与思考块延续限制。</small></li>
+      <li id="source-11"><a href="https://platform.claude.com/docs/en/build-with-claude/compaction-on-demand" target="_blank" rel="noopener">Claude Platform · Compaction on Demand</a><small>按协议返回并保留签名 compaction block。</small></li>
+      <li id="source-12"><a href="https://www.anthropic.com/research/claude-electronics-design" target="_blank" rel="noopener">Anthropic · Testing Claude on Real-World Electronics Design</a><small>三款实际制造的电子原型；生产认证与长期可靠性另行验证。</small></li>
+      <li id="source-13"><a href="https://hexagonmath.org/2611.00175v1" target="_blank" rel="noopener">Hexagon · The Hawking–Page Transition at Weak Coupling</a><small>Anthropic 提交的物理预印本及 provenance；非外部全面复现。</small></li>
+      <li id="source-14"><a href="https://hexagonmath.org/2611.00174v1" target="_blank" rel="noopener">Hexagon · The Spinless Modular Bootstrap at Large Central Charge</a><small>页面注明 Opus 5.5 后来也独立得到同一结果。</small></li>
+      <li id="source-15"><a href="https://platform.claude.com/docs/en/build-with-claude/refusals-and-fallback" target="_blank" rel="noopener">Claude Platform · Refusals and Fallback</a><small>HTTP 200 refusal、opt-in 回退、实际 serving model 与 usage.iterations。</small></li>
+      <li id="source-16"><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/advisor-tool" target="_blank" rel="noopener">Claude Platform · Advisor Tool</a><small>Executor 咨询 advisor 的机制与独立计费；需结合 5.2 文档确认型号配对。</small></li>
+    </ol>
+    <p class="completion-note">扩展材料：<a href="../../fable52-research/report.md">完整调研报告</a> · <a href="../../fable52-research/sources.md">52 项资料索引与访问说明</a>。</p>
+    <hr />
+    <p style="font-size:.85rem; color:var(--text-soft); text-align:center;">修订记录：2026-11-12 初稿；同日修订，区分原文事实、本文推论与设计建议，补充目标对象的推导过程及适用边界。判断印章：时机「进行中」；信心「中」。</p>
+    <div class="doc-footer">
+      <a href="../../index.html">← 首页</a> · <a href="../index.html">洞察索引</a> ·
+      <a href="2026-10_claude-managed-agents-dynamic-workflows.html">相关阅读：Dynamic Workflows</a> ·
+      <a href="../tob/2026-07_org-chart-trap-single-agent-identity.html">Org-Chart 陷阱</a>
+    </div>
+  </article>
+</div>
+<script src="../../_assets/insight.js"></script>
+<script>
+(() => {
+  const effortData = {
+    low: { label: 'LOW · 较低计算投入', copy: '54 分，$3.10 / 题。适合先检验低成本能否满足任务；低 effort 的提前停止风险需要由验收检查发现。', time: 6.2, cost: 3.10 },
+    medium: { label: 'MEDIUM · 应用端发布默认档', copy: '56 分，$3.80 / 题。相对 high 更便宜，但综合分较低。对照实际交付质量，再决定是否升级。', time: 7.8, cost: 3.80 },
+    high: { label: 'HIGH · 本图比较基准', copy: '62 分，$9.08 / 题。适合作为困难任务的评估起点；是否优于现有模型，仍要比较实际验收率与全量成本。', time: 16.6, cost: 9.08 },
+    xhigh: { label: 'XHIGH · 检验额外推理的收益', copy: '62 分，$14.83 / 题。相对 high 成本增加约 63%，综合分未上升；个别困难任务仍可能有收益，应单独测量。', time: 26.4, cost: 14.83 },
+    max: { label: 'MAX · 将预算给最有价值的难题', copy: '65 分，$26.54 / 题。比 high 高 3 分，成本约 2.92 倍。是否值得，取决于关键任务的额外验收收益。', time: 47.8, cost: 26.54 }
+  };
+  const effortButtons = document.querySelectorAll('[data-effort]');
+  effortButtons.forEach(button => button.addEventListener('click', () => {
+    const data = effortData[button.dataset.effort];
+    effortButtons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    document.getElementById('effort-label').textContent = data.label;
+    document.getElementById('effort-copy').textContent = data.copy;
+    document.getElementById('effort-time').textContent = `AA 推算时间：${data.time.toFixed(1)} 分钟 / 题；相对 high 成本 ${(data.cost / 9.08).toFixed(2)}×，时间 ${(data.time / 16.6).toFixed(2)}×。`;
+  }));
+  const goalData = {
+    acceptance: { title: '验收条件：先写清结果', copy: '保存交付物、不可改变的范围、质量门槛与未解决项的处理方式。Agent 可以提出澄清和修订建议，变更后保留版本与原因。', owner: '责任：目标负责人定义；系统保存；Agent 按条件推进。', example: '迁移示例：公开接口兼容，回归集通过，交付分支与基准报告。' },
+    state: { title: '工作事实：让下一次执行接得上', copy: '保存任务负责人、状态、依赖、产物位置、已通过检查与未解决问题。保留实际事件；模型总结帮助阅读，不能覆盖原始检查结果。', owner: '责任：系统持久化；Agent 更新发现；检查程序写入验证结果。', example: '迁移示例：已落地的分支、失败回归样例、剩余模块和恢复入口。' },
+    budget: { title: '资源边界：把继续探索变成可控决定', copy: '保存金额、截止时间、重试次数与可用权限。系统执行硬约束；Agent 在剩余资源内重规划，超出范围时提交继续投入的依据。', owner: '责任：目标负责人设限；运行时执行；Agent 依据余额调计划。', example: '迁移示例：先完成受限原型，记录花费和阻塞，再决定是否扩大工作。' },
+    evidence: { title: '交付证据：允许结果被独立复查', copy: '保存测试报告、来源、产物版本和审阅结论。Agent 提交待验收声明；程序和有资格的审阅人确认满足哪些条件、还缺哪些条件。', owner: '责任：Agent 提交；程序 / 审阅人验证；系统记录验收。', example: '迁移示例：可运行回归、性能对照、变更清单与目标负责人确认。' }
+  };
+  const goalButtons = document.querySelectorAll('[data-goal]');
+  goalButtons.forEach(button => button.addEventListener('click', () => {
+    const data = goalData[button.dataset.goal];
+    goalButtons.forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    document.getElementById('goal-detail-title').textContent = data.title;
+    document.getElementById('goal-detail-copy').textContent = data.copy;
+    document.getElementById('goal-detail-owner').textContent = data.owner;
+    document.getElementById('goal-detail-example').textContent = data.example;
+  }));
+})();
+</script>
+</body>
+</html>

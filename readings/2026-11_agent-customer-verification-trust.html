@@ -1,0 +1,488 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="Guillermo Rauch × Delphi 访谈深读：Agent 成为客户后，基础设施、验证闭环、信任与 SaaS 自建决策怎样改变。附视频时间戳、交互图解与 FDE 落地方法。" />
+<title>下一位客户是 Agent · Vercel 的验证、信任与平台策略 · FDE 洞察</title>
+<link rel="stylesheet" href="../_assets/insight.css" />
+<style>
+  :root {
+    --accent: #366b73;
+    --accent-deep: #28525a;
+    --accent-ink: #20434a;
+    --accent-soft: #e7f1f2;
+  }
+  [data-theme="dark"] {
+    --accent: #91cbd1;
+    --accent-deep: #70b2bc;
+    --accent-ink: #c6e7ea;
+    --accent-soft: #203237;
+  }
+  .rauch-cite { white-space: nowrap; font-family: var(--mono); font-size: .76rem; margin-left: .25em; }
+  .rauch-note { font-size: .86rem; color: var(--text-muted); }
+  .rauch-quote {
+    margin: 1.5rem 0; padding: 1rem 1.3rem; border-left: 3px solid var(--accent);
+    background: var(--accent-soft); border-radius: 0 12px 12px 0;
+  }
+  .rauch-quote p { margin: .2rem 0; font-family: var(--display); font-size: 1.18rem; color: var(--accent-ink); }
+  .rauch-quote footer { margin-top: .5rem; font-size: .82rem; color: var(--text-soft); }
+  .wave-map, .agent-fit, .verification-loop, .trust-engine {
+    margin: 1.8rem 0; padding: 1.2rem; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; box-shadow: var(--shadow); transition: transform .2s, border-color .2s;
+  }
+  .wave-map:hover, .agent-fit:hover, .verification-loop:hover, .trust-engine:hover {
+    transform: translateY(-3px); border-color: var(--accent);
+  }
+  .rauch-visual-label { color: var(--accent); font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; }
+  .rauch-visual-title { font-family: var(--display); font-size: 1.23rem; font-weight: 700; margin: .45rem 0 1rem; }
+  .wave-map svg, .agent-fit svg, .verification-loop svg, .trust-engine svg { display: block; width: 100%; height: auto; }
+  .wave-map text, .agent-fit text, .verification-loop text, .trust-engine text { font-family: var(--sans); }
+  .wave-map .wave-heading { font-family: var(--display); font-weight: 700; font-size: 20px; }
+  .wave-map .wave-caption { font-size: 14px; }
+  .wave-map-mobile, .verification-mobile, .trust-mobile { display: none !important; }
+  .rauch-visual-caption { margin: .8rem 0 0; color: var(--text-soft); font-size: .85rem; line-height: 1.6; }
+  .agent-fit-layout { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.05fr); gap: 1rem; }
+  .agent-fit-list { display: grid; gap: .5rem; }
+  .agent-fit-btn {
+    width: 100%; display: grid; grid-template-columns: 36px 1fr auto; gap: .65rem; align-items: center;
+    padding: .75rem .8rem; text-align: left; font: inherit; color: var(--text-soft); cursor: pointer;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--bg-soft);
+    transition: border-color .2s, background .2s;
+  }
+  .agent-fit-btn svg { width: 30px; height: 30px; }
+  .agent-fit-btn b { display: block; font-size: .92rem; color: var(--text); }
+  .agent-fit-btn small { display: block; font-size: .76rem; }
+  .agent-fit-btn .agent-fit-arrow { color: var(--accent); }
+  .agent-fit-btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+  .agent-fit-btn:focus-visible, .verification-btn:focus-visible, .verification-node:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 3px;
+  }
+  .agent-fit-detail {
+    padding: 1rem; border: 1px solid var(--accent); border-radius: 12px; background: var(--accent-soft);
+    display: flex; flex-direction: column; justify-content: flex-start;
+  }
+  .agent-fit-detail svg { max-width: 310px; align-self: center; margin-bottom: .6rem; }
+  .rauch-detail-title { font-size: 1.08rem; font-family: var(--display); font-weight: 700; color: var(--accent-ink); margin: .25rem 0 .65rem; }
+  .rauch-detail-copy { margin: 0; font-size: .91rem; color: var(--text-soft); }
+  .rauch-detail-check { margin: 1rem 0 0; border-top: 1px solid var(--rule); padding-top: .8rem; font-size: .85rem; color: var(--text); }
+  .verification-controls { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: 1rem; }
+  .verification-btn {
+    font: inherit; font-size: .85rem; padding: .65rem .3rem; background: var(--bg-soft); color: var(--text-soft);
+    border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+  }
+  .verification-btn[aria-pressed="true"] { color: var(--accent-ink); background: var(--accent-soft); border-color: var(--accent); }
+  .verification-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 1rem; align-items: start; }
+  .verification-panel { padding: 1rem; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; min-height: 245px; }
+  .verification-node { cursor: pointer; outline: none; }
+  .verification-node rect { fill: var(--bg-soft); stroke: var(--border); transition: fill .2s, stroke .2s; }
+  .verification-node[aria-pressed="true"] rect { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  .verification-dash { stroke-dasharray: 6 7; animation: verification-flow 2.4s linear infinite; }
+  @keyframes verification-flow { to { stroke-dashoffset: -26; } }
+  .verification-panel ul { margin: .6rem 0 0; padding-left: 1.1rem; font-size: .85rem; }
+  .rauch-claim-list { display: grid; gap: .7rem; margin: 1rem 0; }
+  .rauch-claim {
+    padding: .9rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface);
+  }
+  .rauch-claim b { color: var(--text); }
+  .rauch-claim p { font-size: .91rem; margin: .35rem 0 0; }
+  .rauch-reading-path { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; margin: 1.2rem 0; }
+  .rauch-reading-step { border-top: 3px solid var(--accent); background: var(--surface); padding: 1rem; border-radius: 0 0 10px 10px; }
+  .rauch-reading-step b { display: block; color: var(--accent); }
+  .rauch-reading-step p { margin: .4rem 0; font-size: .87rem; }
+  .rauch-sources { padding-left: 1.3rem; font-size: .89rem; }
+  .rauch-sources li { margin-bottom: .8rem; overflow-wrap: anywhere; }
+  .rauch-sources small { display: block; color: var(--text-muted); }
+  @media (max-width: 820px) {
+    .agent-fit-layout, .verification-layout { grid-template-columns: 1fr; }
+    .rauch-reading-path { grid-template-columns: 1fr; }
+    .verification-panel { min-height: 0; }
+  }
+  @media (max-width: 560px) {
+    .wave-map, .agent-fit, .verification-loop, .trust-engine { padding: .9rem; }
+    .wave-map-desktop, .verification-desktop, .trust-desktop { display: none !important; }
+    .wave-map-mobile, .verification-mobile, .trust-mobile { display: block !important; }
+    .verification-controls { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .verification-dash { animation: none !important; }
+    .wave-map, .agent-fit, .verification-loop, .trust-engine, .agent-fit-btn,
+    .verification-node rect { transition: none !important; }
+    .wave-map:hover, .agent-fit:hover, .verification-loop:hover, .trust-engine:hover { transform: none !important; }
+    .reveal { opacity: 1 !important; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand"><span class="brand-home"><a href="../index.html">← 首页</a></span>下一位客户是 Agent<span class="brand-sub">阅读材料 · 2026-11</span></div>
+    <div class="actions">
+      <button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button>
+      <button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button>
+    </div>
+  </div>
+</div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+<div class="container">
+  <aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+  <article>
+    <header class="doc-header">
+      <h1>下一位客户是 <span class="en">Agent</span></h1>
+      <p style="font-size:1.05rem;color:var(--text-muted);margin-top:-.3em;">Guillermo Rauch × Delphi：Vercel 的验证、信任与平台策略</p>
+      <div class="doc-meta">
+        <span>2026-11-12</span><span>跨市场</span><span>Vercel</span><span>AI Agent</span><span>验证闭环</span><span>开发者体验</span><span>FDE</span>
+        <span>状态：可对外</span><span>时机：进行中</span><span>信心：中</span>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="num">55<small>分 43 秒</small></div><div class="lab">完整访谈 · 发布于 2026-10-29</div></div>
+        <div class="hero-stat"><div class="num">3<small>类用户</small></div><div class="lab">开发者 → 非技术构建者 → Agent</div></div>
+        <div class="hero-stat"><div class="num">4<small>个环节</small></div><div class="lab">目标、执行、验证、资源取舍</div></div>
+        <div class="hero-stat"><div class="num">2016</div><div class="lab">测试主张的源头 · 早于 Agent</div></div>
+      </div>
+      <p class="rauch-note">源：<a href="https://www.youtube.com/watch?v=W9YfKZaK7KI" target="_blank" rel="noopener">Vercel CEO: How 1 Person + AI Agents Could Build a $1T Company</a> · Delphi / Library of Minds</p>
+    </header>
+    <div class="lede"><strong>核心判断：</strong>当代码生成更容易，平台的价值会更多地落在<strong>让执行可靠完成、让结果可以验证、让人保留目标与资源取舍权</strong>。这段访谈提供了一条连贯的路径：从降低部署门槛，到服务 Agent，再到用长期工程质量积累信任。</div>
+    <div class="callout callout-accent">
+      <div class="callout-tag">一页要点</div>
+      <ul>
+        <li><strong>平台策略：</strong>为新一代工作方式提供基础设施，通过清晰场景证明价值，再沿已有能力扩张。</li>
+        <li><strong>客户变化：</strong>Agent 会直接调用平台；接口可读性、状态真实性、性能与恢复能力成为体验的一部分。</li>
+        <li><strong>工程变化：</strong>把成功条件写清楚，在真实边界检验结果；测试数量无法代表交付质量。</li>
+        <li><strong>人类角色：</strong>决定值得实现的结果、可接受的风险、投入多少资源，以及何时停止优化。</li>
+        <li><strong>信任来源：</strong>安全、文档、问题修复和体验细节持续兑现，才会积累品牌信用。</li>
+        <li><strong>商业边界：</strong>自建软件要计算长期运行与维护；“支持 MCP”也需要接受持续调用的检验。</li>
+      </ul>
+    </div>
+    <p class="rauch-note">阅读口径：依据完整英文自动字幕与视频元数据整理，未进行逐帧画面分析。短引文按字幕校读；链接中的时间戳定位相关论述。下文标注“嘉宾自述”“资料核验”“延伸判断”，避免把愿景、口语夸张或投资经验当作统计结论。图解是分析性重绘。</p>
+
+    <h2 id="map"><span class="sec-num">一</span>访谈路线与关键时间点<a class="anchor" href="#map">#</a></h2>
+    <p class="kicker">— THE ARGUMENT IN CONTEXT</p>
+    <p>标题突出“一人加 Agent 能否建立万亿美元公司”，但正片的大部分内容讨论的是更具体的产品与工程选择。开场由主持人讲述 Delphi 团队改用 Vercel 的经历，随后转入平台定位、细分市场、品牌信任、Agent 用户、验证、预算与自建软件。最后约八分钟谈个人经历和如何培养思考能力。主线可以理解为：<strong>自动化把执行能力放大之后，怎样让一个产品和组织依然值得依赖？</strong><a class="rauch-cite" href="#src-1">[1]</a></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>时间</th><th>讨论内容</th><th>值得带走的判断</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=39">00:39–10:10</a></td><td>如何面对 AWS 等既有平台</td><td>抓下一代平台迁移；创新团队的采用可能向企业扩散。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=610">10:10–17:15</a></td><td>从广泛能力到电商切口</td><td>先讲客户体验与 ROI；细分场景要有自然扩张路径。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1035">17:15–27:46</a></td><td>信任、设计与负面反馈</td><td>品牌来自持续兑现；主动寻找客户和员工的痛点。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1666">27:46–33:45</a></td><td>Agent 成为新的平台用户</td><td>降低起步门槛，同时保留能力上限和人的判断权。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2025">33:45–41:14</a></td><td>验证闭环与资源配置</td><td>检验产品结果；让预算、机会成本与停止条件显式化。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2474">41:14–47:30</a></td><td>自建 SaaS、MCP 与 API 质量</td><td>按完整系统成本决策；接入协议之外还有运行契约。</td></tr>
+        <tr><td><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2850">47:30–55:43</a></td><td>个人经历、教育与思考工具</td><td>保留基础能力，再用 Agent 放大兴趣、创造力与判断。</td></tr>
+      </tbody>
+    </table></div>
+
+    <h2 id="platform"><span class="sec-num">二</span>平台策略：使用方式变化与场景切入<a class="anchor" href="#platform">#</a></h2>
+    <p class="kicker">— NEW WORKLOADS, CLEAR BUSINESS VALUE</p>
+    <p><strong>嘉宾自述：</strong>Vercel 的出发点是把繁琐的云基础设施操作自动化。他把“self-driving infrastructure”与今天的“agentic infrastructure”联系起来，并认为创业公司应更好地站在新一波创新之前。旧平台不会立即消失，但新工作负载会寻找更合适的入口。这里的启发是选择<strong>哪种未来工作方式需要新的默认路径</strong>，而非笼统宣称自己比已有平台更好。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=189">03:09</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=305">05:05</a></p>
+    <div class="wave-map reveal">
+      <div class="rauch-visual-label">01 / PLATFORM FIT</div>
+      <div class="rauch-visual-title">新的调用者，带来新的默认路径</div>
+      <svg class="wave-map-desktop" viewBox="0 0 760 245" role="img" aria-label="平台使用方式从专家配置云资源，到开发者部署应用，再到 Agent 循环执行和验证。已有云基础设施持续承载这些工作负载。">
+        <defs><marker id="wave-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8" style="fill:var(--accent)" /></marker></defs>
+        <g style="fill:var(--bg-soft);stroke:var(--border)"><rect x="10" y="22" width="225" height="135" rx="12"/><rect x="267" y="22" width="225" height="135" rx="12"/><rect x="524" y="22" width="225" height="135" rx="12"/></g>
+        <g style="fill:var(--text)">
+          <text x="30" y="55" class="wave-heading">专家配置资源</text><text x="287" y="55" class="wave-heading">构建者发布应用</text><text x="544" y="55" class="wave-heading">Agent 持续执行</text>
+        </g>
+        <g class="wave-caption" style="fill:var(--text-soft)">
+          <text x="30" y="90">理解基础设施概念</text><text x="30" y="116">组织部署与运行</text><text x="287" y="90">提交代码 → 预览链接</text><text x="287" y="116">降低起步门槛</text><text x="544" y="90">目标 → 调用 → 检验</text><text x="544" y="116">状态、恢复、预算</text>
+        </g>
+        <g style="stroke:var(--accent);fill:none" stroke-width="1.7" marker-end="url(#wave-arrow)"><path d="M241 88H258"/><path d="M498 88H515"/></g>
+        <rect x="10" y="183" width="739" height="47" rx="10" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+        <text x="380" y="213" text-anchor="middle" font-size="15" style="fill:var(--accent-ink)">底层云资源继续存在 · 入口和运行契约随工作负载演进</text>
+      </svg>
+      <svg class="wave-map-mobile" viewBox="0 0 330 460" role="img" aria-label="三阶段纵向图：专家配置资源、构建者发布应用、Agent 持续执行；底层云资源持续存在。">
+        <g style="fill:var(--bg-soft);stroke:var(--border)"><rect x="10" y="10" width="310" height="110" rx="12"/><rect x="10" y="143" width="310" height="110" rx="12"/><rect x="10" y="276" width="310" height="110" rx="12"/></g>
+        <g style="fill:var(--text)" class="wave-heading"><text x="27" y="43">专家配置资源</text><text x="27" y="176">构建者发布应用</text><text x="27" y="309">Agent 持续执行</text></g>
+        <g style="fill:var(--text-soft)" font-size="16"><text x="27" y="73">理解基础设施 · 组织部署与运行</text><text x="27" y="206">提交代码 → 预览链接</text><text x="27" y="234">降低门槛，保留能力上限</text><text x="27" y="339">目标 → 调用 → 检验</text><text x="27" y="367">状态、恢复、预算成为契约</text></g>
+        <g style="fill:var(--accent)" font-size="23" text-anchor="middle"><text x="165" y="138">↓</text><text x="165" y="271">↓</text></g>
+        <rect x="10" y="408" width="310" height="42" rx="10" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+        <text x="165" y="435" text-anchor="middle" font-size="15" style="fill:var(--accent-ink)">底层云资源持续承载工作负载</text>
+      </svg>
+      <p class="rauch-visual-caption">延伸判断：这些使用方式会长期共存。Agent 友好平台增加了新的操作与交付层；访谈中的迁移故事无法证明企业已全面离开 AWS。</p>
+    </div>
+    <p>另一个重要修正发生在商业表达上。他承认“所有 AWS 能力，但更好”过于宽泛；电商让加载体验与交易收益更容易建立联系，于是对企业客户的介绍从技术转向客户体验与 ROI。接着，他用“同心圆扩张”解释细分切入：先在一个场景做出卓越体验，再寻找能复用能力和品牌信任的自然邻接市场。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=617">10:17</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=873">14:33</a></p>
+    <p><strong>FDE 映射：</strong>选切口时可以同时检查三件事：客户能否用实际结果确认价值、底层能力能否复用、客户是否愿意沿着这个能力继续采购。例如，从售后退款开始，积累订单读取、权限校验、执行确认与审计能力，再扩到订单修改和异常处理，具有清晰的复用路径。直接从退款跳到完全无关的业务，会增加交付和信任成本。这是分析示例，并非 Vercel 的既有方案。</p>
+
+    <h2 id="agent-customer"><span class="sec-num">三</span>Agent 用户体验：接口与运行契约<a class="anchor" href="#agent-customer">#</a></h2>
+    <p class="kicker">— FROM ACCESS TO RELIABLE COMPLETION</p>
+    <p>主持人把用户变化分为技术人员、v0 带来的非技术人员，以及 Agent。Rauch 的回应是“降低学习门槛、保持很高的能力上限”，并用 builder 统一人类构建者。他也提到自己开始关注“agent as a customer”：Agent 怎样使用平台、体验是否顺畅。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1652">27:32</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1687">28:07</a></p>
+    <p>到后半段，Agent 体验变得非常具体：数据与能力能否被消费，文档是否容易读取，反复调用会不会遭遇不合适的限流，API 是否一致、是否返回可信状态。他明确说，发布一个 MCP 接口还不意味着准备完成。<strong>Agent 会把人类靠经验与手动处理绕过的接口缺陷，变成自动化链路里的真实故障。</strong><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2599">43:19</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2710">45:10</a></p>
+    <div class="agent-fit reveal" data-agent-fit>
+      <div class="rauch-visual-label">02 / AGENT EXPERIENCE</div>
+      <div class="rauch-visual-title">点击一个环节，检查 Agent 能否可靠完成工作</div>
+      <div class="agent-fit-layout">
+        <div class="agent-fit-list" aria-label="Agent 体验的五个检查环节">
+          <button class="agent-fit-btn" type="button" data-fit="0" aria-pressed="true" aria-controls="agent-fit-panel">
+            <svg viewBox="0 0 24 24" role="img" aria-label="发现与文档" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5M7 8h6M7 11h4"/></svg>
+            <span><b>① 能发现与理解</b><small>文档、能力描述、输入输出</small></span><span class="agent-fit-arrow">↗</span>
+          </button>
+          <button class="agent-fit-btn" type="button" data-fit="1" aria-pressed="false" aria-controls="agent-fit-panel">
+            <svg viewBox="0 0 24 24" role="img" aria-label="授权与调用" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4M12 14v3"/></svg>
+            <span><b>② 能合法调用</b><small>身份、范围、稳定入口</small></span><span class="agent-fit-arrow">↗</span>
+          </button>
+          <button class="agent-fit-btn" type="button" data-fit="2" aria-pressed="false" aria-controls="agent-fit-panel">
+            <svg viewBox="0 0 24 24" role="img" aria-label="状态确认" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4zM7 9h4M7 13h3m3 1 2 2 3-4"/></svg>
+            <span><b>③ 能确认真实状态</b><small>受理、执行中、完成、失败</small></span><span class="agent-fit-arrow">↗</span>
+          </button>
+          <button class="agent-fit-btn" type="button" data-fit="3" aria-pressed="false" aria-controls="agent-fit-panel">
+            <svg viewBox="0 0 24 24" role="img" aria-label="重复与并发" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h14l-3-3m3 3-3 3M20 17H6l3 3m-3-3 3-3M4 7v5m16 5v-5"/></svg>
+            <span><b>④ 能承受反复执行</b><small>性能、限流、重复写入</small></span><span class="agent-fit-arrow">↗</span>
+          </button>
+          <button class="agent-fit-btn" type="button" data-fit="4" aria-pressed="false" aria-controls="agent-fit-panel">
+            <svg viewBox="0 0 24 24" role="img" aria-label="恢复与追溯" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a8 8 0 1 1 0 7M4 4v5h5M12 7v5l3 2"/></svg>
+            <span><b>⑤ 能恢复与追溯</b><small>中断续跑、失败原因、证据</small></span><span class="agent-fit-arrow">↗</span>
+          </button>
+        </div>
+        <div class="agent-fit-detail" id="agent-fit-panel" role="region" aria-label="所选环节的机制与验收条件" aria-live="polite" aria-atomic="true">
+          <svg viewBox="0 0 310 150" role="img" aria-label="Agent 通过接口操作业务系统，验证器回读业务状态，形成确认闭环。">
+            <g style="fill:var(--surface);stroke:var(--accent)" stroke-width="1.7"><rect x="8" y="17" width="100" height="47" rx="9"/><rect x="201" y="17" width="100" height="47" rx="9"/><rect x="104" y="100" width="102" height="40" rx="9"/></g>
+            <g style="stroke:var(--accent);fill:none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M111 40h82m-6-5 6 5-6 5M250 67v52h-40m6-5-6 5 6 5M100 119H57V68m-5 6 5-6 5 6"/></g>
+            <g style="fill:var(--accent-ink)" font-size="16" text-anchor="middle"><text x="58" y="46">Agent</text><text x="251" y="46">业务系统</text><text x="155" y="126">验证器</text></g>
+            <text x="156" y="30" text-anchor="middle" font-size="12" style="fill:var(--text-soft)">调用</text>
+          </svg>
+          <div class="rauch-detail-title" data-fit-title>① 能发现与理解</div>
+          <p class="rauch-detail-copy" data-fit-copy>提供容易读取的文档、明确的能力描述与输入输出约束。Agent 需要知道什么时候用一个工具、结果代表什么，以及下一步如何判断。</p>
+          <p class="rauch-detail-check" data-fit-check><strong>验收：</strong>让没有额外人工提示的 Agent，依据文档完成一次真实读取任务，并正确解释结果。</p>
+        </div>
+      </div>
+      <p class="rauch-visual-caption">上图五项是由访谈扩展的工程检查框架。授权、幂等和中断恢复属于落地补充，不能据此认定 Vercel 已为所有场景实现这些能力。</p>
+    </div>
+    <p><strong>资料核验：</strong>Vercel 官方文档确实提供 Agent 多步工具循环与部署指导；Fluid compute 通过实例内并发、动态扩容和冷启动优化支持相关负载。但函数仍有套餐与运行时限制，长时间、跨中断的任务还需考虑持久化工作流。把函数执行时间延长，无法自动解决长时任务的状态恢复。<a class="rauch-cite" href="#src-2">[2]</a><a class="rauch-cite" href="#src-3">[3]</a></p>
+
+    <h2 id="verification"><span class="sec-num">四</span>验证闭环：目标、执行与独立证据<a class="anchor" href="#verification">#</a></h2>
+    <p class="kicker">— VERIFY THE PRODUCT AT ITS BOUNDARIES</p>
+    <blockquote class="rauch-quote"><p>“We're shifting our focus … to verification. To evaluation.”</p><footer>Guillermo Rauch · 从开发框架与体验转向验证、评估 · <a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2034">33:54</a></footer></blockquote>
+    <p>他对无效测试的批评有具体对象：Agent 写了大量测试，却只是复述一个常量的值，最终产品仍然不好用。“两百万个单测”是口语化批评，没有给出可复核的项目统计。其有效内核是<strong>测试是否提供了关于用户目标的新证据</strong>，而非测试文件有多少。随后他强调，从系统边界、尽量贴近用户体验的位置检验，并在失败时继续理解内部机制。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2081">34:41</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2119">35:19</a></p>
+    <div class="verification-loop reveal" data-verification>
+      <div class="rauch-visual-label">03 / VERIFICATION LOOP</div>
+      <div class="rauch-visual-title">目标与资源形成控制面，执行结果回到证据</div>
+      <div class="verification-controls" aria-label="查看闭环环节">
+        <button class="verification-btn" type="button" data-loop="0" aria-pressed="true" aria-controls="verification-panel">① 定义目标</button>
+        <button class="verification-btn" type="button" data-loop="1" aria-pressed="false" aria-controls="verification-panel">② 自主执行</button>
+        <button class="verification-btn" type="button" data-loop="2" aria-pressed="false" aria-controls="verification-panel">③ 独立验证</button>
+        <button class="verification-btn" type="button" data-loop="3" aria-pressed="false" aria-controls="verification-panel">④ 资源取舍</button>
+      </div>
+      <div class="verification-layout">
+        <div>
+          <svg class="verification-desktop" viewBox="0 0 440 310" role="img" aria-label="交互闭环：定义目标、自主执行、独立验证、资源取舍。目标与资源由人控制，执行结果经过验证回流。可点击节点查看详情。">
+            <g style="fill:none;stroke:var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+              <path class="verification-dash" d="M182 64h75M328 96v102M257 230h-74M112 198V96"/>
+              <path d="m249 59 8 5-8 5m74 121 5 8 5-8m-142 35-8 5 8 5m-84-121 5-8 5 8"/>
+            </g>
+            <g class="verification-node" data-loop-node="0" role="button" tabindex="0" aria-label="定义目标" aria-pressed="true">
+              <rect x="38" y="31" width="145" height="65" rx="11"/>
+              <text x="110" y="58" text-anchor="middle" font-size="17" style="fill:var(--text)">① 定义目标</text><text x="110" y="80" text-anchor="middle" font-size="13" style="fill:var(--text-soft)">人：成功条件与边界</text>
+            </g>
+            <g class="verification-node" data-loop-node="1" role="button" tabindex="0" aria-label="自主执行" aria-pressed="false">
+              <rect x="257" y="31" width="145" height="65" rx="11"/>
+              <text x="329" y="58" text-anchor="middle" font-size="17" style="fill:var(--text)">② 自主执行</text><text x="329" y="80" text-anchor="middle" font-size="13" style="fill:var(--text-soft)">Agent：工具与工作流</text>
+            </g>
+            <g class="verification-node" data-loop-node="2" role="button" tabindex="0" aria-label="独立验证" aria-pressed="false">
+              <rect x="257" y="198" width="145" height="65" rx="11"/>
+              <text x="329" y="225" text-anchor="middle" font-size="17" style="fill:var(--text)">③ 独立验证</text><text x="329" y="247" text-anchor="middle" font-size="13" style="fill:var(--text-soft)">验收器：回读真实结果</text>
+            </g>
+            <g class="verification-node" data-loop-node="3" role="button" tabindex="0" aria-label="资源取舍" aria-pressed="false">
+              <rect x="38" y="198" width="145" height="65" rx="11"/>
+              <text x="110" y="225" text-anchor="middle" font-size="17" style="fill:var(--text)">④ 资源取舍</text><text x="110" y="247" text-anchor="middle" font-size="13" style="fill:var(--text-soft)">人：追加、转向或停止</text>
+            </g>
+            <text x="220" y="143" text-anchor="middle" font-size="19" style="fill:var(--accent-ink)">结果与约束驱动</text>
+            <text x="220" y="169" text-anchor="middle" font-size="13" style="fill:var(--text-soft)">失败证据回流 · 保留系统理解</text>
+            <text x="220" y="296" text-anchor="middle" font-size="12" style="fill:var(--text-muted)">分析性架构映射，非 Vercel 内部实现图</text>
+          </svg>
+          <svg class="verification-mobile" viewBox="0 0 330 370" role="img" aria-label="四环节纵向闭环：定义目标、自主执行、独立验证、资源取舍；资源取舍回流到目标。可点击节点查看详情。">
+            <g style="fill:none;stroke:var(--accent)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path class="verification-dash" d="M149 68v23m0 62v23m0 62v23M290 294h22V38h-26"/><path d="m144 85 5 6 5-6m-10 85 5 6 5-6m-10 85 5 6 5-6m141-229-6 6 6 6"/></g>
+            <g class="verification-node" data-loop-node="0" role="button" tabindex="0" aria-label="定义目标" aria-pressed="true"><rect x="8" y="8" width="279" height="60" rx="10"/><text x="24" y="34" font-size="18" style="fill:var(--text)">① 定义目标</text><text x="24" y="56" font-size="14" style="fill:var(--text-soft)">人：成功条件与边界</text></g>
+            <g class="verification-node" data-loop-node="1" role="button" tabindex="0" aria-label="自主执行" aria-pressed="false"><rect x="8" y="93" width="279" height="60" rx="10"/><text x="24" y="119" font-size="18" style="fill:var(--text)">② 自主执行</text><text x="24" y="141" font-size="14" style="fill:var(--text-soft)">Agent：工具与持久化工作流</text></g>
+            <g class="verification-node" data-loop-node="2" role="button" tabindex="0" aria-label="独立验证" aria-pressed="false"><rect x="8" y="178" width="279" height="60" rx="10"/><text x="24" y="204" font-size="18" style="fill:var(--text)">③ 独立验证</text><text x="24" y="226" font-size="14" style="fill:var(--text-soft)">验收器：回读真实结果</text></g>
+            <g class="verification-node" data-loop-node="3" role="button" tabindex="0" aria-label="资源取舍" aria-pressed="false"><rect x="8" y="263" width="279" height="60" rx="10"/><text x="24" y="289" font-size="18" style="fill:var(--text)">④ 资源取舍</text><text x="24" y="311" font-size="14" style="fill:var(--text-soft)">人：追加、转向或停止</text></g>
+            <text x="165" y="353" text-anchor="middle" font-size="13" style="fill:var(--accent-ink)">结果与约束驱动 · 失败证据回流</text>
+          </svg>
+        </div>
+        <div class="verification-panel" id="verification-panel" role="region" aria-label="闭环环节的责任与证据" aria-live="polite" aria-atomic="true">
+          <div class="rauch-detail-title" data-loop-title>① 定义目标</div>
+          <p class="rauch-detail-copy" data-loop-copy>把意图变成可检验的目标，并明确禁止事项、权限范围、预算与必须升级给人的决策。人的价值首先是决定什么值得做。</p>
+          <ul data-loop-items><li>输入：业务目标与约束</li><li>输出：验收条件和停止条件</li><li>责任：业务负责人 / FDE</li></ul>
+        </div>
+      </div>
+      <p class="rauch-visual-caption">“独立验证”指证据来源独立于执行者的成功宣称；可以是确定性程序、业务系统回读与人工抽检的组合，无须增加一个专门的 Agent。</p>
+    </div>
+    <p><strong>资料核验：</strong>这并非突然出现的 AI 测试观。2016 年的“Write tests. Not too many. Mostly integration.”，以及 Rauch 2020 年的 <cite>Develop, Preview, Test</cite>，已经把测试当作有回报、风险与机会成本的投资。Kent C. Dodds 的解释强调集成测试在信心、速度与成本之间的平衡；两篇文章存在引用关系，属于主张的历史脉络，不能算两项独立实验。<a class="rauch-cite" href="#src-4">[4]</a><a class="rauch-cite" href="#src-5">[5]</a></p>
+    <p>Anthropic 的 Agent 评估指南提供了另一条证据：它严格区分执行轨迹和环境的最终结果。例如，Agent 说“机票已订”是轨迹内容，数据库里是否存在预订记录才是结果。指南同时允许代码、模型和人工评分；单测也仍然适合检验确定性的程序行为。因而可迁移的原则是<strong>根据失败风险选择验证手段，让真正的完成条件有证据支撑</strong>。<a class="rauch-cite" href="#src-6">[6]</a></p>
+    <div class="callout callout-warn"><div class="callout-tag">需要保留的边界</div><p>端到端流程跑通，无法单独证明权限隔离、支付金额、并发竞争与安全约束都正确。高风险不变量仍需针对性的单测、集成检查或安全验证；生成代码也不能获得随意改写验收标准的权限。</p></div>
+
+    <h2 id="trust"><span class="sec-num">五</span>信任积累：可观察的日常质量<a class="anchor" href="#trust">#</a></h2>
+    <p class="kicker">— TRUST AS AN ACCUMULATED OUTCOME</p>
+    <blockquote class="rauch-quote"><p>“Trust is an output, not an input.”</p><footer>Guillermo Rauch · <a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1086">18:06</a></footer></blockquote>
+    <p>Rauch 把品牌和信任视为工作完成之后才能观察的结果。他列举的输入很务实：安全、修 bug、简洁体验、文档与对细节的重视；用户会把多次分散接触积累成“这家公司值得依赖”的判断。他关于“后 AGI 信任护城河”的表述是前瞻观点，访谈没有证明信任已经成为所有行业最重要的竞争因素。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1226">20:26</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1267">21:07</a></p>
+    <div class="trust-engine reveal">
+      <div class="rauch-visual-label">04 / TRUST THROUGH DELIVERY</div>
+      <div class="rauch-visual-title">可重复的兑现，给长期委托提供依据</div>
+      <svg class="trust-desktop" viewBox="0 0 760 278" role="img" aria-label="安全与权限、文档与状态、修复与体验构成可控输入。用户在多次交互中观察一致兑现，积累信任并扩大委托；失败反馈回流改进。此图没有量化信任分数。">
+        <defs><marker id="trust-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8" style="fill:var(--accent)"/></marker></defs>
+        <g style="fill:var(--bg-soft);stroke:var(--border)"><rect x="8" y="32" width="207" height="47" rx="9"/><rect x="8" y="92" width="207" height="47" rx="9"/><rect x="8" y="152" width="207" height="47" rx="9"/><rect x="278" y="55" width="202" height="122" rx="12"/></g>
+        <g style="fill:var(--text)" font-size="17"><text x="24" y="62">安全与权限</text><text x="24" y="122">文档与状态</text><text x="24" y="182">修复与体验</text><text x="379" y="87" text-anchor="middle">多次真实接触</text></g>
+        <g style="stroke:var(--accent);fill:none" stroke-width="1.7" stroke-linejoin="round"><path d="M218 56h24v120h-24m24-60h27" marker-end="url(#trust-arrow)"/><path d="M486 116h61" marker-end="url(#trust-arrow)"/></g>
+        <g style="fill:var(--accent)"><circle cx="318" cy="114" r="5"/><circle cx="348" cy="114" r="5"/><circle cx="378" cy="114" r="5"/><circle cx="408" cy="114" r="5"/><circle cx="438" cy="114" r="5"/></g>
+        <text x="379" y="149" text-anchor="middle" font-size="14" style="fill:var(--text-soft)">用户观察是否一致兑现</text>
+        <rect x="557" y="55" width="195" height="122" rx="12" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+        <text x="654" y="99" text-anchor="middle" font-size="21" style="fill:var(--accent-ink)">积累信任</text><text x="654" y="134" text-anchor="middle" font-size="14" style="fill:var(--text-soft)">愿意扩大委托范围</text>
+        <path d="M654 183v44H112v-18" style="fill:none;stroke:var(--accent)" stroke-width="1.7" marker-end="url(#trust-arrow)"/>
+        <rect x="281" y="210" width="270" height="34" rx="8" style="fill:var(--surface)"/><text x="416" y="233" text-anchor="middle" font-size="14" style="fill:var(--accent-ink)">负面反馈 → 修复 → 再验证</text>
+        <text x="380" y="269" text-anchor="middle" font-size="12" style="fill:var(--text-muted)">机制示意 · 节点数量不代表样本量或信任分数</text>
+      </svg>
+      <svg class="trust-mobile" viewBox="0 0 330 385" role="img" aria-label="信任机制纵向图：安全、文档、修复等输入，通过多次一致兑现积累信任；负面反馈推动修复和再次验证。">
+        <g style="fill:var(--bg-soft);stroke:var(--border)"><rect x="10" y="8" width="310" height="76" rx="11"/><rect x="10" y="111" width="310" height="88" rx="11"/></g>
+        <text x="165" y="37" text-anchor="middle" font-size="18" style="fill:var(--text)">安全、文档、修复与体验</text><text x="165" y="65" text-anchor="middle" font-size="15" style="fill:var(--text-soft)">可以持续改进的输入</text>
+        <text x="165" y="108" text-anchor="middle" font-size="22" style="fill:var(--accent)">↓</text>
+        <text x="165" y="142" text-anchor="middle" font-size="18" style="fill:var(--text)">多次真实接触</text><text x="165" y="173" text-anchor="middle" font-size="15" style="fill:var(--text-soft)">用户观察是否一致兑现</text>
+        <text x="165" y="223" text-anchor="middle" font-size="22" style="fill:var(--accent)">↓</text>
+        <rect x="10" y="230" width="310" height="81" rx="11" style="fill:var(--accent-soft);stroke:var(--accent)"/>
+        <text x="165" y="263" text-anchor="middle" font-size="22" style="fill:var(--accent-ink)">积累信任</text><text x="165" y="290" text-anchor="middle" font-size="15" style="fill:var(--text-soft)">愿意扩大委托范围</text>
+        <text x="165" y="346" text-anchor="middle" font-size="15" style="fill:var(--accent-ink)">↺ 负面反馈 → 修复 → 再验证</text>
+        <text x="165" y="373" text-anchor="middle" font-size="12" style="fill:var(--text-muted)">机制示意，无量化信任数据</text>
+      </svg>
+      <p class="rauch-visual-caption">延伸判断：Agent 产品中的信任，可以落实到“发生了什么、为什么这样做、失败能否恢复、谁对结果负责”的连续体验。</p>
+    </div>
+    <p>他对日常工作的提醒同样具体：读流失问卷、接触愤怒离开的客户、关注内部开发体验的抱怨。Vercel 的相关 Slack 频道是嘉宾介绍的内部做法，外部无法验证它的使用频率或改善效果。可迁移的是主动暴露失败的组织习惯：<strong>让坏消息能够进入改进闭环</strong>，再追踪修复是否真的改变了用户体验。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1519">25:19</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1577">26:17</a></p>
+
+    <h2 id="economics"><span class="sec-num">六</span>资源取舍与 SaaS 自建的完整成本<a class="anchor" href="#economics">#</a></h2>
+    <p class="kicker">— BUDGET THE WHOLE SYSTEM</p>
+    <p>在性能优化的例子里，Agent 向 Rauch 提出边际收益递减的问题：继续变快需要更多时间，是否还值得？他把人类接下来的重要职责称为“capital allocation”。这里的资本包括算力、token、时间，以及其他工作被占用的机会成本。他也提到部分领域可能出现由 Agent 自主经营的企业，但只给出投资经历与小规模成功的自述，没有公开经营数据。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2224">37:04</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2305">38:25</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2424">40:24</a></p>
+    <p><strong>资料核验：</strong>Google SRE 的风险管理框架长期强调，可靠性需要与功能、成本和业务风险共同取舍；不同类型的故障也不能等价处理。这支持“显式配置资源与风险”的原则，但不支持把隐私泄露和偶发加载失败都折成同一种可容忍误差。<a class="rauch-cite" href="#src-7">[7]</a></p>
+    <p>自建 SaaS 的讨论延续了这一逻辑。他首先要求考虑安全、持久性、可用性与长期维护，然后才谈删除工具：其中一类是功能重叠、原本靠低门槛界面解决问题的工具；另一类是无法向 Agent 暴露数据和能力、妨碍工作链路的工具。<strong>“一次能生成一个 demo”不足以决定替换供应商。</strong><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2492">41:32</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2568">42:48</a></p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>决策维度</th><th>倾向自建的信号</th><th>倾向采购或保留的信号</th></tr></thead>
+      <tbody>
+        <tr><td>业务差异</td><td>流程专属，配置工具难以表达</td><td>通用流程，成熟供应商持续适配</td></tr>
+        <tr><td>链路复杂度</td><td>多个工具重复做相似工作，统一后更简单</td><td>替换会引入更多数据同步和运维责任</td></tr>
+        <tr><td>Agent 接入</td><td>数据可迁出，自建可形成稳定执行链路</td><td>现有工具的接口、权限与状态查询已可靠</td></tr>
+        <tr><td>长期成本</td><td>有人负责升级、回归、故障与备份恢复</td><td>团队无法承担长期运行和领域知识维护</td></tr>
+        <tr><td>高风险领域</td><td>边界明确，规则与审计能够验证</td><td>支付、薪资、合规等责任超过团队能力</td></tr>
+      </tbody>
+    </table></div>
+    <p class="rauch-note">表格为延伸决策框架，不是嘉宾给出的采购标准。比较总成本时，应纳入生成与开发、迁移集成、基础设施、持续验证、安全维护和事故处理；访谈没有提供可以用于通用 ROI 模型的金额数据。</p>
+
+    <h2 id="fde"><span class="sec-num">七</span>FDE 落地：把目标转成验收与反馈<a class="anchor" href="#fde">#</a></h2>
+    <p class="kicker">— FROM CUSTOMER INTENT TO OBSERVABLE RESULTS</p>
+    <p><strong>延伸判断：</strong>这段访谈对 FDE 最直接的价值，是把交付单位从“接了多少工具、生成了多少代码”，推进到“哪类业务结果能持续可靠完成”。以一个退款 Agent 为例：客户关心符合政策的退款被正确处理、没有重复支付、异常可以追溯。模型对自己表现的描述，只能作为辅助信息。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>步骤</th><th>责任主体</th><th>应留下的产物或证据</th></tr></thead>
+      <tbody>
+        <tr><td>定义目标与取舍</td><td>业务负责人 + FDE</td><td>适用订单、成功状态、禁止事项、预算和升级条件</td></tr>
+        <tr><td>建立工具契约</td><td>系统负责人 + FDE</td><td>权限范围、错误语义、异步状态、重复提交处理规则</td></tr>
+        <tr><td>运行任务</td><td>Agent + 持久化工作流</td><td>目标标识、调用记录、执行状态、检查点与恢复信息</td></tr>
+        <tr><td>确认业务结果</td><td>确定性验收器 + 业务系统</td><td>订单与资金记录回读；金额正确；无重复退款</td></tr>
+        <tr><td>校准质量</td><td>FDE + 领域专家</td><td>异常抽检、失败分类、回归案例与处置结果</td></tr>
+        <tr><td>分配后续资源</td><td>业务负责人 + 工程负责人</td><td>继续、停止或扩范围的依据；预算与风险变化</td></tr>
+      </tbody>
+    </table></div>
+    <p>架构上可以将<strong>控制面</strong>负责的目标、策略、预算、状态管理与验收条件，和<strong>数据面</strong>负责的模型、工具及业务操作分开。局部失败由工作流记录、重试或升级；成功由验收器确认。这样既能保留清晰责任，也避免为了“独立验证”不断增加子 Agent。该映射符合薄 Agent 配合持久化工作流的思路，属于本文的架构建议。</p>
+    <div class="callout callout-pro">
+      <div class="callout-tag">建议做一个两周试点</div>
+      <ol>
+        <li><strong>先选一个可回读的结果。</strong>明确初始状态、目标状态与禁止事项，记录现有人工流程作为基线。</li>
+        <li><strong>跑通闭环。</strong>建立工具契约与真实验收；针对重复提交、超时后续跑、权限不足做必要验证。</li>
+        <li><strong>保留失败样本。</strong>每条样本记录输入、预期、实际状态和可复核证据，避免只有“体验不好”的标签。</li>
+        <li><strong>按结果决定扩张。</strong>检查完成率、重复执行、成本、人工介入与恢复情况；阈值由业务风险确定。</li>
+      </ol>
+    </div>
+    <p>指标尤其需要防止混淆：工具返回成功率、业务结果完成率、单次最好成绩和多次稳定性各有不同含义。应记录分母、场景和试验次数；在没有实测数据前，无法把访谈的效率愿景变成自己的交付承诺。<a class="rauch-cite" href="#src-6">[6]</a></p>
+
+    <h2 id="limits"><span class="sec-num">八</span>证据边界与需要修正的类比<a class="anchor" href="#limits">#</a></h2>
+    <p class="kicker">— WHERE THE CLAIMS STOP</p>
+    <div class="rauch-claim-list">
+      <div class="rauch-claim"><b>“一人万亿美元公司”是愿景</b><p>视频标题使用“Could”，正片也表达为希望与可能性。没有公开收入、利润、估值或长期运行数据可证明该形态已经成立。适合观察组织规模与执行杠杆变化，尚不能据此推导确定的商业结果。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=387">06:27</a></p></div>
+      <div class="rauch-claim"><b>“Agent 总选 Vercel”缺少选择率证据</b><p>这一观察来自主持人的使用经历。没有模型、任务分布、对照平台和重复试验记录；训练语料、工具默认配置、集成便利性都可能影响选择。无法单独据此证明平台质量优势或稳定分发护城河。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1815">30:15</a></p></div>
+      <div class="rauch-claim"><b>“MCP 是新的 HTTP”是生态类比</b><p>它表达面向 Agent 的互操作愿景。协议层面，MCP 使用 JSON-RPC，标准传输包括 stdio 与 Streamable HTTP；因此 MCP 可以运行在 HTTP 上，二者处于不同层次。这一类比也不能替代身份、授权、状态语义与系统可靠性设计。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2657">44:17</a><a class="rauch-cite" href="#src-8">[8]</a></p></div>
+      <div class="rauch-claim"><b>“代码免费”“调用百万倍”没有可用统计口径</b><p>这些是对生成能力与调用强度的口语表达。代码生成仍有模型、算力与验证成本；Agent 的调用放大取决于任务和重试策略。可以预期基础设施压力变化，不能照抄为成本假设或容量规划倍率。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2551">42:31</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2797">46:37</a></p></div>
+      <div class="rauch-claim"><b>验证可以提高信心，仍然需要系统理解</b><p>Rauch 同时强调不放弃理解；失败发生时，需要查明机制。任何有限测试集合都有盲区，结果验证还应配合约束检查、生产观测和人工校准。本文不把这一访谈解释为“只看结果即可”的工程许可。<a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2182">36:22</a><a class="rauch-cite" href="#src-6">[6]</a></p></div>
+    </div>
+    <p><strong>当前判断：</strong>时机为“进行中”，因为 Agent 接入与验证已经有文档和可实施方法；信心为“中”，因为“验证结果、明确资源取舍”有较扎实的工程依据，而平台长期胜负、信任护城河及极小组织的商业规模仍待观察。本文采用单场访谈还原观点，相关厂商资料用于核对能力边界，无法替代独立性能或经营验证。</p>
+
+    <h2 id="learning-sources"><span class="sec-num">九</span>学习路径、复述问题与来源<a class="anchor" href="#learning-sources">#</a></h2>
+    <p class="kicker">— BUILD THE FOUNDATION, THEN AMPLIFY IT</p>
+    <p>末段的教育观与前面的工程观相呼应：先发现兴趣、建立基础，再把 Agent 当作思考与创造的放大工具。Rauch 用个人电脑、Google 和缓存层级比喻外部能力对思考的扩展；同时，他仍然欣赏孩子用铅笔画画，也认为特定目标需要扎实的系统工程能力。这里的可迁移结论是：<strong>亲自建立判断结果的能力，再把更多执行交给工具。</strong><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=3009">50:09</a><a class="rauch-cite" href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=3098">51:38</a></p>
+    <div class="rauch-reading-path">
+      <div class="rauch-reading-step"><b>先看工程</b><p><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2025">33:45–40:24</a></p><p>抓验证、理解、预算和机会成本，先把论点映射到一个真实任务。</p></div>
+      <div class="rauch-reading-step"><b>再看平台</b><p><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=2599">43:19–47:30</a></p><p>检查现有工具是否能读、能写、能确认、能恢复，以及能否承担持续调用。</p></div>
+      <div class="rauch-reading-step"><b>最后看组织</b><p><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI&amp;t=1035">17:15–27:46</a></p><p>把信任拆成具体输入，检查客户和员工的坏消息能否触发有效修复。</p></div>
+    </div>
+    <p>用于复述检验的三个问题：</p>
+    <ol>
+      <li>如果 Agent 返回“成功”，业务系统里需要出现什么证据，才能确认任务完成？</li>
+      <li>一个工具有 MCP 接口，但写入超时、状态不一致，你会怎样定义重试与验收契约？</li>
+      <li>当继续优化的收益递减，哪些取舍应由人决定，哪些信息应由 Agent 提供？</li>
+    </ol>
+    <p>进一步阅读：<a href="./2026-06_loop-engineering-coding-agent.html">Loop Engineering</a>可补充执行闭环；<a href="./2026-09_shopify-river-taste-responsibility.html">Shopify River：执行与责任</a>可对照人类判断角色；<a href="./2026-09_grok-bot-last-ten-percent.html">Grok Bot：最后 10% 的产品化</a>可对照长期交付中的可靠性工作。</p>
+    <ol class="rauch-sources">
+      <li id="src-1"><a href="https://www.youtube.com/watch?v=W9YfKZaK7KI" target="_blank" rel="noopener">[1] Delphi · Vercel CEO: How 1 Person + AI Agents Could Build a $1T Company</a><small>发布 2026-10-29，55:43；来源为完整英文自动字幕、视频描述和章节元数据。嘉宾观点与内部经历为单一来源自述。</small></li>
+      <li id="src-2"><a href="https://vercel.com/docs/agents" target="_blank" rel="noopener">[2] Vercel · How to build AI Agents with Vercel and the AI SDK</a><small>官方指南；用于核验工具调用、多步循环和部署支持。页面有关持续时间的示例存在不同口径，具体限制以专门文档为准。</small></li>
+      <li id="src-3"><a href="https://vercel.com/docs/fluid-compute" target="_blank" rel="noopener">[3] Vercel · Fluid compute</a><small>官方文档；用于核验并发、扩容、冷启动优化、函数持续时间及长时工作流边界。</small></li>
+      <li id="src-4"><a href="https://rauchg.com/2020/develop-preview-test" target="_blank" rel="noopener">[4] Guillermo Rauch · Develop, Preview, Test</a><small>2020-06-11；本人历史文章，阐述生产相近预览环境、用户边界测试与测试投资回报。</small></li>
+      <li id="src-5"><a href="https://kentcdodds.com/blog/write-tests" target="_blank" rel="noopener">[5] Kent C. Dodds · Write tests. Not too many. Mostly integration.</a><small>2019-07-13；引用 Rauch 2016-12-10 的原帖。用于历史追溯和测试取舍解释，不作为独立实验。文章的覆盖率示例明确不是科学统计，本文未采纳该数值。</small></li>
+      <li id="src-6"><a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener">[6] Anthropic · Demystifying evals for AI agents</a><small>2026-01-09；官方工程指南。用于区分轨迹与最终结果、多次试验、代码／模型／人工评分及回归评估。</small></li>
+      <li id="src-7"><a href="https://sre.google/sre-book/embracing-risk/" target="_blank" rel="noopener">[7] Google SRE Book · Embracing Risk</a><small>用于核验可靠性、风险、成本与业务目标的取舍原则。</small></li>
+      <li id="src-8"><a href="https://modelcontextprotocol.io/specification/2026-07-28/basic/transports" target="_blank" rel="noopener">[8] Model Context Protocol · Transports</a><small>官方规范 2026-07-28 版；用于核验 JSON-RPC、stdio 与 Streamable HTTP 的协议关系。</small></li>
+    </ol>
+    <p class="rauch-note">资料核验日期：2026-11-12。官方产品文档属于动态资料，正文仅使用本次可确认的能力，不把现有文档全部回推为访谈当日状态。</p>
+    <hr />
+    <p style="font-size:.85rem;color:var(--text-muted);text-align:center;">修订记录：2026-11-12 初稿 · 完整英文自动字幕解读、一手资料核验、四组图解</p>
+    <div class="doc-footer"><a href="../index.html">← 首页</a> · <a href="./index.html">阅读材料索引</a></div>
+  </article>
+</div>
+<script src="../_assets/insight.js"></script>
+<script>
+(() => {
+  const fitData = [
+    ['① 能发现与理解', '提供容易读取的文档、明确的能力描述与输入输出约束。Agent 需要知道什么时候用一个工具、结果代表什么，以及下一步如何判断。', '让没有额外人工提示的 Agent，依据文档完成一次真实读取任务，并正确解释结果。'],
+    ['② 能合法调用', '能力可用还需要身份与权限。工具应明确可操作范围、必要参数与拒绝原因；接入协议不能替代业务授权。', '分别使用有权限与无权限的身份调用；确认允许的操作成功，越界操作被拒绝且不产生业务副作用。'],
+    ['③ 能确认真实状态', '请求受理、执行中与业务完成是不同状态。异步写入应提供可查询标识，验证器再回读业务结果；接口成功返回本身不足以证明完成。', '发起一次异步操作，观察状态推进，并从业务系统回读目标状态；失败或未完成时不应报告成功。'],
+    ['④ 能承受反复执行', '持续循环会放大限流、性能与重复写入问题。为写操作明确幂等规则，为读取和批量调用定义性能边界；限流应给出可执行的恢复信号。', '在约定负载下重复提交同一操作，检查是否产生重复副作用；触发限流后检查退避和恢复行为。'],
+    ['⑤ 能恢复与追溯', '把任务状态与必要检查点持久保存。中断后应知道哪些操作已经发生、哪些尚未完成，并能提供定位问题的证据。', '在写入前后分别制造中断，恢复后确认无遗漏、无重复执行；核对错误原因、状态记录与最终结果。']
+  ];
+  const fit = document.querySelector('[data-agent-fit]');
+  if (fit) fit.querySelectorAll('[data-fit]').forEach(button => {
+    button.addEventListener('click', () => {
+      const row = fitData[Number(button.dataset.fit)];
+      fit.querySelectorAll('[data-fit]').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+      fit.querySelector('[data-fit-title]').textContent = row[0];
+      fit.querySelector('[data-fit-copy]').textContent = row[1];
+      const check = fit.querySelector('[data-fit-check]');
+      check.replaceChildren();
+      const label = document.createElement('strong');
+      label.textContent = '验收：';
+      check.append(label, document.createTextNode(row[2]));
+    });
+  });
+  const loopData = [
+    ['① 定义目标', '把意图变成可检验的目标，并明确禁止事项、权限范围、预算与必须升级给人的决策。人的价值首先是决定什么值得做。', ['输入：业务目标与约束', '输出：验收条件和停止条件', '责任：业务负责人 / FDE']],
+    ['② 自主执行', 'Agent 选择工具与执行路径；工作流负责持久化状态、局部重试和恢复。允许执行策略变化，同时让调用和关键状态可追溯。', ['输入：目标、工具契约与可用预算', '输出：产物、业务操作与运行证据', '责任：Agent / 运行平台']],
+    ['③ 独立验证', '检验环境中的真实结果，并同时检查关键约束。使用确定性程序、业务回读与必要人工校准；不以执行者的完成宣称作为唯一依据。', ['输入：验收条件、产物和业务状态', '输出：通过、失败和可定位证据', '责任：验收器 / 领域专家']],
+    ['④ 资源取舍', '根据结果、边际收益、风险和机会成本决定继续、转向或停止。Agent 应提供可评估的选项；超出预先授权的关键取舍由人决定。', ['输入：质量差距、成本和替代方案', '输出：更新的目标、预算或停止决定', '责任：业务负责人 / 工程负责人']]
+  ];
+  const loop = document.querySelector('[data-verification]');
+  const selectLoop = index => {
+    const row = loopData[index];
+    loop.querySelectorAll('[data-loop]').forEach(b => b.setAttribute('aria-pressed', String(Number(b.dataset.loop) === index)));
+    loop.querySelectorAll('[data-loop-node]').forEach(n => n.setAttribute('aria-pressed', String(Number(n.dataset.loopNode) === index)));
+    loop.querySelector('[data-loop-title]').textContent = row[0];
+    loop.querySelector('[data-loop-copy]').textContent = row[1];
+    const list = loop.querySelector('[data-loop-items]');
+    list.replaceChildren();
+    row[2].forEach(text => { const li = document.createElement('li'); li.textContent = text; list.append(li); });
+  };
+  if (loop) {
+    loop.querySelectorAll('[data-loop]').forEach(b => b.addEventListener('click', () => selectLoop(Number(b.dataset.loop))));
+    loop.querySelectorAll('[data-loop-node]').forEach(node => {
+      node.addEventListener('click', () => selectLoop(Number(node.dataset.loopNode)));
+      node.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); selectLoop(Number(node.dataset.loopNode)); }
+      });
+    });
+  }
+})();
+</script>
+</body>
+</html>
