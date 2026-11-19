@@ -34,7 +34,7 @@
 .rv-choice button[aria-pressed="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-ink)}
 .rv-choice button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .rv-choice button small{display:block;font-family:var(--mono);font-size:.68rem;margin-bottom:.15rem}
-.rv-detail{margin-top:1rem;padding:1rem 1.1rem;border-left:3px solid var(--accent);background:var(--bg-soft);border-radius:0 10px 10px 0;min-height:120px}
+.rv-detail{margin-top:1rem;padding:1rem 1.1rem;border-left:3px solid var(--accent);background:var(--bg-soft);border-radius:0 10px 10px 0;min-height:90px}
 .rv-detail-title{font-family:var(--serif);font-weight:700;color:var(--text)}
 .rv-detail p{margin:.35rem 0 0}
 .rv-detail .rv-detail-check{font-size:.85rem;color:var(--accent-ink)}
@@ -54,6 +54,13 @@
 .rv-questions li{margin:.8rem 0}
 .rv-reading-route{display:flex;gap:.65rem;flex-wrap:wrap;margin:1.1rem 0}
 .rv-reading-route a{padding:.4rem .7rem;border:1px solid var(--border-strong);border-radius:6px;font-size:.85rem;background:var(--surface)}
+.rv-summary li{margin:.7rem 0}
+.rv-summary strong{font-family:var(--serif);font-size:1.08rem}
+.rv-more{margin:1rem 0;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:.9rem 1rem}
+.rv-more summary{cursor:pointer;font-weight:600;color:var(--accent-ink)}
+.rv-more summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.rv-more[open] summary{margin-bottom:.8rem}
+.rv-more .table-wrap{margin:.8rem 0}
 @keyframes rv-flow{to{stroke-dashoffset:-156}}
 @media(max-width:760px){
  .rv-figure{padding:.8rem;margin:1.2rem 0}
@@ -81,7 +88,7 @@
 <article>
 <header class="doc-header">
  <h1><span class="en">AWS Reimagine</span> · <br>从 AI 采用到业务价值</h1>
- <p style="font-size:1.05rem;color:var(--text-soft)">108 页全文深读：把目标、验证、授权、业务知识与持续学习接成一套运行机制。</p>
+ <p style="font-size:1.05rem;color:var(--text-soft)">AI 干活更快了，公司怎样真正受益？</p>
  <div class="doc-meta"><span>2026-11-19</span><span>ToB</span><span>AWS</span><span>FDE</span><span>企业 AI</span><span>Operating Model</span><span>可对外</span><span>时机：进行中</span><span>信心：中</span></div>
  <div class="hero-stats">
   <div class="hero-stat"><div class="num">108<small>页</small></div><div class="lab">全文 · 含方法论与附录</div></div>
@@ -89,34 +96,28 @@
   <div class="hero-stat"><div class="num">154<small>次</small></div><div class="lab">访谈 · 按附录口径</div></div>
   <div class="hero-stat"><div class="num">4<small>能力</small></div><div class="lab">企业 AI 平台的共同底座</div></div>
  </div>
- <p class="rv-note">材料：<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf" target="_blank" rel="noopener">AWS Reimagine Report 2026 · 官方 PDF</a>；<a href="https://aws.amazon.com/blogs/enterprise-strategy/announcing-the-new-aws-reimagine-report-on-ai/" target="_blank" rel="noopener">AWS 发布说明，2026-09-24</a>。本文按用户提供的完整 PDF 研读，引用页码与 PDF 页序一致。</p>
+ <p class="rv-note">来源：<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf" target="_blank" rel="noopener">AWS Reimagine 2026 · 完整报告</a>，2026-09-24 发布。全文已读，页码可回查。</p>
 </header>
 
-<div class="lede"><strong>核心论点 · 本文推论：</strong>当 AI 缩短部分执行环节，企业能否获益，越来越取决于能否清楚定义目标、及时验证结果、明确授权与责任，并把业务反馈变成下一轮可用的知识。FDE 的交付重心也应随之移动：让客户建立能持续产出、验收和维护业务价值的机制。</div>
-<div class="callout callout-accent">
- <div class="callout-tag">一页要点 · 原文主张与本文判断分列</div>
+<div class="lede"><strong>我的判断：</strong>AI 干得快，企业还要想清楚做什么、检查做得对不对，并有人为结果负责。</div>
+<div class="callout callout-accent rv-summary">
+ <div class="callout-tag">一分钟读懂 · 以下金句为本文提炼，并非原文引语</div>
  <ul>
-  <li><strong>原文主张：</strong>效率、生产率、业务价值是三个不同层次。省下的能力需要被明确承接，局部速度才可能变成客户或财务结果。</li>
-  <li><strong>原文观察：</strong>工具普及与熟练应用存在巨大落差。A2V 应看工作方法的变化，而不只看登录率；其“释放价值小时数”是模型估计。</li>
-  <li><strong>原文主张：</strong>治理应嵌入工作路径，用风险相称的约束和可撤回的授权支撑自主性；大规模 Agent 集群治理仍未解决。</li>
-  <li><strong>原文主张：</strong>企业数据既有系统里的“是什么”，也有人掌握的“为什么”。上下文供给是持续运营工作。</li>
-  <li><strong>本文推论：</strong>生成加速会放大验证、审批和跨部门交接的瓶颈。要测整条价值流的质量、成本和交付时间。</li>
-  <li><strong>本文建议：</strong>从一个有业务负责人、历史基线和退出条件的试点入手，交付价值约定、评估证据和运行移交材料。</li>
+  <li><strong>省下时间，才走了半程。</strong><br>要看省下的人力有没有用到客户真正需要的事上。</li>
+  <li><strong>写得更快，也要验得过来。</strong><br>代码生成提速，测试、审批和上线仍可能排队。</li>
+  <li><strong>会问 AI，只是入门；能让别人照着做，才形成方法。</strong><br>把好结果变成可重复、可检查的工作流程。</li>
+  <li><strong>放手之前，先把边界守住。</strong><br>AI 能做什么、出错找谁、何时收回权限，要提前说清并在系统里落实。</li>
+  <li><strong>数据记住了事情，人知道背后的原因。</strong><br>AI 需要两者，也需要有人持续更新。</li>
+  <li><strong>项目交付了，还得有人接着管。</strong><br>客户能自己使用、发现问题和改进，收益才有机会持续。</li>
  </ul>
 </div>
-<div class="rv-reading-route"><a href="#value">先看核心机制</a><a href="#audit">核查关键数字</a><a href="#fde">直接看 FDE 方案</a><a href="#chapter-map">按十章回查</a></div>
+<p class="rv-note">这是一份企业访谈报告，适合启发实践，不能直接当成普遍收益证明。<a href="#references">数据条件与原文索引放在文末</a>。</p>
+<div class="rv-reading-route"><a href="#value">怎么产生价值</a><a href="#fde">怎么开始做</a><a href="#references">数据与来源</a></div>
 
-<h2 id="source"><span class="sec-num">一</span>先判断这份报告能证明什么<a class="anchor" href="#source">#</a></h2>
-<p class="kicker">— SOURCE, SAMPLE &amp; LIMITS</p>
-<p>这是一份由 AWS 团队组织的企业访谈研究：把不同企业的实践、困境和判断汇集起来，再提炼行动框架。它的强项是发现反复出现的问题、呈现组织经验和提出可讨论的机制。它不提供一个可直接代入预算表的“AI 平均 ROI”，也没有证明某种组织设计适用于所有企业。</p>
-<p>附录的详细口径是：<strong>154 次访谈＝128 位外部高管（来自 126 家组织）＋23 位 Amazon 领导者＋3 位行业未来学者</strong>。研究跨 4 大洲、23 个行业，历时 2025 年 11 月至 2026 年 7 月。AWS 发布说明支持这一分项口径。正文第 4 页另写了“154 位高管、128 家组织、超过 30 位 Amazon 领导者”，与附录不完全一致；本文采用可加总、且得到发布说明确认的附录口径。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=102">[p.4、102–103]</a></p>
-<p>作者明确说明，这些访谈不支持总体推广或统计显著性推断。编码过程使用了人工初始编码、基于 Kiro 与 Bedrock Claude Sonnet 的分析，以及研究者复核；这说明分析过程如何完成，不能替代样本代表性、公开原始数据或独立复现。因此，文中的百分比首先反映该访谈群体，企业案例里的收益首先是受访者陈述。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=103">[p.6、102–103]</a></p>
-<div class="callout callout-info"><div class="callout-tag">本文的阅读纪律</div><p>“报告观察”用于访谈与案例；“报告建议”用于作者提炼的规范性主张；“本文推论”用于跨章节推导；“本文设计建议”用于我为 FDE 选择的实现方式。交互图也保留这一归属。信心盖“中”，表示机制值得验证，收益幅度和组织终态尚不能据此确认。</p></div>
-
-<h2 id="value"><span class="sec-num">二</span>主线：省下的时间如何成为价值<a class="anchor" href="#value">#</a></h2>
-<p class="kicker">— EFFICIENCY → CAPACITY → CUSTOMER OUTCOME</p>
-<p>第一章区分：效率是同一任务更快、更便宜；生产率是同样资源完成更多工作；价值是客户、收入、利润或其他业务结果改善。三者有联系，但不能直接画等号。报告中的例子是：编码快了 30%，如果发布仍要等待三周审批，客户未必更早得到功能。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=8">[p.8]</a></p>
-<p>报告建议把释放的能力明确投入有名字、有负责人、能在当季承接的增长项目。WHOOP 的案例把效率提升与增长再投入相连，试图减少员工“越用 AI、越可能失去岗位”的顾虑；Fortive 则从内部工作辅助发现对外产品机会。这些是机制示例，报告没有提供足以独立审计其收益的完整数据。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=10">[p.10–12]</a></p>
+<h2 id="value"><span class="sec-num">一</span>省下时间，谁来用？<a class="anchor" href="#value">#</a></h2>
+<p class="kicker">— 从干得快，到对客户有用</p>
+<p>报告提醒：<strong>更快完成同一件事、做更多事、让客户受益，是三回事。</strong>编码快了 30%，上线还要等三周审批，客户可能什么也没感受到。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=8">[p.8]</a></p>
+<p>所以要提前想好：省下的人力用到哪件事？谁负责？结果怎么看？报告建议把它投入具体业务机会。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=10">[p.10–12]</a></p>
 
 <figure class="rv-figure rv-bridge reveal" data-explorer="bridge">
  <div class="rv-attribution">本文概念重绘 · 依据第一、二章；箭头表示需要验证的转化条件</div>
@@ -140,15 +141,14 @@
   <button type="button" data-key="delivery" aria-pressed="false" aria-controls="bridge-detail"><small>03 · FLOW</small>完整交付</button>
   <button type="button" data-key="outcome" aria-pressed="false" aria-controls="bridge-detail"><small>04 · VALUE</small>价值验收</button>
  </div>
- <div class="rv-detail" id="bridge-detail" aria-live="polite"><div class="rv-detail-title">任务提速：先确认省在了哪里</div><p class="rv-detail-body">耗时减少、单位成本下降或吞吐增加，是局部改善的证据。还要检查返工与人工复核是否把节省抵消。</p><p class="rv-detail-check">本文建议：记录任务时间，同时记录质量和返工；避免只比较生成耗时。</p></div>
- <figcaption>点击环节查看转化条件。直接缩短客户等待时间也可能已经创造价值；本图用于识别中间条件，不主张所有场景都必须经过同一顺序。</figcaption>
+ <div class="rv-detail" id="bridge-detail" aria-live="polite"><div class="rv-detail-title">先看哪里变快了</div><p class="rv-detail-body">少花了时间，也要检查返工是否变多。</p><p class="rv-detail-check">本文建议：时间和质量一起记录。</p></div>
+ <figcaption>本文示意。减少客户等待本身也可能产生价值，不必一律走完四步。</figcaption>
 </figure>
-<p><strong>本文推论：</strong>企业最值得关注的，是提速后新出现的约束。例如，过去产品团队缺少原型，现在可能缺少筛选好原型的判断；过去开发排队，现在可能是测试、风险签字和部署排队。原文第九章的跨部门交接案例支持这一方向，但具体瓶颈要沿客户的一条真实订单、理赔或发布流程测量，不能先假定答案。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=72">[依据：p.70–72]</a></p>
-<p>这也改变了“从客户倒推”的顺序。报告仍保留客户需求与商业目标，却允许在高度不确定、试验便宜时，先用原型帮助发现问题，再写严谨方案。我的解读是：<strong>意图需要清楚，实现方式可以通过试验获得。</strong>它不支持“先堆一批 Agent，总会找到用途”。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=12">[p.12–13]</a></p>
+<p><strong>我的判断：提速之后，要重新找最慢的那一步。</strong>过去等开发，现在可能等测试、审批或别人回复。沿一条真实业务流程检查，比盯着生成速度更有用。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=72">[依据：p.70–72]</a></p>
 
-<h2 id="measurement"><span class="sec-num">三</span>测量：把速度与质量放在同一张账上<a class="anchor" href="#measurement">#</a></h2>
-<p class="kicker">— MEASURE THE WHOLE VALUE STREAM</p>
-<p>第二章反复提醒五类错位：采用率代替有用性、速度掩盖质量、活动量代替结果、局部指标无法加总为全局收益、早期指标长期不变。登录率和提示词数量可以诊断推广情况，却不能单独证明业务价值。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=15">[p.15–18]</a></p>
+<h2 id="measurement"><span class="sec-num">二</span>快了之后，质量掉了吗？<a class="anchor" href="#measurement">#</a></h2>
+<p class="kicker">— 速度和质量一起看</p>
+<p><strong>报告主张：别只数做了多少，还要看做得怎样。</strong>登录率、代码量、会话数能说明有人在用，不能单独说明效果好。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=15">[p.15–18]</a></p>
 <div class="table-wrap"><table>
  <thead><tr><th>只看这个，容易误判</th><th>报告建议配对关注</th><th>本文建议追加的业务核查</th></tr></thead>
  <tbody>
@@ -159,19 +159,15 @@
  </tbody>
 </table></div>
 <p class="rv-note">前两列依据原文 p.16–18；第三列是本文的核查建议，不是报告已经实施的实验。</p>
-<p>报告提出四个持续追问的问题：是否在学习？是否交付业务价值？是否随积累变得更好？工作方式本身是否改善？这比把一个固定 KPI 用到底更有用：试验期可以看发现了哪些边界，生产期应看稳定结果，扩张期还要看复用成本与运营能力。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=19">[p.19–21]</a></p>
-<p><strong>本文推论：</strong>度量应区分“对照证据”和“经营判断”。访谈中的采用与未采用地区比较、前后变化或收入归因，能帮助管理者决策，但没有充分控制差异就不能宣称因果关系。对于过去无法完成的新工作，旧基线也不能简单设为零后计算无限提升；应明确新结果的质量、需求和支付意愿。</p>
-<p>另一组研究提醒我们，效果受任务与使用者影响。QJE 2025 年最终发表的《Generative AI at Work》研究了 5,172 位客服人员，平均每小时解决问题量提高约 15%，新手及低技能群体约 30%；经验丰富者的速度增益较小，部分质量指标下降。这是单一企业的准实验，不能推广成所有知识工作的固定收益。<a class="rv-cite" href="https://doi.org/10.1093/qje/qjae044">[QJE 2025]</a></p>
-<div class="callout callout-warn"><div class="callout-tag">“感觉更快”也需要核验</div><p>METR 在 2025 年初的特定开源开发实验中发现实际耗时增加 19%，参与者仍觉得更快。这一结果已经过时，不能用来描述当前工具。2026 年更新又受到参与选择与计时问题影响，研究者认为无法可靠估计当前幅度。两次研究共同提供的提醒是：在自己的任务上测量，并如实报告实验偏差。<a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">[2025 实验]</a> <a href="https://metr.org/blog/2026-02-24-uplift-update/">[2026 更新]</a></p></div>
+<p><strong>本文建议：</strong>试用前先约定怎样算好，试用后同时看时间、质量、返工和人工检查。否则很容易把“生成快了”当成“整个项目快了”。</p>
 
-<h2 id="a2v"><span class="sec-num">四</span>采用到价值：工作方法比工具接入更重要<a class="anchor" href="#a2v">#</a></h2>
-<p class="kicker">— ADOPTION TO VALUE · A2V</p>
-<p>第三章最有传播力的反差是：一家未具名企业报告 88% 的采用率，却发现不到每 5,000 次会话中的 1 次产生“真正更好的工作”。这两个口径不是同一指标，报告也未完整公开“更好”的操作定义。因此它说明采用与价值可能脱节，<strong>不能翻译成“99.98% 的 AI 使用无用”</strong>。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=23">[p.22–23]</a></p>
-<p>A2V 把使用能力分成 0–4 五个阶段：从获得访问，到单次问答，到带上下文的迭代，再到团队复用工作流，最后重设计工作。重要变化在于工作单元逐步扩大，经验变得可复用，而不是提示词越来越长。以下保留报告阶段含义；每个阶段的行动判断由本文补充。</p>
+<h2 id="a2v"><span class="sec-num">三</span>能问出答案，也能重复做好吗？<a class="anchor" href="#a2v">#</a></h2>
+<p class="kicker">— 从会用工具，到形成方法</p>
+<p>报告用 A2V（从采用到价值）描述五步进阶：能访问、单次提问、补材料反复改、团队复用、重新安排工作。<strong>我的提炼：一次问得好，还要能让下一次、下一个人也做好。</strong><a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=23">[p.23–25]</a></p>
 
 <figure class="rv-figure rv-stages reveal" data-explorer="stages">
- <div class="rv-attribution">按原文阶段与估计值重绘 · hVC 是方向性模型估计，非实测生产率</div>
- <div class="rv-map" tabindex="0" role="region" aria-label="A2V 阶段图，可横向滚动"><svg viewBox="0 0 720 266" role="img" aria-label="A2V 五个阶段逐步扩大工作单元，阶段一到四的每次交互 hVC 估计为 0.08、0.36、1.39、4.65 小时">
+ <div class="rv-attribution">按原文五个阶段重绘 · 行动建议为本文提炼</div>
+ <div class="rv-map" tabindex="0" role="region" aria-label="A2V 阶段图，可横向滚动"><svg viewBox="0 0 720 266" role="img" aria-label="从工具访问、单次提问、反复迭代、团队复用，到重新安排工作">
   <path d="M24 224H696" class="rv-line"/>
   <rect x="26" y="183" width="112" height="41" rx="7" class="rv-box"/>
   <rect x="165" y="152" width="112" height="72" rx="7" class="rv-box"/>
@@ -180,12 +176,12 @@
   <rect x="582" y="60" width="112" height="164" rx="7" class="rv-highlight"/>
   <g text-anchor="middle">
    <text x="82" y="169">0 · 好奇</text><text x="82" y="208" class="rv-small">访问工具</text>
-   <text x="221" y="110" class="rv-big">0.08h</text><text x="221" y="139">1 · 起步</text><text x="221" y="207" class="rv-small">一次问答</text>
-   <text x="360" y="80" class="rv-big">0.36h</text><text x="360" y="109">2 · 练习</text><text x="360" y="207" class="rv-small">上下文与迭代</text>
-   <text x="499" y="49" class="rv-big">1.39h</text><text x="499" y="78">3 · 熟练</text><text x="499" y="207" class="rv-small">团队可复用</text>
-   <text x="638" y="18" class="rv-big">4.65h</text><text x="638" y="47">4 · 专家</text><text x="638" y="207" class="rv-small">重设计工作</text>
+   <text x="221" y="110" class="rv-big">提问</text><text x="221" y="139">1 · 起步</text><text x="221" y="207" class="rv-small">一次问答</text>
+   <text x="360" y="80" class="rv-big">迭代</text><text x="360" y="109">2 · 练习</text><text x="360" y="207" class="rv-small">补材料、反复改</text>
+   <text x="499" y="49" class="rv-big">复用</text><text x="499" y="78">3 · 熟练</text><text x="499" y="207" class="rv-small">团队可复用</text>
+   <text x="638" y="18" class="rv-big">改造</text><text x="638" y="47">4 · 专家</text><text x="638" y="207" class="rv-small">重新安排工作</text>
   </g>
-  <text x="360" y="251" text-anchor="middle" class="rv-small">台阶示意成熟度；高度不按 hVC 比例绘制，不表示实际收益曲线</text>
+  <text x="360" y="251" text-anchor="middle" class="rv-small">台阶表示工作方法的变化，不表示收益倍数</text>
  </svg></div><p class="rv-mobile-hint">图可横向滑动；点下方阶段查看详情。</p>
  <div class="rv-choice rv-choice-five" aria-label="选择 A2V 阶段">
   <button type="button" data-key="s0" aria-pressed="false" aria-controls="stages-detail"><small>STAGE 0</small>好奇 · 有访问</button>
@@ -194,26 +190,18 @@
   <button type="button" data-key="s3" aria-pressed="true" aria-controls="stages-detail"><small>STAGE 3</small>熟练 · 复用工作流</button>
   <button type="button" data-key="s4" aria-pressed="false" aria-controls="stages-detail"><small>STAGE 4</small>专家 · 改造工作</button>
  </div>
- <div class="rv-detail" id="stages-detail" aria-live="polite"><div class="rv-detail-title">阶段 3：让有效方法成为团队资产</div><p class="rv-detail-body">报告描述可复用、可分享的团队工作流。该阶段自评“真正有用”的交互超过 85%；每次交互 hVC 估计约 1.39 小时。两者都不等于独立验证的业务收益。</p><p class="rv-detail-check">本文建议：把输入、验收、失败路径一起交给第二位使用者，检查是否离开原作者仍可运行。</p></div>
- <figcaption>来源：<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=24">p.23–25</a>。hVC（hours of Value Captured）由模型推导，原文标注未以真实结果验证，可视为潜在释放能力的估计；不能用 4.65÷0.08 推导实际生产率倍数。</figcaption>
+ <div class="rv-detail" id="stages-detail" aria-live="polite"><div class="rv-detail-title">阶段 3：把好方法交给别人</div><p class="rv-detail-body">报告描述可以在团队里重复使用的工作流程。</p><p class="rv-detail-check">本文建议：找第二个人照着做，看能否得到合格结果。</p></div>
+ <figcaption>来源：<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=24">p.23–25</a>。原文的节省小时数是模型估计，详见下方数据核查。</figcaption>
 </figure>
-<p>报告所述约 10,000 人的 A2V 队列中，阶段 3 及以上占比在五个月内从 18% 升到 51%。这是该队列的变化，不是有对照的培训效果实验；它与前言提及的超过 35,000 名实践者研究也不是同一个样本。报告把递增挑战、从真实工作出发和复用实践视为进阶的重要路径，值得作为培养方案的假设。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=25">[p.6、23–25]</a></p>
-<p>还要分开“会不会”和“愿不愿”。报告区分积极者、被压垮者、怀疑者和感到威胁者；这些态度与技能阶段并不重合。一个已经熟练的人可能因为岗位风险拒绝推广，一个积极的新手可能需要具体示范。于是，中层管理者的工作要从逐项控制转向消除障碍、明确目的和帮助迁移方法。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=28">[p.28–30]</a></p>
+<p>报告还提醒，懂业务、能判断对错很重要。我的建议是让业务专家参与定义要求、检查例外、解释失败。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=35">[p.34–35]</a></p>
+<details class="rv-more"><summary>还有一个难题：新人靠什么练出判断？</summary><p>常规练习被自动化后，新人怎样积累经验？报告没有给出已验证的答案。本文建议保留必要的人工练习，让新人先说明自己的判断，再看 AI 建议，并检查离开 AI 后是否仍能做好。<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=37">[p.37–38]</a></p></details>
 
-<h2 id="judgment"><span class="sec-num">五</span>技能：问题定义与判断怎样得到培养<a class="anchor" href="#judgment">#</a></h2>
-<p class="kicker">— DOMAIN EXPERTISE, SPECIFICATION &amp; APPRENTICESHIP</p>
-<p>第四章强调五项较持久的能力：学习与重新学习、问题定义、判断、系统思考、好奇心。临床护士和会计等领域专家在案例中参与 AI 工作设计，说明代码执行门槛降低后，业务知识能进入更广的实现空间；这些案例不意味着领域专家无需工程、评估和治理支持。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=34">[p.31–35]</a></p>
-<p>原文使用“specmaxxing”讨论规格的重要性，并建议先让领域专家审查问题定义，再选择工具。<strong>本文推论：</strong>输出越容易得到，模糊需求越可能以精致形式被放大。领域专家至少应参与三处：定义什么叫正确，检查关键例外，解释失败为何发生。这里的“三处”是本文归纳，不是报告定义的固定岗位配置。</p>
-<div class="callout callout-warn"><div class="callout-tag">报告没有解决的难题：学徒路径</div><p>如果初级人员的常规练习被自动化，未来如何获得高级判断？受访者没有给出已验证的解决办法。报告提到监督式模拟项目等探索，但不能据此宣布“初级岗位已经无必要”，也不能把“用 AI 自学”当成可靠替代。<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=37">[p.37–38]</a></p></div>
-<p>QJE 的客服研究在 AI 暂时不可用时仍观察到部分使用者的表现改善，为“辅助也可能促进学习”提供了证据；它并未证明复杂系统设计、风险判断或跨部门协商能以同样方式习得。<strong>本文设计建议：</strong>保留精选人工练习、让新人先解释自己的判断再看模型建议，并用不提供 AI 的保留任务观察能力迁移。这样才能把“产出提升”和“人真的学会了”分开。</p>
-
-<h2 id="governance"><span class="sec-num">六</span>治理：把自主性做成有条件的授权<a class="anchor" href="#governance">#</a></h2>
-<p class="kicker">— HARD BOUNDARIES &amp; REVOCABLE AUTONOMY</p>
-<p>第五章的方向是治理进入设计：让受控路径更容易走；按后果而不是按技术新鲜度分风险；批准可复用的模式；集中管理基本标准、由领域团队执行。Air New Zealand 在采用预批准模式后，季度 PoC 数从 4 个增至超过 50 个，是受访者陈述的速度变化；PoC 更多还不能证明生产收益更高。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=44">[p.39–44]</a></p>
-<p>报告用“硬边界”“持续评估”“赢得自主性”和“人类责任”讨论 Agent。授权应按任务建立，从影子运行、辅助执行，到带抽检的协作，再到边界内自主，并可撤回；高后果操作可能始终保留人工判断。报告也坦承，尚无人完整实现其设想的集群治理。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=45">[p.45–47]</a></p>
+<h2 id="governance"><span class="sec-num">四</span>让 AI 自己做，出了错谁管？<a class="anchor" href="#governance">#</a></h2>
+<p class="kicker">— 先守住边界，再逐步放手</p>
+<p>报告主张：先旁观测试，再辅助执行，表现可靠后才逐步放权；出问题能收回。高风险操作可以一直由人决定。<strong>会做一类事，不代表可以放手做所有事。</strong><a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=46">[p.45–47]</a></p>
 
 <figure class="rv-figure rv-boundary reveal">
- <div class="rv-attribution">本文设计示意 · 对原文硬边界原则的具体化；非原文系统架构</div>
+ <div class="rv-attribution">本文设计示意 · 依据原文边界原则</div>
  <div class="rv-map" tabindex="0" role="region" aria-label="执行边界图，可横向滚动"><svg viewBox="0 0 720 304" role="img" aria-label="Agent 提出行动，外部执行策略检查身份、范围、前提和预算；低风险允许执行，高风险要求人工，不满足条件则阻止">
   <defs><marker id="rv-arrow-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9" class="rv-ink"/></marker></defs>
   <rect x="12" y="82" width="155" height="115" rx="14" class="rv-box"/>
@@ -233,20 +221,18 @@
   <path d="M558 212l15 15m0-15-15 15" class="rv-deny"/><text x="590" y="226">阻止操作</text>
   <text x="360" y="289" text-anchor="middle" class="rv-small">提示词中的“请谨慎”无法替代工具与系统实际执行的约束</text>
  </svg></div><p class="rv-mobile-hint">横向滑动查看完整执行路径。</p>
- <figcaption>本文设计建议：执行规则由 Agent 之外的工具或系统强制检查。模型可以辅助解释与分类，策略仍需定义可验证的条件、拒绝路径和例外负责人。</figcaption>
+ <figcaption>本文建议：让工具和系统检查执行条件，不通过就拦住或交给人。</figcaption>
 </figure>
-<p>一个值得细读的失败案例：数据库升级 Agent 拥有合法权限，却删除并重建了线上数据库，没有理解维护窗口等业务原因。报告用它说明，权限之外还需要业务上下文。<strong>本文推论：</strong>把“为什么不能现在做”写进上下文很有帮助，但仅有文字约束仍不是硬边界。维护窗口、备份状态、目标环境、回滚条件等若可被机器检查，应在工具调用处强制执行。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=45">[案例：p.45]</a></p>
-<p>还要警惕把另一个模型当成绝对可靠的监管者。检查 Agent 本身也会失误，集群可能共享同一错误上下文、竞争资源或同时触发危险动作。我的判断是：自主性成熟度应该按具体任务、环境和后果界定，结合持续评估与撤销条件；不能凭一个总准确率把整个 Agent 升成“自主”。</p>
-<p>人的责任也需要明确到环节：谁授权、谁接受风险、谁处理异常、谁维护策略。它不等于每次点击都人工审批，也不等于把全部法律与组织责任压给一个人的名字。报告的“具名负责人”原则帮助找到运营责任入口，具体责任分配仍要按业务和制度设计。</p>
+<p>报告有个失败案例：AI 有权操作数据库，却在不合适的时间删库重建。<strong>我的判断：告诉它“要小心”还不够，系统得真正拦住不该做的操作。</strong>例如执行前检查维护窗口、备份和恢复条件。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=45">[案例：p.45]</a></p>
+<p class="rv-note">另一个 AI 检查者也会出错。大量 AI 一起工作的治理，报告承认还没有完整解决。</p>
 
-<h2 id="platform"><span class="sec-num">七</span>平台与上下文：共同底座究竟管什么<a class="anchor" href="#platform">#</a></h2>
-<p class="kicker">— ORCHESTRATION · EVALUATION · GATEWAY · CONTEXT</p>
-<p>第七章把上下文分成两层：业务系统保存“发生了什么”，人们的邮件、对话、笔记和工作习惯解释“为什么这样做”。CRM 的商机胜出记录可能是准确的，却没有记录客户选择它的原因。一个字段也可能需要例外解释：报告举的“不要联系”示例，可能实际意指“只通过 CFO 助理联系”；这在原文是解释性示例，不是具名公司的实证案例。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=56">[p.55–59]</a></p>
-<p><strong>本文推论：</strong>“数据已数字化”与“上下文可供 Agent 安全行动”之间，还有定义、权限、来源、时效和冲突处理。把所有聊天塞入向量库不会自然填平这段距离。应围绕正在运行的两三个场景，由领域专家与数据工程师共同修正，把纠错回流到有负责人的知识源，同时保留用途与隐私边界。</p>
-<p>第八章提出四项平台能力：编排、评估与可观测性、AI 网关、上下文管理。平台管公共运行能力，领域团队保留业务流程判断；原文详细论述倾向于购买通用基础设施、掌握自己的业务逻辑，并持续重新评估构建与采购边界。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=63">[p.61–68]</a></p>
+<h2 id="platform"><span class="sec-num">五</span>AI 懂记录，也懂来龙去脉吗？<a class="anchor" href="#platform">#</a></h2>
+<p class="kicker">— 给它事实，也给它必要的原因</p>
+<p>业务系统能记住“这个客户买了”，但选择原因可能留在销售的笔记里。报告把两者叫作“是什么”和“为什么”。<strong>我的提炼：记录正确，不代表 AI 已经懂业务。</strong><a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=56">[p.55–59]</a></p>
+<p>报告提出四项共用能力。说白了，就是让工作跑起来、看清是否做对、管好模型接入、维护业务资料。具体业务该怎么做，仍由懂业务的人决定。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=63">[p.63–67]</a></p>
 
 <figure class="rv-figure rv-platform reveal" data-explorer="platform">
- <div class="rv-attribution">按原文四项能力重绘 · 中心职责是本文归纳；不指定某个 Agent 框架</div>
+ <div class="rv-attribution">按原文四项能力重绘 · 中心职责为本文归纳</div>
  <div class="rv-map" tabindex="0" role="region" aria-label="平台能力图，可横向滚动"><svg viewBox="0 0 720 314" role="img" aria-label="企业 AI 平台的四项能力围绕领域工作流：编排、评估与可观测性、网关、上下文；业务目标和风险判断仍由领域负责人承担">
   <path d="M198 86H261V152 M522 86H459V152 M198 230H261V164 M522 230H459V164" class="rv-line"/>
   <rect x="12" y="25" width="225" height="103" rx="12" class="rv-box"/>
@@ -259,8 +245,8 @@
    <text x="596" y="61">评估与可观测性</text><text x="596" y="92" class="rv-small">轨迹 / 质量 / 版本 / 告警</text>
    <text x="124" y="219">AI 网关</text><text x="124" y="250" class="rv-small">接入 / 用量 / 成本 / 权限</text>
    <text x="596" y="219">上下文</text><text x="596" y="250" class="rv-small">来源 / 更新 / 冲突 / 时效</text>
-   <text x="360" y="130">领域工作流</text><text x="360" y="162" class="rv-small">业务意图与验收</text><text x="360" y="191" class="rv-small">领域规则与异常判断</text>
-   <text x="360" y="307" class="rv-small">平台提供共用能力；业务负责人承担目标、后果与持续运营决策</text>
+   <text x="360" y="130">具体业务</text><text x="360" y="162" class="rv-small">要做什么，怎样算好</text><text x="360" y="191" class="rv-small">规则与例外怎么处理</text>
+   <text x="360" y="307" class="rv-small">系统提供共用能力；业务负责人决定目标、风险和后续投入</text>
   </g>
  </svg></div><p class="rv-mobile-hint">图可横向滑动；点下方能力查看详情。</p>
  <div class="rv-choice rv-choice-four" aria-label="选择平台能力">
@@ -269,34 +255,28 @@
   <button type="button" data-key="gateway" aria-pressed="false" aria-controls="platform-detail"><small>03 · ACCESS</small>AI 网关</button>
   <button type="button" data-key="context" aria-pressed="false" aria-controls="platform-detail"><small>04 · KNOW</small>上下文</button>
  </div>
- <div class="rv-detail" id="platform-detail" aria-live="polite"><div class="rv-detail-title">编排：复用运行基础，不集中接管业务判断</div><p class="rv-detail-body">报告把队列、运行、登记与重试等公共能力，同领域流程的步骤和升级规则区分。团队仍需知道哪些步骤能自动执行、哪里应交给人。</p><p class="rv-detail-check">本文建议：先选能恢复和观察的最小运行方式，再按实际消费者的需要增加能力。</p></div>
- <figcaption>来源：<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=63">p.63–67</a>。点击能力查看职责与本文建议；图中不暗示必须统一为一个大型平台。</figcaption>
+ <div class="rv-detail" id="platform-detail" aria-live="polite"><div class="rv-detail-title">编排：让工作跑起来</div><p class="rv-detail-body">系统管运行、排队和重试，业务团队决定步骤和例外。</p><p class="rv-detail-check">本文建议：先跑通一个场景，再按需要补能力。</p></div>
+ <figcaption>四项能力依据原文 <a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=63">p.63–67</a>；点击查看大白话解释。</figcaption>
 </figure>
-<p>评估需要沿完整交易观察工具、取回的材料、模型版本和最终行动。平行运行与人的结果比较是报告建议的方法；<strong>本文补充：</strong>与人一致不等于客观正确，人也可能犯错，重要案例仍需独立事实标签。模型的自报信心也不能直接当作经过校准的风险概率。</p>
-<p>上下文管理的难点是使用之后的变化：政策更新由谁负责？两个来源矛盾时谁裁决？客户临时例外何时失效？反馈是数据错误、检索失败还是模型误解？原文建议修正活动场景并建立持续更新机制；我进一步建议让每项关键知识保留权威来源、责任人、版本与有效期，避免把所有错误都归给“脏数据”。</p>
-<p>DORA 的平台工程研究与这里形成相互参照：高质量内部平台与更好的 AI 使用效果相关，AI 会放大组织已有的优势和问题；它同样是观察性证据。其强调从实际用户任务和最小平台出发，也支持“先验证共用能力的需求，再扩张平台”的实践方向。<a class="rv-cite" href="https://dora.dev/capabilities/platform-engineering/">[DORA · 2025 数据]</a></p>
+<p><strong>本文建议：</strong>先管好正在用的资料：谁提供、谁更新、何时过期、矛盾找谁。把一次纠错写回资料源，下一次才不容易重蹈覆辙。</p>
 
-<h2 id="economics"><span class="sec-num">八</span>经济账：成本与价值由同一业务主体负责<a class="anchor" href="#economics">#</a></h2>
-<p class="kicker">— COST PER ACCEPTED BUSINESS OUTCOME</p>
-<p>第六章的变化是成本从相对固定的软件订阅，转向随任务长度、模型选择、重试、验证和多 Agent 执行变化的消耗。单价下降会让更多任务进入可行范围，总支出仍可能上升。报告借用 Jevons 式反弹解释这一可能性；它不是证明每个企业都必然出现相同反弹。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=50">[p.49–52]</a></p>
-<p>报告主张由同一业务负责人同时看价值与成本，平台提供可见性。普及工具、低门槛探索、生产工作负载还需要不同的资金管理方式。业务不能只拿收益而把全部消耗推给 IT；IT 也不宜只看 Token 账单就否决能带来客户结果的工作。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=53">[p.53–54]</a></p>
+<h2 id="economics"><span class="sec-num">六</span>便宜的是调用，还是整件事？<a class="anchor" href="#economics">#</a></h2>
+<p class="kicker">— 算完整成本</p>
+<p>模型调用便宜了，如果重试、人工检查和返工更多，总账未必便宜。报告建议让同一业务负责人同时管收益和成本。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=53">[p.49–54]</a></p>
 <div class="rv-ledger">
  <div class="rv-attribution">本文指标建议 · 非报告原有公式</div>
- <div class="rv-ledger-formula">每个合格业务结果的成本<br>＝ 同期完整工作负载总成本 ÷ 被验收为合格的业务结果数</div>
- <p>分子纳入成功与失败尝试的模型、工具、上下文、重试和人工复核成本；集成、培训、维护等按预先声明的周期分摊。分母使用业务验收口径，并与严重错误率、客户质量、端到端时间一起报告。</p>
- <p>这用于检查价值链，不是把人的判断都换算成钱。没有合格结果时，应报告成本与失败原因，不计算一个误导性的比率。</p>
+ <div class="rv-ledger-formula">办好一件事，实际花了多少？<br>＝ 完整总成本 ÷ 合格结果数</div>
+ <p>模型、工具、失败重试、人工检查都计入；建设与维护费用按约定周期分摊。同时看质量和耗时。没有合格结果，就直接报告花了多少、为何失败。</p>
 </div>
-<p>“更便宜但准确率低 2%”是否划算，取决于错误后果及适用任务。我的建议是先确定业务质量和风险下限，再寻找足够好的较低成本方案，同时设置重试、模型升级与预算上限。若复核负担翻倍，Token 省下来的钱可能并不是真实节省。</p>
-<p>AT&amp;T 受访者称，每投入 1 美元 AI 可获得超过 5 美元的当年自由现金流回报，并披露极大规模 Token 使用。这个案例说明企业开始把 AI 放进经营账；它没有公开足够完整的成本归属和独立审计证据，不能作为通用“5 倍 ROI”基准，也不能从每日 Token 数直接换算成本。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=54">[p.50、54]</a></p>
+<p><strong>本文建议：</strong>先定能接受的质量和风险，再选够用的模型，并限制重试和预算。省钱的前提，是事情仍能办好。</p>
 
-<h2 id="operating-model"><span class="sec-num">九</span>组织终态未定，学习机制可以先建立<a class="anchor" href="#operating-model">#</a></h2>
-<p class="kicker">— OUTCOME OWNERSHIP &amp; CONTINUOUS LEARNING</p>
-<p>第九章描述的组织变化，是持续工作的 AI 与按周、按月开会交接的人类制度发生摩擦。访谈中的 Fortive RFP 流程要穿过多部门等待，局部自动化没有完整结果的负责人。小团队、领域专家与工程师组合、临时团队完成任务后传播方法，都是报告观察到的探索方向。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=72">[p.69–79]</a></p>
-<p>但报告同时强调，综合性的重设计还很少，信任、角色、管理者价值、组织连贯性和奖励机制尚未有稳定答案。把几个小团队案例推广成“企业应该全面取消经理”或“一人公司已经是终态”，超过了证据。AI 不疲劳、不排队等理想描述，也要放回前面讨论的成本、上下文与集群失败限制中理解。</p>
-<p>第十章及结语更稳妥的主张是：领导者亲自使用工具，提出清晰业务方向，安排有边界的学习，让判断分布到了解问题的人，并跨部门连接结果。试验与生产应允许不同速度：前者尽快验证一个问题，后者需要面向客户的可靠运行和持续负责人。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=92">[p.84–99]</a></p>
+<h2 id="operating-model"><span class="sec-num">七</span>做完一次，下一次会更好吗？<a class="anchor" href="#operating-model">#</a></h2>
+<p class="kicker">— 把经验留下来</p>
+<p>报告观察到小团队、业务专家与工程师一起工作的尝试，也强调新的组织形态还没定型。更可操作的主张是：明确方向，让懂问题的人参与判断，让试验结果改变下一次做法。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=79">[p.78–83、92–99]</a></p>
+<p><strong>我的提炼：每做一次，留下能帮下一次的东西。</strong>成功方法可以复用，失败要说明原因，资料和规则要跟着改。下图是本文建议的做法。</p>
 
 <figure class="rv-figure rv-loop reveal" data-explorer="loop">
- <div class="rv-attribution">本文跨章节综合 · 非原文既定流程；用于检验学习是否留下资产</div>
+ <div class="rv-attribution">本文建议 · 让每次经验帮到下一次</div>
  <div class="rv-map" tabindex="0" role="region" aria-label="持续学习图，可横向滚动"><svg viewBox="0 0 720 286" role="img" aria-label="持续学习闭环：真实结果进入失败复盘，修正知识和策略，通过再评估决定下一次发布；中心保持业务目标、边界和负责人">
   <defs><marker id="rv-arrow-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1 L9 5 L1 9" class="rv-ink"/></marker></defs>
   <path d="M197 61H513 M608 101V180 M512 221H207 M112 181V103" class="rv-path rv-motion" marker-end="url(#rv-arrow-c)"/>
@@ -319,14 +299,12 @@
   <button type="button" data-key="assets" aria-pressed="false" aria-controls="loop-detail"><small>03 · UPDATE</small>修正资产</button>
   <button type="button" data-key="release" aria-pressed="false" aria-controls="loop-detail"><small>04 · DECIDE</small>再评估与发布</button>
  </div>
- <div class="rv-detail" id="loop-detail" aria-live="polite"><div class="rv-detail-title">真实结果：把失败与人工负担也留下来</div><p class="rv-detail-body">本文建议每次工作记录实际结果、使用过的上下文和工具、人工介入、成本与异常。只保留成功案例，会让下一轮评估过度乐观。</p><p class="rv-detail-check">责任主体：业务负责人定义结果；平台与 FDE 留下可追溯证据。</p></div>
- <figcaption>依据第二、五、七、八、九、十章与后记综合。点击环节查看本文建议的责任分配。反馈闭环是否改善业务，仍需在目标任务上验证。</figcaption>
+ <div class="rv-detail" id="loop-detail" aria-live="polite"><div class="rv-detail-title">成功和失败都留下来</div><p class="rv-detail-body">本文建议记录结果、花费和人工介入，别只展示成功案例。</p><p class="rv-detail-check">业务负责人定标准，FDE 留证据。</p></div>
+ <figcaption>本文根据多章建议综合；效果仍需在实际业务中验证。</figcaption>
 </figure>
-<p><strong>本文推论：</strong>这份报告真正可复用的组织资产，是把结果、证据、知识更新和下一次决策连接起来的能力。后记主张对结果保持承诺、对实现方式保持可调整，这支持把学习过程当作资产；它仍是作者的经营观点，不是被量化验证的竞争优势定律。<a class="rv-cite" href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=100">[p.100–101]</a></p>
-<p>对 FDE 的具体启示是：一次驻场成功之后，要验证第二个团队能否接手、错误能否被定位、上下文能否继续更新。长期依赖最初那位专家的脑内知识，说明方法还没完成移交。报告所述“传播方法”是依据；把它变成工业化交付与验收条件，是本文的选择。</p>
+<p><strong>对 FDE 的建议：</strong>离场前找第二个人接手。能自己使用、发现问题、更新资料，才说明方法真正交了出去。</p>
 
-<h2 id="audit"><span class="sec-num">十</span>关键数字审读：引用时保留这些条件<a class="anchor" href="#audit">#</a></h2>
-<p class="kicker">— A CLAIM LEDGER, NOT AN ROI TABLE</p>
+<details class="rv-more" id="audit"><summary>展开核查：报告里的数字能说明什么？</summary>
 <div class="table-wrap rv-audit"><table>
  <thead><tr><th>材料中的数字</th><th>实际支持什么</th><th>不能据此推出什么</th></tr></thead>
  <tbody>
@@ -341,31 +319,30 @@
   <tr><td><strong>&gt;2/3 认为工作设计构成障碍</strong><br><a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=70">p.70</a></td><td>研究访谈群体中反复出现的组织问题。</td><td>全体企业中具有统计代表性的发生比例。</td></tr>
  </tbody>
 </table></div>
-<p><strong>审读后的判断：</strong>这些数据适合帮助选问题、设计试验与询问供应商；要形成自己企业的投资判断，还需要本地的质量、成本、客户结果和持续运行证据。报告中的“代码量十倍”“个人效率提高 10–15%”也可以同时成立，因为分母不同，不能拼成一条生产率曲线。</p>
+<p>这些数字用于启发试验。自己企业的收益，仍要自己测。</p></details>
 
-<h2 id="fde"><span class="sec-num">十一</span>FDE 落地：两周内交付一个可评审的机制<a class="anchor" href="#fde">#</a></h2>
-<p class="kicker">— AUTHOR'S PROPOSAL · TWO-WEEK BOUNDED PILOT</p>
-<p><strong>本文设计建议：</strong>选择一条边界清楚、可回放、有足够案例量的业务流程，用两周回答一个问题：“在预定质量与风险下，这种工作方式是否改善完整结果？”两周是形成评审证据的节奏，不是对所有场景的上线承诺。样本少或业务周期长时，结论应保持暂定。</p>
+<h2 id="fde"><span class="sec-num">八</span>先选一件事，两周试明白<a class="anchor" href="#fde">#</a></h2>
+<p class="kicker">— 本文建议：小范围试，按结果决定</p>
+<p>选一条能回放、有案例的业务流程。提前定好质量底线、负责人和停止条件。两周先形成判断；案例少、周期长，就继续观察，不急着宣称成功。</p>
 <div class="table-wrap"><table>
  <thead><tr><th>时间与步骤</th><th>责任主体</th><th>具体工作</th><th>留下的验收材料</th></tr></thead>
  <tbody>
-  <tr><td>第 1–2 天<br>定义结果</td><td>业务负责人＋领域专家</td><td>选真实业务问题；回放一条完整流程；确认历史基线、质量底线、关键风险、停止条件与继续运行预算。</td><td>价值约定：结果、验收口径、负责人、对照方法、不可越过的边界。</td></tr>
-  <tr><td>第 3–5 天<br>建立最小路径</td><td>FDE＋平台工程＋评估负责人</td><td>接入必要上下文与工具；建立轨迹、成本、权限、失败回退；准备历史与保留案例，包括已知例外。</td><td>可回放工作流；评估集与标签依据；上下文来源；执行与恢复规则。</td></tr>
-  <tr><td>第 6–10 天<br>影子运行</td><td>领域评审者＋FDE</td><td>先与人工结果平行比较；独立判质量；记录全部尝试、人工介入、返工、严重错误与端到端时间。</td><td>完整结果账与失败清单；质量、成本、时间的联合比较；偏差说明。</td></tr>
-  <tr><td>第 11–14 天<br>决定与移交</td><td>业务负责人决策；运营负责人接手</td><td>按事前条件扩张、改道或停止；由第二位使用者复现；明确维护、异常处理、更新与撤销授权职责。</td><td>决策记录；运行手册；可复用方法、评估集和知识修正；具名持续负责人。</td></tr>
+  <tr><td>第 1–2 天</td><td>业务负责人＋专家</td><td>选问题，定怎样算好、什么不能做。</td><td>目标、旧结果、标准和负责人。</td></tr>
+  <tr><td>第 3–5 天</td><td>FDE＋平台团队</td><td>接资料和工具，准备正常与异常案例。</td><td>能回放的流程、测试案例、失败退路。</td></tr>
+  <tr><td>第 6–10 天</td><td>业务评审者＋FDE</td><td>和人工结果比较，记录质量、时间、全量成本。</td><td>成功与失败记录、比较结果。</td></tr>
+  <tr><td>第 11–14 天</td><td>业务负责人＋接手人</td><td>决定继续、调整或停止，让第二个人接手。</td><td>决定依据、使用说明、后续负责人。</td></tr>
  </tbody>
 </table></div>
-<p>这套方案沿用报告的价值负责人、持续评估、上下文更新和学习节奏，但时间表、交付物与以下验收问题由本文设计。实现可以使用已有工作流或轻量任务账本；如需跨步骤恢复，可选择持久状态。报告没有规定 Goal 对象、DAG 或特定 Durable Workflow 架构，不能把这些作者偏好写成原文结论。</p>
-<div class="card-grid">
- <div class="card"><div class="card-eyebrow">交付物 01</div><h4>价值约定</h4><p>客户要什么、如何判断合格、谁承担价值和成本、什么条件下停止。避免演示成功后才寻找业务需求。</p></div>
- <div class="card"><div class="card-eyebrow">交付物 02</div><h4>评估证据</h4><p>保存合格与失败结果，说明标签依据、基线偏差、人工复核和全量成本，让结论可回查。</p></div>
- <div class="card"><div class="card-eyebrow">交付物 03</div><h4>运行移交</h4><p>说明知识谁更新、异常谁处理、权限何时撤回，以及客户离开 FDE 后怎样继续学习。</p></div>
-</div>
-<p><strong>本文建议的通过条件：</strong>在预先约定的质量与风险范围内，完整业务结果有所改善；第二位使用者能运行并解释关键失败；后续运营有人、有权限、有预算。若只生成得更快，或者依赖 FDE 持续人工兜底，就应该把这次结果记录为局部验证。</p>
+<div class="callout callout-accent"><div class="callout-tag">本文建议的交付标准</div><p><strong>事情办得更好，别人能接着办，出了问题有人管。</strong>这三件事都检查过，再考虑扩大使用。</p></div>
 
-<h2 id="chapter-map"><span class="sec-num">十二</span>十章索引：各章在整条机制中的位置<a class="anchor" href="#chapter-map">#</a></h2>
-<p class="kicker">— READ BACK INTO THE ORIGINAL</p>
-<p>以下章名为中文意译。页码区间含章首页与小结，方便回查；“关键追问”为本文提炼。</p>
+<h2 id="references"><span class="sec-num">九</span>需要细看时，再展开<a class="anchor" href="#references">#</a></h2>
+<p class="kicker">— 原文与补充证据</p>
+<details class="rv-more" id="source"><summary>报告怎么做的？为什么收益不能照搬？</summary>
+<p>按附录：154 次访谈＝128 位外部高管（126 家组织）＋23 位 Amazon 领导者＋3 位未来学者。正文人数口径有差异，本文采用附录与 <a href="https://aws.amazon.com/blogs/enterprise-strategy/announcing-the-new-aws-reimagine-report-on-ai/">AWS 发布说明</a>一致的分项。</p>
+<p>访谈用了人工与 AI 编码、研究者复核。作者明确说明样本不支持总体统计推广；企业收益多为受访者陈述，本文未独立审计。<a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=102">[p.102–103]</a></p>
+</details>
+<details class="rv-more" id="chapter-map"><summary>十章分别说什么？展开原文索引</summary>
+<p class="rv-note">章名为意译；最后一列是本文追问。</p>
 <div class="table-wrap rv-chapters"><table>
  <thead><tr><th>原文位置</th><th>主题</th><th>报告主张／观察</th><th>关键追问 · 本文</th></tr></thead>
  <tbody>
@@ -382,22 +359,21 @@
   <tr><td><a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=96">结语、后记 · p.96–101</a></td><td>双速推进与结果承诺</td><td>有边界的探索与生产并行；对结果负责，持续调整实现。</td><td>实验何时结束？谁接手长期运行？</td></tr>
   <tr><td><a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf#page=102">附录 · p.102–108</a></td><td>方法、术语与作者</td><td>样本构成、编码流程、研究限制与术语说明。</td><td>引用的数字究竟来自哪个样本、哪种测量？</td></tr>
  </tbody>
-</table></div>
+</table></div></details>
 
-<h2 id="open"><span class="sec-num">十三</span>读完后仍需回答的六个问题<a class="anchor" href="#open">#</a></h2>
-<p class="kicker">— WHAT THE REPORT DOES NOT SETTLE</p>
+<details class="rv-more" id="open"><summary>还有哪些问题没解决？</summary>
 <ol class="rv-questions">
- <li><strong>价值如何归因？</strong>若同期改了流程、人员和产品，怎样区分 AI 的贡献与其他变化？报告提供经营经验，尚不能替代本地对照设计。</li>
- <li><strong>验证能否跟上生成？</strong>评审者会不会成为新瓶颈？人工标签质量与高风险例外怎样维护？检查模型的错误怎样被发现？</li>
- <li><strong>上下文权威来自哪里？</strong>人的经验与制度文件冲突时谁裁决？隐私与授权允许使用哪些“为什么”？这些不是检索召回率能单独解决的。</li>
- <li><strong>人的判断如何增长？</strong>新手是否只会使用工具，还是能独立解释和处理异常？长期职业路径与激励机制仍需验证。</li>
- <li><strong>自主性怎样规模化？</strong>单任务表现良好之后，集群的共享状态、相关失败、资源竞争和撤回机制如何保持可控？</li>
- <li><strong>客户能否独立继续学习？</strong>FDE 离开后，是否有人维护知识、验收结果和迭代授权？若没有，项目收益的持续性仍缺关键证据。</li>
+ <li>收益来自 AI，还是同期改了人员、流程和产品？</li>
+ <li>生成量增加后，检查的人会不会忙不过来？</li>
+ <li>资料与人的经验矛盾时，谁说了算？</li>
+ <li>新人怎样积累独立判断？</li>
+ <li>大量 AI 一起工作，怎样控制共同错误和资源争抢？</li>
+ <li>FDE 离开后，谁继续更新资料、评估效果？</li>
 </ol>
-<div class="callout callout-accent"><div class="callout-tag">本文最终判断</div><p>这份报告最有用的阅读方式，是把十章当作一条互相制约的链：业务目标定义要做什么，技能与上下文帮助做对，平台承载执行，治理限定可以做什么，评估与经济账判断是否值得继续，领导与组织让反馈真正改变下一轮行动。每个环节都需要实际负责人和可回查证据。</p></div>
-
-<h2 id="references"><span class="sec-num">十四</span>信源与版本说明<a class="anchor" href="#references">#</a></h2>
-<p class="kicker">— PRIMARY SOURCE FIRST</p>
+</details>
+<details class="rv-more"><summary>补充研究与来源</summary>
+<p>QJE 的单企业客服研究测得平均效率提升约 15%，新手与低技能群体约 30%；资深者收益较小，部分质量下降。不能推广成所有岗位的固定收益。METR 的历史实验也提醒，感觉快与实际快可能不同；2026 更新因样本选择和计时问题，无法可靠估计当前幅度。</p>
+<p>DORA 的观察研究提示，AI 会放大组织已有的优势与问题；相关性不等于因果证明。</p>
 <ul>
  <li><a href="https://d1.awsstatic.com/onedam/marketing-channels/website/public/shared/whitepapers/aws-reimagine-report_2026.pdf">AWS Reimagine Report 2026</a>：本文主材料，完整研读 108 页。案例收益按受访者陈述处理。</li>
  <li><a href="https://aws.amazon.com/blogs/enterprise-strategy/announcing-the-new-aws-reimagine-report-on-ai/">AWS 官方发布说明</a>：Tom Godden，2026-09-24；用于核查发布时间与样本分项。</li>
@@ -405,9 +381,9 @@
  <li><a href="https://dora.dev/capabilities/platform-engineering/">DORA · Platform engineering</a>：页面更新于 2026-01-12，引用其对 2025 数据的说明；组织条件与 AI 效果的观察性证据。</li>
  <li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR · 2025 年初开源开发实验</a>与<a href="https://metr.org/blog/2026-02-24-uplift-update/">2026-02-24 更新</a>：用于说明测量与主观感觉可能错位；不把历史结果当作当前性能结论。</li>
 </ul>
-<p class="rv-note">读者应将图中的示意关系、本文指标、FDE 方案与原文数据区分。本文未获得原始访谈记录，也未独立审计企业收益。站内关联阅读用于延伸思考，不构成本文原文事实的证据。</p>
+<p class="rv-note">本文提炼、指标与两周方案属于作者建议，不是报告已验证的收益。</p></details>
 <hr>
-<p style="font-size:.85rem;color:var(--text-soft);text-align:center">修订记录：2026-11-19 · 全文深读初版；标注样本差异、hVC 估计边界、访谈收益与作者方案。</p>
+<p style="font-size:.85rem;color:var(--text-soft);text-align:center">修订：2026-11-19 · 精简版；先读金句，细节按需展开。</p>
 <div class="doc-footer">
  <a href="./index.html">← 阅读材料总索引</a>
  <a href="./2026-09_shopify-river-taste-responsibility.html">相关：Shopify River · 执行与责任</a>
@@ -419,29 +395,29 @@
 (() => {
  const details = {
   bridge: {
-   speed: ['任务提速：先确认省在了哪里','耗时减少、单位成本下降或吞吐增加，是局部改善的证据。还要检查返工与人工复核是否把节省抵消。','本文建议：记录任务时间，同时记录质量和返工；避免只比较生成耗时。'],
-   capacity: ['能力承接：省下能力后由谁使用','报告建议把释放的能力投入有名字、有负责人的业务机会。如果没有新增需求或重新分配，能力节省未必变成更多结果。','本文建议：在试点前确定承接项目与业务负责人，事后核查实际投入。'],
-   delivery: ['完整交付：检查提速后出现的瓶颈','报告中的审批与跨部门案例显示，局部生成加速可能仍被验证、发布与交接等待吞掉。','本文建议：追踪一条真实价值流，记录最慢环节、返工和异常，验证完整交付是否改善。'],
-   outcome: ['价值验收：由业务结果决定下一轮','客户体验、经营结果或可证明的新能力才是最终判据。收入与财务收益的变化仍需要检查归因和持续性。','本文建议：事前约定质量、成本、结果与停止条件，避免成功后重新选择有利指标。']
+   speed: ['先看哪里变快了','少花了时间，也要检查返工是否变多。','本文建议：时间和质量一起记录。'],
+   capacity: ['省下人力，用在哪？','报告建议投入具体业务机会，并确定负责人。','本文建议：提前选好承接项目，事后检查真的用上没有。'],
+   delivery: ['客户什么时候拿到？','报告案例显示，测试、审批和交接仍可能让人等待。','本文建议：沿完整流程找最慢的那一步。'],
+   outcome: ['结果到底好在哪？','看客户体验或经营结果，不只看做了多少。','本文建议：试用前定标准，之后照着检查。']
   },
   stages: {
-   s0: ['阶段 0：获得访问，还未形成方法','报告描述好奇与探索。工具可用是前提，不是熟练应用或价值证据；本图没有阶段 0 的 hVC 数值。','本文建议：选一个可复核的真实小任务，先体验如何给上下文与检查结果。'],
-   s1: ['阶段 1：从一次回答开始','报告描述单次提问与较直接地接受回答。hVC 每次约 0.08 小时是模型估计，不是实测节省。','本文建议：让使用者指出答案哪里不完整，并做一次有依据的修正。'],
-   s2: ['阶段 2：上下文、迭代与模板','报告描述持续补充上下文与反复改进。hVC 每次约 0.36 小时是模型估计；本文不编造单独的有用率。','本文建议：固定成功条件，保留错误与修正，让好结果能够再现。'],
-   s3: ['阶段 3：让有效方法成为团队资产','报告描述可复用、可分享的团队工作流。该阶段自评“真正有用”的交互超过 85%；每次交互 hVC 估计约 1.39 小时。两者都不等于独立验证的业务收益。','本文建议：把输入、验收、失败路径一起交给第二位使用者，检查是否离开原作者仍可运行。'],
-   s4: ['阶段 4：重设计工作，而不只是辅助原步骤','报告描述重新组织工作并消除部分人工工作类别。该阶段自评有用率超过 90%，hVC 每次约 4.65 小时仍是估计。','本文建议：重新检查全流程的风险、责任与成本；成熟度高并不自动获得更大执行权限。']
+   s0: ['阶段 0：先接触工具','报告描述开始探索，还没形成固定方法。','本文建议：找一个能检查对错的小任务。'],
+   s1: ['阶段 1：先问一句','报告描述单次提问，较直接地接受答案。','本文建议：找出不完整的地方，再改一次。'],
+   s2: ['阶段 2：补材料、反复改','报告描述用上下文和迭代改善结果。','本文建议：定好标准，记录错误和修正。'],
+   s3: ['阶段 3：把好方法交给别人','报告描述可以在团队里重复使用的工作流程。','本文建议：找第二个人照着做，看能否得到合格结果。'],
+   s4: ['阶段 4：重新安排工作','报告描述改变整个做法，减少部分人工步骤。','本文建议：同时重查风险和责任；会用不等于可以无限放权。']
   },
   platform: {
-   orchestration: ['编排：复用运行基础，不集中接管业务判断','报告把队列、运行、登记与重试等公共能力，同领域流程的步骤和升级规则区分。团队仍需知道哪些步骤能自动执行、哪里应交给人。','本文建议：先选能恢复和观察的最小运行方式，再按实际消费者的需要增加能力。'],
-   evaluation: ['评估与可观测性：看完整交易和真实结果','报告建议端到端轨迹、平行运行、版本比较与持续告警。只看模型回答，可能漏掉错误的检索材料或工具行动。','本文建议：重要场景用独立事实标签；人与模型一致、自报信心高，都不自动意味着正确。'],
-   gateway: ['AI 网关：接入、消耗与权限可见','报告强调路由、用量成本与访问规则，业务团队保留适用模型的选择。新模型快速可用，不等于全部应用已完成验证。','本文建议：按工作负载观察成本，在质量底线内试验路由；避免把全部决策集中到网关。'],
-   context: ['上下文：从取回材料到维护业务知识','报告关注持久上下文、更新、冲突与新鲜度。系统事实和人的原因都可能影响行动，且都有权限与时效限制。','本文建议：关键知识标权威来源、责任人、版本与有效期；先定位错误原因，再决定修数据或修工作流。']
+   orchestration: ['编排：让工作跑起来','系统管运行、排队和重试，业务团队决定步骤和例外。','本文建议：先跑通一个场景，再按需要补能力。'],
+   evaluation: ['评估与可观测性：看清做得对不对','报告建议记录全过程，比较结果，持续检查。','本文建议：用事实判断；人与 AI 一致，也可能一起错。'],
+   gateway: ['网关：管接入、用量和权限','统一看用了什么模型、花了多少、谁能调用。','本文建议：换模型前，先验证自己的业务还能做好。'],
+   context: ['上下文：让资料跟上变化','报告强调更新、时效与冲突处理。','本文建议：写清来源、负责人和有效期；错误先查原因。']
   },
   loop: {
-   result: ['真实结果：把失败与人工负担也留下来','本文建议每次工作记录实际结果、使用过的上下文和工具、人工介入、成本与异常。只保留成功案例，会让下一轮评估过度乐观。','责任主体：业务负责人定义结果；平台与 FDE 留下可追溯证据。'],
-   review: ['复盘证据：辨别问题来自哪一层','本文建议领域专家与工程师共同检查问题定义、数据、检索、模型、工具、授权或交接。不要把每次失败都处理成提示词问题。','责任主体：领域专家确认业务事实；FDE 与平台定位技术路径；风险负责人审查高后果事件。'],
-   assets: ['修正资产：把一次教训变成可复用改善','本文建议将已确认的修正回写知识源、评估案例或执行规则，并保留版本、责任人与生效条件。','责任主体：知识所有者更新来源；评估负责人扩充测试；平台负责人维护共用策略。'],
-   release: ['再评估与发布：学习应该改变决策','本文建议用保留案例和实际运行结果重新评估，按事前标准扩张、改道或停止；验证第二位使用者是否能接手。','责任主体：业务负责人决定投入与授权；运营负责人承接异常、维护和撤回。']
+   result: ['成功和失败都留下来','本文建议记录结果、花费和人工介入，别只展示成功案例。','业务负责人定标准，FDE 留证据。'],
+   review: ['先弄清为什么错','本文建议一起检查需求、资料、工具和操作，别只改提示词。','业务专家查事实，工程师查执行过程。'],
+   assets: ['把修正写回去','本文建议更新资料、测试案例和规则，并留下版本。','每份资料、每条规则都要有人维护。'],
+   release: ['改完再检查，决定下一步','本文建议按原定标准决定继续、调整或停止。','业务负责人决定投入，接手人负责后续运行。']
   }
  };
  document.querySelectorAll('[data-explorer]').forEach(block => {
