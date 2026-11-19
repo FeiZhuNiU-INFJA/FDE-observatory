@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-19T07:23:18.918050+00:00",
+  "generated_at": "2026-11-19T07:43:16.224606+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-11_organize-agents-around-completion.html",
@@ -958,6 +958,25 @@
         "AWS",
         "FDE",
         "Operating Model"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
+    {
+      "path": "readings/2026-11_product-bets-distribution-ai-organization.html",
+      "title": "Revolut · 产品能加速，组织怎样跟上？",
+      "date": "2026-11-19",
+      "audience": "cross",
+      "status": "可对外",
+      "tags": [
+        "Revolut",
+        "Agent",
+        "FDE",
+        "产品试验",
+        "组织设计"
       ],
       "category": "readings",
       "extra": {

@@ -206,6 +206,7 @@
 | patina-blue | `#366b73` / dark `#91cbd1` | 下一位客户是 Agent · Vercel 的验证、信任与平台策略（`readings/2026-11_agent-customer-verification-trust.html`） |
 | clay-copper | `#8c6047` / dark `#d7b397` | Fable 5.2 · 把 Agent 围绕「完成」组织起来（`insights/cross/2026-11_organize-agents-around-completion.html`） |
 | aubergine-brown | `#70483f` / dark `#d9aa9b` | AWS Reimagine · 从 AI 采用到业务价值（`readings/2026-11_ai-value-operating-model.html`） |
+| moss-ledger | `#53652f` / dark `#b8cd87` | Revolut · 产品能加速，组织怎样跟上？（`readings/2026-11_product-bets-distribution-ai-organization.html`） |
 
 **禁用页面 accent（它们是语义色，撞了会让 callout/pill 失去含义）：**
 `--warn #b45309` · `--con #dc2626` · `--pro #16a34a` · `--info #2563eb`

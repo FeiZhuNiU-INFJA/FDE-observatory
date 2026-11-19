@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Nik Storonsky × John Collison 访谈解读：Revolut 如何用新产品试验、自动分发和毛利比较配置资源，以及 AI 为什么尚未改变专业分工。含时间戳、交互图与证据核查。">
+<title>Revolut · 产品能加速，组织怎样跟上？ · FDE 阅读</title>
+<link rel="stylesheet" href="../_assets/insight.css">
+<style>
+:root{--accent:#53652f;--accent-soft:#edf0e4;--accent-deep:#3d4b22;--accent-ink:#35411e}
+[data-theme="dark"]{--accent:#b8cd87;--accent-soft:#293020;--accent-deep:#99b16b;--accent-ink:#dce8c3}
+.nb-note{font-size:.86rem;color:var(--text-soft)}
+.nb-cite{font-family:var(--mono);font-size:.76em;white-space:nowrap}
+.nb-summary li{margin:.65rem 0}
+.nb-summary strong{font-family:var(--serif);font-size:1.06rem}
+.nb-route{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.2rem 0}
+.nb-route a{padding:.4rem .7rem;background:var(--surface);border:1px solid var(--border-strong);border-radius:6px;font-size:.85rem}
+.nb-bets,.nb-sell,.nb-org{padding:1.25rem;margin:1.6rem 0;border:1px solid var(--border);border-radius:16px;background:var(--surface);box-shadow:var(--shadow);transition:transform .18s,border-color .18s}
+.nb-bets:hover,.nb-sell:hover,.nb-org:hover{transform:translateY(-3px);border-color:var(--accent)}
+.nb-label{font: .72rem/1.6 var(--mono);color:var(--accent);margin-bottom:.8rem}
+.nb-explorer{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(190px,1fr);gap:1rem;align-items:stretch}
+.nb-map{min-width:0;overflow-x:auto}
+.nb-map svg{display:block;width:100%;height:auto}
+.nb-map svg text{font-family:var(--sans);font-size:17px;fill:var(--text)}
+.nb-map svg .nb-small{font-family:var(--sans);font-size:12px;fill:var(--text-soft)}
+.nb-map svg .nb-num{font-family:var(--display);font-weight:700;font-size:30px;fill:var(--accent)}
+.nb-map svg .nb-box{fill:var(--bg-soft);stroke:var(--border-strong);stroke-width:1.5}
+.nb-map svg .nb-line{fill:none;stroke:var(--border-strong);stroke-width:1.7}
+.nb-map svg .nb-path{fill:none;stroke:var(--accent);stroke-width:1.7}
+.nb-map svg .nb-ink{fill:var(--accent)}
+.nb-node{cursor:pointer;outline:none}
+.nb-node:hover .nb-box,.nb-node:focus-visible .nb-box{stroke:var(--accent);stroke-width:2.5}
+.nb-node[aria-pressed="true"] .nb-box{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.nb-node:focus-visible text{text-decoration:underline}
+.nb-panel{padding:1rem;border:1px solid var(--border-strong);border-radius:10px;background:var(--bg-soft);align-self:stretch}
+.nb-panel-title{font-family:var(--serif);font-weight:700;color:var(--accent-ink);margin-bottom:.5rem}
+.nb-panel p{font-size:.9rem;line-height:1.8;margin:.45rem 0}
+.nb-panel .nb-panel-check{font-size:.82rem;color:var(--accent-ink);border-top:1px solid var(--border);padding-top:.65rem}
+.nb-panel a{font-size:.8rem}
+.nb-bets figcaption,.nb-sell figcaption,.nb-org figcaption{font-size:.8rem;color:var(--text-soft);margin-top:.85rem}
+.nb-hint{font-size:.76rem;color:var(--text-soft);margin:.55rem 0 0}
+.nb-rule{padding:1.2rem;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 12px 12px 0;margin:1.4rem 0}
+.nb-rule strong{font-family:var(--serif);font-size:1.08rem;color:var(--accent-ink)}
+.nb-more{margin:1rem 0;padding:1rem;border:1px solid var(--border);border-radius:10px;background:var(--surface)}
+.nb-more summary{font-weight:600;color:var(--accent-ink);cursor:pointer}
+.nb-more[open] summary{margin-bottom:1rem}
+.nb-more summary:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.nb-time td:first-child{white-space:nowrap}
+.nb-time td:nth-child(2){min-width:150px}
+.nb-audit td:nth-child(2),.nb-audit td:nth-child(3){min-width:190px}
+.nb-ref li{margin:.85rem 0;overflow-wrap:anywhere}
+@media(max-width:860px){.nb-explorer{grid-template-columns:1fr}.nb-panel{min-height:0}.nb-panel p{font-size:.9rem}}
+@media(max-width:640px){.nb-bets,.nb-sell,.nb-org{padding:.8rem}.nb-map svg{min-width:510px}.nb-hint{line-height:1.6}.nb-panel{padding:.85rem}}
+@media(prefers-reduced-motion:reduce){.nb-bets,.nb-sell,.nb-org{transition:none;transform:none!important}.reveal{opacity:1!important;transform:none!important}}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="topbar-inner">
+<div class="brand"><span class="brand-home"><a href="../index.html">← 首页</a></span>Revolut 的产品试验<span class="brand-sub">阅读材料 · 2026-11</span></div>
+<div class="actions"><button class="icon-btn toc-mobile-btn" id="tocBtn" title="目录" aria-label="目录">☰</button><button class="icon-btn" id="themeBtn" title="切换主题" aria-label="切换主题">◐</button></div>
+</div></div>
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer"><h5>目录</h5><ul id="drawerToc"></ul></aside>
+<div class="container">
+<aside class="toc-aside"><h5>目录</h5><ul id="toc"></ul></aside>
+<article>
+<header class="doc-header">
+<h1><span class="en">Revolut</span> · <br>产品能加速，组织怎样跟上？</h1>
+<p style="font-size:1.05rem;color:var(--text-soft)">Nik Storonsky × John Collison：从新产品试验，到 AI 改造公司的现实阻力</p>
+<div class="doc-meta"><span>2026-11-19</span><span>跨市场</span><span>Revolut</span><span>Agent</span><span>FDE</span><span>产品试验</span><span>组织设计</span><span>可对外</span><span>时机：进行中</span><span>信心：中</span></div>
+<div class="hero-stats">
+<div class="hero-stat"><div class="num">51<small>分 49 秒</small></div><div class="lab">访谈全长 · 完整逐字稿已读</div></div>
+<div class="hero-stat"><div class="num">约 100<small>次</small></div><div class="lab">历史产品试验 · Nik 自述</div></div>
+<div class="hero-stat"><div class="num">前 25<small>%</small></div><div class="lab">同龄产品毛利比较 · 加码组</div></div>
+<div class="hero-stat"><div class="num">尚未<small>改组</small></div><div class="lab">AI 小团队仍待验证</div></div>
+</div>
+<p class="nb-note">来源：Cheeky Pint，2026-11-10 发布 · <a href="https://www.youtube.com/watch?v=-NARhJ7jAj4" target="_blank" rel="noopener">视频</a> · <a href="https://cheekypint.substack.com/p/nik-storonsky-the-most-uncompromising" target="_blank" rel="noopener">节目完整逐字稿</a>。主持人 John Collison 是 Stripe 联合创始人；嘉宾 Nik Storonsky 是 Revolut 联合创始人兼 CEO。</p>
+</header>
+<div class="lede"><strong>本文判断：</strong>Revolut 值得学的是把产品试验、分发和资源调整接起来；AI 要进一步释放收益，还得让权限、流程和验收跟上人的能力变化。</div>
+<div class="callout callout-accent nb-summary">
+<div class="callout-tag">一分钟读懂 · 以下金句为本文提炼，并非原文引语</div>
+<ul>
+<li><strong>好产品能反复做出来，才形成公司能力。</strong><br>Revolut 用小团队试产品，再拿历史表现决定追加多少资源。</li>
+<li><strong>先给产品被看见的机会，再看它值不值得加码。</strong><br>合格上线后接入自动分发，以相同上线月龄比较毛利。</li>
+<li><strong>AI 会推荐什么，也要知道什么时候别开口。</strong><br>推荐系统同时考虑购买可能性、毛利和消息打扰。</li>
+<li><strong>一个人能多干活，组织不一定少排队。</strong><br>技术能跨前后端，权限和流程仍按专业切开。</li>
+<li><strong>指标达标了，还要看看产品到底好不好。</strong><br>Nik 用产品检查补足仪表盘：增长可能来自行情或运气。</li>
+</ul>
+</div>
+<p class="nb-note">这是经营者的经验访谈。内部模型、实验数据与因果效果未公开；本文把自述、公开披露、推论和建议分别标明。<a href="#sources">关键数字与简介差异可在文末回查</a>。</p>
+<div class="nb-route"><a href="#bets">产品怎么加码</a><a href="#sell">AI 怎么分发</a><a href="#organization">组织怎么跟上</a><a href="#fde">FDE 怎么试</a></div>
+
+<h2 id="bets"><span class="sec-num">一</span>不是多提想法，而是反复试出好产品<a class="anchor" href="#bets">#</a></h2>
+<p class="kicker">— 用结果决定下一笔投入</p>
+<p>Nik 说，Revolut 成功的产品大多是<strong>别人已经做过、但做得不够好的东西</strong>。员工可以提议，经经济可行性和有经验者审查后，组建约 10 人的小团队。后来他把立项到上线的常见周期说得更清楚：12–18 个月，包含招聘、入职、开发与内部治理审批。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=243">[1 · 04:03]</a><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1020">[1 · 17:00–19:35]</a></p>
+<p>上线先选一个国家，确认运转正常再扩大范围，并接入自动交叉销售系统。他们积累了约 100 次试验的历史数据，按<strong>上线第 1、2、3……12 个月的毛利</strong>比较：前 25% 加团队，后 25% 移走资源，中间视情况保留。毛利是收入扣掉直接成本后留下的钱。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1110">[1 · 18:30–19:35]</a></p>
+
+<figure class="nb-bets reveal" data-explorer="bets">
+<div class="nb-label">按访谈流程重绘 · 点击图中节点查看条件；不是原始系统架构</div>
+<div class="nb-explorer">
+<div class="nb-map" tabindex="0" role="region" aria-label="新产品试验流程图，可横向滚动">
+<svg viewBox="0 0 560 380" role="img" aria-label="想法经经济验证后建立小团队，试点上线并接入分发，再按相同上线月龄比较历史毛利，决定加码、保留或撤出资源">
+<defs><marker id="nb-arrow-bets" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L9 5L1 9" class="nb-ink"/></marker></defs>
+<path d="M166 65H204M356 65H394M470 104V144M394 184H355M204 184H166" class="nb-path" marker-end="url(#nb-arrow-bets)"/>
+<g class="nb-node" data-key="idea" role="button" tabindex="0" aria-label="经济验证" aria-pressed="true" aria-controls="bets-detail"><rect x="14" y="26" width="152" height="78" rx="12" class="nb-box"/><text x="90" y="60" text-anchor="middle">经济验证</text><text x="90" y="86" text-anchor="middle" class="nb-small">谁付钱 · 怎么回本</text></g>
+<g class="nb-node" data-key="team" role="button" tabindex="0" aria-label="独立小团队" aria-pressed="false" aria-controls="bets-detail"><rect x="204" y="26" width="152" height="78" rx="12" class="nb-box"/><text x="280" y="60" text-anchor="middle">独立小团队</text><text x="280" y="86" text-anchor="middle" class="nb-small">组队到上线 12–18 月</text></g>
+<g class="nb-node" data-key="launch" role="button" tabindex="0" aria-label="试点上线" aria-pressed="false" aria-controls="bets-detail"><rect x="394" y="26" width="152" height="78" rx="12" class="nb-box"/><text x="470" y="60" text-anchor="middle">试点上线</text><text x="470" y="86" text-anchor="middle" class="nb-small">先一个国家 · 再推广</text></g>
+<g class="nb-node" data-key="distribution" role="button" tabindex="0" aria-label="接入分发" aria-pressed="false" aria-controls="bets-detail"><rect x="394" y="144" width="152" height="78" rx="12" class="nb-box"/><text x="470" y="179" text-anchor="middle">接入分发</text><text x="470" y="205" text-anchor="middle" class="nb-small">自动交叉销售系统</text></g>
+<g class="nb-node" data-key="compare" role="button" tabindex="0" aria-label="同龄比较" aria-pressed="false" aria-controls="bets-detail"><rect x="204" y="144" width="152" height="78" rx="12" class="nb-box"/><text x="280" y="179" text-anchor="middle">同龄比较</text><text x="280" y="205" text-anchor="middle" class="nb-small">上线月龄 × 毛利</text></g>
+<g class="nb-node" data-key="allocate" role="button" tabindex="0" aria-label="调整投入" aria-pressed="false" aria-controls="bets-detail"><rect x="14" y="144" width="152" height="78" rx="12" class="nb-box"/><text x="90" y="179" text-anchor="middle">调整投入</text><text x="90" y="205" text-anchor="middle" class="nb-small">扩团队 · 留团队 · 移资源</text></g>
+<path d="M90 222V257H546" class="nb-line"/>
+<rect x="14" y="278" width="152" height="67" rx="10" class="nb-box"/><rect x="204" y="278" width="152" height="67" rx="10" class="nb-box"/><rect x="394" y="278" width="152" height="67" rx="10" class="nb-box"/>
+<text x="90" y="310" text-anchor="middle" class="nb-num">前 25%</text><text x="90" y="334" text-anchor="middle" class="nb-small">加码</text>
+<text x="280" y="310" text-anchor="middle">中间组</text><text x="280" y="334" text-anchor="middle" class="nb-small">视情况保留</text>
+<text x="470" y="310" text-anchor="middle" class="nb-num">后 25%</text><text x="470" y="334" text-anchor="middle" class="nb-small">移走资源</text>
+<text x="280" y="370" text-anchor="middle" class="nb-small">退出投资 ≠ 立刻关停已有客户使用的服务</text>
+</svg></div>
+<div class="nb-panel" id="bets-detail" aria-live="polite" aria-atomic="true"><div class="nb-panel-title">先问产品能不能回本</div><p class="nb-panel-body">Revolut Lite 想把类似 Venmo 的转账体验带到更多国家，实际自然增长不够，转而买量后，回收获客成本的速度不理想。</p><p class="nb-panel-check">原文反例：现有平台成功，不保证新的分发条件也成立。</p><a class="nb-panel-source" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=363">回看 06:03–06:59 ↗</a></div>
+</div>
+<p class="nb-hint">支持点击、Tab 与回车；窄屏可横向滑动图。</p>
+<figcaption>依据 [1] 04:03–06:59、17:00–19:59。节点顺序为访谈整理，内部归因与资源算法未披露。</figcaption>
+</figure>
+<p><strong>本文推论：</strong>这套机制的价值在于，让“产品不好”与“没人看见”更容易分开讨论。不过接入同一推荐系统，不代表各产品获得相同曝光；跨国家、跨产品的毛利也不天然可比。借用这套方法时，仍要核查分发条件和直接成本。</p>
+<p>公开成绩能提供背景：2025 年 Revolut 有 11 条产品线年收入各超过 £1 亿，集团收入约 £45 亿、税前利润约 £17 亿。它说明多产品业务已有规模，<strong>不能单独证明上述管理方法带来了多少增长</strong>。<a class="nb-cite" href="#ref3">[3]</a></p>
+
+<h2 id="sell"><span class="sec-num">二</span>AI 推荐产品，也要算打扰客户的代价<a class="anchor" href="#sell">#</a></h2>
+<p class="kicker">— 先提出候选，再结合当下情况判断</p>
+<p>Nik 披露了两层模型：传统机器学习根据客户信息与事件提出产品候选；上层大语言模型像客户经理，结合产品、事件和这些建议，决定此刻推荐什么。例子是客户出国、购买旅行流量卡时，推荐 Revolut 的 eSIM。<strong>他特意澄清：平台看到的是交易，不是完整账单内容。</strong><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1212">[1 · 20:12–21:45]</a></p>
+<p>系统并非只追求成交，还考虑产品毛利与发送消息的负面价值，也就是打扰的代价。访谈没有公开权重、提示词、是否可以不发送，以及大语言模型相对旧系统的增量收益。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1305">[1 · 21:45–22:13]</a></p>
+<figure class="nb-sell reveal" data-explorer="sell">
+<div class="nb-label">按 Nik 的描述重绘 · 是逻辑分工，不代表已核实代码实现</div>
+<div class="nb-explorer">
+<div class="nb-map" tabindex="0" role="region" aria-label="模型推荐分工图，可横向滚动">
+<svg viewBox="0 0 560 365" role="img" aria-label="客户信息和事件进入机器学习生成候选，大语言模型结合情境判断推荐；同时考虑成交、毛利与打扰成本">
+<defs><marker id="nb-arrow-sell" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L9 5L1 9" class="nb-ink"/></marker></defs>
+<path d="M170 75H210M170 187H190V96H210M354 75H397M470 114V157" class="nb-path" marker-end="url(#nb-arrow-sell)"/>
+<g class="nb-node" data-key="events" role="button" tabindex="0" aria-label="客户与事件" aria-pressed="false" aria-controls="sell-detail"><rect x="14" y="34" width="156" height="82" rx="12" class="nb-box"/><text x="92" y="68" text-anchor="middle">客户与事件</text><text x="92" y="94" text-anchor="middle" class="nb-small">画像 · 交易 · 当下情况</text></g>
+<g class="nb-node" data-key="catalog" role="button" tabindex="0" aria-label="可用产品" aria-pressed="false" aria-controls="sell-detail"><rect x="14" y="146" width="156" height="82" rx="12" class="nb-box"/><text x="92" y="181" text-anchor="middle">可用产品</text><text x="92" y="207" text-anchor="middle" class="nb-small">平台产品供判断使用</text></g>
+<g class="nb-node" data-key="ml" role="button" tabindex="0" aria-label="机器学习候选" aria-pressed="false" aria-controls="sell-detail"><rect x="210" y="34" width="144" height="82" rx="12" class="nb-box"/><text x="282" y="68" text-anchor="middle">机器学习</text><text x="282" y="94" text-anchor="middle" class="nb-small">提出产品候选</text></g>
+<g class="nb-node" data-key="llm" role="button" tabindex="0" aria-label="语言模型判断" aria-pressed="true" aria-controls="sell-detail"><rect x="397" y="34" width="150" height="82" rx="12" class="nb-box"/><text x="472" y="68" text-anchor="middle">语言模型</text><text x="472" y="94" text-anchor="middle" class="nb-small">综合情况 · 决定推荐</text></g>
+<path d="M170 207H375V98H397" class="nb-line" marker-end="url(#nb-arrow-sell)"/>
+<g class="nb-node" data-key="push" role="button" tabindex="0" aria-label="推荐给客户" aria-pressed="false" aria-controls="sell-detail"><rect x="397" y="157" width="150" height="72" rx="12" class="nb-box"/><text x="472" y="188" text-anchor="middle">推荐给客户</text><text x="472" y="211" text-anchor="middle" class="nb-small">示例：旅行流量卡</text></g>
+<rect x="14" y="268" width="533" height="74" rx="12" class="nb-box"/>
+<text x="280" y="298" text-anchor="middle">成交可能性 · 产品毛利 · 消息打扰成本</text>
+<text x="280" y="324" text-anchor="middle" class="nb-small">原文说明共同考虑这些因素，没有披露计算公式</text>
+</svg></div>
+<div class="nb-panel" id="sell-detail" aria-live="polite" aria-atomic="true"><div class="nb-panel-title">候选之上，再做情境判断</div><p class="nb-panel-body">Nik 把大语言模型比作客户经理：查看产品、事件和机器学习建议，决定当前推荐。访谈没有说明它能否拒绝所有候选。</p><p class="nb-panel-check">本文解读：适合先把范围缩小，再让语言模型处理情境。</p><a class="nb-panel-source" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1254">回看 20:54–21:27 ↗</a></div>
+</div>
+<p class="nb-hint">点图中节点查看输入、模型职责与未披露之处。</p>
+<figcaption>依据 [1] 20:12–22:13。产品目录箭头仅表示产品信息用于判断；没有公开独立服务或接口。</figcaption>
+</figure>
+<p><strong>本文建议：</strong>企业 Agent 可以先拿一个窄场景试这种分工：已有规则或模型列出可行动事项，语言模型解释为什么现在值得做，再由明确规则限定能执行的动作。例如续约助手先收到“合同即将到期”的事件，再检查客户问题是否解决，决定提醒销售还是等待；这是本文示例。</p>
+<p>要同时检查：有效行动增加了多少，无效提醒和客户投诉是否增加。<strong>“少打扰”也不能代替“对客户合适”。</strong>赚钱、成交与客户受益可能不一致，访谈没有证明系统已经解决这种冲突。</p>
+
+<h2 id="organization"><span class="sec-num">三</span>一个人能跨专业，权限和流程还没跟上<a class="anchor" href="#organization">#</a></h2>
+<p class="kicker">— AI 能力已经变化，组队方式尚未变化</p>
+<p>Nik 说，AI 已用于客服、翻译、工程和营销，也在尝试能端到端工作的 AI 员工。他认为一个开发者有机会覆盖前端、后端，甚至数据科学，小团队“可能”只需两人。<strong>这段话是能力判断和设想，不是已完成的组织实验。</strong><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1996">[1 · 33:16–34:56]</a></p>
+<p>主持人紧接着追问：那新产品团队缩小了吗？Nik 回答，<strong>还没有</strong>。原有流程仍需要 iOS、Android、后端、数据与运营等专业人员；让一个新人拿到所有系统的访问权限并完成工作很难。他会继续用已经有效的方法，同时试新方法，等效果被证明再改变。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2096">[1 · 34:56–36:36]</a></p>
+<figure class="nb-org reveal" data-explorer="org">
+<div class="nb-label">本文推论与试验建议 · 非 Revolut 已实施架构</div>
+<div class="nb-explorer">
+<div class="nb-map" tabindex="0" role="region" aria-label="能力与组织阻力图，可横向滚动">
+<svg viewBox="0 0 560 370" role="img" aria-label="AI 让个人能力覆盖多个专业，但专业权限、协作流程与验收责任仍需衔接；可先沿一条真实交付流程试验">
+<defs><marker id="nb-arrow-org" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1L9 5L1 9" class="nb-ink"/></marker></defs>
+<g class="nb-node" data-key="capacity" role="button" tabindex="0" aria-label="个人能力变宽" aria-pressed="true" aria-controls="org-detail"><rect x="14" y="22" width="532" height="80" rx="12" class="nb-box"/><text x="36" y="55">个人能力变宽</text><text x="36" y="83" class="nb-small">AI 帮助同一个人跨前端、后端与数据工作</text><path d="M383 62h133" class="nb-path"/><circle cx="383" cy="62" r="5" class="nb-ink"/><circle cx="450" cy="62" r="5" class="nb-ink"/><circle cx="516" cy="62" r="5" class="nb-ink"/></g>
+<path d="M280 102V132" class="nb-path" marker-end="url(#nb-arrow-org)"/>
+<g class="nb-node" data-key="access" role="button" tabindex="0" aria-label="权限按专业分散" aria-pressed="false" aria-controls="org-detail"><rect x="14" y="137" width="164" height="103" rx="12" class="nb-box"/><text x="96" y="174" text-anchor="middle">权限</text><text x="96" y="199" text-anchor="middle" class="nb-small">系统按专业开放</text><text x="96" y="222" text-anchor="middle" class="nb-small">原文指出的阻力</text></g>
+<g class="nb-node" data-key="handoff" role="button" tabindex="0" aria-label="流程仍按专业交接" aria-pressed="false" aria-controls="org-detail"><rect x="198" y="137" width="164" height="103" rx="12" class="nb-box"/><text x="280" y="174" text-anchor="middle">流程</text><text x="280" y="199" text-anchor="middle" class="nb-small">专业角色仍需衔接</text><text x="280" y="222" text-anchor="middle" class="nb-small">原文指出的阻力</text></g>
+<g class="nb-node" data-key="acceptance" role="button" tabindex="0" aria-label="验收责任也需安排" aria-pressed="false" aria-controls="org-detail"><rect x="382" y="137" width="164" height="103" rx="12" class="nb-box"/><text x="464" y="174" text-anchor="middle">验收</text><text x="464" y="199" text-anchor="middle" class="nb-small">谁检查 · 谁负责</text><text x="464" y="222" text-anchor="middle" class="nb-small">本文追加的核查</text></g>
+<path d="M96 240V263H464V240M280 263V280" class="nb-line" marker-end="url(#nb-arrow-org)"/>
+<g class="nb-node" data-key="pilot" role="button" tabindex="0" aria-label="试一条交付流程" aria-pressed="false" aria-controls="org-detail"><rect x="14" y="285" width="532" height="66" rx="12" class="nb-box"/><text x="280" y="315" text-anchor="middle">先试一条能完整验收的交付流程</text><text x="280" y="339" text-anchor="middle" class="nb-small">记录用时、等待、返工与人工检查，再决定怎么改组</text></g>
+</svg></div>
+<div class="nb-panel" id="org-detail" aria-live="polite" aria-atomic="true"><div class="nb-panel-title">能做更多，不等于已少用人</div><p class="nb-panel-body">Nik 认为 AI 可以拓宽个人能力，但承认新产品团队仍采用旧框架，两人团队尚未被这段访谈证明。</p><p class="nb-panel-check">本文判断：先核实完整交付能否完成，再推算人员需求。</p><a class="nb-panel-source" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2096">回看 34:56–35:32 ↗</a></div>
+</div>
+<p class="nb-hint">点权限、流程或验收，查看各自需要解决的问题。</p>
+<figcaption>前两项阻力依据 [1] 34:56–36:36；验收与试验方法为本文补充。无需因此向个人开放所有系统权限。</figcaption>
+</figure>
+<div class="nb-rule"><strong>本文推论：要先改“怎样把事情做完”，才能判断“需要多少人”。</strong><p>原文给出的事实是能力能跨专业，而组队、访问与流程仍按专业安排。因此，单看代码生成速度不足以估算完整交付的人力；还要验证等待、返工与检查是否随之改变。</p></div>
+<p>这个结论也有边界：受监管业务中的独立复核可能有必要，专业人员仍可能承担经验、质量和责任。适合试的是减少不必要的交接，而不是把所有角色合成一个人。</p>
+
+<h2 id="economics"><span class="sec-num">四</span>收入来自客户长期使用，不能只数注册<a class="anchor" href="#economics">#</a></h2>
+<p class="kicker">— 持续使用、利润与风险一起看</p>
+<p>Nik 希望少依赖贷款带来的利润：经济恶化时，坏账可能吞掉多年收益；他偏好交易收入与订阅。他说贷款留在资产负债表上的目标占比低于 10%，其余考虑证券化。<strong>这是目标，不是对当前占比的披露。</strong><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=755">[1 · 12:35–16:55]</a></p>
+<p>也不能把它写成“Revolut 主要靠订阅赚钱”。2025 年官方披露的订阅收入为 £7.08 亿，占集团约 £45 亿收入的<strong>约 16%（按披露数粗算）</strong>；卡支付、财富、外汇和利息同样重要。利息收入也不等于贷款净利差。订阅没有同样的借款人违约敞口，但权益成本和获客成本仍可能让它亏钱。<a class="nb-cite" href="#ref3">[3]</a></p>
+<p>客户关系也有深浅。Nik 自述，按国家不同，只有 10–20% 的月活用户把工资打进 Revolut。偶尔转账与把它当主账户，使用频率和其他产品需求不同。他还说，过于复杂的用户状态机最终被简化成<strong>按国家、加入时间分组，看 12、18、24 个月后是否仍活跃</strong>。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1690">[1 · 28:10–31:10]</a><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1898">[1 · 31:38–33:16]</a></p>
+<p><strong>本文对 Agent 产品的映射：</strong>注册、连接工具、跑通一次，类似“开了账户”；客户把真实工作持续交给你，才接近“主账户”。但金融工资账户的黏性不能直接套到企业软件，应观察真实任务是否反复完成、是否减少客户工作量。</p>
+<details class="nb-more"><summary>不直接收费的功能，怎样评价价值？</summary>
+<p>Nik 说，Revolut 同时记录直接与间接毛利。RevPoints 积分的账面毛利小，但他们把留存、增量使用带来的收益归给它，得到较高的间接毛利。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1480">[1 · 24:40–27:36]</a></p>
+<p><strong>本文核查：</strong>间接归因是模型估计，不是新增的一笔实际收入。访谈没有披露对照实验或去重方法；同一客户的留存收益若被多个功能重复认领，账面会很好看。借鉴时，把实收收入、节省成本与归因估计分开记录，再用合适的对照验证。</p>
+</details>
+
+<h2 id="judgment"><span class="sec-num">五</span>数字负责筛查，人还要检查产品<a class="anchor" href="#judgment">#</a></h2>
+<p class="kicker">— 达标不是质量的全部证明</p>
+<p>Nik 自述把约 95% 的时间用于内部，主要看产品和业务流程。执行检查已有半自动系统和绩效团队；他本人追问指标是否被外部因素托高、功能质量是否足够、开发速度是否合理。他最后也明确说：<strong>不能量化所有事。</strong><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2556">[1 · 42:36–45:28]</a><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=3070">[1 · 51:10]</a></p>
+<p><strong>本文判断：</strong>同样的方法适合检查 Agent。自动评测可以发现大批重复问题；负责产品的人仍要打开真实产物，检查它是否解决客户需求。比如报告格式合规、引用都有，也可能答非所问。先用指标缩小检查范围，再用真实任务补上质量判断。</p>
+<p>不能照搬的有两点：第一，慢启动不必然意味着坏产品。Nik 的经验来自自己的产品组合，基础设施、长期信任与不同分发条件未必服从同一毛利曲线。第二，经营者相信判断力，不代表更换团队与增长之间已有因果证明。文中财富产品增长 60–80% 到 300% 的例子，仍是他的自述。<a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1333">[1 · 22:13–24:15]</a><a class="nb-cite" href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2658">[1 · 44:18–45:20]</a></p>
+
+<h2 id="fde"><span class="sec-num">六</span>FDE 先试一条业务，别急着重画组织<a class="anchor" href="#fde">#</a></h2>
+<p class="kicker">— 本文建议 · 用完整交付验证价值</p>
+<p>FDE 是深入客户现场、把技术变成业务结果的工程角色。本文建议借用的，是<strong>小范围试验、稳定的试用入口、按真实结果调整投入</strong>。Revolut 已有大客户基数和历史试验数据，早期企业 Agent 项目通常没有，不能生搬前后 25% 的门槛。</p>
+<div class="table-wrap"><table>
+<thead><tr><th>步骤</th><th>责任主体</th><th>要拿到的证据</th></tr></thead>
+<tbody>
+<tr><td>选一个真实流程</td><td>客户业务负责人 + FDE</td><td>起点、交付物、怎样算完成；现有用时与问题</td></tr>
+<tr><td>打通可用的最小范围</td><td>FDE + 客户系统负责人</td><td>必需数据和工具可访问；专业复核与写入边界明确</td></tr>
+<tr><td>让客户实际使用</td><td>业务负责人</td><td>明确使用人和入口，记录曝光、尝试与失败</td></tr>
+<tr><td>对照完整交付</td><td>FDE + 验收人</td><td>总用时、等待、返工、人工检查、产物质量与运行成本</td></tr>
+<tr><td>决定下一笔投入</td><td>客户业务负责人</td><td>扩大使用、继续修正或暂停；已有用户的服务有人接管</td></tr>
+</tbody>
+</table></div>
+<p class="nb-note">表格是本文试验建议，不是 Revolut 原文流程；试验周期由业务发生频率和验收需要决定。</p>
+<p><strong>本文示例：</strong>合同初审助手先读合同、生成带条款出处的问题清单，交给律师复核。观察的是从收件到完成初审的总时间、漏掉的重要问题与人工复核投入。若生成只需一分钟，但系统权限、材料收集和律师排队没改善，就应先处理这些环节。</p>
+<p>这种交付可以沿用现有业务系统、账本或工作流，不必先新增一套 Agent 管理架构。下一步投资应该落在被证据确认的瓶颈上。</p>
+
+<h2 id="sources"><span class="sec-num">七</span>原文回看与证据核查<a class="anchor" href="#sources">#</a></h2>
+<p class="kicker">— 主线已读完，细节按需展开</p>
+<details class="nb-more"><summary>视频简介有两处容易误读</summary>
+<ul>
+<li><strong>“210 天合规审批周期”：</strong>YouTube 简介和节目文章导语均提到它；本次取得的英文字幕与完整公开逐字稿中，未找到对应数字或缩短后的结果。正文不能据此宣称 AI 已把 210 天降到多少天，也不能推算收益。</li>
+<li><strong>“新产品靠留存曲线决定生死”：</strong>简介强调 retention curves，正文 18:30–19:35 具体说的是按上线月龄比较毛利。客户留存分组出现在另一个话题，不能把两套口径混为一谈。</li>
+</ul>
+<p class="nb-note">来源 [1] 视频简介、英文字幕与 [2] 导语/逐字稿相互对照。它们是同一访谈的不同载体，不是独立证据。</p>
+</details>
+<details class="nb-more"><summary>关键数字：哪些是自述、目标或公开披露？</summary>
+<div class="table-wrap nb-audit"><table>
+<thead><tr><th>说法</th><th>实际口径</th><th>核查与边界</th></tr></thead>
+<tbody>
+<tr><td>每天约 10 万新客户</td><td>Nik 当时自述，00:21–00:50</td><td>未核实是注册、审批完成还是活跃客户，不能直接年化</td></tr>
+<tr><td>约 100 次历史试验；前后 25%</td><td>Nik 自述，按相同上线月龄比较毛利</td><td>未公开样本表、曝光分配及跨产品调整方法</td></tr>
+<tr><td>9–18 月 / 12–18 月</td><td>早段粗述；17:58 后澄清立项到上线常见为 12–18 月</td><td>包含组队、开发、内部审批，不能全算成编码时间</td></tr>
+<tr><td>两个人可以做产品</td><td>能力设想；34:56 后承认原团队框架尚未改</td><td>不能写成已全面采用两人团队或已完成裁员</td></tr>
+<tr><td>工资账户占月活 10–20%</td><td>因国家而异，28:58–29:25</td><td>不是占全体注册用户；未公开分国家数据</td></tr>
+<tr><td>35 岁以下超过 50%</td><td>Nik 指欧洲多数市场、持有任何 Revolut 账户</td><td>不是主账户占比；没有公开国家、年龄与分母明细</td></tr>
+<tr><td>“微笑”留存与负流失</td><td>用户活跃下降后回升；60→65/70 是口述例子</td><td>不是 SaaS 收入净留存指标，不作为实测曲线绘图</td></tr>
+<tr><td>贷款低于资产负债表 10%</td><td>Nik 的目标状态</td><td>不是当前实测比例；官方只另披露资产配置与贷款组合</td></tr>
+<tr><td>2025 年订阅收入 £7.08 亿</td><td>集团收入约 £45 亿，粗算约 16%</td><td>公开公司披露 [3]；使用英镑，避免美元换算口径影响</td></tr>
+<tr><td>美国批准与 2027 年推出银行</td><td>2026-09-03 公告：OCC 有条件批准</td><td>仍需 FDIC、Fed 与 OCC 最终批准；2027 年是计划 [4]</td></tr>
+<tr><td>2028 年 IPO</td><td>Nik 的希望，47:39–48:37</td><td>以市场状况为条件，不是确定上市日期</td></tr>
+<tr><td>AI 创投收益前 3–4%</td><td>Nik 自述，45:50 起；主持人纠正为创投而非对冲基金</td><td>未披露比较样本、已实现收益与核算方法，不作投资结论</td></tr>
+</tbody>
+</table></div>
+</details>
+<details class="nb-more"><summary>51 分钟怎么回看？</summary>
+<div class="table-wrap nb-time"><table>
+<thead><tr><th>起点</th><th>原视频话题</th><th>值得留意的细节</th></tr></thead>
+<tbody>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=21">00:21</a></td><td>Revolut 增长</td><td>前七年主要自然增长；2022 年开始较大增长预算</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=243">04:03</a></td><td>新产品试验</td><td>经济审查、独立团队；Lite 是分发假设失败的反例</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=755">12:35</a></td><td>贷款风险与订阅</td><td>偏好低信用风险，不等于订阅占多数收入</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1020">17:00</a></td><td>上线、比较、资源分配</td><td>按相同上线月龄看毛利；撤出资源要考虑客户损害</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1212">20:12</a></td><td>自动交叉销售</td><td>机器学习候选 + 大语言模型判断 + 打扰成本</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1480">24:40</a></td><td>不直接收费的功能</td><td>RevPoints 的间接毛利归因，未披露因果验证方法</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1659">27:39</a></td><td>Stripe Radar 广告</td><td>广告段，不作为独立性能证据</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1690">28:10</a></td><td>从偶尔使用到主账户</td><td>工资入账、年轻用户、留存分组的不同分母</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=1996">33:16</a></td><td>AI 与公司组织</td><td>能力设想与已实施改组之间的差距</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2196">36:36</a></td><td>选市场</td><td>竞争、单位经济与获牌难度共同决定</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2344">39:04</a></td><td>美国信用卡与牌照</td><td>强调技术和合规衔接；美国推出仍有审批条件</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2556">42:36</a></td><td>CEO 时间与产品检查</td><td>指标绿了，也要看产品质量及外部行情</td></tr>
+<tr><td><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4&amp;t=2750">45:50</a></td><td>AI 创投、IPO、绩效</td><td>区分自述、计划和验证；量化不是全部判断</td></tr>
+</tbody>
+</table></div>
+<p class="nb-note">大章节时间来自节目说明；17:00、24:40、36:36 与 45:50 是本文为补充话题标出的回看位置。</p>
+</details>
+<ol class="nb-ref">
+<li id="ref1"><a href="https://www.youtube.com/watch?v=-NARhJ7jAj4" target="_blank" rel="noopener">[1] Cheeky Pint · Nik Storonsky: The most uncompromising banking CEO</a>，2026-11-10。访谈、节目简介与英文字幕；内部经营方法均按 Nik 自述归属。</li>
+<li id="ref2"><a href="https://cheekypint.substack.com/p/nik-storonsky-the-most-uncompromising" target="_blank" rel="noopener">[2] Cheeky Pint · 完整公开逐字稿</a>。用于通读和核对说话人，与 [1] 同源；个别说话人标签仍有编辑误差。</li>
+<li id="ref3"><a href="https://www.revolut.com/cs-CZ/news/revolut_reports_record_profit_of_2_3bn_for_2025_as_revenue_surges_to_6bn/" target="_blank" rel="noopener">[3] Revolut · 2025 年业绩公告</a>，2026-03-24。核查产品线收入、订阅占比及贷款/资产背景。财务数据以公司披露为准，不证明管理方法的因果效果。</li>
+<li id="ref4"><a href="https://www.revolut.com/news/revolut_receives_conditional_approval_from_u_s_office_of_the_comptroller_of_the_currency_to_form_a_national_bank/" target="_blank" rel="noopener">[4] Revolut · 美国 OCC 有条件批准公告</a>，2026-09-03。核查审批阶段与 2027 年计划。</li>
+<li id="ref5"><a href="https://thefinanser.com/2026/11/when-john-collison-had-a-pint-with-nik-storonsky" target="_blank" rel="noopener">[5] Chris Skinner · When John Collison had a pint with Nik Storonsky</a>，2026-11-12。补充对长期责任、客户适合性和美国市场的质疑；它也基于同一访谈，不计作内部事实的独立验证。</li>
+</ol>
+<p class="nb-note">判断印章：时机「进行中」，因为模型与组织适配已是当下交付问题；信心「中」，因为机制描述明确，但内部实验和 AI 增量收益未公开。核查截至 2026-11-19。</p>
+<hr>
+<p style="font-size:.85rem;color:var(--text-muted);text-align:center">修订记录：2026-11-19 初稿 · 通读完整逐字稿，核查公开业绩与美国审批阶段</p>
+<div class="doc-footer"><a href="../index.html">← 首页</a> · <a href="index.html">阅读材料索引</a> · <a href="2026-11_ai-value-operating-model.html">相关：从 AI 采用到业务价值</a></div>
+</article>
+</div>
+<script src="../_assets/insight.js"></script>
+<script>
+(() => {
+const video = 'https://www.youtube.com/watch?v=-NARhJ7jAj4&t=';
+const entries = {
+bets:{
+ idea:['先问产品能不能回本','Revolut Lite 想把类似 Venmo 的转账体验带到更多国家，实际自然增长不够，转而买量后，回收获客成本的速度不理想。','原文反例：现有平台成功，不保证新的分发条件也成立。',363,'06:03–06:59'],
+ team:['独立团队，承担一项产品试验','Nik 先说约 10 人，立项到上线通常 12–18 个月，包含招人、入职、开发与内部审批。','口径提醒：不是开发者连续编码了 18 个月。',243,'04:03 / 17:58'],
+ launch:['先让一个国家用起来','选择爱尔兰、英国等试点，确认运转正常后再推广到更多国家。','原文没有披露固定试点样本量或统一上线门槛。',1100,'18:20–18:44'],
+ distribution:['接入系统，不再只争人手推广','产品加入自动交叉销售系统，系统根据客户情况分发。','本文核查：接入相同系统不代表获得相同曝光，要看实际分发条件。',1110,'18:30–18:57'],
+ compare:['比较上线同样久的产品','用约 100 次历史试验，比较上线第 1、2、3……12 个月的毛利表现。','原文是毛利比较；不是把十年老产品与一个月新产品放一起。',1136,'18:56–19:20'],
+ allocate:['把投入给表现更好的产品','前 25% 扩团队，后 25% 移走资源，中间视情况处理。如果关停会伤害已有客户，就停止追加投入但保留维护。','原文约束：退出投资与退出客户服务是不同决定。',1150,'19:10–19:59']
+},
+sell:{
+ events:['交易信号有用，也有边界','Nik 举出国旅行与购买流量卡的例子；随后澄清，只看得到交易，看不到完整账单详情。','本文核查：不要把交易记录夸大成完整客户需求。',1212,'20:12–21:45'],
+ catalog:['判断必须结合平台产品','Nik 说语言模型查看所有产品、事件和机器学习建议。图中目录只是表示这一输入，不声称存在独立目录服务。','原文未披露产品信息更新、市场资格判断或权限接口。',1254,'20:54–21:27'],
+ ml:['先得到有依据的候选','机器学习根据客户画像与事件提出当前可能合适的产品。','本文解读：保留已有模型的筛选能力，再评估语言模型补了什么。',1212,'20:12–20:54'],
+ llm:['候选之上，再做情境判断','Nik 把大语言模型比作客户经理：查看产品、事件和机器学习建议，决定当前推荐。访谈没有说明它能否拒绝所有候选。','本文解读：适合先把范围缩小，再让语言模型处理情境。',1254,'20:54–21:27'],
+ push:['成交之外，也有消息的代价','Nik 说共同考虑购买可能性、产品毛利与打扰成本；没有给出权重或公式。','本文建议：另外验证客户适合性、无效提醒与投诉，不能只看成交。',1305,'21:45–22:13']
+},
+org:{
+ capacity:['能做更多，不等于已少用人','Nik 认为 AI 可以拓宽个人能力，但承认新产品团队仍采用旧框架，两人团队尚未被这段访谈证明。','本文判断：先核实完整交付能否完成，再推算人员需求。',2096,'34:56–35:32'],
+ access:['访问系统仍按专业安排','原文说，让一个新员工拿到所有系统权限并产出所需代码很难。','本文建议：为一条流程提供必需且受限的访问；需要复核的写入保留复核。',2140,'35:40–36:10'],
+ handoff:['旧流程仍期待不同专业角色','iOS、Android、后端、数据与运营都有自己的系统和工作方式；个人能力拓宽，没有自动消除交接。','本文建议：先记录材料收集、等待与交接，找最慢的环节。',2124,'35:24–36:15'],
+ acceptance:['完成由谁检查？','这是本文追加的核查，不是 Nik 已公布的方案。人员跨专业后，仍需约定产物、检查人和错误责任。','本文建议：用真实交付检查漏项、返工和人工复核投入。',2096,'34:56–36:36（推论依据）'],
+ pilot:['先试完整交付，再决定改组','这是本文试验建议：拿一条可验收流程，用现有方法作参照，观察总时间、质量、等待与成本。','适用前提：有真实使用人和清楚的验收标准；周期按业务频率安排。',2115,'35:15–35:32（建议依据）']
+}
+};
+document.querySelectorAll('[data-explorer]').forEach(figure => {
+ const panel = figure.querySelector('.nb-panel');
+ const nodes = figure.querySelectorAll('.nb-node');
+ const select = node => {
+  const item = entries[figure.dataset.explorer]?.[node.dataset.key];
+  if (!item) return;
+  nodes.forEach(other => other.setAttribute('aria-pressed', String(other === node)));
+  panel.querySelector('.nb-panel-title').textContent = item[0];
+  panel.querySelector('.nb-panel-body').textContent = item[1];
+  panel.querySelector('.nb-panel-check').textContent = item[2];
+  const source = panel.querySelector('.nb-panel-source');
+  source.href = video + item[3];
+  source.textContent = '回看 ' + item[4] + ' ↗';
+ };
+ nodes.forEach(node => {
+  node.addEventListener('click', () => select(node));
+  node.addEventListener('keydown', event => {
+   if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); select(node);}
+  });
+ });
+});
+})();
+</script>
+</body>
+</html>
