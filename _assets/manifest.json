@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-12T08:52:29.767095+00:00",
+  "generated_at": "2026-11-19T07:07:01.030144+00:00",
   "insights": [
     {
       "path": "insights/cross/2026-11_organize-agents-around-completion.html",
@@ -948,6 +948,23 @@
   ],
   "legacy": [],
   "readings": [
+    {
+      "path": "readings/2026-11_ai-value-operating-model.html",
+      "title": "AWS Reimagine · 从 AI 采用到业务价值",
+      "date": "2026-11-19",
+      "audience": "tob",
+      "status": "可对外",
+      "tags": [
+        "AWS",
+        "FDE",
+        "Operating Model"
+      ],
+      "category": "readings",
+      "extra": {
+        "timing": "进行中",
+        "confidence": "中"
+      }
+    },
     {
       "path": "readings/2026-11_agent-customer-verification-trust.html",
       "title": "下一位客户是 Agent",
